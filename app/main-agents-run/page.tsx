@@ -270,6 +270,11 @@ export default function MainAgentsRunPage() {
     setCurrentStep((step) => (step < 0 ? 0 : Math.min(step + 1, runSteps.length - 1)));
   };
 
+  const reviewStep = (index: number) => {
+    setIsRunning(false);
+    setCurrentStep(index);
+  };
+
   return (
     <main className="run-page">
       <header className="run-topbar">
@@ -339,20 +344,28 @@ export default function MainAgentsRunPage() {
       <section className="workflow-section">
         <div className="section-heading">
           <div><span>НАПРАВЛЕНИЕ ПОТОКА →</span><h2>Маршрут Main agents</h2></div>
-          <p>Последовательность собрана Orchestrator для этого кейса.</p>
+          <p><b>Нажмите на любого агента</b>, чтобы остановить поток и просмотреть вход и результат.</p>
         </div>
         <div className="agent-rail" ref={railRef}>
           {runSteps.map((step, index) => {
             const state = stepState(index, currentStep);
             return (
-              <div className={`rail-step ${state}`} data-step={index} key={step.id}>
+              <button
+                aria-label={`Открыть шаг ${index + 1}: ${step.name}`}
+                aria-pressed={state === "active"}
+                className={`rail-step ${state}`}
+                data-step={index}
+                key={step.id}
+                onClick={() => reviewStep(index)}
+                type="button"
+              >
                 <div className="rail-node">
                   <span>{state === "completed" ? "✓" : String(index + 1).padStart(2, "0")}</span>
                   {state === "active" && <i />}
                 </div>
                 <div className="rail-label"><small>{step.phase}</small><b>{step.name}</b></div>
                 {index < runSteps.length - 1 && <span className="rail-arrow">→</span>}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -365,11 +378,18 @@ export default function MainAgentsRunPage() {
             {runSteps.map((step, index) => {
               const state = stepState(index, currentStep);
               return (
-                <div className={`sequence-row ${state}`} key={step.id}>
+                <button
+                  aria-label={`Просмотреть шаг ${index + 1}: ${step.name}`}
+                  aria-pressed={state === "active"}
+                  className={`sequence-row ${state}`}
+                  key={step.id}
+                  onClick={() => reviewStep(index)}
+                  type="button"
+                >
                   <span className="sequence-index">{state === "completed" ? "✓" : index + 1}</span>
                   <div><b>{step.name}</b><small>{step.phase}</small></div>
-                  <em>{state === "completed" ? "Готово" : state === "active" ? "Сейчас" : "Далее"}</em>
-                </div>
+                  <em>{state === "completed" ? "Готово" : state === "active" ? isRunning ? "Сейчас" : "Просмотр" : "Далее"}</em>
+                </button>
               );
             })}
           </div>
@@ -380,7 +400,7 @@ export default function MainAgentsRunPage() {
             <>
               <div className="active-agent-head">
                 <div className="agent-orbit"><span>{String(currentStep + 1).padStart(2, "0")}</span><i /><i /></div>
-                <div><span className="live-label"><i /> {isRunning ? "ВЫПОЛНЯЕТСЯ" : isComplete ? "ЗАВЕРШЕНО" : "ПРИОСТАНОВЛЕНО"}</span><h2>{activeStep.name}</h2><p>{activeStep.action}</p></div>
+                <div><span className="live-label"><i /> {isRunning ? "ВЫПОЛНЯЕТСЯ" : isComplete ? "ЗАВЕРШЕНО" : "ПРОСМОТР ШАГА"}</span><h2>{activeStep.name}</h2><p>{activeStep.action}</p></div>
               </div>
               <div className="data-flow">
                 <div className="data-block input-data"><span>01 · ПОЛУЧЕНО</span><p>{activeStep.received}</p></div>
