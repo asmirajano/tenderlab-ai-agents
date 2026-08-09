@@ -761,6 +761,32 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .status-line > span i { background: #39a56f; border-radius: 50%; height: 6px; width: 6px; }
 .status-line > b { color: #8b978f; font-weight: 500; }
 
+@media (min-width: 1181px) {
+  .topbar { height: 76px; }
+  .brand { font-size: 20px; }
+  .command-hero { padding-top: 132px; padding-bottom: 48px; }
+  .command-titlebar { margin-bottom: 34px; }
+  .command-titlebar h1 { font-size: clamp(70px, 5.7vw, 84px); }
+  .command-titlebar > div:first-child > p:last-child { font-size: 18px; }
+  .command-metrics { gap: 15px; margin-bottom: 15px; }
+  .command-metric { min-height: 142px; padding: 21px 23px; }
+  .command-metric > span { font-size: 11px; }
+  .command-metric > strong { font-size: 43px; }
+  .command-metric > i { bottom: 21px; right: 21px; }
+  .command-grid { gap: 15px; grid-template-columns: minmax(0, 1fr) 370px; }
+  .operation-board { padding: 29px 30px 21px; }
+  .activity-panel { padding: 29px 26px 21px; }
+  .panel-head h2 { font-size: 27px; }
+  .agent-run-list button { min-height: 56px; padding-block: 13px; }
+  .agent-run-list button > div b, .activity-feed p b { font-size: 14px; }
+  .agent-run-list button > div small, .activity-feed p small { font-size: 11px; }
+  .architecture-section, .agents-section { padding-block: 102px; }
+  .layer-flow button { min-height: 198px; }
+  .agent-card { min-height: 250px; }
+  .agent-card > strong { font-size: 18px; }
+  .agent-card > p { font-size: 14px; }
+}
+
 @media (min-width: 1680px) {
   :root { --app-shell: 1840px; --app-gutter: clamp(48px, 4vw, 82px); }
   .command-titlebar { margin-bottom: 36px; }
