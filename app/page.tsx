@@ -179,9 +179,26 @@ const agentExamples: Record<number, AgentExample> = {
 
 const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer]));
 
+type AgentTier = "main" | "specialized" | "optional";
+
+const mainAgentIds = new Set([1, 6, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
+const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
+
+const getAgentTier = (agentId: number): AgentTier => {
+  if (mainAgentIds.has(agentId)) return "main";
+  if (optionalAgentIds.has(agentId)) return "optional";
+  return "specialized";
+};
+
+const tierLabels: Record<AgentTier, string> = {
+  main: "Main",
+  specialized: "Specialized",
+  optional: "Optional",
+};
+
 export default function Home() {
   const [activeLayer, setActiveLayer] = useState<string>("all");
-  const [mode, setMode] = useState<"all" | "core">("all");
+  const [mode, setMode] = useState<"all" | AgentTier>("all");
   const [query, setQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
@@ -189,7 +206,7 @@ export default function Home() {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return agents.filter((agent) => {
       const layerMatch = activeLayer === "all" || agent.layer === activeLayer;
-      const modeMatch = mode === "all" || agent.core;
+      const modeMatch = mode === "all" || getAgentTier(agent.id) === mode;
       const searchMatch =
         !normalizedQuery ||
         agent.name.toLocaleLowerCase().includes(normalizedQuery) ||
@@ -223,8 +240,8 @@ export default function Home() {
           <a href="#architecture">Workflow</a>
           <a href="#agents">Agents</a>
         </nav>
-        <button className="core-jump" onClick={() => { setMode("core"); setActiveLayer("all"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>
-          <span>●</span> Core 12
+        <button className="core-jump" onClick={() => { setMode("main"); setActiveLayer("all"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>
+          <span>●</span> Main 19
         </button>
       </header>
 
@@ -259,22 +276,25 @@ export default function Home() {
             </div>
             <div className="operation-progress"><i /></div>
             <div className="agent-run-list">
-              <button onClick={() => setSelectedAgent(agents[23])}>
+              <button className="main-run" onClick={() => setSelectedAgent(agents[23])}>
                 <span className="run-icon done">✓</span><div><b>Requirement Parser Agent</b><small>186 требований извлечено</small></div><em>DONE</em><strong>02:14</strong>
               </button>
-              <button onClick={() => setSelectedAgent(agents[30])}>
+              <button className="main-run" onClick={() => setSelectedAgent(agents[30])}>
                 <span className="run-icon running">◌</span><div><b>Company-to-Tender Match Score Agent</b><small>Расчёт соответствия компании</small></div><em className="live">RUNNING</em><strong>68%</strong>
               </button>
-              <button onClick={() => setSelectedAgent(agents[33])}>
+              <button className="specialized-run" onClick={() => setSelectedAgent(agents[33])}>
                 <span className="run-icon review">!</span><div><b>Gap Analysis Agent</b><small>Требуется подтверждение 3 сертификатов</small></div><em className="attention">REVIEW</em><strong>03</strong>
               </button>
-              <button onClick={() => setSelectedAgent(agents[38])}>
+              <button className="optional-run skipped-run" onClick={() => setSelectedAgent(agents[39])}>
+                <span className="run-icon skipped">—</span><div><b>Partner Discovery Agent</b><small>Не требуется: монтаж закрывает компания</small></div><em className="skipped">SKIPPED</em><strong>—</strong>
+              </button>
+              <button className="main-run" onClick={() => setSelectedAgent(agents[38])}>
                 <span className="run-icon queued">→</span><div><b>Solution Architecture Agent</b><small>Ожидает завершения Match Score</small></div><em>QUEUED</em><strong>—</strong>
               </button>
             </div>
             <div className="board-foot">
-              <span><i /> 4 agents active</span>
-              <button onClick={() => { setMode("core"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>View operation →</button>
+              <span><i /> 3 active · 1 review · 1 skipped</span>
+              <button onClick={() => { setMode("main"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>View main agents →</button>
             </div>
           </section>
 
@@ -301,15 +321,44 @@ export default function Home() {
       <section className="architecture-section" id="architecture">
         <div className="section-heading compact-heading">
           <div>
-            <p className="eyebrow"><span /> OPERATIONAL LAYERS</p>
-            <h2>8 teams. One command.</h2>
+            <p className="eyebrow"><span /> DYNAMIC ARCHITECTURE</p>
+            <h2>Context routes the workflow.</h2>
           </div>
-          <p>COMPANY → UNIVERSE → MATCH → SOLUTION → BID → EXECUTION → LEARN</p>
+          <p>ACTIVATE ↗ BRANCH ↔ SKIP ↘ REJOIN</p>
         </div>
+
+        <div className="routing-map" aria-label="Dynamic agent routing">
+          <div className="context-inputs">
+            <span>CONTEXT INPUTS</span>
+            <div><i>01</i><b>Tender</b><small>тип и процедура</small></div>
+            <div><i>02</i><b>Company</b><small>профиль и пробелы</small></div>
+            <div><i>03</i><b>Evidence</b><small>доступные данные</small></div>
+            <div><i>04</i><b>Decision</b><small>текущий путь</small></div>
+          </div>
+          <div className="route-connector"><span>→</span><small>ROUTE</small></div>
+          <div className="router-core">
+            <span>CONTEXT ROUTER</span>
+            <strong>TenderLab Orchestrator</strong>
+            <p>Активирует нужных агентов и обходит нерелевантные.</p>
+            <div><i /><i /><i /></div>
+          </div>
+          <div className="route-connector branch"><span>↗</span><small>BRANCH</small></div>
+          <div className="route-outcomes">
+            <button className="outcome-main" onClick={() => { setMode("main"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Main</span><b>19</b><small>ведут основные этапы</small></button>
+            <button className="outcome-specialized" onClick={() => { setMode("specialized"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Specialized</span><b>23</b><small>включаются по условию</small></button>
+            <button className="outcome-optional" onClick={() => { setMode("optional"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Optional</span><b>22</b><small>пропускаются без необходимости</small></button>
+          </div>
+        </div>
+
+        <div className="routing-note"><span><i className="main-dot" />Main — обычно ведёт поток</span><span><i className="specialized-dot" />Specialized — активируется по данным</span><span><i className="optional-dot" />Optional — skipped when not relevant</span></div>
 
         <div className="layer-flow">
           {layers.map((layer) => {
-            const count = agents.filter((agent) => agent.layer === layer.id).length;
+            const layerAgents = agents.filter((agent) => agent.layer === layer.id);
+            const count = layerAgents.length;
+            const mainCount = layerAgents.filter((agent) => getAgentTier(agent.id) === "main").length;
+            const specializedCount = layerAgents.filter((agent) => getAgentTier(agent.id) === "specialized").length;
+            const optionalCount = layerAgents.filter((agent) => getAgentTier(agent.id) === "optional").length;
             return (
               <button
                 key={layer.id}
@@ -322,6 +371,7 @@ export default function Home() {
                 <strong>{layer.name}</strong>
                 <small>{layer.ru}</small>
                 <b>{String(count).padStart(2, "0")}</b>
+                <div className="layer-mix"><span className="mix-main">{mainCount}</span><span className="mix-specialized">{specializedCount}</span><span className="mix-optional">{optionalCount}</span></div>
               </button>
             );
           })}
@@ -337,7 +387,9 @@ export default function Home() {
           <div className="catalog-tools">
             <div className="mode-switch" role="group" aria-label="Agent set">
               <button className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
-              <button className={mode === "core" ? "active" : ""} onClick={() => setMode("core")}>Core 12</button>
+              <button className={mode === "main" ? "active main-mode" : "main-mode"} onClick={() => setMode("main")}>Main 19</button>
+              <button className={mode === "specialized" ? "active" : ""} onClick={() => setMode("specialized")}>Specialized</button>
+              <button className={mode === "optional" ? "active" : ""} onClick={() => setMode("optional")}>Optional</button>
             </div>
             <label className="search-box">
               <span>⌕</span>
@@ -364,16 +416,17 @@ export default function Home() {
           <div className="agent-grid">
             {visibleAgents.map((agent) => {
               const layer = layerById[agent.layer];
+              const tier = getAgentTier(agent.id);
               return (
                 <button
-                  className="agent-card"
+                  className={`agent-card tier-${tier}`}
                   key={agent.id}
                   onClick={() => setSelectedAgent(agent)}
                   style={{ "--layer-color": layer.color } as React.CSSProperties}
                 >
                   <span className="card-index">{String(agent.id).padStart(2, "0")}</span>
                   <span className="agent-symbol">{layer.mark}</span>
-                  {agent.core && <span className="core-mark">CORE</span>}
+                  <span className={`tier-badge badge-${tier}`}>{tierLabels[tier]}</span>
                   <strong>{agent.name}</strong>
                   <p>{agent.description}</p>
                   <span className="card-layer">{layer.number} · {layer.name}</span>
@@ -403,7 +456,7 @@ export default function Home() {
             <div className="drawer-topline">
               <span>{String(selectedAgent.id).padStart(2, "0")}</span>
               <b>{layerById[selectedAgent.layer].number} · {layerById[selectedAgent.layer].name}</b>
-              {selectedAgent.core && <em>CORE</em>}
+              <em className={`drawer-tier drawer-${getAgentTier(selectedAgent.id)}`}>{tierLabels[getAgentTier(selectedAgent.id)]}</em>
             </div>
             <div className="drawer-icon">{layerById[selectedAgent.layer].mark}</div>
             <h3 id="agent-title">{selectedAgent.name}</h3>
@@ -421,7 +474,7 @@ export default function Home() {
               <h4>{agentExamples[selectedAgent.id].item}</h4>
               <p>{agentExamples[selectedAgent.id].result}</p>
             </section>
-            <div className="status-line"><span><i /> READY</span><b>TENDERLAB OS</b></div>
+            <div className="status-line"><span><i /> {getAgentTier(selectedAgent.id) === "optional" ? "ON DEMAND" : "AVAILABLE"}</span><b>{tierLabels[getAgentTier(selectedAgent.id)]} agent</b></div>
           </aside>
         </div>
       )}
