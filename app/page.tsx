@@ -239,6 +239,7 @@ export default function Home() {
           <a href="#top" className="nav-active">Command Center</a>
           <a href="#architecture">Workflow</a>
           <a href="#agents">Agents</a>
+          <a href="/main-agents-run">Main Run</a>
         </nav>
         <button className="core-jump" onClick={() => { setMode("main"); setActiveLayer("all"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>
           <span>●</span> Main 20
