@@ -181,7 +181,7 @@ const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer]));
 
 type AgentTier = "main" | "specialized" | "optional";
 
-const mainAgentIds = new Set([1, 6, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
+const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
 const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
 
 const getAgentTier = (agentId: number): AgentTier => {
@@ -241,7 +241,7 @@ export default function Home() {
           <a href="#agents">Agents</a>
         </nav>
         <button className="core-jump" onClick={() => { setMode("main"); setActiveLayer("all"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>
-          <span>●</span> Main 19
+          <span>●</span> Main 20
         </button>
       </header>
 
@@ -344,8 +344,8 @@ export default function Home() {
           </div>
           <div className="route-connector branch"><span>↗</span><small>BRANCH</small></div>
           <div className="route-outcomes">
-            <button className="outcome-main" onClick={() => { setMode("main"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Main</span><b>19</b><small>ведут основные этапы</small></button>
-            <button className="outcome-specialized" onClick={() => { setMode("specialized"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Specialized</span><b>23</b><small>включаются по условию</small></button>
+            <button className="outcome-main" onClick={() => { setMode("main"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Main</span><b>20</b><small>ведут основные этапы</small></button>
+            <button className="outcome-specialized" onClick={() => { setMode("specialized"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Specialized</span><b>22</b><small>включаются по условию</small></button>
             <button className="outcome-optional" onClick={() => { setMode("optional"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Optional</span><b>22</b><small>пропускаются без необходимости</small></button>
           </div>
         </div>
@@ -387,7 +387,7 @@ export default function Home() {
           <div className="catalog-tools">
             <div className="mode-switch" role="group" aria-label="Agent set">
               <button className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
-              <button className={mode === "main" ? "active main-mode" : "main-mode"} onClick={() => setMode("main")}>Main 19</button>
+              <button className={mode === "main" ? "active main-mode" : "main-mode"} onClick={() => setMode("main")}>Main 20</button>
               <button className={mode === "specialized" ? "active" : ""} onClick={() => setMode("specialized")}>Specialized</button>
               <button className={mode === "optional" ? "active" : ""} onClick={() => setMode("optional")}>Optional</button>
             </div>
