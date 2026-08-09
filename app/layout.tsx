@@ -13,11 +13,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TenderLab.ai — AI Tender Operating System",
-  description: "64 AI agents across the full international tender lifecycle.",
+  metadataBase: new URL("https://tenderlab-ai-agents-demo.asmirajan.chatgpt.site"),
+  title: "TenderLab.ai — Agent Command Center",
+  description: "64 AI agents coordinating the full international tender lifecycle.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
+  },
+  openGraph: {
+    title: "TenderLab.ai — Agent Command Center",
+    description: "64 AI agents. 8 operational layers. One tender operating system.",
+    images: [{ url: "/og.png", width: 1664, height: 944 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TenderLab.ai — Agent Command Center",
+    description: "64 AI agents. 8 operational layers. One tender operating system.",
+    images: ["/og.png"],
   },
 };
 

@@ -146,7 +146,8 @@ export default function Home() {
           <span>TenderLab<span className="brand-dot">.ai</span></span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#architecture">Architecture</a>
+          <a href="#top" className="nav-active">Command Center</a>
+          <a href="#architecture">Workflow</a>
           <a href="#agents">Agents</a>
         </nav>
         <button className="core-jump" onClick={() => { setMode("core"); setActiveLayer("all"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>
@@ -154,59 +155,81 @@ export default function Home() {
         </button>
       </header>
 
-      <section className="hero" id="top">
-        <div className="hero-copy">
-          <p className="eyebrow"><span /> TENDER OPERATING SYSTEM</p>
-          <h1>Company <b>→</b><br />Tender <b>→</b><br /><em>Win.</em></h1>
-          <p className="hero-note">AI-отдел международных тендеров.<br />От профиля компании до исполнения.</p>
-          <div className="metrics" aria-label="Platform metrics">
-            <div><strong>64</strong><span>Agents</span></div>
-            <div><strong>08</strong><span>Layers</span></div>
-            <div><strong>01</strong><span>System</span></div>
+      <section className="command-hero" id="top">
+        <div className="command-titlebar">
+          <div>
+            <p className="eyebrow"><span /> LIVE OPERATIONS</p>
+            <h1>Agent Command Center</h1>
+            <p>64 агента управляют полным тендерным циклом.</p>
+          </div>
+          <div className="system-health">
+            <span><i /> SYSTEM ONLINE</span>
+            <b>09 AUG 2026</b>
           </div>
         </div>
 
-        <div className="system-visual" aria-label="TenderLab agent architecture">
-          <div className="orbit orbit-outer" />
-          <div className="orbit orbit-inner" />
-          <div className="system-core">
-            <span className="pulse" />
-            <small>ORCHESTRATED</small>
-            <strong>TenderLab</strong>
-            <em>OS</em>
-          </div>
-          {layers.map((layer, index) => (
-            <button
-              key={layer.id}
-              className={`orbit-node node-${index + 1}`}
-              style={{ "--layer-color": layer.color } as React.CSSProperties}
-              onClick={() => selectLayer(layer.id)}
-              aria-label={`Show ${layer.name} agents`}
-            >
-              <span>{layer.mark}</span>
-              <b>{layer.name}</b>
-              <small>{agents.filter((agent) => agent.layer === layer.id).length}</small>
-            </button>
-          ))}
-          <div className="signal signal-a" />
-          <div className="signal signal-b" />
-          <div className="signal signal-c" />
+        <div className="command-metrics" aria-label="Platform metrics">
+          <div className="command-metric primary"><span>ACTIVE AGENTS</span><strong>12<sup>/64</sup></strong><i>+3 today</i></div>
+          <div className="command-metric"><span>OPEN TENDERS</span><strong>27</strong><i>6 priority</i></div>
+          <div className="command-metric"><span>AVG. MATCH</span><strong>82<sup>%</sup></strong><i>↑ 8.4%</i></div>
+          <div className="command-metric"><span>DEADLINES</span><strong>04</strong><i>next 7 days</i></div>
+        </div>
+
+        <div className="command-grid">
+          <section className="operation-board" aria-label="Active tender operation">
+            <div className="panel-head">
+              <div><span className="panel-kicker">ACTIVE OPERATION</span><h2>WB-UZ-2026-041</h2></div>
+              <div className="operation-score"><b>72%</b><span>complete</span></div>
+            </div>
+            <div className="tender-meta">
+              <span>UZBEKISTAN</span><i>•</i><span>WORLD BANK</span><i>•</i><span>MEDICAL EQUIPMENT</span><b>12d : 04h</b>
+            </div>
+            <div className="operation-progress"><i /></div>
+            <div className="agent-run-list">
+              <button onClick={() => setSelectedAgent(agents[23])}>
+                <span className="run-icon done">✓</span><div><b>Requirement Parser Agent</b><small>186 требований извлечено</small></div><em>DONE</em><strong>02:14</strong>
+              </button>
+              <button onClick={() => setSelectedAgent(agents[30])}>
+                <span className="run-icon running">◌</span><div><b>Company-to-Tender Match Score Agent</b><small>Расчёт соответствия компании</small></div><em className="live">RUNNING</em><strong>68%</strong>
+              </button>
+              <button onClick={() => setSelectedAgent(agents[33])}>
+                <span className="run-icon review">!</span><div><b>Gap Analysis Agent</b><small>Требуется подтверждение 3 сертификатов</small></div><em className="attention">REVIEW</em><strong>03</strong>
+              </button>
+              <button onClick={() => setSelectedAgent(agents[38])}>
+                <span className="run-icon queued">→</span><div><b>Solution Architecture Agent</b><small>Ожидает завершения Match Score</small></div><em>QUEUED</em><strong>—</strong>
+              </button>
+            </div>
+            <div className="board-foot">
+              <span><i /> 4 agents active</span>
+              <button onClick={() => { setMode("core"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>View operation →</button>
+            </div>
+          </section>
+
+          <aside className="activity-panel" aria-label="Agent activity">
+            <div className="panel-head slim"><div><span className="panel-kicker">COMMAND QUEUE</span><h2>Live activity</h2></div><span className="activity-count">07</span></div>
+            <div className="activity-feed">
+              <div><span className="feed-dot blue" /><p><b>Tender Discovery Agent</b><small>Найдено 14 новых возможностей</small></p><time>now</time></div>
+              <div><span className="feed-dot green" /><p><b>Company Verification Agent</b><small>Профиль SinoMed подтверждён</small></p><time>4m</time></div>
+              <div><span className="feed-dot amber" /><p><b>Human Approval Agent</b><small>Ожидает решения Bid / No-Bid</small></p><time>12m</time></div>
+              <div><span className="feed-dot violet" /><p><b>Quotation Normalization Agent</b><small>Сравнено 8 предложений</small></p><time>31m</time></div>
+            </div>
+            <button className="activity-link" onClick={() => document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" })}>Open all agents <span>↗</span></button>
+          </aside>
         </div>
       </section>
 
-      <section className="proof-strip" aria-label="Operating principle">
-        <div><span>01</span><b>AI</b><small>находит</small></div>
-        <i>→</i>
-        <div><span>02</span><b>Evidence</b><small>проверяет</small></div>
-        <i>→</i>
-        <div><span>03</span><b>Human</b><small>утверждает</small></div>
+      <section className="principle-bar" aria-label="Operating principle">
+        <span>OPERATING CONTROL</span>
+        <div><b>AI</b><small>находит</small></div><i>→</i>
+        <div><b>Evidence</b><small>проверяет</small></div><i>→</i>
+        <div><b>Human</b><small>утверждает</small></div>
       </section>
 
       <section className="architecture-section" id="architecture">
         <div className="section-heading compact-heading">
           <div>
-            <p className="eyebrow"><span /> SYSTEM MAP</p>
-            <h2>8 layers. One flow.</h2>
+            <p className="eyebrow"><span /> OPERATIONAL LAYERS</p>
+            <h2>8 teams. One command.</h2>
           </div>
           <p>COMPANY → UNIVERSE → MATCH → SOLUTION → BID → EXECUTION → LEARN</p>
         </div>
