@@ -1,6 +1,7 @@
 name: Test and deploy to Firebase Hosting
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
