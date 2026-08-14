@@ -255,7 +255,7 @@ export default function Home() {
           </div>
           <div className="system-health">
             <span><i /> SYSTEM ONLINE</span>
-            <b>09 AUG 2026</b>
+            <b>15 AUG 2026</b>
           </div>
         </div>
 
