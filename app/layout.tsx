@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tenderlab-ai-agents-demo.asmirajan.chatgpt.site"),
+  metadataBase: new URL("https://tenderlab-ai-agents.web.app"),
   title: "TenderLab.ai — Agent Command Center",
   description: "64 AI agents coordinating the full international tender lifecycle.",
   icons: {

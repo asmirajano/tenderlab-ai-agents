@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-html-link-for-pages -- full document navigation keeps the static Firebase export server-independent */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./run.css";
 
@@ -225,14 +227,12 @@ export default function MainAgentsRunPage() {
   useEffect(() => {
     if (!isRunning || currentStep < 0 || isComplete) return;
     const timer = window.setTimeout(() => {
-      setCurrentStep((step) => Math.min(step + 1, runSteps.length - 1));
+      const nextStep = Math.min(currentStep + 1, runSteps.length - 1);
+      setCurrentStep(nextStep);
+      if (nextStep === runSteps.length - 1) setIsRunning(false);
     }, AUTO_STEP_MS);
     return () => window.clearTimeout(timer);
   }, [currentStep, isComplete, isRunning]);
-
-  useEffect(() => {
-    if (isComplete) setIsRunning(false);
-  }, [isComplete]);
 
   useEffect(() => {
     if (currentStep < 0 || !railRef.current) return;

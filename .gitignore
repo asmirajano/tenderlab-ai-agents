@@ -38,3 +38,11 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+
+# Firebase Hosting
+/.firebase/
+firebase-debug.log*
+ui-debug.log*
+
+# Unrelated local media; add intentionally if it becomes part of the app
+/video/
