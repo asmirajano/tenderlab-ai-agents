@@ -48,6 +48,8 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - Primary navigation is route-based: Command Center (`/`), Workflow (`/workflow`), Agents (`/agents`), and Main Run (`/main-agents-run`) render independent pages from shared components and data.
 - Hierarchy rows render the flow as Main agent → supporting subagents → Result / Output.
 - Tier, layer, search, and relationship views all reuse the same canonical agent records.
+- Every agent also carries audited platform-use metadata: Command Center, Client Side, or Backend. Shared is derived only when an agent genuinely serves both Command Center and Client Side.
+- Backend remains an exclusive behind-the-scenes classification; platform-side filters compose with Flat / Hierarchy, tier, layer, and search filters.
 
 ## Updated implementation plan
 
@@ -59,3 +61,4 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 6. **Document pipeline:** preserve source URL and original files through acquisition, versioning, OCR, canonical-English normalization, user-language translation, and cache.
 7. **Outcome intelligence:** connect tender, award, contract, competitor, and delivery outcomes back into the knowledge graph and Outcome Learning Agent.
 8. **Regression audit:** verify names, tiers, language, route state, score semantics, handoffs, responsive behavior, and cross-view consistency after each architecture change.
+9. **Platform-use audit:** review responsibility, inputs, outputs, and workflow exposure before changing Command Center, Client Side, Backend, or Shared classifications.

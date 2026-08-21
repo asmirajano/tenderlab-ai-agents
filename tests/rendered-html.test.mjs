@@ -37,6 +37,12 @@ test("exports all four TenderLab pages as static HTML", async () => {
   assert.match(agentsPage, />Flat</);
   assert.match(agentsPage, />Hierarchy</);
   assert.match(agentsPage, /aria-label="Architecture view"/);
+  assert.match(agentsPage, /USED IN \/ PLATFORM SIDE/);
+  assert.match(agentsPage, /aria-label="Filter by platform side"/);
+  assert.match(agentsPage, />Command Center(?:<!-- -->)? <b>44<\/b>/);
+  assert.match(agentsPage, />Client Side(?:<!-- -->)? <b>45<\/b>/);
+  assert.match(agentsPage, />Backend(?:<!-- -->)? <b>14<\/b>/);
+  assert.match(agentsPage, />Shared(?:<!-- -->)? <b>39<\/b>/);
   assert.match(agentsPage, /aria-current="page"[^>]+href="\/agents"/);
   assert.doesNotMatch(agentsPage, /<h1>Agent Command Center/);
   assert.doesNotMatch(agentsPage, /Context routes the workflow/);
@@ -91,6 +97,31 @@ test("defines concrete output metadata for all 64 agents", async () => {
     assert.ok(consumers && consumers.length > 8, `agent ${agentId} needs downstream consumers`);
     assert.doesNotMatch(primary, /analysis completed|result generated|анализ завершён|результат создан/i);
   }
+});
+
+test("classifies all 64 agents by audited platform use", async () => {
+  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const mapping = source.match(/const platformSidesByAgentId:[^{]+\{([\s\S]*?)\n\};/)?.[1];
+  assert.ok(mapping, "expected canonical platform-side mapping");
+
+  const entries = [...mapping.matchAll(/(\d+): \[([^\]]+)\]/g)].map((match) => ({
+    id: Number(match[1]),
+    sides: [...match[2].matchAll(/"([^"]+)"/g)].map((side) => side[1]),
+  }));
+  assert.equal(entries.length, 64, "expected one platform-side record per agent");
+  assert.deepEqual(entries.map((entry) => entry.id).sort((a, b) => a - b), Array.from({ length: 64 }, (_, index) => index + 1));
+
+  const allowedSides = new Set(["command-center", "client-side", "backend"]);
+  for (const entry of entries) {
+    assert.ok(entry.sides.length > 0, `agent ${entry.id} needs a platform side`);
+    assert.ok(entry.sides.every((side) => allowedSides.has(side)), `agent ${entry.id} has an invalid platform side`);
+    if (entry.sides.includes("backend")) assert.equal(entry.sides.length, 1, `agent ${entry.id} must be Backend-only`);
+  }
+
+  assert.equal(entries.filter((entry) => entry.sides.includes("command-center")).length, 44);
+  assert.equal(entries.filter((entry) => entry.sides.includes("client-side")).length, 45);
+  assert.equal(entries.filter((entry) => entry.sides.includes("backend")).length, 14);
+  assert.equal(entries.filter((entry) => entry.sides.length > 1).length, 39);
 });
 
 test("publishes client files only", async () => {

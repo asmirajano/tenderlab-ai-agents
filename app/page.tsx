@@ -20,6 +20,9 @@ type AgentOutput = {
   consumers: string;
 };
 
+type PlatformSide = "command-center" | "client-side" | "backend";
+type PlatformFilter = "all" | PlatformSide | "shared";
+
 type Agent = {
   id: number;
   name: string;
@@ -27,6 +30,7 @@ type Agent = {
   layer: string;
   core?: boolean;
   output: AgentOutput;
+  platformSides: PlatformSide[];
 };
 
 const layers: Layer[] = [
@@ -40,7 +44,7 @@ const layers: Layer[] = [
   { id: "learning", number: "08", name: "Learn", ru: "Результат", mark: "↻", color: "#9cdd67" },
 ];
 
-const agents: Agent[] = [
+const agentDefinitions: Omit<Agent, "platformSides">[] = [
   { id: 1, name: "TenderLab Orchestrator", description: "Координирует ограниченные этапы, повторы, уверенность, доказательства и согласования.", layer: "governance", core: true, output: { primary: "Маршрут кейса и состояние выполнения", artifacts: ["Граф активации", "Правила повторов", "Пороги и согласования"], consumers: "Все активные агенты · Human Approval" } },
   { id: 2, name: "Human Approval Agent", description: "Передаёт критические решения ответственному человеку.", layer: "governance", output: { primary: "Протокол утверждённого решения", artifacts: ["Решение и условия", "Ответственный и timestamp", "Комментарии и исключения"], consumers: "Orchestrator · Следующий разрешённый этап" } },
   { id: 3, name: "Evidence & Provenance Agent", description: "Связывает выводы и оценки уверенности с проверяемыми источниками.", layer: "governance", output: { primary: "Пакет доказательств и происхождения", artifacts: ["Source citations", "Confidence levels", "Неподтверждённые пробелы"], consumers: "Scoring · Compliance · Human Approval" } },
@@ -113,6 +117,61 @@ const agents: Agent[] = [
   { id: 63, name: "Payment & Contract Administration Agent", description: "Контролирует этапы, документы, платежи и изменения.", layer: "learning", output: { primary: "Реестр исполнения контракта и платежей", artifacts: ["Milestones and invoices", "Retention and guarantees", "Variation log"], consumers: "Finance · Audit · Outcome Learning" } },
   { id: 64, name: "Outcome Learning Agent", description: "Возвращает результаты в систему знаний.", layer: "learning", core: true, output: { primary: "Запись outcome intelligence", artifacts: ["Award, score и feedback", "Коррекции моделей", "Обновления профиля и graph"], consumers: "Knowledge Graph · Discovery · Scoring models" } },
 ];
+
+// Platform-side classification is based on responsibility, inputs, outputs and workflow exposure.
+// Backend is intentionally exclusive: these agents process or orchestrate without direct user interaction.
+const platformSidesByAgentId: Record<number, PlatformSide[]> = {
+  1: ["backend"], 2: ["command-center", "client-side"], 3: ["backend"], 4: ["backend"], 5: ["backend"],
+  6: ["command-center", "client-side"], 7: ["command-center", "client-side"], 8: ["command-center", "client-side"], 9: ["command-center", "client-side"], 10: ["client-side"],
+  11: ["command-center"], 12: ["command-center"], 13: ["backend"], 14: ["command-center", "client-side"], 15: ["backend"],
+  16: ["backend"], 17: ["client-side"], 18: ["command-center"], 19: ["command-center"], 20: ["command-center", "client-side"],
+  21: ["backend"], 22: ["backend"], 23: ["backend"], 24: ["backend"], 25: ["command-center", "client-side"],
+  26: ["backend"], 27: ["client-side"], 28: ["backend"], 29: ["command-center", "client-side"], 30: ["command-center", "client-side"],
+  31: ["command-center", "client-side"], 32: ["command-center", "client-side"], 33: ["command-center", "client-side"], 34: ["command-center", "client-side"], 35: ["command-center", "client-side"],
+  36: ["client-side"], 37: ["command-center", "client-side"], 38: ["command-center", "client-side"], 39: ["command-center", "client-side"], 40: ["command-center", "client-side"],
+  41: ["command-center", "client-side"], 42: ["command-center", "client-side"], 43: ["command-center", "client-side"], 44: ["command-center", "client-side"], 45: ["command-center", "client-side"],
+  46: ["command-center", "client-side"], 47: ["command-center", "client-side"], 48: ["command-center", "client-side"], 49: ["command-center", "client-side"], 50: ["command-center", "client-side"],
+  51: ["command-center", "client-side"], 52: ["command-center", "client-side"], 53: ["command-center", "client-side"], 54: ["command-center", "client-side"], 55: ["command-center", "client-side"],
+  56: ["command-center"], 57: ["command-center", "client-side"], 58: ["command-center", "client-side"], 59: ["command-center", "client-side"], 60: ["command-center", "client-side"],
+  61: ["command-center", "client-side"], 62: ["client-side"], 63: ["client-side"], 64: ["backend"],
+};
+
+const agents: Agent[] = agentDefinitions.map((agent) => ({
+  ...agent,
+  platformSides: platformSidesByAgentId[agent.id],
+}));
+
+const missingPlatformClassifications = agents.filter((agent) => !agent.platformSides?.length);
+const mixedBackendClassifications = agents.filter(
+  (agent) => agent.platformSides.includes("backend") && agent.platformSides.length > 1,
+);
+if (missingPlatformClassifications.length || mixedBackendClassifications.length) {
+  throw new Error("Every agent needs a valid platform-side classification; Backend must remain behind-the-scenes only.");
+}
+
+const platformSideLabels: Record<PlatformSide, string> = {
+  "command-center": "Command Center",
+  "client-side": "Client Side",
+  backend: "Backend",
+};
+
+const platformFilterOptions: { id: PlatformFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "command-center", label: "Command Center" },
+  { id: "client-side", label: "Client Side" },
+  { id: "backend", label: "Backend" },
+  { id: "shared", label: "Shared" },
+];
+
+const matchesPlatformFilter = (agent: Agent, filter: PlatformFilter) => {
+  if (filter === "all") return true;
+  if (filter === "shared") return agent.platformSides.length > 1;
+  return agent.platformSides.includes(filter);
+};
+
+const platformFilterCounts = Object.fromEntries(
+  platformFilterOptions.map(({ id }) => [id, agents.filter((agent) => matchesPlatformFilter(agent, id)).length]),
+) as Record<PlatformFilter, number>;
 
 type AgentExample = {
   company: string;
@@ -284,6 +343,11 @@ function AgentCard({ agent, className = "", onSelect, parentCount = 0 }: AgentCa
       <span className={`tier-badge badge-${tier}`}>{tierLabels[tier]}</span>
       <strong>{agent.name}</strong>
       <p>{agent.description}</p>
+      <span className="platform-badges" aria-label="Used in">
+        {agent.platformSides.map((side) => (
+          <span className={`platform-badge platform-${side}`} key={side}>{platformSideLabels[side]}</span>
+        ))}
+      </span>
       {parentCount > 1 && <span className="shared-support">↔ Shared · {parentCount} Main</span>}
       <span className="card-layer">{layer.number} · {layer.name}</span>
       <span className="card-arrow">↗</span>
@@ -329,6 +393,7 @@ function AgentDrawerOutput({ agent }: { agent: Agent }) {
 export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run"> }) {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
   const [architectureView, setArchitectureView] = useState<ArchitectureView>("flat");
   const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
@@ -339,13 +404,14 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run">
     return agents.filter((agent) => {
       const layerMatch = activeLayer === "all" || agent.layer === activeLayer;
       const modeMatch = mode === "all" || getAgentTier(agent.id) === mode;
+      const platformMatch = matchesPlatformFilter(agent, platformFilter);
       const searchMatch =
         !normalizedQuery ||
         agent.name.toLocaleLowerCase().includes(normalizedQuery) ||
         agent.description.toLocaleLowerCase().includes(normalizedQuery);
-      return layerMatch && modeMatch && searchMatch;
+      return layerMatch && modeMatch && platformMatch && searchMatch;
     });
-  }, [activeLayer, mode, query]);
+  }, [activeLayer, mode, platformFilter, query]);
 
   const hierarchyGroups = useMemo(() => {
     const visibleIds = new Set(visibleAgents.map((agent) => agent.id));
@@ -386,9 +452,11 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run">
     const params = new URLSearchParams(window.location.search);
     const requestedMode = params.get("mode");
     const requestedLayer = params.get("layer");
+    const requestedPlatform = params.get("side") as PlatformFilter | null;
     const applyRequestedFilters = window.setTimeout(() => {
       if (requestedMode === "main" || requestedMode === "specialized" || requestedMode === "optional") setMode(requestedMode);
       if (requestedLayer && layers.some((layer) => layer.id === requestedLayer)) setActiveLayer(requestedLayer);
+      if (requestedPlatform && platformFilterOptions.some((option) => option.id === requestedPlatform)) setPlatformFilter(requestedPlatform);
     }, 0);
     return () => window.clearTimeout(applyRequestedFilters);
   }, [page]);
@@ -586,6 +654,23 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run">
           ))}
         </div>
 
+        <div className="platform-filter-panel">
+          <span>USED IN / PLATFORM SIDE</span>
+          <div className="platform-switch" role="group" aria-label="Filter by platform side">
+            {platformFilterOptions.map((option) => (
+              <button
+                aria-pressed={platformFilter === option.id}
+                className={platformFilter === option.id ? "active" : ""}
+                key={option.id}
+                onClick={() => setPlatformFilter(option.id)}
+              >
+                {option.label} <b>{platformFilterCounts[option.id]}</b>
+              </button>
+            ))}
+          </div>
+          <small>Shared = Command Center + Client Side</small>
+        </div>
+
         {visibleAgents.length > 0 ? architectureView === "flat" ? (
           <div className="agent-grid">
             {visibleAgents.map((agent) => (
@@ -650,7 +735,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run">
         ) : (
           <div className="empty-state">
             <span>⌕</span><strong>Ничего не найдено</strong>
-            <button onClick={() => { setQuery(""); setActiveLayer("all"); setMode("all"); }}>Сбросить</button>
+            <button onClick={() => { setQuery(""); setActiveLayer("all"); setMode("all"); setPlatformFilter("all"); }}>Сбросить</button>
           </div>
         )}
       </section>
