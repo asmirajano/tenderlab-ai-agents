@@ -180,6 +180,7 @@ const agentExamples: Record<number, AgentExample> = {
 const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer]));
 
 type AgentTier = "main" | "specialized" | "optional";
+type ArchitectureView = "flat" | "hierarchy";
 
 const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
 const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
@@ -196,9 +197,89 @@ const tierLabels: Record<AgentTier, string> = {
   optional: "Optional",
 };
 
+// Explicit architecture relationships. A subagent can support several Main agents.
+// Both Flat and Hierarchy views render the canonical `agents` registry above.
+const subagentParentIds: Record<number, number[]> = {
+  2: [1, 35, 56, 58],
+  3: [1, 9, 24, 31, 47, 56, 64],
+  4: [1, 21, 58, 64],
+  5: [1, 6, 14, 31, 64],
+  7: [6, 9, 31, 32, 39, 48],
+  8: [6, 9, 25, 31, 56],
+  10: [9, 25, 47, 56, 58],
+  11: [6, 32, 39, 50, 64],
+  12: [6, 32, 39, 64],
+  13: [14, 21],
+  15: [14, 31],
+  16: [14, 31],
+  17: [14, 21, 58],
+  18: [14, 35, 52, 64],
+  19: [14, 35, 64],
+  20: [14, 35, 52, 64],
+  22: [21, 24, 53, 58],
+  23: [21, 24, 47, 58],
+  26: [24, 31, 35, 47, 52],
+  27: [24, 47, 58],
+  28: [24, 48, 56],
+  29: [21, 24, 47, 56, 58],
+  30: [24, 47, 53, 56],
+  33: [31, 32, 35, 39],
+  34: [9, 31, 32, 35, 39],
+  36: [9, 25, 31, 35, 39],
+  37: [31, 35, 50, 51, 52],
+  38: [25, 35, 47, 56],
+  40: [32, 39],
+  41: [32, 39, 52],
+  42: [32, 39, 50],
+  43: [32, 39, 50],
+  44: [25, 39, 47, 50],
+  45: [39, 50, 51],
+  46: [50, 51],
+  49: [47, 50, 51, 56],
+  54: [51, 52, 56, 58],
+  55: [9, 25, 47, 52, 53, 56, 58],
+  57: [25, 35, 47, 56, 58],
+  59: [24, 53, 56, 64],
+  60: [52, 53, 64],
+  61: [58, 64],
+  62: [39, 50, 64],
+  63: [50, 64],
+};
+
+type AgentCardProps = {
+  agent: Agent;
+  className?: string;
+  onSelect: (agent: Agent) => void;
+  parentCount?: number;
+};
+
+function AgentCard({ agent, className = "", onSelect, parentCount = 0 }: AgentCardProps) {
+  const layer = layerById[agent.layer];
+  const tier = getAgentTier(agent.id);
+
+  return (
+    <button
+      className={`agent-card tier-${tier} ${className}`.trim()}
+      onClick={() => onSelect(agent)}
+      style={{ "--layer-color": layer.color } as React.CSSProperties}
+    >
+      <span className="card-index">{String(agent.id).padStart(2, "0")}</span>
+      <span className="agent-symbol">{layer.mark}</span>
+      <span className={`tier-badge badge-${tier}`}>{tierLabels[tier]}</span>
+      <strong>{agent.name}</strong>
+      <p>{agent.description}</p>
+      {parentCount > 1 && <span className="shared-support">↔ Shared · {parentCount} Main</span>}
+      <span className="card-layer">{layer.number} · {layer.name}</span>
+      <span className="card-arrow">↗</span>
+    </button>
+  );
+}
+
 export default function Home() {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
+  const [architectureView, setArchitectureView] = useState<ArchitectureView>("flat");
+  const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
@@ -214,6 +295,32 @@ export default function Home() {
       return layerMatch && modeMatch && searchMatch;
     });
   }, [activeLayer, mode, query]);
+
+  const hierarchyGroups = useMemo(() => {
+    const visibleIds = new Set(visibleAgents.map((agent) => agent.id));
+    return agents
+      .filter((agent) => getAgentTier(agent.id) === "main")
+      .map((parent) => ({
+        parent,
+        parentMatches: visibleIds.has(parent.id),
+        children: agents.filter(
+          (agent) =>
+            getAgentTier(agent.id) !== "main" &&
+            visibleIds.has(agent.id) &&
+            subagentParentIds[agent.id]?.includes(parent.id),
+        ),
+      }))
+      .filter((group) => group.parentMatches || group.children.length > 0);
+  }, [visibleAgents]);
+
+  const toggleMainAgent = (agentId: number) => {
+    setCollapsedMainAgents((current) => {
+      const next = new Set(current);
+      if (next.has(agentId)) next.delete(agentId);
+      else next.add(agentId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -386,11 +493,23 @@ export default function Home() {
             <h2>{visibleAgents.length}<sup>/64</sup> agents</h2>
           </div>
           <div className="catalog-tools">
+            <div className="view-switch" role="group" aria-label="Architecture view">
+              <button
+                aria-pressed={architectureView === "flat"}
+                className={architectureView === "flat" ? "active" : ""}
+                onClick={() => setArchitectureView("flat")}
+              >Flat</button>
+              <button
+                aria-pressed={architectureView === "hierarchy"}
+                className={architectureView === "hierarchy" ? "active" : ""}
+                onClick={() => setArchitectureView("hierarchy")}
+              >Hierarchy</button>
+            </div>
             <div className="mode-switch" role="group" aria-label="Agent set">
-              <button className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
-              <button className={mode === "main" ? "active main-mode" : "main-mode"} onClick={() => setMode("main")}>Main 20</button>
-              <button className={mode === "specialized" ? "active" : ""} onClick={() => setMode("specialized")}>Specialized</button>
-              <button className={mode === "optional" ? "active" : ""} onClick={() => setMode("optional")}>Optional</button>
+              <button aria-pressed={mode === "all"} className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
+              <button aria-pressed={mode === "main"} className={mode === "main" ? "active main-mode" : "main-mode"} onClick={() => setMode("main")}>Main 20</button>
+              <button aria-pressed={mode === "specialized"} className={mode === "specialized" ? "active" : ""} onClick={() => setMode("specialized")}>Specialized</button>
+              <button aria-pressed={mode === "optional"} className={mode === "optional" ? "active" : ""} onClick={() => setMode("optional")}>Optional</button>
             </div>
             <label className="search-box">
               <span>⌕</span>
@@ -413,28 +532,64 @@ export default function Home() {
           ))}
         </div>
 
-        {visibleAgents.length > 0 ? (
+        {visibleAgents.length > 0 ? architectureView === "flat" ? (
           <div className="agent-grid">
-            {visibleAgents.map((agent) => {
-              const layer = layerById[agent.layer];
-              const tier = getAgentTier(agent.id);
-              return (
-                <button
-                  className={`agent-card tier-${tier}`}
-                  key={agent.id}
-                  onClick={() => setSelectedAgent(agent)}
-                  style={{ "--layer-color": layer.color } as React.CSSProperties}
-                >
-                  <span className="card-index">{String(agent.id).padStart(2, "0")}</span>
-                  <span className="agent-symbol">{layer.mark}</span>
-                  <span className={`tier-badge badge-${tier}`}>{tierLabels[tier]}</span>
-                  <strong>{agent.name}</strong>
-                  <p>{agent.description}</p>
-                  <span className="card-layer">{layer.number} · {layer.name}</span>
-                  <span className="card-arrow">↗</span>
-                </button>
-              );
-            })}
+            {visibleAgents.map((agent) => (
+              <AgentCard agent={agent} key={agent.id} onSelect={setSelectedAgent} />
+            ))}
+          </div>
+        ) : (
+          <div className="hierarchy-view">
+            <div className="hierarchy-toolbar">
+              <p><span>↔</span> Shared subagents appear under every Main agent they support.</p>
+              <div>
+                <button onClick={() => setCollapsedMainAgents(new Set<number>())}>Expand all</button>
+                <button onClick={() => setCollapsedMainAgents(new Set(hierarchyGroups.map((group) => group.parent.id)))}>Collapse all</button>
+              </div>
+            </div>
+            <div className="hierarchy-list">
+              {hierarchyGroups.map(({ parent, parentMatches, children }) => {
+                const collapsed = collapsedMainAgents.has(parent.id);
+                return (
+                  <section
+                    className={`hierarchy-group ${parentMatches ? "" : "context-parent"}`.trim()}
+                    key={parent.id}
+                    style={{ "--layer-color": layerById[parent.layer].color } as React.CSSProperties}
+                  >
+                    <div className="hierarchy-parent-row">
+                      <AgentCard agent={parent} className="hierarchy-parent-card" onSelect={setSelectedAgent} />
+                      <div className="hierarchy-link" aria-hidden="true"><span>→</span><small>SUPPORTS</small></div>
+                      <button
+                        aria-label={`${collapsed ? "Expand" : "Collapse"} ${parent.name} subagents`}
+                        aria-expanded={!collapsed}
+                        className="hierarchy-toggle"
+                        onClick={() => toggleMainAgent(parent.id)}
+                      >
+                        <span>{collapsed ? "+" : "−"}</span>
+                        <strong>{children.length}</strong>
+                        <small>{collapsed ? "Expand" : "Collapse"}</small>
+                      </button>
+                    </div>
+                    {!collapsed && children.length > 0 && (
+                      <div className="hierarchy-branches">
+                        <div className="hierarchy-children">
+                          {children.map((agent) => (
+                            <div className="hierarchy-child" key={agent.id}>
+                              <AgentCard
+                                agent={agent}
+                                className="hierarchy-child-card"
+                                onSelect={setSelectedAgent}
+                                parentCount={subagentParentIds[agent.id]?.length ?? 1}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="empty-state">

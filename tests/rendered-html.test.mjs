@@ -21,6 +21,9 @@ test("exports both TenderLab routes as static HTML", async () => {
   assert.match(home, /Agent Command Center/);
   assert.match(home, /Tender Readiness Score Agent/);
   assert.match(home, /href="\/main-agents-run"/);
+  assert.match(home, />Flat</);
+  assert.match(home, />Hierarchy</);
+  assert.match(home, /aria-label="Architecture view"/);
 
   assert.match(run, /Main Agents Run/);
   assert.match(run, /TenderLab Orchestrator/);

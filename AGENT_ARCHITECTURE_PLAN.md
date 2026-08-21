@@ -39,6 +39,13 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - Keep source acquisition, document intelligence, qualification, compliance, and proposal preparation as composable subsystems rather than duplicate umbrella agents.
 - Require evidence, confidence, and human approval at the appropriate gates.
 
+## Architecture views
+
+- **Flat** remains the complete agent inventory.
+- **Hierarchy** derives Main-parent and subagent relationships from explicit architecture metadata.
+- Specialized and Optional agents may support multiple Main agents and appear under every relevant parent.
+- Tier, layer, search, and relationship views all reuse the same canonical agent records.
+
 ## Updated implementation plan
 
 1. **Canonical registry:** keep the current 64-agent names, layers, and tier counts as the source of truth.
