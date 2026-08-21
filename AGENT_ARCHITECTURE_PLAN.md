@@ -50,6 +50,7 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - Tier, layer, search, and relationship views all reuse the same canonical agent records.
 - Every agent also carries audited platform-use metadata: Command Center, Client Side, or Backend. Shared is derived only when an agent genuinely serves both Command Center and Client Side.
 - Backend remains an exclusive behind-the-scenes classification; platform-side filters compose with Flat / Hierarchy, tier, layer, and search filters.
+- Every assigned platform side has an agent-specific rationale derived from its users, inputs, outputs, and workflow; Shared agents explain Command Center and Client Side separately in the individual-agent drawer.
 
 ## Updated implementation plan
 

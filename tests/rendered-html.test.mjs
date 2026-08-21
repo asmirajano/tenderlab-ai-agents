@@ -124,6 +124,39 @@ test("classifies all 64 agents by audited platform use", async () => {
   assert.equal(entries.filter((entry) => entry.sides.length > 1).length, 39);
 });
 
+test("defines an individual rationale for every agent and assigned platform side", async () => {
+  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const sideMapping = source.match(/const platformSidesByAgentId:[^{]+\{([\s\S]*?)\n\};/)?.[1];
+  const rationaleMapping = source.match(/const platformRationaleByAgentId:[^{]+\{([\s\S]*?)\n\};/)?.[1];
+  assert.ok(sideMapping && rationaleMapping, "expected platform-side and rationale registries");
+
+  const sidesByAgent = new Map(
+    [...sideMapping.matchAll(/(\d+): \[([^\]]+)\]/g)].map((match) => [
+      Number(match[1]),
+      [...match[2].matchAll(/"([^"]+)"/g)].map((side) => side[1]).sort(),
+    ]),
+  );
+  const rationaleRecords = [...rationaleMapping.matchAll(/^ {2}(\d+): \{([\s\S]*?)(?=^ {2}\d+: \{|(?![\s\S]))/gm)];
+  assert.equal(rationaleRecords.length, 64, "expected one rationale record per agent");
+
+  const allRationales = [];
+  for (const record of rationaleRecords) {
+    const agentId = Number(record[1]);
+    const rationaleEntries = [...record[2].matchAll(/"?(command-center|client-side|backend)"?: "([^"]+)"/g)];
+    const rationaleSides = rationaleEntries.map((entry) => entry[1]).sort();
+    assert.deepEqual(rationaleSides, sidesByAgent.get(agentId), `agent ${agentId} rationales must match assigned sides`);
+    for (const entry of rationaleEntries) {
+      assert.ok(entry[2].length > 60, `agent ${agentId} needs a specific platform rationale`);
+      assert.doesNotMatch(entry[2], /используется здесь|нужен пользователям|работает на платформе|общая поддержка/i);
+      allRationales.push(entry[2]);
+    }
+  }
+
+  assert.equal(allRationales.length, 103, "expected separate Command Center and Client Side rationales for Shared agents");
+  assert.equal(new Set(allRationales).size, allRationales.length, "platform rationales must not be duplicated");
+  assert.match(source, /WHY THIS PLATFORM SIDE/);
+});
+
 test("publishes client files only", async () => {
   const topLevel = await readdir(publishRoot);
   assert.ok(topLevel.includes("index.html"));

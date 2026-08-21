@@ -22,6 +22,7 @@ type AgentOutput = {
 
 type PlatformSide = "command-center" | "client-side" | "backend";
 type PlatformFilter = "all" | PlatformSide | "shared";
+type PlatformRationale = Partial<Record<PlatformSide, string>>;
 
 type Agent = {
   id: number;
@@ -31,6 +32,7 @@ type Agent = {
   core?: boolean;
   output: AgentOutput;
   platformSides: PlatformSide[];
+  platformRationale: PlatformRationale;
 };
 
 const layers: Layer[] = [
@@ -44,7 +46,7 @@ const layers: Layer[] = [
   { id: "learning", number: "08", name: "Learn", ru: "Результат", mark: "↻", color: "#9cdd67" },
 ];
 
-const agentDefinitions: Omit<Agent, "platformSides">[] = [
+const agentDefinitions: Omit<Agent, "platformSides" | "platformRationale">[] = [
   { id: 1, name: "TenderLab Orchestrator", description: "Координирует ограниченные этапы, повторы, уверенность, доказательства и согласования.", layer: "governance", core: true, output: { primary: "Маршрут кейса и состояние выполнения", artifacts: ["Граф активации", "Правила повторов", "Пороги и согласования"], consumers: "Все активные агенты · Human Approval" } },
   { id: 2, name: "Human Approval Agent", description: "Передаёт критические решения ответственному человеку.", layer: "governance", output: { primary: "Протокол утверждённого решения", artifacts: ["Решение и условия", "Ответственный и timestamp", "Комментарии и исключения"], consumers: "Orchestrator · Следующий разрешённый этап" } },
   { id: 3, name: "Evidence & Provenance Agent", description: "Связывает выводы и оценки уверенности с проверяемыми источниками.", layer: "governance", output: { primary: "Пакет доказательств и происхождения", artifacts: ["Source citations", "Confidence levels", "Неподтверждённые пробелы"], consumers: "Scoring · Compliance · Human Approval" } },
@@ -136,17 +138,207 @@ const platformSidesByAgentId: Record<number, PlatformSide[]> = {
   61: ["command-center", "client-side"], 62: ["client-side"], 63: ["client-side"], 64: ["backend"],
 };
 
+const platformRationaleByAgentId: Record<number, PlatformRationale> = {
+  1: { backend: "В фоновом режиме строит маршрут кейса, запускает нужных агентов, повторы и approval gates; пользователю достаточно видеть состояние процесса." },
+  2: {
+    "command-center": "Консультанты фиксируют исключения, пороги риска и разрешение продолжить кейс, сохраняя ответственного и условия решения.",
+    "client-side": "Уполномоченные сотрудники компании подтверждают участие, цену и обязательства, после чего решение открывает следующий этап заявки.",
+  },
+  3: { backend: "Автоматически прикрепляет источники, provenance и confidence к машинным выводам для Scoring, Compliance и approval без отдельной пользовательской операции." },
+  4: { backend: "Незаметно версионирует данные, документы и решения, создавая diff и audit trail для восстановления, контроля качества и расследований." },
+  5: { backend: "Поддерживает связи между тендерами, компаниями, документами, awards и contracts, чтобы Discovery, Matching и Learning получали общий контекст." },
+  6: {
+    "command-center": "Консультанты собирают и проверяют профиль из открытых источников, чтобы искать компании, оценивать их и готовить адресную работу.",
+    "client-side": "Компания дополняет мощности, географию и доказательства; подтверждённый профиль повторно используется в readiness, matching и заявках.",
+  },
+  7: {
+    "command-center": "Консультанты переводят разрозненный каталог компании в единую taxonomy для поиска тендеров и сопоставления требований.",
+    "client-side": "Производитель подтверждает характеристики, мощности и ограничения, получая пригодный для тендеров каталог возможностей.",
+  },
+  8: {
+    "command-center": "Консультанты проводят due diligence компании до рекомендации или контакта, проверяя юридическую сущность, производство и референсы.",
+    "client-side": "Участник получает верифицированное досье, которое подтверждает его квалификацию и усиливает evidence для конкретной заявки.",
+  },
+  9: {
+    "command-center": "Консультанты ранжируют компании по готовности и определяют, где требуются документы, обучение или сопровождение до продвижения тендера.",
+    "client-side": "Компания видит score 0–100, блокирующие пробелы и конкретный план повышения общей тендерной готовности.",
+  },
+  10: { "client-side": "Команда компании ведёт собственные сертификаты, scope и сроки действия, получая предупреждения до qualification и submission." },
+  11: { "command-center": "Консультанты накапливают независимые supplier profiles, историю поставок и риски для проектирования решений и проверки рыночных альтернатив." },
+  12: { "command-center": "Консультанты картируют внешних партнёров и их компетенции, чтобы заранее закрывать capability gaps и формировать JV или consortium." },
+  13: { backend: "Автоматические collectors получают notices, оригиналы, вложения и source metadata, формируя надёжный вход для Discovery и Document Intake." },
+  14: {
+    "command-center": "Консультанты находят и приоритизируют возможности для отраслевых кампаний, prospecting и последующей проверки подходящих компаний.",
+    "client-side": "Компания получает персональный shortlist релевантных тендеров со сроком, источником, score и объяснением отбора.",
+  },
+  15: { backend: "Фоново присваивает sector, category, geography, buyer type и procedure, чтобы остальные агенты могли фильтровать и сравнивать тендеры." },
+  16: { backend: "До показа пользователю применяет geography, category, budget и exclusion thresholds, удаляя явный шум из потока возможностей." },
+  17: { "client-side": "Рабочая команда компании получает календарь контрольных дат, change alerts, owners и reminders, необходимые для своевременной подачи." },
+  18: { "command-center": "Консультанты сравнивают спрос, страны, ценовые ориентиры и tender flow, чтобы выбирать рынки и направления коммерческой работы." },
+  19: { "command-center": "Консультанты исследуют awards, победителей, цены и contract patterns для конкурентных выводов, scoring и стратегии следующих кампаний." },
+  20: {
+    "command-center": "Консультанты профилируют покупателя и конкурентное поле, чтобы адаптировать позиционирование, outreach и bid strategy.",
+    "client-side": "Участник получает procurement patterns, competitor shortlist и ценовые диапазоны для более обоснованного предложения.",
+  },
+  21: { backend: "Получает, хэширует, индексирует и версионирует файлы до анализа, обеспечивая единый документный корпус без ручной сортировки." },
+  22: { backend: "Распознаёт сканы, создаёт canonical English и кэш переводов, чтобы downstream-агенты работали с единым поисковым текстом." },
+  23: { backend: "Разбирает пакет на lots, BOQ, forms и annex relationships, подготавливая структуру для Requirement Parser, Deliverables и Assembly." },
+  24: { backend: "Машинно извлекает требования, условия, формы и правила оценки из корпуса; пользователи работают уже со структурированным реестром." },
+  25: {
+    "command-center": "Консультанты быстро проверяют обязательный допуск компании до продвижения возможности и фиксируют доказательства или критические gaps.",
+    "client-side": "Компания получает Pass / Fail матрицу, список квалификационных документов и понятные действия для устранения препятствий.",
+  },
+  26: { backend: "Преобразует текстовые criteria, weights, formulas и thresholds в формальную модель, которую используют Match Score, Bid decision и Strategy." },
+  27: { "client-side": "Bid team компании получает полный checklist форм, приложений, владельцев и сроков, чтобы ни один обязательный deliverable не потерялся." },
+  28: { backend: "Сохраняет exact clauses, units, tolerances и запреты на substitutions, предотвращая домыслы в compliance и proposal generation." },
+  29: {
+    "command-center": "Консультанты отслеживают amendments по портфелю кейсов и сразу видят, какие оценки, документы и рекомендации нужно пересмотреть.",
+    "client-side": "Команда заявки получает redline, затронутые требования и назначенные действия, чтобы обновить предложение до нового срока.",
+  },
+  30: {
+    "command-center": "Консультанты выявляют противоречия, привязывают их к источникам и формируют корректные buyer-ready clarification questions.",
+    "client-side": "Технические и коммерческие эксперты компании уточняют факты и утверждают вопросы, влияющие на цену, решение или обязательства.",
+  },
+  31: {
+    "command-center": "Консультанты ранжируют пары Company × Tender для outreach и объясняют, какие сильные стороны или gaps определили score.",
+    "client-side": "Компания видит персональный fit score с evidence, а не общий readiness, и понимает целесообразность именно этого тендера.",
+  },
+  32: {
+    "command-center": "Консультанты находят нетривиальные пути участия и строят предложение даже при неполном прямом совпадении каталога.",
+    "client-side": "Компания сравнивает Direct, Partner и JV модели, видя покрытие решения и ещё незакрытые компоненты.",
+  },
+  33: {
+    "command-center": "Консультанты рекомендуют роль Prime, JV member или subcontractor и определяют, каких партнёров требуется привлечь.",
+    "client-side": "Руководство компании оценивает контроль, workshare, риски и обязательства предлагаемой модели участия.",
+  },
+  34: {
+    "command-center": "Консультанты диагностируют недостающие capabilities и evidence, превращая пробелы в план сопровождения, партнёрства или подготовки.",
+    "client-side": "Компания получает список конкретных gaps с owners и сроками для readiness, solution design и заявки.",
+  },
+  35: {
+    "command-center": "Консультанты приоритизируют кейсы и формируют доказательную рекомендацию Bid / No-Bid для клиента или внутренней кампании.",
+    "client-side": "Руководство компании утверждает участие на основе opportunity score, win probability и сопоставления риска с отдачей.",
+  },
+  36: { "client-side": "Производство и логистика компании проверяют загрузку мощностей, график поставки и bottlenecks перед принятием контрактных обязательств." },
+  37: {
+    "command-center": "Консультанты сравнивают margin, cash-flow и сценарии, чтобы не продвигать коммерчески слабую возможность.",
+    "client-side": "Финансовая команда компании проверяет внутренние допущения и согласует Go / No-Go thresholds для заявки.",
+  },
+  38: {
+    "command-center": "Консультанты проверяют sanctions, country и integrity risks до кампании, рекомендации партнёра или допуска кейса дальше.",
+    "client-side": "Legal и compliance функции компании получают risk register и mitigation plan для принятия формального решения.",
+  },
+  39: {
+    "command-center": "Консультанты собирают products, suppliers и partners в целостную конфигурацию, полностью покрывающую требования тендера.",
+    "client-side": "Техническая команда компании проверяет архитектуру решения, роли участников и реалистичность модели поставки.",
+  },
+  40: {
+    "command-center": "Консультанты ищут и ранжируют партнёров для кампаний, JV и закрытия gaps конкретного tender solution.",
+    "client-side": "Компания получает проверяемый shortlist и contact path для переговоров с кандидатами, подходящими по capability fit.",
+  },
+  41: {
+    "command-center": "Консультанты проектируют состав consortium, workshare и eligibility coverage, сравнивая альтернативные конфигурации.",
+    "client-side": "Компания утверждает собственную роль, объём работ, ответственность и зависимость от других участников consortium.",
+  },
+  42: {
+    "command-center": "Консультанты находят местных представителей, монтажные и сервисные организации под географию и SLA тендера.",
+    "client-side": "Компания выбирает локальную сеть для поставки, установки, гарантии и последующего обслуживания контракта.",
+  },
+  43: {
+    "command-center": "Консультанты расширяют supply options и получают альтернативы по specification fit, MOQ, lead time и цене.",
+    "client-side": "Procurement team компании выбирает дополнительные товары или производителей для комплектации полного решения.",
+  },
+  44: {
+    "command-center": "Консультанты проводят due diligence рекомендованных поставщиков, чтобы не включать непроверенную мощность или сертификат в решение.",
+    "client-side": "Компания опирается на legal, capacity и certificate checks при выборе источника и принятии supplier risk.",
+  },
+  45: {
+    "command-center": "Консультанты выпускают единый technical RFQ, управляют recipients и сроками для независимой оценки стоимости решения.",
+    "client-side": "Procurement team компании отслеживает запросы, ответы и просрочки, сохраняя контролируемый sourcing process.",
+  },
+  46: {
+    "command-center": "Консультанты приводят vendor quotes к общей базе, чтобы честно сравнить unit cost, Incoterms, сроки и исключения.",
+    "client-side": "Компания получает сопоставимую таблицу предложений для выбора поставщика и подтверждения cost assumptions.",
+  },
+  47: {
+    "command-center": "Консультанты управляют сквозным покрытием требований, evidence, owners и открытыми gaps по всему bid workstream.",
+    "client-side": "Каждый владелец ответа в компании видит свой статус и traceability от требования до финального доказательства.",
+  },
+  48: {
+    "command-center": "Консультанты независимо проверяют technical response, equivalence evidence и deviations до включения в предложение.",
+    "client-side": "Инженеры компании устраняют несоответствия и подтверждают, что предлагаемая конфигурация выполнима и корректна.",
+  },
+  49: {
+    "command-center": "Консультанты проверяют валюту, налоги, payment terms, bonds и deviations против условий тендера.",
+    "client-side": "Finance и commercial team компании подтверждают цены и принимают обязательства, влияющие на cash flow и риск.",
+  },
+  50: {
+    "command-center": "Консультанты строят landed-cost scenarios с фрахтом, пошлинами и налогами для коммерческой оценки и pricing advice.",
+    "client-side": "Компания вводит реальные закупочные и операционные затраты и утверждает полную стоимость исполнения.",
+  },
+  51: {
+    "command-center": "Консультанты структурируют line-item pricing, проверяют BOQ completeness и выявляют арифметические или валютные ошибки.",
+    "client-side": "Компания согласует итоговые цены, маржу, налоги и валюты перед включением BOQ в заявку.",
+  },
+  52: {
+    "command-center": "Консультанты превращают buyer intelligence, scoring и differentiators в win themes, позиционирование и план ответа.",
+    "client-side": "Руководство компании подтверждает обещания, конкурентные преимущества и акценты, которые заявка сможет доказать.",
+  },
+  53: {
+    "command-center": "Консультанты формируют связный technical draft из requirements, strategy, solution architecture и evidence.",
+    "client-side": "Технические эксперты компании проверяют методологию, план исполнения и обязательства до финализации текста.",
+  },
+  54: {
+    "command-center": "Консультанты заполняют price schedules, commercial terms, assumptions и exclusions в требуемом формате.",
+    "client-side": "Finance и sales функции компании утверждают коммерческие формы и подтверждают отсутствие несанкционированных допущений.",
+  },
+  55: {
+    "command-center": "Консультанты подбирают наиболее релевантные references, CVs и certificates под каждый qualification criterion.",
+    "client-side": "Компания предоставляет исходные записи, проверяет точность опыта и разрешает использование персональных и корпоративных evidence.",
+  },
+  56: { "command-center": "Независимая red-team функция консультантов выявляет слабые ответы, противоречия и compliance defects и управляет журналом исправлений до подачи." },
+  57: {
+    "command-center": "Консультанты выделяют risk clauses, liabilities, securities и negotiation exceptions и готовят decision memo.",
+    "client-side": "Юристы и руководство компании решают, какие договорные риски принять, смягчить или вынести как deviation.",
+  },
+  58: {
+    "command-center": "Консультанты собирают версии, проверяют manifest, форматы и portal readiness, предотвращая технически неполную подачу.",
+    "client-side": "Уполномоченный представитель компании подписывает и подаёт пакет и получает официальный submission receipt.",
+  },
+  59: {
+    "command-center": "Консультанты готовят согласованный ответ комиссии с source-linked evidence и контролируют версию отправки.",
+    "client-side": "Subject owners компании подтверждают факты и утверждают новые технические, ценовые или контрактные обязательства.",
+  },
+  60: {
+    "command-center": "Консультанты создают narrative, talking points и objection-response matrix и проводят подготовку команды к встрече.",
+    "client-side": "Представители компании используют пакет на презентации и переговорах, сохраняя согласованную позицию и пределы уступок.",
+  },
+  61: {
+    "command-center": "Консультанты переводят award notice в план действий по guarantees, securities, документам и contract signing.",
+    "client-side": "Legal, finance и operations компании исполняют award conditions и принимают контракт в операционную работу.",
+  },
+  62: { "client-side": "Производство, QC, логистика и монтаж компании ведут реальный график исполнения, milestones и отклонения после award." },
+  63: { "client-side": "Finance и contract administration компании контролируют invoices, retention, guarantees, variations и подтверждающие документы до оплаты." },
+  64: { backend: "Автоматически возвращает award, score, buyer feedback и delivery outcome в knowledge graph и модели, улучшая будущие Discovery и Scoring." },
+};
+
 const agents: Agent[] = agentDefinitions.map((agent) => ({
   ...agent,
   platformSides: platformSidesByAgentId[agent.id],
+  platformRationale: platformRationaleByAgentId[agent.id],
 }));
 
 const missingPlatformClassifications = agents.filter((agent) => !agent.platformSides?.length);
 const mixedBackendClassifications = agents.filter(
   (agent) => agent.platformSides.includes("backend") && agent.platformSides.length > 1,
 );
-if (missingPlatformClassifications.length || mixedBackendClassifications.length) {
-  throw new Error("Every agent needs a valid platform-side classification; Backend must remain behind-the-scenes only.");
+const invalidPlatformRationales = agents.filter((agent) => {
+  const rationaleSides = Object.keys(agent.platformRationale ?? {}) as PlatformSide[];
+  return agent.platformSides.some((side) => !agent.platformRationale?.[side]?.trim()) ||
+    rationaleSides.some((side) => !agent.platformSides.includes(side));
+});
+if (missingPlatformClassifications.length || mixedBackendClassifications.length || invalidPlatformRationales.length) {
+  throw new Error("Every agent needs matching platform-side classifications and rationales; Backend must remain behind-the-scenes only.");
 }
 
 const platformSideLabels: Record<PlatformSide, string> = {
@@ -386,6 +578,31 @@ function AgentDrawerOutput({ agent }: { agent: Agent }) {
         {agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}
       </div>
       <p><span>ИСПОЛЬЗУЕТСЯ →</span>{agent.output.consumers}</p>
+    </section>
+  );
+}
+
+function AgentPlatformRationale({ agent }: { agent: Agent }) {
+  const classification = agent.platformSides.length > 1
+    ? "Shared"
+    : platformSideLabels[agent.platformSides[0]];
+
+  return (
+    <section className="drawer-platform-rationale" aria-label={`${agent.name} platform-side rationale`}>
+      <div className="drawer-rationale-heading">
+        <span>WHY THIS PLATFORM SIDE</span>
+        <b>{classification}</b>
+      </div>
+      <div className={`drawer-rationale-list ${agent.platformSides.length > 1 ? "rationale-shared" : "rationale-single"}`}>
+        {agent.platformSides.map((side) => (
+          <article key={side}>
+            {agent.platformSides.length > 1 && (
+              <span className={`rationale-side rationale-${side}`}>{platformSideLabels[side]}</span>
+            )}
+            <p>{agent.platformRationale[side]}</p>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -773,6 +990,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run">
               <p>{agentExamples[selectedAgent.id].result}</p>
             </section>
             <AgentDrawerOutput agent={selectedAgent} />
+            <AgentPlatformRationale agent={selectedAgent} />
             <div className="status-line"><span><i /> {getAgentTier(selectedAgent.id) === "optional" ? "ON DEMAND" : "AVAILABLE"}</span><b>{tierLabels[getAgentTier(selectedAgent.id)]} agent</b></div>
           </aside>
         </div>
