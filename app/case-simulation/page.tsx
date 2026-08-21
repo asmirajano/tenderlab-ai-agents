@@ -273,7 +273,18 @@ export default function CaseSimulationPage() {
         </ol>
       </section>
 
-      <section className="engagement-matrix-section">
+      <section className="case-audit-findings" aria-label="Предварительные архитектурные наблюдения">
+        <div className="section-heading"><div><p>ARCHITECTURE REVIEW</p><h2>Что Case 1 уже позволяет проверить</h2></div><span>Это наблюдения V1, а не окончательные выводы.</span></div>
+        <div className="finding-grid">
+          <article><span>01 · ПЕРЕСЕЧЕНИЕ</span><h3>Partner Discovery vs Local Representation</h3><p>Широкий Partner Discovery намеренно пропущен: для локального сервиса более точен Local Representation. Нужно подтвердить границу scopes.</p></article>
+          <article><span>02 · ОСОЗНАННЫЙ SKIP</span><h3>Supplier-side chain</h3><p>Supplier Intelligence, Discovery, Verification, RFQ и Quotation Normalization не запускаются: компания производит весь предмет одного лота сама.</p></article>
+          <article><span>03 · РЕЗЕРВ</span><h3>Document exception route</h3><p>OCR, Amendment и Ambiguity остаются conditional standby. Их нельзя считать выполненными без скана, addendum или реального противоречия.</p></article>
+        </div>
+      </section>
+        </div>
+      </section>
+
+      <section className="engagement-matrix-section" aria-label="Главная матрица Cases × 64 Agents">
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
           <span>Нажмите статус Case 1, чтобы увидеть input, output и handoff.</span>
@@ -321,17 +332,6 @@ export default function CaseSimulationPage() {
               ))}
             </tbody>
           </table>
-        </div>
-      </section>
-
-      <section className="case-audit-findings" aria-label="Предварительные архитектурные наблюдения">
-        <div className="section-heading"><div><p>ARCHITECTURE REVIEW</p><h2>Что Case 1 уже позволяет проверить</h2></div><span>Это наблюдения V1, а не окончательные выводы.</span></div>
-        <div className="finding-grid">
-          <article><span>01 · ПЕРЕСЕЧЕНИЕ</span><h3>Partner Discovery vs Local Representation</h3><p>Широкий Partner Discovery намеренно пропущен: для локального сервиса более точен Local Representation. Нужно подтвердить границу scopes.</p></article>
-          <article><span>02 · ОСОЗНАННЫЙ SKIP</span><h3>Supplier-side chain</h3><p>Supplier Intelligence, Discovery, Verification, RFQ и Quotation Normalization не запускаются: компания производит весь предмет одного лота сама.</p></article>
-          <article><span>03 · РЕЗЕРВ</span><h3>Document exception route</h3><p>OCR, Amendment и Ambiguity остаются conditional standby. Их нельзя считать выполненными без скана, addendum или реального противоречия.</p></article>
-        </div>
-      </section>
         </div>
       </section>
 

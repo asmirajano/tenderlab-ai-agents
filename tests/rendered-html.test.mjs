@@ -242,6 +242,16 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource, /hidden=\{!caseExpanded\}/);
   assert.match(pageSource, /case1Chronology\.map/);
 
+  const moduleContentPosition = pageSource.indexOf('className="case-module-content"');
+  const chronologyPosition = pageSource.indexOf('className="case-chronology"');
+  const findingsPosition = pageSource.indexOf('className="case-audit-findings"');
+  const matrixPosition = pageSource.indexOf('className="engagement-matrix-section"');
+  assert.ok(moduleContentPosition < chronologyPosition, "chronology must remain inside the Case 1 module");
+  assert.ok(chronologyPosition < findingsPosition, "Case 1 findings must follow its chronology");
+  assert.ok(findingsPosition < matrixPosition, "the global matrix must follow the complete Case 1 module");
+  assert.match(pageSource.slice(matrixPosition - 120, matrixPosition), /<\/div>\r?\n {6}<\/section>\r?\n\s*<section /, "the Case 1 module must close before the global matrix opens");
+  assert.equal([...pageSource.matchAll(/className="engagement-matrix-section"/g)].length, 1, "expected one global matrix source");
+
   const chronology = dataSource.match(/export const case1Chronology:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
   assert.ok(chronology, "expected the canonical Case 1 chronology registry");
   const events = [...chronology.matchAll(/^ {4}step: (\d+),$/gm)].map((match) => Number(match[1]));
