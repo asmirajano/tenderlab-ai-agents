@@ -57,6 +57,26 @@ test("includes every browser asset referenced by the exported pages", async () =
   );
 });
 
+test("defines concrete output metadata for every Main agent", async () => {
+  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const mainIdsSource = source.match(/const mainAgentIds = new Set\(\[([^\]]+)\]\)/)?.[1];
+  assert.ok(mainIdsSource, "expected the canonical Main-agent ID registry");
+  const mainIds = [...mainIdsSource.matchAll(/\d+/g)].map((match) => Number(match[0]));
+  assert.equal(mainIds.length, 20);
+
+  for (const agentId of mainIds) {
+    const record = source.split("\n").find((line) => line.includes(`{ id: ${agentId},`));
+    assert.ok(record, `expected agent ${agentId} in the registry`);
+    const primary = record.match(/primary: "([^"]+)"/)?.[1];
+    const artifacts = record.match(/artifacts: \[([^\]]+)\]/)?.[1];
+    const consumers = record.match(/consumers: "([^"]+)"/)?.[1];
+    assert.ok(primary && primary.length > 12, `agent ${agentId} needs a specific primary output`);
+    assert.ok(artifacts && [...artifacts.matchAll(/"[^"]+"/g)].length >= 3, `agent ${agentId} needs concrete artifacts`);
+    assert.ok(consumers && consumers.length > 8, `agent ${agentId} needs downstream consumers`);
+    assert.doesNotMatch(primary, /analysis completed|result generated|анализ завершён|результат создан/i);
+  }
+});
+
 test("publishes client files only", async () => {
   const topLevel = await readdir(publishRoot);
   assert.ok(topLevel.includes("index.html"));

@@ -44,6 +44,8 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - **Flat** remains the complete agent inventory.
 - **Hierarchy** derives Main-parent and subagent relationships from explicit architecture metadata.
 - Specialized and Optional agents may support multiple Main agents and appear under every relevant parent.
+- Every Main-agent record defines a primary output, concrete artifacts, and downstream consumers.
+- Hierarchy rows render the flow as Main agent → supporting subagents → Result / Output.
 - Tier, layer, search, and relationship views all reuse the same canonical agent records.
 
 ## Updated implementation plan
