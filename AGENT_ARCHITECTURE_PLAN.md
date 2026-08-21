@@ -45,13 +45,23 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - **Hierarchy** derives Main-parent and subagent relationships from explicit architecture metadata.
 - Specialized and Optional agents may support multiple Main agents and appear under every relevant parent.
 - Every agent record defines a primary output, concrete artifacts, and downstream consumers; the same metadata powers Main hierarchy outputs and all 64 individual agent cards.
-- Primary navigation is route-based: Command Center (`/`), Workflow (`/workflow`), Agents (`/agents`), and Main Run (`/main-agents-run`) render independent pages from shared components and data.
+- Primary navigation is route-based: Command Center (`/`), Workflow (`/workflow`), Agents (`/agents`), Main Run (`/main-agents-run`), and Case Audit (`/case-simulation`) render independent pages from shared components and data.
 - Hierarchy rows render the flow as Main agent → supporting subagents → Result / Output.
 - Tier, layer, search, and relationship views all reuse the same canonical agent records.
 - Every agent also carries audited platform-use metadata: Command Center, Client Side, or Backend. Shared is derived only when an agent genuinely serves both Command Center and Client Side.
 - Backend remains an exclusive behind-the-scenes classification; platform-side filters compose with Flat / Hierarchy, tier, layer, and search filters.
 - Every assigned platform side has an agent-specific rationale derived from its users, inputs, outputs, and workflow; Shared agents explain Command Center and Client Side separately in the individual-agent drawer.
 - Individual-agent drawers use one progressive profile hierarchy: identity and purpose → platform role → operating model → result and handoff → realistic example → operational metadata.
+
+## Case simulation audit
+
+- Case Audit is designed as **Agents as rows × Cases as columns** so the current Case 1 analysis can grow to ten cases without changing the matrix model.
+- Agent identity, tier, layer, platform side, purpose, and canonical output continue to come from the shared 64-agent registry. Case records store only case-specific engagement decisions and handoffs.
+- Case 1 is **«Международная поставка школьной мебели»**: one international Goods tender, one lot, Georgia as organizer country, a Turkish furniture manufacturer, and a DEMO budget of $3.85 million.
+- The first audit classifies all 64 agents as 47 Required / Core, 9 Conditional, and 8 Not involved. Conditional records distinguish six triggered conditions from three standby conditions.
+- Each involved record defines its workflow stage, practical reason, input, case-specific output, and next consumer. Each skipped record defines which active capability covers the work or why no practical role exists.
+- Twelve route stages expose the end-to-end handoff from control and discovery through bid preparation, submission, evaluation, award, contract execution, and learning.
+- Cases 2–10 remain visible only as future matrix placeholders until Case 1 methodology and assignments are approved.
 
 ## Updated implementation plan
 

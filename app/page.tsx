@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
 
-type Layer = {
+export type Layer = {
   id: string;
   number: string;
   name: string;
@@ -14,17 +14,17 @@ type Layer = {
   color: string;
 };
 
-type AgentOutput = {
+export type AgentOutput = {
   primary: string;
   artifacts: string[];
   consumers: string;
 };
 
-type PlatformSide = "command-center" | "client-side" | "backend";
+export type PlatformSide = "command-center" | "client-side" | "backend";
 type PlatformFilter = "all" | PlatformSide | "shared";
 type PlatformRationale = Partial<Record<PlatformSide, string>>;
 
-type Agent = {
+export type Agent = {
   id: number;
   name: string;
   description: string;
@@ -35,7 +35,7 @@ type Agent = {
   platformRationale: PlatformRationale;
 };
 
-const layers: Layer[] = [
+export const layers: Layer[] = [
   { id: "governance", number: "01", name: "Control", ru: "Управление", mark: "⌘", color: "#8b7cff" },
   { id: "company", number: "02", name: "Company", ru: "Профиль", mark: "◈", color: "#43d9b2" },
   { id: "universe", number: "03", name: "Universe", ru: "Рынок", mark: "◎", color: "#39a9ff" },
@@ -322,7 +322,7 @@ const platformRationaleByAgentId: Record<number, PlatformRationale> = {
   64: { backend: "Автоматически возвращает award, score, buyer feedback и delivery outcome в knowledge graph и модели, улучшая будущие Discovery и Scoring." },
 };
 
-const agents: Agent[] = agentDefinitions.map((agent) => ({
+export const agents: Agent[] = agentDefinitions.map((agent) => ({
   ...agent,
   platformSides: platformSidesByAgentId[agent.id],
   platformRationale: platformRationaleByAgentId[agent.id],
@@ -341,7 +341,7 @@ if (missingPlatformClassifications.length || mixedBackendClassifications.length 
   throw new Error("Every agent needs matching platform-side classifications and rationales; Backend must remain behind-the-scenes only.");
 }
 
-const platformSideLabels: Record<PlatformSide, string> = {
+export const platformSideLabels: Record<PlatformSide, string> = {
   "command-center": "Command Center",
   "client-side": "Client Side",
   backend: "Backend",
@@ -438,21 +438,21 @@ const agentExamples: Record<number, AgentExample> = {
   64: { company: "FurniLearn Analytics", item: "Результаты тендера на школьную мебель", result: "Цена победителя, замечания заказчика и оценка 93/100 добавлены в будущие рекомендации." },
 };
 
-const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer]));
+export const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer])) as Record<string, Layer>;
 
-type AgentTier = "main" | "specialized" | "optional";
+export type AgentTier = "main" | "specialized" | "optional";
 type ArchitectureView = "flat" | "hierarchy";
 
 const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
 const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
 
-const getAgentTier = (agentId: number): AgentTier => {
+export const getAgentTier = (agentId: number): AgentTier => {
   if (mainAgentIds.has(agentId)) return "main";
   if (optionalAgentIds.has(agentId)) return "optional";
   return "specialized";
 };
 
-const tierLabels: Record<AgentTier, string> = {
+export const tierLabels: Record<AgentTier, string> = {
   main: "Main",
   specialized: "Specialized",
   optional: "Optional",
@@ -628,7 +628,7 @@ function AgentOperationalMetadata({ agent }: { agent: Agent }) {
   );
 }
 
-export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run"> }) {
+export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" | "case-simulation"> }) {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");

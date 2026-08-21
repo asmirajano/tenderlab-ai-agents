@@ -1,12 +1,13 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- static Firebase pages use native route navigation */
 
-export type PrimaryPage = "command-center" | "workflow" | "agents" | "main-run";
+export type PrimaryPage = "command-center" | "workflow" | "agents" | "main-run" | "case-simulation";
 
 const navItems: Array<{ id: PrimaryPage; label: string; href: string }> = [
   { id: "command-center", label: "Command Center", href: "/" },
   { id: "workflow", label: "Workflow", href: "/workflow" },
   { id: "agents", label: "Agents", href: "/agents" },
   { id: "main-run", label: "Main Run", href: "/main-agents-run" },
+  { id: "case-simulation", label: "Case Audit", href: "/case-simulation" },
 ];
 
 export default function TopNavigation({ active }: { active: PrimaryPage }) {

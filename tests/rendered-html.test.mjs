@@ -11,12 +11,13 @@ async function readPublished(relativePath) {
   return readFile(path.join(publishRoot, relativePath), "utf8");
 }
 
-test("exports all four TenderLab pages as static HTML", async () => {
-  const [home, workflow, agentsPage, run] = await Promise.all([
+test("exports all five TenderLab pages as static HTML", async () => {
+  const [home, workflow, agentsPage, run, caseSimulation] = await Promise.all([
     readPublished("index.html"),
     readPublished("workflow.html"),
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
+    readPublished("case-simulation.html"),
   ]);
 
   assert.match(home, /<title>TenderLab\.ai/);
@@ -52,7 +53,16 @@ test("exports all four TenderLab pages as static HTML", async () => {
   assert.match(run, /Tender Readiness Score Agent/);
   assert.match(run, /aria-current="page"[^>]+href="\/main-agents-run"/);
 
-  for (const html of [home, workflow, agentsPage, run]) {
+  assert.match(caseSimulation, /Case Simulation/);
+  assert.match(caseSimulation, /Agent Engagement/);
+  assert.match(caseSimulation, /Международная поставка школьной мебели/);
+  assert.match(caseSimulation, /Anatolia Workspace A\.Ş\./);
+  assert.match(caseSimulation, /64 архитектурных роли/);
+  assert.match(caseSimulation, /CASE 01 · ACTIVE/);
+  assert.match(caseSimulation, /CASE (?:<!-- -->)?10/);
+  assert.match(caseSimulation, /aria-current="page"[^>]+href="\/case-simulation"/);
+
+  for (const html of [home, workflow, agentsPage, run, caseSimulation]) {
     assert.match(html, /<html[^>]*lang="ru"/);
     assert.match(html, /<script[^>]+src="\/_next\/static\/chunks\//);
     assert.doesNotMatch(html, /codex-preview/);
@@ -66,6 +76,7 @@ test("includes every browser asset referenced by the exported pages", async () =
     readPublished("workflow.html"),
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
+    readPublished("case-simulation.html"),
   ]);
   const referencedAssets = new Set();
 
@@ -182,12 +193,46 @@ test("orders the agent detail drawer as one progressive profile", async () => {
   assert.match(source, /On demand/);
 });
 
+test("defines one complete Case 1 engagement decision for all 64 canonical agents", async () => {
+  const source = await readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8");
+  const records = [...source.matchAll(/^ {2}\{ agentId: (\d+), status: "(required|conditional|not-involved)"[^\n]+$/gm)].map((match) => ({
+    id: Number(match[1]),
+    status: match[2],
+    source: match[0],
+  }));
+
+  assert.equal(records.length, 64, "expected one Case 1 decision per canonical agent");
+  assert.deepEqual(records.map((record) => record.id).sort((a, b) => a - b), Array.from({ length: 64 }, (_, index) => index + 1));
+  assert.equal(records.filter((record) => record.status === "required").length, 47);
+  assert.equal(records.filter((record) => record.status === "conditional").length, 9);
+  assert.equal(records.filter((record) => record.status === "not-involved").length, 8);
+
+  for (const record of records.filter((item) => item.status !== "not-involved")) {
+    assert.match(record.source, /when: "[^"]+"/);
+    assert.match(record.source, /why: "[^"]+"/);
+    assert.match(record.source, /input: "[^"]+"/);
+    assert.match(record.source, /output: "[^"]+"/);
+    assert.match(record.source, /next: "[^"]+"/);
+  }
+  for (const record of records.filter((item) => item.status === "not-involved")) {
+    assert.match(record.source, /coveredBy: "[^"]+"/);
+  }
+  assert.equal([...source.matchAll(/status: "conditional", activation: "triggered"/g)].length, 6);
+  assert.equal([...source.matchAll(/status: "conditional", activation: "standby"/g)].length, 3);
+  assert.match(source, /1 тендер · 1 лот/);
+  assert.match(source, /budget: "\$3,85 млн"/);
+  assert.match(source, /organizerCountry: "Грузия"/);
+  assert.match(source, /companyCountry: "Турция"/);
+  assert.match(source, /tenderType: "Товары"/);
+});
+
 test("publishes client files only", async () => {
   const topLevel = await readdir(publishRoot);
   assert.ok(topLevel.includes("index.html"));
   assert.ok(topLevel.includes("workflow.html"));
   assert.ok(topLevel.includes("agents.html"));
   assert.ok(topLevel.includes("main-agents-run.html"));
+  assert.ok(topLevel.includes("case-simulation.html"));
   assert.ok(topLevel.includes("_next"));
   assert.ok(!topLevel.includes("server"));
   await assert.rejects(access(path.join(publishRoot, ".env")));

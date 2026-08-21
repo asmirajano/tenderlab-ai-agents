@@ -23,6 +23,7 @@ const routes = [
   { pathname: "/workflow", output: "workflow.html" },
   { pathname: "/agents", output: "agents.html" },
   { pathname: "/main-agents-run", output: "main-agents-run.html" },
+  { pathname: "/case-simulation", output: "case-simulation.html" },
 ];
 
 for (const route of routes) {
