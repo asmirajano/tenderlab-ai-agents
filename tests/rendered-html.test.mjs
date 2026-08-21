@@ -57,16 +57,14 @@ test("includes every browser asset referenced by the exported pages", async () =
   );
 });
 
-test("defines concrete output metadata for every Main agent", async () => {
+test("defines concrete output metadata for all 64 agents", async () => {
   const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
-  const mainIdsSource = source.match(/const mainAgentIds = new Set\(\[([^\]]+)\]\)/)?.[1];
-  assert.ok(mainIdsSource, "expected the canonical Main-agent ID registry");
-  const mainIds = [...mainIdsSource.matchAll(/\d+/g)].map((match) => Number(match[0]));
-  assert.equal(mainIds.length, 20);
+  const agentRecords = [...source.matchAll(/^ {2}\{ id: (\d+), name: [^\n]+$/gm)];
+  assert.equal(agentRecords.length, 64, "expected 64 canonical agent records");
 
-  for (const agentId of mainIds) {
-    const record = source.split("\n").find((line) => line.includes(`{ id: ${agentId},`));
-    assert.ok(record, `expected agent ${agentId} in the registry`);
+  for (const match of agentRecords) {
+    const agentId = Number(match[1]);
+    const record = match[0];
     const primary = record.match(/primary: "([^"]+)"/)?.[1];
     const artifacts = record.match(/artifacts: \[([^\]]+)\]/)?.[1];
     const consumers = record.match(/consumers: "([^"]+)"/)?.[1];

@@ -23,7 +23,7 @@ type Agent = {
   description: string;
   layer: string;
   core?: boolean;
-  output?: AgentOutput;
+  output: AgentOutput;
 };
 
 const layers: Layer[] = [
@@ -39,75 +39,75 @@ const layers: Layer[] = [
 
 const agents: Agent[] = [
   { id: 1, name: "TenderLab Orchestrator", description: "Координирует ограниченные этапы, повторы, уверенность, доказательства и согласования.", layer: "governance", core: true, output: { primary: "Маршрут кейса и состояние выполнения", artifacts: ["Граф активации", "Правила повторов", "Пороги и согласования"], consumers: "Все активные агенты · Human Approval" } },
-  { id: 2, name: "Human Approval Agent", description: "Передаёт критические решения ответственному человеку.", layer: "governance" },
-  { id: 3, name: "Evidence & Provenance Agent", description: "Связывает выводы и оценки уверенности с проверяемыми источниками.", layer: "governance" },
-  { id: 4, name: "Audit & Version Control Agent", description: "Фиксирует версии данных, документов и решений.", layer: "governance" },
-  { id: 5, name: "Tender Knowledge Graph Agent", description: "Связывает покупателей, поставщиков, тендеры, документы, присуждения и контракты.", layer: "governance" },
+  { id: 2, name: "Human Approval Agent", description: "Передаёт критические решения ответственному человеку.", layer: "governance", output: { primary: "Протокол утверждённого решения", artifacts: ["Решение и условия", "Ответственный и timestamp", "Комментарии и исключения"], consumers: "Orchestrator · Следующий разрешённый этап" } },
+  { id: 3, name: "Evidence & Provenance Agent", description: "Связывает выводы и оценки уверенности с проверяемыми источниками.", layer: "governance", output: { primary: "Пакет доказательств и происхождения", artifacts: ["Source citations", "Confidence levels", "Неподтверждённые пробелы"], consumers: "Scoring · Compliance · Human Approval" } },
+  { id: 4, name: "Audit & Version Control Agent", description: "Фиксирует версии данных, документов и решений.", layer: "governance", output: { primary: "Неизменяемый журнал версий и действий", artifacts: ["Версии объектов", "Diff изменений", "История решений"], consumers: "Orchestrator · QA · Audit" } },
+  { id: 5, name: "Tender Knowledge Graph Agent", description: "Связывает покупателей, поставщиков, тендеры, документы, присуждения и контракты.", layer: "governance", output: { primary: "Обновлённый граф тендерных знаний", artifacts: ["Entity nodes", "Проверенные связи", "Provenance metadata"], consumers: "Discovery · Matching · Outcome Learning" } },
 
   { id: 6, name: "Company Profile Agent", description: "Создаёт структурированный профиль компании.", layer: "company", core: true, output: { primary: "Проверенный профиль компании", artifacts: ["Категории возможностей", "Мощности и география", "Ссылки на доказательства"], consumers: "Readiness · Discovery · Match Score" } },
-  { id: 7, name: "Product & Capability Agent", description: "Нормализует продукты, услуги и мощности.", layer: "company" },
-  { id: 8, name: "Company Verification Agent", description: "Проверяет компанию, производство и опыт.", layer: "company" },
+  { id: 7, name: "Product & Capability Agent", description: "Нормализует продукты, услуги и мощности.", layer: "company", output: { primary: "Нормализованный каталог возможностей", artifacts: ["Product taxonomy", "Технические параметры", "Мощности и ограничения"], consumers: "Company Profile · Readiness · Match Score" } },
+  { id: 8, name: "Company Verification Agent", description: "Проверяет компанию, производство и опыт.", layer: "company", output: { primary: "Верифицированное досье компании", artifacts: ["Legal identity", "Проверка производства", "Подтверждённые референсы"], consumers: "Company Profile · Eligibility · Match Score" } },
   { id: 9, name: "Tender Readiness Score Agent", description: "Оценивает общую готовность компании к тендерам.", layer: "company", core: true, output: { primary: "Карта тендерной готовности", artifacts: ["Оценка 0–100", "Блокирующие пробелы", "План улучшений"], consumers: "Discovery · Match Score · Human review" } },
-  { id: 10, name: "Credential & Certificate Agent", description: "Управляет лицензиями, сертификатами и сроками.", layer: "company" },
-  { id: 11, name: "Supplier Intelligence Agent", description: "Накапливает проверенные данные о поставщиках.", layer: "company" },
-  { id: 12, name: "Partner Capability Graph Agent", description: "Картирует партнёров и их возможности.", layer: "company" },
+  { id: 10, name: "Credential & Certificate Agent", description: "Управляет лицензиями, сертификатами и сроками.", layer: "company", output: { primary: "Реестр действующих credentials", artifacts: ["Сертификаты и лицензии", "Scope и покрытие", "Expiry alerts"], consumers: "Eligibility · Compliance Matrix · Submission" } },
+  { id: 11, name: "Supplier Intelligence Agent", description: "Накапливает проверенные данные о поставщиках.", layer: "company", output: { primary: "Проверенный supplier intelligence dataset", artifacts: ["Supplier profiles", "История поставок", "Риски и performance"], consumers: "Solution Architecture · Cost · Learning" } },
+  { id: 12, name: "Partner Capability Graph Agent", description: "Картирует партнёров и их возможности.", layer: "company", output: { primary: "Граф партнёров и компетенций", artifacts: ["Partner nodes", "Capability coverage", "Незакрытые gaps"], consumers: "Participation Route · Solution · JV" } },
 
-  { id: 13, name: "Tender Source Ingestion Agent", description: "Собирает объявления, оригиналы, вложения и файлы из источников.", layer: "universe" },
+  { id: 13, name: "Tender Source Ingestion Agent", description: "Собирает объявления, оригиналы, вложения и файлы из источников.", layer: "universe", output: { primary: "Нормализованный поток тендерных источников", artifacts: ["Notice objects", "Original attachments", "Source metadata"], consumers: "Tender Discovery · Document Intake" } },
   { id: 14, name: "Tender Discovery Agent", description: "Находит потенциально подходящие возможности.", layer: "universe", core: true, output: { primary: "Ранжированный shortlist тендеров", artifacts: ["Оценка релевантности", "Срок и источник", "Причины исключения"], consumers: "Document Intake · Match Score" } },
-  { id: 15, name: "Tender Classification Agent", description: "Классифицирует отрасль, страну и процедуру.", layer: "universe" },
-  { id: 16, name: "Tender Filtering Agent", description: "Отсеивает явно нерелевантные возможности.", layer: "universe" },
-  { id: 17, name: "Tender Alert & Deadline Agent", description: "Следит за сроками, изменениями и уведомлениями.", layer: "universe" },
-  { id: 18, name: "Market Intelligence Agent", description: "Анализирует рынки, спрос и тендерный поток.", layer: "universe" },
-  { id: 19, name: "Tender Award Intelligence Agent", description: "Связывает тендеры с присуждениями и контрактами, выявляя победителей и закономерности.", layer: "universe" },
-  { id: 20, name: "Buyer & Competitor Intelligence Agent", description: "Профилирует заказчиков, конкурентов и лидеров.", layer: "universe" },
+  { id: 15, name: "Tender Classification Agent", description: "Классифицирует отрасль, страну и процедуру.", layer: "universe", output: { primary: "Классификационная карточка тендера", artifacts: ["Sector и category", "Country и buyer type", "Procedure и procurement method"], consumers: "Filtering · Discovery · Market Intelligence" } },
+  { id: 16, name: "Tender Filtering Agent", description: "Отсеивает явно нерелевантные возможности.", layer: "universe", output: { primary: "Отфильтрованный набор возможностей", artifacts: ["Pass / Reject flags", "Причины исключения", "Применённые thresholds"], consumers: "Tender Discovery · Alerts" } },
+  { id: 17, name: "Tender Alert & Deadline Agent", description: "Следит за сроками, изменениями и уведомлениями.", layer: "universe", output: { primary: "Календарь дедлайнов и приоритетных alerts", artifacts: ["Контрольные даты", "Change alerts", "Owners и reminders"], consumers: "Orchestrator · Document Intake · Submission" } },
+  { id: 18, name: "Market Intelligence Agent", description: "Анализирует рынки, спрос и тендерный поток.", layer: "universe", output: { primary: "Market intelligence brief", artifacts: ["Demand trends", "Price benchmarks", "Country opportunity map"], consumers: "Discovery · Bid Strategy · Outcome Learning" } },
+  { id: 19, name: "Tender Award Intelligence Agent", description: "Связывает тендеры с присуждениями и контрактами, выявляя победителей и закономерности.", layer: "universe", output: { primary: "Связанный dataset тендеров и присуждений", artifacts: ["Award history", "Победители и цены", "Contract patterns"], consumers: "Buyer Intelligence · Scoring · Strategy" } },
+  { id: 20, name: "Buyer & Competitor Intelligence Agent", description: "Профилирует заказчиков, конкурентов и лидеров.", layer: "universe", output: { primary: "Досье покупателя и конкурентная карта", artifacts: ["Procurement patterns", "Competitor shortlist", "Price and win bands"], consumers: "Match Score · Bid Strategy · Proposal" } },
 
   { id: 21, name: "Document Intake Agent", description: "Получает, индексирует и версионирует документы и вложения.", layer: "documents", output: { primary: "Версионированный корпус документов", artifacts: ["Манифест источников", "Хэши файлов", "Очередь OCR и перевода"], consumers: "Requirement Parser · Compliance Matrix" } },
-  { id: 22, name: "OCR & Language Agent", description: "Распознаёт сканы, переводит через канонический английский и кэширует переводы.", layer: "documents" },
-  { id: 23, name: "Tender Structure Agent", description: "Структурирует лоты, позиции, формы и приложения.", layer: "documents" },
+  { id: 22, name: "OCR & Language Agent", description: "Распознаёт сканы, переводит через канонический английский и кэширует переводы.", layer: "documents", output: { primary: "Поисковый мультиязычный текстовый корпус", artifacts: ["OCR text", "Canonical English", "Translation cache"], consumers: "Tender Structure · Requirement Parser" } },
+  { id: 23, name: "Tender Structure Agent", description: "Структурирует лоты, позиции, формы и приложения.", layer: "documents", output: { primary: "Структурная карта тендерного пакета", artifacts: ["Lots и BOQ tree", "Forms registry", "Annex relationships"], consumers: "Requirement Parser · Deliverables · Assembly" } },
   { id: 24, name: "Requirement Parser Agent", description: "Извлекает все требования и условия.", layer: "documents", core: true, output: { primary: "Структурированный реестр требований", artifacts: ["Критерии допуска", "Формы и поставки", "Правила оценки"], consumers: "Eligibility · Compliance Matrix · Solution" } },
   { id: 25, name: "Eligibility & Qualification Agent", description: "Определяет обязательные критерии допуска.", layer: "documents", output: { primary: "Решение о допуске и evidence pack", artifacts: ["Pass / Fail матрица", "Обязательные пробелы", "Документы квалификации"], consumers: "Bid / No-Bid · Compliance Matrix · Human Approval" } },
-  { id: 26, name: "Evaluation Criteria Agent", description: "Извлекает баллы, веса и правила оценки.", layer: "documents" },
-  { id: 27, name: "Deliverables & Forms Agent", description: "Находит все формы, справки и приложения.", layer: "documents" },
-  { id: 28, name: "Strict-Spec Agent", description: "Сохраняет спецификации без домыслов и подмен.", layer: "documents" },
-  { id: 29, name: "Amendment & Change Agent", description: "Сравнивает версии и показывает изменения.", layer: "documents" },
-  { id: 30, name: "Ambiguity & Clarification Agent", description: "Находит противоречия и готовит вопросы.", layer: "documents" },
+  { id: 26, name: "Evaluation Criteria Agent", description: "Извлекает баллы, веса и правила оценки.", layer: "documents", output: { primary: "Формальная модель оценки заявки", artifacts: ["Criteria и weights", "Scoring formulas", "Pass thresholds"], consumers: "Match Score · Bid / No-Bid · Proposal Strategy" } },
+  { id: 27, name: "Deliverables & Forms Agent", description: "Находит все формы, справки и приложения.", layer: "documents", output: { primary: "Контрольный реестр форм и deliverables", artifacts: ["Required forms", "Owners и due dates", "Completion status"], consumers: "Compliance Matrix · Document Assembly" } },
+  { id: 28, name: "Strict-Spec Agent", description: "Сохраняет спецификации без домыслов и подмен.", layer: "documents", output: { primary: "Source-locked набор спецификаций", artifacts: ["Exact clauses", "Units и tolerances", "Запреты на substitutions"], consumers: "Requirement Parser · Compliance · Proposal" } },
+  { id: 29, name: "Amendment & Change Agent", description: "Сравнивает версии и показывает изменения.", layer: "documents", output: { primary: "Отчёт о влиянии поправок", artifacts: ["Redline изменений", "Затронутые требования", "Required actions"], consumers: "Orchestrator · Compliance · Proposal owners" } },
+  { id: 30, name: "Ambiguity & Clarification Agent", description: "Находит противоречия и готовит вопросы.", layer: "documents", output: { primary: "Реестр вопросов на clarification", artifacts: ["Противоречия", "Source citations", "Buyer-ready questions"], consumers: "Human Approval · Buyer · Compliance" } },
 
   { id: 31, name: "Company-to-Tender Match Score Agent", description: "Рассчитывает и объясняет персональный уровень соответствия.", layer: "matching", core: true, output: { primary: "Объяснимая оценка Company × Tender", artifacts: ["Взвешенный fit score", "Сильные стороны и gaps", "Evidence citations"], consumers: "Solution-Based Matching · Bid / No-Bid" } },
   { id: 32, name: "Solution-Based Matching Agent", description: "Находит участие за пределами совпадения товаров.", layer: "matching", core: true, output: { primary: "Модель участия и карта solution-fit", artifacts: ["Direct / Partner / JV", "Покрытие решения", "Незакрытые компоненты"], consumers: "Bid / No-Bid · Solution Architecture" } },
-  { id: 33, name: "Participation Route Agent", description: "Выбирает оптимальную роль компании в тендере.", layer: "matching" },
-  { id: 34, name: "Gap Analysis Agent", description: "Показывает недостающие ресурсы и компетенции.", layer: "matching" },
+  { id: 33, name: "Participation Route Agent", description: "Выбирает оптимальную роль компании в тендере.", layer: "matching", output: { primary: "Рекомендованная модель участия", artifacts: ["Prime / JV / Subcontractor", "Role rationale", "Partner requirements"], consumers: "Partner Discovery · Solution Architecture · Bid Decision" } },
+  { id: 34, name: "Gap Analysis Agent", description: "Показывает недостающие ресурсы и компетенции.", layer: "matching", output: { primary: "План закрытия capability gaps", artifacts: ["Missing capabilities", "Evidence gaps", "Actions, owners и сроки"], consumers: "Readiness · Partner Discovery · Solution" } },
   { id: 35, name: "TenderScore / Bid-No-Bid Agent", description: "Оценивает возможность, вероятность победы и рекомендует Bid / No-Bid.", layer: "matching", core: true, output: { primary: "Рекомендация Bid / No-Bid", artifacts: ["Opportunity score", "Вероятность победы", "Risk / Return rationale"], consumers: "Human Approval · Solution Architecture · Proposal Strategy" } },
-  { id: 36, name: "Capacity & Execution Agent", description: "Проверяет реальную способность выполнить контракт.", layer: "matching" },
-  { id: 37, name: "Commercial Attractiveness Agent", description: "Оценивает маржу, денежный поток и коммерческие сценарии.", layer: "matching" },
-  { id: 38, name: "Risk & Integrity Agent", description: "Проверяет санкционные, страновые и регуляторные риски.", layer: "matching" },
+  { id: 36, name: "Capacity & Execution Agent", description: "Проверяет реальную способность выполнить контракт.", layer: "matching", output: { primary: "Оценка выполнимости контракта", artifacts: ["Capacity load", "Delivery schedule", "Bottlenecks и mitigations"], consumers: "Bid / No-Bid · Solution · Logistics" } },
+  { id: 37, name: "Commercial Attractiveness Agent", description: "Оценивает маржу, денежный поток и коммерческие сценарии.", layer: "matching", output: { primary: "Коммерческий business case", artifacts: ["Margin scenarios", "Cash-flow curve", "Go / No-Go thresholds"], consumers: "Bid / No-Bid · Pricing · Human Approval" } },
+  { id: 38, name: "Risk & Integrity Agent", description: "Проверяет санкционные, страновые и регуляторные риски.", layer: "matching", output: { primary: "Реестр integrity и compliance рисков", artifacts: ["Sanctions screening", "Country and regulatory risks", "Mitigation plan"], consumers: "Bid / No-Bid · Human Approval · Legal Review" } },
 
   { id: 39, name: "Solution Architecture Agent", description: "Собирает полное решение под требования.", layer: "solution", output: { primary: "Архитектура тендерного решения", artifacts: ["Конфигурация продуктов", "Роли партнёров", "Модель поставки"], consumers: "Technical Compliance · Cost · Technical Proposal" } },
-  { id: 40, name: "Partner Discovery Agent", description: "Находит партнёров для закрытия пробелов.", layer: "solution", core: true },
-  { id: 41, name: "JV & Consortium Optimization Agent", description: "Проектирует состав и роли консорциума.", layer: "solution" },
-  { id: 42, name: "Local Representation Agent", description: "Ищет местных представителей и сервисных партнёров.", layer: "solution" },
-  { id: 43, name: "Supplier Discovery Agent", description: "Подбирает дополнительные товары и производителей.", layer: "solution" },
-  { id: 44, name: "Supplier Verification Agent", description: "Проверяет поставщика, документы и возможности.", layer: "solution" },
-  { id: 45, name: "RFQ Orchestrator Agent", description: "Создаёт и управляет запросами котировок.", layer: "solution" },
-  { id: 46, name: "Quotation Normalization Agent", description: "Приводит предложения к единому сравнению.", layer: "solution" },
+  { id: 40, name: "Partner Discovery Agent", description: "Находит партнёров для закрытия пробелов.", layer: "solution", core: true, output: { primary: "Ранжированный shortlist партнёров", artifacts: ["Candidate profiles", "Capability fit", "Evidence и contact path"], consumers: "JV Optimization · Solution Architecture" } },
+  { id: 41, name: "JV & Consortium Optimization Agent", description: "Проектирует состав и роли консорциума.", layer: "solution", output: { primary: "Оптимизированная структура консорциума", artifacts: ["Member roles", "Workshare matrix", "Eligibility coverage"], consumers: "Solution Architecture · Proposal · Legal Review" } },
+  { id: 42, name: "Local Representation Agent", description: "Ищет местных представителей и сервисных партнёров.", layer: "solution", output: { primary: "Shortlist местной сервисной сети", artifacts: ["Representatives", "Geographic coverage", "SLA capabilities"], consumers: "Solution Architecture · Execution & Logistics" } },
+  { id: 43, name: "Supplier Discovery Agent", description: "Подбирает дополнительные товары и производителей.", layer: "solution", output: { primary: "Shortlist подходящих поставщиков", artifacts: ["Product and spec fit", "MOQ и lead time", "Initial price range"], consumers: "Supplier Verification · RFQ · Cost" } },
+  { id: 44, name: "Supplier Verification Agent", description: "Проверяет поставщика, документы и возможности.", layer: "solution", output: { primary: "Supplier due-diligence dossier", artifacts: ["Legal verification", "Capacity and certificates", "Risk rating"], consumers: "RFQ · Cost · Solution Architecture" } },
+  { id: 45, name: "RFQ Orchestrator Agent", description: "Создаёт и управляет запросами котировок.", layer: "solution", output: { primary: "RFQ-пакет и response tracker", artifacts: ["Technical RFQ", "Recipient list", "Deadlines and responses"], consumers: "Quotation Normalization · Cost" } },
+  { id: 46, name: "Quotation Normalization Agent", description: "Приводит предложения к единому сравнению.", layer: "solution", output: { primary: "Сопоставимая таблица котировок", artifacts: ["Normalized unit cost", "Incoterms and lead time", "Deviations and exclusions"], consumers: "Cost & Landed-Price · Pricing" } },
 
   { id: 47, name: "Compliance Matrix Agent", description: "Связывает требования, ответы, доказательства и статус.", layer: "bid", core: true, output: { primary: "Трассируемая матрица соответствия", artifacts: ["Requirement → Response → Evidence", "Owner и статус", "Открытые gaps"], consumers: "Technical Compliance · Proposal · QA" } },
   { id: 48, name: "Technical Compliance Agent", description: "Проверяет решение по техническим требованиям.", layer: "bid", output: { primary: "Заключение о техническом соответствии", artifacts: ["Compliant / Deviation", "Доказательства эквивалентности", "Вопросы на clarification"], consumers: "Technical Proposal · QA · Human Approval" } },
-  { id: 49, name: "Commercial Compliance Agent", description: "Проверяет цены, валюты и коммерческие условия.", layer: "bid" },
+  { id: 49, name: "Commercial Compliance Agent", description: "Проверяет цены, валюты и коммерческие условия.", layer: "bid", output: { primary: "Заключение о коммерческом соответствии", artifacts: ["Currency and tax checks", "Payment and bond terms", "Commercial deviations"], consumers: "Commercial Proposal · Legal Review · QA" } },
   { id: 50, name: "Cost & Landed-Price Agent", description: "Считает полную стоимость поставки и исполнения.", layer: "bid", output: { primary: "Модель полной стоимости поставки", artifacts: ["Unit и total costs", "Фрахт, пошлины, налоги", "Сценарные допущения"], consumers: "Pricing & BOQ · Commercial Proposal" } },
   { id: 51, name: "Pricing & BOQ Agent", description: "Формирует цену и проверяет ведомости объёмов.", layer: "bid", output: { primary: "Проверенная ценовая BOQ", artifacts: ["Line-item prices", "Валюты и налоги", "Margin summary"], consumers: "Commercial Proposal · QA · Submission" } },
   { id: 52, name: "Proposal Strategy Agent", description: "Определяет позиционирование, структуру, акценты и темы победы.", layer: "bid", core: true, output: { primary: "Стратегический бриф предложения", artifacts: ["Win themes", "Позиционирование", "План ответа"], consumers: "Technical Proposal · Commercial Proposal · QA" } },
   { id: 53, name: "Technical Proposal Agent", description: "Готовит техническое предложение и методологию.", layer: "bid", output: { primary: "Черновик технического предложения", artifacts: ["Методология", "План исполнения", "Evidence и annex links"], consumers: "Bid QA · Document Assembly" } },
-  { id: 54, name: "Commercial Proposal Agent", description: "Готовит коммерческие формы и допущения.", layer: "bid" },
-  { id: 55, name: "Credentials & Experience Agent", description: "Подбирает опыт, резюме и подтверждения.", layer: "bid" },
+  { id: 54, name: "Commercial Proposal Agent", description: "Готовит коммерческие формы и допущения.", layer: "bid", output: { primary: "Заполненное коммерческое предложение", artifacts: ["Price schedules", "Commercial terms", "Assumptions and exclusions"], consumers: "Bid QA · Document Assembly" } },
+  { id: 55, name: "Credentials & Experience Agent", description: "Подбирает опыт, резюме и подтверждения.", layer: "bid", output: { primary: "Evidence-backed credentials pack", artifacts: ["Relevant references", "CVs and experts", "Certificates mapped to requirements"], consumers: "Technical Proposal · Bid QA · Assembly" } },
   { id: 56, name: "Bid QA & Red Team Agent", description: "Ищет пропуски, слабые ответы и противоречия.", layer: "bid", output: { primary: "Red-team review и журнал исправлений", artifacts: ["Compliance defects", "Рейтинг рисков", "Утверждённые исправления"], consumers: "Proposal owners · Document Assembly · Human Approval" } },
-  { id: 57, name: "Legal & Contract Review Agent", description: "Выявляет обязательства и договорные риски.", layer: "bid" },
+  { id: 57, name: "Legal & Contract Review Agent", description: "Выявляет обязательства и договорные риски.", layer: "bid", output: { primary: "Contract risk memo и deviation schedule", artifacts: ["Risk clauses", "Liabilities and securities", "Proposed exceptions"], consumers: "Human Approval · Bid QA · Award & Contract" } },
   { id: 58, name: "Document Assembly & Submission Agent", description: "Собирает, проверяет и подаёт пакет.", layer: "bid", output: { primary: "Готовый к подаче тендерный пакет", artifacts: ["Подписанные формы", "File manifest", "Submission receipt"], consumers: "Buyer portal · Award & Contract · Audit" } },
 
-  { id: 59, name: "Clarification Response Agent", description: "Готовит ответы на вопросы комиссии.", layer: "learning" },
-  { id: 60, name: "Presentation & Negotiation Agent", description: "Поддерживает презентации и переговоры.", layer: "learning" },
-  { id: 61, name: "Award & Contract Agent", description: "Сопровождает присуждение, гарантии и подписание.", layer: "learning" },
-  { id: 62, name: "Execution & Logistics Agent", description: "Поддерживает производство, доставку и внедрение.", layer: "learning" },
-  { id: 63, name: "Payment & Contract Administration Agent", description: "Контролирует этапы, документы, платежи и изменения.", layer: "learning" },
+  { id: 59, name: "Clarification Response Agent", description: "Готовит ответы на вопросы комиссии.", layer: "learning", output: { primary: "Buyer-ready clarification response package", artifacts: ["Approved answers", "Supporting evidence", "Submission version"], consumers: "Buyer portal · Audit · Proposal owners" } },
+  { id: 60, name: "Presentation & Negotiation Agent", description: "Поддерживает презентации и переговоры.", layer: "learning", output: { primary: "Презентационный и negotiation pack", artifacts: ["Slide narrative", "Talking points", "Objection-response matrix"], consumers: "Bid team · Human negotiators · Buyer meeting" } },
+  { id: 61, name: "Award & Contract Agent", description: "Сопровождает присуждение, гарантии и подписание.", layer: "learning", output: { primary: "Award-to-contract action plan", artifacts: ["Award notice review", "Bonds and securities", "Signing checklist"], consumers: "Legal Review · Execution · Contract Administration" } },
+  { id: 62, name: "Execution & Logistics Agent", description: "Поддерживает производство, доставку и внедрение.", layer: "learning", output: { primary: "План и статус исполнения поставки", artifacts: ["Production schedule", "QC and logistics plan", "Installation milestones"], consumers: "Contract Administration · Outcome Learning" } },
+  { id: 63, name: "Payment & Contract Administration Agent", description: "Контролирует этапы, документы, платежи и изменения.", layer: "learning", output: { primary: "Реестр исполнения контракта и платежей", artifacts: ["Milestones and invoices", "Retention and guarantees", "Variation log"], consumers: "Finance · Audit · Outcome Learning" } },
   { id: 64, name: "Outcome Learning Agent", description: "Возвращает результаты в систему знаний.", layer: "learning", core: true, output: { primary: "Запись outcome intelligence", artifacts: ["Award, score и feedback", "Коррекции моделей", "Обновления профиля и graph"], consumers: "Knowledge Graph · Discovery · Scoring models" } },
 ];
 
@@ -204,12 +204,10 @@ const tierLabels: Record<AgentTier, string> = {
   optional: "Optional",
 };
 
-const mainAgentsMissingOutput = [...mainAgentIds].filter(
-  (agentId) => !agents.find((agent) => agent.id === agentId)?.output,
-);
+const agentsMissingOutput = agents.filter((agent) => !agent.output).map((agent) => agent.id);
 
-if (mainAgentsMissingOutput.length > 0) {
-  throw new Error(`Missing output metadata for Main agents: ${mainAgentsMissingOutput.join(", ")}`);
+if (agentsMissingOutput.length > 0) {
+  throw new Error(`Missing output metadata for agents: ${agentsMissingOutput.join(", ")}`);
 }
 
 // Explicit architecture relationships. A subagent can support several Main agents.
@@ -306,6 +304,22 @@ function MainAgentOutputCard({ agent }: { agent: Agent }) {
       </div>
       <p><span>ПЕРЕДАЁТ →</span>{output.consumers}</p>
     </aside>
+  );
+}
+
+function AgentDrawerOutput({ agent }: { agent: Agent }) {
+  return (
+    <section className="drawer-output" aria-label={`${agent.name} result and output`}>
+      <div className="drawer-output-heading">
+        <span>RESULT / OUTPUT</span>
+        <b>DELIVERABLE</b>
+      </div>
+      <h4>{agent.output.primary}</h4>
+      <div className="drawer-output-artifacts" aria-label="Expected output structure">
+        {agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}
+      </div>
+      <p><span>ИСПОЛЬЗУЕТСЯ →</span>{agent.output.consumers}</p>
+    </section>
   );
 }
 
@@ -666,6 +680,7 @@ export default function Home() {
               <h4>{agentExamples[selectedAgent.id].item}</h4>
               <p>{agentExamples[selectedAgent.id].result}</p>
             </section>
+            <AgentDrawerOutput agent={selectedAgent} />
             <div className="status-line"><span><i /> {getAgentTier(selectedAgent.id) === "optional" ? "ON DEMAND" : "AVAILABLE"}</span><b>{tierLabels[getAgentTier(selectedAgent.id)]} agent</b></div>
           </aside>
         </div>
