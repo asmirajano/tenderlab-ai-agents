@@ -154,7 +154,32 @@ test("defines an individual rationale for every agent and assigned platform side
 
   assert.equal(allRationales.length, 103, "expected separate Command Center and Client Side rationales for Shared agents");
   assert.equal(new Set(allRationales).size, allRationales.length, "platform rationales must not be duplicated");
-  assert.match(source, /WHY THIS PLATFORM SIDE/);
+  assert.match(source, /PLATFORM ROLE \/ WHY/);
+});
+
+test("orders the agent detail drawer as one progressive profile", async () => {
+  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const drawer = source.match(/\{selectedAgent && \(([\s\S]*?)<\/aside>/)?.[1];
+  assert.ok(drawer, "expected the individual agent detail drawer");
+
+  const progressiveSections = [
+    'className="drawer-identity"',
+    "<AgentPlatformRationale",
+    'className="drawer-process"',
+    "<AgentDrawerOutput",
+    'className="sim-example"',
+    "<AgentOperationalMetadata",
+  ];
+  const positions = progressiveSections.map((section) => drawer.indexOf(section));
+  assert.ok(positions.every((position) => position >= 0), "every profile section must remain present");
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions, "profile sections must follow the intended information hierarchy");
+  assert.match(drawer, /PURPOSE/);
+  assert.match(drawer, /HOW IT WORKS/);
+  assert.match(drawer, /REALISTIC EXAMPLE/);
+  assert.match(source, /ИСПОЛЬЗУЕТСЯ →/);
+  assert.match(source, /Context routed/);
+  assert.match(source, /Condition triggered/);
+  assert.match(source, /On demand/);
 });
 
 test("publishes client files only", async () => {

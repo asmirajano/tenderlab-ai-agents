@@ -458,6 +458,12 @@ const tierLabels: Record<AgentTier, string> = {
   optional: "Optional",
 };
 
+const tierActivationLabels: Record<AgentTier, string> = {
+  main: "Context routed",
+  specialized: "Condition triggered",
+  optional: "On demand",
+};
+
 const agentsMissingOutput = agents.filter((agent) => !agent.output).map((agent) => agent.id);
 
 if (agentsMissingOutput.length > 0) {
@@ -590,7 +596,7 @@ function AgentPlatformRationale({ agent }: { agent: Agent }) {
   return (
     <section className="drawer-platform-rationale" aria-label={`${agent.name} platform-side rationale`}>
       <div className="drawer-rationale-heading">
-        <span>WHY THIS PLATFORM SIDE</span>
+        <span>PLATFORM ROLE / WHY</span>
         <b>{classification}</b>
       </div>
       <div className={`drawer-rationale-list ${agent.platformSides.length > 1 ? "rationale-shared" : "rationale-single"}`}>
@@ -602,6 +608,21 @@ function AgentPlatformRationale({ agent }: { agent: Agent }) {
             <p>{agent.platformRationale[side]}</p>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AgentOperationalMetadata({ agent }: { agent: Agent }) {
+  const tier = getAgentTier(agent.id);
+
+  return (
+    <section className="drawer-operations" aria-label={`${agent.name} operational metadata`}>
+      <span>OPERATIONAL</span>
+      <div>
+        <p><small>AVAILABILITY</small><strong><i /> AVAILABLE</strong></p>
+        <p><small>AGENT TYPE</small><b className={`operations-tier operations-${tier}`}>{tierLabels[tier]}</b></p>
+        <p><small>ACTIVATION</small><b>{tierActivationLabels[tier]}</b></p>
       </div>
     </section>
   );
@@ -968,30 +989,36 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run">
         <div className="drawer-shell" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAgent(null); }}>
           <aside className="agent-drawer" role="dialog" aria-modal="true" aria-labelledby="agent-title" style={{ "--layer-color": layerById[selectedAgent.layer].color } as React.CSSProperties}>
             <button className="drawer-close" onClick={() => setSelectedAgent(null)} aria-label="Close">×</button>
-            <div className="drawer-topline">
-              <span>{String(selectedAgent.id).padStart(2, "0")}</span>
-              <b>{layerById[selectedAgent.layer].number} · {layerById[selectedAgent.layer].name}</b>
-              <em className={`drawer-tier drawer-${getAgentTier(selectedAgent.id)}`}>{tierLabels[getAgentTier(selectedAgent.id)]}</em>
-            </div>
-            <div className="drawer-icon">{layerById[selectedAgent.layer].mark}</div>
-            <h3 id="agent-title">{selectedAgent.name}</h3>
-            <p>{selectedAgent.description}</p>
-            <div className="drawer-flow">
-              <div><span>AI</span><small>находит</small></div>
-              <i>→</i>
-              <div><span>Evidence</span><small>проверяет</small></div>
-              <i>→</i>
-              <div><span>Human</span><small>решает</small></div>
-            </div>
+            <header className="drawer-identity">
+              <div className="drawer-icon">{layerById[selectedAgent.layer].mark}</div>
+              <div className="drawer-identity-copy">
+                <div className="drawer-topline">
+                  <span>{String(selectedAgent.id).padStart(2, "0")}</span>
+                  <b>{layerById[selectedAgent.layer].number} · {layerById[selectedAgent.layer].name}</b>
+                </div>
+                <h3 id="agent-title">{selectedAgent.name}</h3>
+                <p className="drawer-purpose"><span>PURPOSE</span>{selectedAgent.description}</p>
+              </div>
+            </header>
+            <AgentPlatformRationale agent={selectedAgent} />
+            <section className="drawer-process" aria-label={`${selectedAgent.name} operating model`}>
+              <div className="drawer-process-heading"><span>HOW IT WORKS</span><b>AI + EVIDENCE + HUMAN</b></div>
+              <div className="drawer-flow">
+                <div><span>AI</span><small>находит</small></div>
+                <i>→</i>
+                <div><span>Evidence</span><small>проверяет</small></div>
+                <i>→</i>
+                <div><span>Human</span><small>решает</small></div>
+              </div>
+            </section>
+            <AgentDrawerOutput agent={selectedAgent} />
             <section className="sim-example" aria-label="Симулированный пример">
-              <div className="example-label"><span>СИМУЛИРОВАННЫЙ ПРИМЕР</span><b>DEMO</b></div>
+              <div className="example-label"><span>REALISTIC EXAMPLE</span><b>DEMO</b></div>
               <div className="example-company"><i />{agentExamples[selectedAgent.id].company}</div>
               <h4>{agentExamples[selectedAgent.id].item}</h4>
               <p>{agentExamples[selectedAgent.id].result}</p>
             </section>
-            <AgentDrawerOutput agent={selectedAgent} />
-            <AgentPlatformRationale agent={selectedAgent} />
-            <div className="status-line"><span><i /> {getAgentTier(selectedAgent.id) === "optional" ? "ON DEMAND" : "AVAILABLE"}</span><b>{tierLabels[getAgentTier(selectedAgent.id)]} agent</b></div>
+            <AgentOperationalMetadata agent={selectedAgent} />
           </aside>
         </div>
       )}
