@@ -226,6 +226,24 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
   assert.match(source, /tenderType: "Товары"/);
 });
 
+test("defines one responsive readability scale across every application surface", async () => {
+  const [globalStyles, runStyles, caseStyles] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "globals.css"), "utf8"),
+    readFile(path.join(projectRoot, "app", "main-agents-run", "run.css"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
+  ]);
+
+  for (const token of ["--type-micro", "--type-label", "--type-small", "--type-body", "--type-control", "--type-card-title"]) {
+    assert.match(globalStyles, new RegExp(`${token}: clamp\\(`));
+  }
+  assert.match(globalStyles, /\.topbar nav a \{ font-size: var\(--type-control\)/);
+  assert.match(globalStyles, /\.agent-card > strong \{ font-size: var\(--type-card-title\)/);
+  assert.match(globalStyles, /@media \(min-width: 1680px\)/);
+  assert.match(runStyles, /Main Run readability upgrade/);
+  assert.match(caseStyles, /Case Audit readability upgrade/);
+  assert.match(caseStyles, /\.engagement-matrix \{ min-width: 1750px/);
+});
+
 test("publishes client files only", async () => {
   const topLevel = await readdir(publishRoot);
   assert.ok(topLevel.includes("index.html"));

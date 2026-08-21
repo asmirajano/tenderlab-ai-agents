@@ -354,3 +354,99 @@
   .status-signal.is-live::after, .rail-step.active .rail-node i { animation: none; }
   * { scroll-behavior: auto !important; }
 }
+
+/* Main Run readability upgrade. */
+.run-nav-title span,
+.case-id span,
+.case-facts small,
+.run-status-copy small,
+.section-heading span,
+.panel-title span,
+.sequence-row em,
+.live-label,
+.data-block span,
+.handoff-card span,
+.flow-arrow,
+.handoff-target small,
+.run-empty > span,
+.feed-event > span,
+.run-footer { font-size: var(--type-micro); line-height: 1.35; }
+
+.run-back,
+.run-primary small,
+.case-main p,
+.run-progress-copy,
+.run-controls button,
+.metrics-strip span,
+.section-heading p,
+.rail-label small,
+.sequence-row small,
+.active-agent-head p,
+.data-block p,
+.handoff-card p,
+.feed-placeholder,
+.feed-event p,
+.feed-event small { font-size: var(--type-small); line-height: 1.5; }
+
+.run-nav-title b,
+.case-id b,
+.case-facts b,
+.run-status-copy b,
+.rail-label b,
+.panel-title b,
+.sequence-row b,
+.handoff-target b,
+.feed-event b { font-size: var(--type-label); line-height: 1.4; }
+
+.run-topbar { min-height: 76px; }
+.run-eyebrow { font-size: var(--type-label) !important; }
+.run-hero-copy > p:last-child { font-size: var(--type-body); line-height: 1.55; }
+.run-primary { min-height: 92px; }
+.run-primary b { font-size: clamp(26px, calc(23px + .25vw), 31px); }
+.case-main h2 { font-size: clamp(22px, calc(20px + .18vw), 25px); line-height: 1.25; }
+.case-facts > span { min-height: 92px; }
+.run-controls button { min-height: 46px; padding: 12px 14px; }
+.metrics-strip > div { min-height: 104px; }
+.metrics-strip b { font-size: clamp(24px, calc(22px + .18vw), 28px); }
+.section-heading h2 { font-size: clamp(29px, calc(25px + .3vw), 36px); line-height: 1.15; }
+
+.agent-rail { min-height: 164px; }
+.rail-node { font-size: var(--type-label); height: 45px; width: 45px; }
+.rail-label { width: 148px; }
+.rail-arrow { left: 45px; top: 22px; }
+.sequence-row { min-height: 58px; }
+.sequence-index { font-size: var(--type-micro); height: 29px; width: 29px; }
+
+.active-agent-card { padding: 38px; }
+.active-agent-head h2 { font-size: clamp(30px, 2.4vw, 43px); line-height: 1.08; }
+.data-block, .handoff-card { min-height: 216px; }
+.run-empty h2 { font-size: clamp(37px, calc(33px + .32vw), 44px); }
+.run-empty p { font-size: var(--type-body); }
+.run-empty button { font-size: var(--type-control); min-height: 46px; }
+
+@media (min-width: 1680px) {
+  .case-card,
+  .run-status-board,
+  .metrics-strip,
+  .workflow-section,
+  .active-workspace,
+  .run-footer { max-width: 1760px; }
+  .workflow-section { margin-bottom: 30px; }
+  .sequence-panel, .active-agent-card, .handoff-feed { min-height: 700px; }
+}
+
+@media (max-width: 820px) {
+  .run-topbar { height: 72px; }
+  .run-hero { padding-top: 118px; }
+  .run-back { font-size: 0; }
+  .run-back::after { font-size: 12px; }
+  .run-controls button { min-height: 50px; }
+  .agent-rail { min-height: 158px; }
+  .active-agent-card { padding: 30px 24px; }
+}
+
+@media (max-width: 420px) {
+  .run-eyebrow { font-size: 11px !important; }
+  .case-main h2 { font-size: 19px; }
+  .case-facts b { font-size: 12px; }
+}

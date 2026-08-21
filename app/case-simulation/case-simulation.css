@@ -313,3 +313,138 @@
 @media (prefers-reduced-motion: reduce) {
   .case-detail { animation: none; }
 }
+
+/* Case Audit readability upgrade. */
+.case-eyebrow,
+.case-audit-version span,
+.case-dossier-title > span,
+.case-dossier-facts small,
+.case-audit-metrics article > span,
+.section-kicker > span,
+.tier-breakdown p i,
+.platform-breakdown article > span,
+.case-audit-page .section-heading p,
+.stage-card > div small,
+.stage-card footer small,
+.stage-select > span,
+.matrix-result-count,
+.engagement-matrix thead th > span,
+.matrix-stage-row th span,
+.matrix-agent-id,
+.matrix-agent-copy small,
+.case-platform-badges i,
+.engagement-cell > span,
+.finding-grid article > span,
+.case-detail-meta,
+.case-detail-tags > span:not(.case-platform-badges),
+.detail-reason small,
+.detail-io article > span,
+.detail-skip > span,
+.detail-output > small,
+.case-detail-footer span { font-size: var(--type-micro); line-height: 1.35; }
+
+.case-audit-version small,
+.case-dossier-title p,
+.case-dossier-facts span,
+.case-audit-metrics small,
+.section-kicker > b,
+.tier-breakdown article > b small,
+.platform-breakdown article > b small,
+.case-audit-page .section-heading > span,
+.stage-card > p,
+.matrix-search input,
+.matrix-segment button,
+.stage-select select,
+.matrix-legend > span,
+.matrix-legend small,
+.engagement-matrix thead th > small,
+.matrix-stage-row th small,
+.engagement-cell > small,
+.finding-grid p,
+.case-detail-title p,
+.detail-reason b,
+.detail-io article > p,
+.detail-skip p,
+.case-detail-footer button { font-size: var(--type-small); line-height: 1.5; }
+
+.case-dossier-facts b,
+.tier-breakdown article > b,
+.platform-breakdown article > b,
+.stage-card footer b,
+.engagement-matrix thead th > b,
+.matrix-stage-row th b,
+.matrix-agent-copy b,
+.engagement-cell > b { font-size: var(--type-label); line-height: 1.4; }
+
+.case-audit-hero > div:first-child > p:last-child { font-size: var(--type-body); line-height: 1.6; max-width: 900px; }
+.case-audit-version b { font-size: var(--type-small); }
+.case-dossier-title h2 { font-size: clamp(31px, calc(27px + .3vw), 38px); line-height: 1.12; }
+.case-dossier-title { padding: 34px 36px; }
+.case-dossier-facts article { min-height: 190px; padding: 28px 25px; }
+
+.case-audit-metrics article { min-height: 150px; padding: 23px 24px 20px; }
+.case-audit-metrics strong { font-size: clamp(42px, calc(38px + .35vw), 50px); }
+.case-audit-metrics strong sup { font-size: var(--type-micro); }
+.breakdown-block { padding: 22px 24px; }
+.tier-breakdown article,
+.platform-breakdown article { min-height: 64px; padding: 14px 15px; }
+
+.stage-card { flex-basis: 300px; min-height: 294px; padding: 22px; }
+.stage-card > div span { font-size: var(--type-label); height: 37px; width: 37px; }
+.stage-card h3 { font-size: clamp(21px, calc(19px + .18vw), 24px); line-height: 1.25; }
+.stage-card footer { padding: 14px; }
+
+.matrix-toolbar { gap: 12px; padding: 14px; }
+.matrix-search,
+.stage-select { height: 48px; }
+.matrix-segment button { min-height: 40px; padding: 9px 11px; }
+.engagement-matrix { min-width: 1750px; }
+.engagement-matrix thead th { height: 102px; padding: 16px 14px; }
+.engagement-matrix .agent-column { width: 370px; }
+.engagement-matrix .case-one-column { width: 235px; }
+.engagement-matrix .future-case { width: 118px; }
+.matrix-stage-row th { height: 48px; }
+.agent-matrix-card { grid-template-columns: 32px 42px minmax(0, 1fr) auto; min-height: 94px; padding: 12px 13px; }
+.matrix-agent-mark { font-size: 18px; height: 40px; width: 40px; }
+.case-platform-badges.is-compact i { font-size: var(--type-micro); padding: 4px 5px; }
+.engagement-cell { min-height: 74px; padding: 11px 12px; }
+.engagement-cell > span { height: 31px; width: 31px; }
+
+.finding-grid article { min-height: 210px; padding: 24px; }
+.finding-grid h3 { font-size: clamp(20px, calc(18px + .18vw), 23px); }
+.case-detail { max-width: 820px; padding: 36px 40px 28px; width: min(96vw, 820px); }
+.case-detail-title h2 { font-size: clamp(35px, 3.5vw, 50px); line-height: 1.05; }
+.detail-reason > div { padding: 17px 19px; }
+.detail-io article { min-height: 220px; padding: 19px; }
+.detail-skip h3 { font-size: clamp(23px, calc(21px + .18vw), 27px); }
+.case-detail-footer button { min-height: 44px; padding: 10px 13px; }
+
+@media (min-width: 1680px) {
+  .case-audit-page { --case-shell: min(2160px, calc(100vw - (var(--app-gutter) * 2))); }
+  .case-audit-hero { padding-top: 150px; }
+  .engagement-flow, .engagement-matrix-section, .case-audit-findings { margin-top: 86px; }
+  .stage-card { flex-basis: 320px; min-height: 312px; }
+  .engagement-matrix { min-width: 1900px; }
+}
+
+@media (max-width: 820px) {
+  .case-audit-hero { padding-top: 168px; }
+  .case-dossier-facts article { min-height: 150px; }
+  .case-audit-metrics article { min-height: 126px; }
+  .case-detail { padding: 30px 22px 24px; width: 100vw; }
+}
+
+@media (max-width: 560px) {
+  .case-audit-hero h1 { font-size: 43px; }
+  .case-dossier-title { padding: 26px 22px; }
+  .case-dossier-title h2 { font-size: 27px; }
+  .case-dossier-facts article { min-height: 128px; }
+  .case-audit-metrics article { min-height: 118px; }
+  .stage-card { flex-basis: 270px; min-height: 280px; }
+  .engagement-matrix .agent-column { width: 260px; }
+  .engagement-matrix .case-one-column { width: 190px; }
+  .agent-matrix-card { grid-template-columns: 26px 36px minmax(0, 1fr); }
+  .matrix-agent-copy b { font-size: 11.5px; }
+  .engagement-cell > small { max-width: 120px; }
+  .case-detail-title h2 { font-size: 32px; }
+}
