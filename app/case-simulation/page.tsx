@@ -14,6 +14,7 @@ import {
 import TopNavigation from "../top-navigation";
 import {
   case1,
+  case1Chronology,
   case1Engagements,
   caseStages,
   type CaseAgentEngagement,
@@ -75,6 +76,7 @@ export default function CaseSimulationPage() {
   const [stageFilter, setStageFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [caseExpanded, setCaseExpanded] = useState(true);
 
   const metrics = useMemo(() => countByStatus(case1Engagements), []);
   const conditionalTriggered = case1Engagements.filter((record) => record.status === "conditional" && record.activation === "triggered").length;
@@ -124,23 +126,48 @@ export default function CaseSimulationPage() {
     setSelectedAgentId(filteredAgents[nextIndex]?.id ?? selectedAgent.id);
   };
 
+  const toggleCase = () => {
+    setCaseExpanded((current) => {
+      if (current) setSelectedAgentId(null);
+      return !current;
+    });
+  };
+
   return (
     <main className="case-audit-page">
       <TopNavigation active="case-simulation" />
 
       <section className="case-audit-hero">
         <div>
-          <p className="case-eyebrow"><span /> АУДИТ АРХИТЕКТУРЫ · КЕЙС 01</p>
+          <p className="case-eyebrow"><span /> АУДИТ АРХИТЕКТУРЫ · CASE SIMULATION</p>
           <h1>Case Simulation<br /><em>Agent Engagement</em></h1>
           <p>Практическая проверка участия 64 агентов в одном полном маршруте — от обнаружения закупки до исполнения контракта.</p>
         </div>
         <div className="case-audit-version">
           <span>МЕТОДИКА</span>
-          <b>CASE 01 · V1</b>
-          <small>Следующие кейсы добавляются только после аудита текущего.</small>
+          <b>ПОЭТАПНЫЙ АУДИТ</b>
+          <small>Следующий кейс добавляется только после проверки текущего.</small>
         </div>
       </section>
 
+      <section className={`case-module ${caseExpanded ? "is-expanded" : "is-collapsed"}`} aria-labelledby="case-1-module-title">
+        <button
+          type="button"
+          className="case-module-toggle"
+          aria-expanded={caseExpanded}
+          aria-controls="case-1-content"
+          onClick={toggleCase}
+        >
+          <span className="case-module-index">CASE 1</span>
+          <span className="case-module-title">
+            <small>DEMO · {case1.id}</small>
+            <strong id="case-1-module-title">{case1.name}</strong>
+          </span>
+          <span className="case-module-summary">{metrics.required} Core · {metrics.conditional} Conditional · {metrics["not-involved"]} Skip</span>
+          <span className="case-module-action">{caseExpanded ? "Свернуть" : "Развернуть"}<i aria-hidden="true">{caseExpanded ? "−" : "+"}</i></span>
+        </button>
+
+        <div className="case-module-content" id="case-1-content" hidden={!caseExpanded}>
       <section className="case-dossier" aria-label="Параметры Case 1">
         <div className="case-dossier-title">
           <span>DEMO · {case1.id}</span>
@@ -212,6 +239,40 @@ export default function CaseSimulationPage() {
         </div>
       </section>
 
+      <section className="case-chronology" aria-labelledby="case-1-chronology-title">
+        <div className="section-heading chronology-heading">
+          <div><p>CASE 1 · REVIEW NARRATIVE</p><h2 id="case-1-chronology-title">Хронология событий — Case 1</h2></div>
+          <span>Рабочая DEMO-версия для проверки реалистичности, последовательности и полноты процесса.</span>
+        </div>
+        <div className="chronology-review-note">
+          <span>ЦЕЛЬ ПРОВЕРКИ</span>
+          <p>Это история конкретного тендера, а не абстрактная схема агентов. Каждый шаг показывает инициатора, фактическое действие, подключённых агентов, полученный результат и следующий переход.</p>
+        </div>
+        <ol className="chronology-list">
+          {case1Chronology.map((event) => (
+            <li className="chronology-event" key={event.step}>
+              <div className="chronology-marker" aria-hidden="true"><span>{String(event.step).padStart(2, "0")}</span><i /></div>
+              <article>
+                <header>
+                  <div><small>{event.period} · {event.phase}</small><h3>{event.title}</h3></div>
+                  <p><span>ИНИЦИАТОР</span><b>{event.initiator}</b></p>
+                </header>
+                <p className="chronology-narrative">{event.narrative}</p>
+                <div className="chronology-agents">
+                  <span>AGENTS</span>
+                  <div>{event.agents.map((agent) => <b key={agent}>{agent}</b>)}</div>
+                </div>
+                <div className="chronology-handoff">
+                  <div><span>РЕЗУЛЬТАТ</span><p>{event.result}</p></div>
+                  <i aria-hidden="true">→</i>
+                  <div><span>ЧТО ДАЛЬШЕ</span><p>{event.next}</p></div>
+                </div>
+              </article>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <section className="engagement-matrix-section">
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
@@ -269,6 +330,8 @@ export default function CaseSimulationPage() {
           <article><span>01 · ПЕРЕСЕЧЕНИЕ</span><h3>Partner Discovery vs Local Representation</h3><p>Широкий Partner Discovery намеренно пропущен: для локального сервиса более точен Local Representation. Нужно подтвердить границу scopes.</p></article>
           <article><span>02 · ОСОЗНАННЫЙ SKIP</span><h3>Supplier-side chain</h3><p>Supplier Intelligence, Discovery, Verification, RFQ и Quotation Normalization не запускаются: компания производит весь предмет одного лота сама.</p></article>
           <article><span>03 · РЕЗЕРВ</span><h3>Document exception route</h3><p>OCR, Amendment и Ambiguity остаются conditional standby. Их нельзя считать выполненными без скана, addendum или реального противоречия.</p></article>
+        </div>
+      </section>
         </div>
       </section>
 

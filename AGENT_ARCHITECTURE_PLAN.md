@@ -61,6 +61,8 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - The first audit classifies all 64 agents as 47 Required / Core, 9 Conditional, and 8 Not involved. Conditional records distinguish six triggered conditions from three standby conditions.
 - Each involved record defines its workflow stage, practical reason, input, case-specific output, and next consumer. Each skipped record defines which active capability covers the work or why no practical role exists.
 - Twelve route stages expose the end-to-end handoff from control and discovery through bid preparation, submission, evaluation, award, contract execution, and learning.
+- All Case 1-specific content is packaged as one accessible, collapsible case module so future approved cases can remain self-contained rather than extending one uninterrupted page.
+- A 20-event Russian review chronology follows the compact workflow. It tells the concrete simulated story from publication through discovery, company consent, qualification, proposal, submission, evaluation, award, execution, closeout, and learning; every event names its initiator, agents, result, and next handoff.
 - Cases 2–10 remain visible only as future matrix placeholders until Case 1 methodology and assignments are approved.
 
 ## Updated implementation plan

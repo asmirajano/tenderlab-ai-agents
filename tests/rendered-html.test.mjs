@@ -57,6 +57,11 @@ test("exports all five TenderLab pages as static HTML", async () => {
   assert.match(caseSimulation, /Agent Engagement/);
   assert.match(caseSimulation, /Международная поставка школьной мебели/);
   assert.match(caseSimulation, /Anatolia Workspace A\.Ş\./);
+  assert.match(caseSimulation, /aria-controls="case-1-content"/);
+  assert.match(caseSimulation, /aria-expanded="true"/);
+  assert.match(caseSimulation, /Хронология событий — Case 1/);
+  assert.match(caseSimulation, /Заказчик публикует международную закупку/);
+  assert.match(caseSimulation, /Контракт исполняется и результат возвращается в систему/);
   assert.match(caseSimulation, /64 архитектурных роли/);
   assert.match(caseSimulation, /CASE 01 · ACTIVE/);
   assert.match(caseSimulation, /CASE (?:<!-- -->)?10/);
@@ -224,6 +229,32 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
   assert.match(source, /organizerCountry: "Грузия"/);
   assert.match(source, /companyCountry: "Турция"/);
   assert.match(source, /tenderType: "Товары"/);
+});
+
+test("packages Case 1 as a collapsible module with a complete review chronology", async () => {
+  const [pageSource, dataSource] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8"),
+  ]);
+
+  assert.match(pageSource, /aria-controls="case-1-content"/);
+  assert.match(pageSource, /aria-expanded=\{caseExpanded\}/);
+  assert.match(pageSource, /hidden=\{!caseExpanded\}/);
+  assert.match(pageSource, /case1Chronology\.map/);
+
+  const chronology = dataSource.match(/export const case1Chronology:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
+  assert.ok(chronology, "expected the canonical Case 1 chronology registry");
+  const events = [...chronology.matchAll(/^ {4}step: (\d+),$/gm)].map((match) => Number(match[1]));
+  assert.deepEqual(events, Array.from({ length: 20 }, (_, index) => index + 1));
+  assert.equal([...chronology.matchAll(/^ {4}initiator: /gm)].length, 20);
+  assert.equal([...chronology.matchAll(/^ {4}agents: /gm)].length, 20);
+  assert.equal([...chronology.matchAll(/^ {4}result: /gm)].length, 20);
+  assert.equal([...chronology.matchAll(/^ {4}next: /gm)].length, 20);
+  assert.match(chronology, /Tender Readiness 84\/100/);
+  assert.match(chronology, /релевантностью 92%/);
+  assert.match(chronology, /Match 88%/);
+  assert.match(chronology, /вероятность победы 61%/);
+  assert.match(chronology, /164\/164/);
 });
 
 test("defines one responsive readability scale across every application surface", async () => {
