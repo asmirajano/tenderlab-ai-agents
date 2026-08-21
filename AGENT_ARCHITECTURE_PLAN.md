@@ -45,6 +45,7 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - **Hierarchy** derives Main-parent and subagent relationships from explicit architecture metadata.
 - Specialized and Optional agents may support multiple Main agents and appear under every relevant parent.
 - Every agent record defines a primary output, concrete artifacts, and downstream consumers; the same metadata powers Main hierarchy outputs and all 64 individual agent cards.
+- Primary navigation is route-based: Command Center (`/`), Workflow (`/workflow`), Agents (`/agents`), and Main Run (`/main-agents-run`) render independent pages from shared components and data.
 - Hierarchy rows render the flow as Main agent → supporting subagents → Result / Output.
 - Tier, layer, search, and relationship views all reuse the same canonical agent records.
 

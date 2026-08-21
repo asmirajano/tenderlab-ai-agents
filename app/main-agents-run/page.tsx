@@ -1,8 +1,7 @@
 "use client";
 
-/* eslint-disable @next/next/no-html-link-for-pages -- full document navigation keeps the static Firebase export server-independent */
-
 import { useEffect, useMemo, useRef, useState } from "react";
+import TopNavigation from "../top-navigation";
 import "./run.css";
 
 type RunStep = {
@@ -277,14 +276,7 @@ export default function MainAgentsRunPage() {
 
   return (
     <main className="run-page">
-      <header className="run-topbar">
-        <a className="brand" href="/" aria-label="TenderLab home">
-          <span className="brand-mark"><i /><i /><i /></span>
-          <span>TenderLab<span className="brand-dot">.ai</span></span>
-        </a>
-        <div className="run-nav-title"><span>LIVE WORKFLOW</span><b>Main Agents Run</b></div>
-        <a className="run-back" href="/">← Agent Architecture</a>
-      </header>
+      <TopNavigation active="main-run" />
 
       <section className="run-hero">
         <div className="run-hero-copy">

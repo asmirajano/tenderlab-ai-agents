@@ -1,6 +1,9 @@
 "use client";
 
+/* eslint-disable @next/next/no-html-link-for-pages -- native navigation preserves independent Firebase pages */
+
 import { useEffect, useMemo, useState } from "react";
+import TopNavigation, { type PrimaryPage } from "./top-navigation";
 
 type Layer = {
   id: string;
@@ -323,7 +326,7 @@ function AgentDrawerOutput({ agent }: { agent: Agent }) {
   );
 }
 
-export default function Home() {
+export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run"> }) {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
   const [architectureView, setArchitectureView] = useState<ArchitectureView>("flat");
@@ -378,29 +381,29 @@ export default function Home() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
 
-  const selectLayer = (id: string) => {
-    setActiveLayer(id);
-    document.getElementById("agents")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  useEffect(() => {
+    if (page !== "agents") return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedMode = params.get("mode");
+    const requestedLayer = params.get("layer");
+    const applyRequestedFilters = window.setTimeout(() => {
+      if (requestedMode === "main" || requestedMode === "specialized" || requestedMode === "optional") setMode(requestedMode);
+      if (requestedLayer && layers.some((layer) => layer.id === requestedLayer)) setActiveLayer(requestedLayer);
+    }, 0);
+    return () => window.clearTimeout(applyRequestedFilters);
+  }, [page]);
+
+  useEffect(() => {
+    if (page !== "command-center") return;
+    const legacyRoute = window.location.hash === "#architecture" ? "/workflow" : window.location.hash === "#agents" ? "/agents" : null;
+    if (legacyRoute) window.location.replace(legacyRoute);
+  }, [page]);
 
   return (
-    <main>
-      <header className="topbar">
-        <a className="brand" href="#top" aria-label="TenderLab home">
-          <span className="brand-mark"><i /><i /><i /></span>
-          <span>TenderLab<span className="brand-dot">.ai</span></span>
-        </a>
-        <nav aria-label="Primary navigation">
-          <a href="#top" className="nav-active">Command Center</a>
-          <a href="#architecture">Workflow</a>
-          <a href="#agents">Agents</a>
-          <a href="/main-agents-run">Main Run</a>
-        </nav>
-        <button className="core-jump" onClick={() => { setMode("main"); setActiveLayer("all"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>
-          <span>●</span> Main 20
-        </button>
-      </header>
+    <main className={`page-shell page-${page}`}>
+      <TopNavigation active={page} />
 
+      {page === "command-center" && <>
       <section className="command-hero" id="top">
         <div className="command-titlebar">
           <div>
@@ -450,7 +453,7 @@ export default function Home() {
             </div>
             <div className="board-foot">
               <span><i /> 3 active · 1 review · 1 skipped</span>
-              <button onClick={() => { setMode("main"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}>View main agents →</button>
+              <a href="/agents?mode=main">View main agents →</a>
             </div>
           </section>
 
@@ -462,7 +465,7 @@ export default function Home() {
               <div><span className="feed-dot amber" /><p><b>Human Approval Agent</b><small>Ожидает решения Bid / No-Bid</small></p><time>12m</time></div>
               <div><span className="feed-dot violet" /><p><b>Quotation Normalization Agent</b><small>Сравнено 8 предложений</small></p><time>31m</time></div>
             </div>
-            <button className="activity-link" onClick={() => document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" })}>Open all agents <span>↗</span></button>
+            <a className="activity-link" href="/agents">Open all agents <span>↗</span></a>
           </aside>
         </div>
       </section>
@@ -473,7 +476,9 @@ export default function Home() {
         <div><b>Evidence</b><small>проверяет</small></div><i>→</i>
         <div><b>Human</b><small>утверждает</small></div>
       </section>
+      </>}
 
+      {page === "workflow" && (
       <section className="architecture-section" id="architecture">
         <div className="section-heading compact-heading">
           <div>
@@ -500,9 +505,9 @@ export default function Home() {
           </div>
           <div className="route-connector branch"><span>↗</span><small>BRANCH</small></div>
           <div className="route-outcomes">
-            <button className="outcome-main" onClick={() => { setMode("main"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Main</span><b>20</b><small>ведут основные этапы</small></button>
-            <button className="outcome-specialized" onClick={() => { setMode("specialized"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Specialized</span><b>22</b><small>включаются по условию</small></button>
-            <button className="outcome-optional" onClick={() => { setMode("optional"); document.getElementById("agents")?.scrollIntoView({ behavior: "smooth" }); }}><span>Optional</span><b>22</b><small>пропускаются без необходимости</small></button>
+            <a className="outcome-main" href="/agents?mode=main"><span>Main</span><b>20</b><small>ведут основные этапы</small></a>
+            <a className="outcome-specialized" href="/agents?mode=specialized"><span>Specialized</span><b>22</b><small>включаются по условию</small></a>
+            <a className="outcome-optional" href="/agents?mode=optional"><span>Optional</span><b>22</b><small>пропускаются без необходимости</small></a>
           </div>
         </div>
 
@@ -516,11 +521,10 @@ export default function Home() {
             const specializedCount = layerAgents.filter((agent) => getAgentTier(agent.id) === "specialized").length;
             const optionalCount = layerAgents.filter((agent) => getAgentTier(agent.id) === "optional").length;
             return (
-              <button
+              <a
                 key={layer.id}
-                className={activeLayer === layer.id ? "active" : ""}
+                href={`/agents?layer=${layer.id}`}
                 style={{ "--layer-color": layer.color } as React.CSSProperties}
-                onClick={() => selectLayer(layer.id)}
               >
                 <span className="layer-number">{layer.number}</span>
                 <i>{layer.mark}</i>
@@ -528,12 +532,14 @@ export default function Home() {
                 <small>{layer.ru}</small>
                 <b>{String(count).padStart(2, "0")}</b>
                 <div className="layer-mix"><span className="mix-main">{mainCount}</span><span className="mix-specialized">{specializedCount}</span><span className="mix-optional">{optionalCount}</span></div>
-              </button>
+              </a>
             );
           })}
         </div>
       </section>
+      )}
 
+      {page === "agents" && (
       <section className="agents-section" id="agents">
         <div className="section-heading agents-heading">
           <div>
@@ -648,9 +654,10 @@ export default function Home() {
           </div>
         )}
       </section>
+      )}
 
       <footer>
-        <a className="brand footer-brand" href="#top"><span className="brand-mark"><i /><i /><i /></span>TenderLab<span className="brand-dot">.ai</span></a>
+        <a className="brand footer-brand" href="/"><span className="brand-mark"><i /><i /><i /></span>TenderLab<span className="brand-dot">.ai</span></a>
         <p>ONE PLACE. EVERY TENDER. WORLDWIDE.</p>
         <span>AI TENDER OPERATING SYSTEM · 2026</span>
       </footer>
@@ -687,4 +694,8 @@ export default function Home() {
       )}
     </main>
   );
+}
+
+export default function Home() {
+  return <TenderLabPage page="command-center" />;
 }

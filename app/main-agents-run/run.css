@@ -36,7 +36,7 @@
   justify-content: space-between;
   margin: 0 auto;
   max-width: calc(var(--run-shell) + (var(--run-gutter) * 2));
-  padding: 64px var(--run-gutter) 34px;
+  padding: 140px var(--run-gutter) 34px;
 }
 
 .run-eyebrow { align-items: center; color: #6e7a73; display: flex; font-family: var(--font-geist-mono); font-size: 12px !important; font-weight: 700; gap: 9px; letter-spacing: .12em; margin: 0 0 15px !important; }
@@ -289,7 +289,7 @@
   .run-nav-title { display: none; }
   .run-back { font-size: 0; padding: 9px 11px; }
   .run-back::after { content: "← Агенты"; font-size: 12px; }
-  .run-hero { align-items: stretch; flex-direction: column; gap: 22px; padding: 36px var(--run-gutter) 24px; }
+  .run-hero { align-items: stretch; flex-direction: column; gap: 22px; padding: 152px var(--run-gutter) 24px; }
   .run-hero h1 { font-size: clamp(42px, 13vw, 58px); }
   .run-hero-copy > p:last-child { font-size: 17px; line-height: 1.45; margin-top: 15px; }
   .run-primary { justify-content: center; width: 100%; }

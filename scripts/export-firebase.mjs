@@ -20,6 +20,8 @@ const workerUrl = `${pathToFileURL(serverEntry).href}?firebase-export=${Date.now
 const { default: worker } = await import(workerUrl);
 const routes = [
   { pathname: "/", output: "index.html" },
+  { pathname: "/workflow", output: "workflow.html" },
+  { pathname: "/agents", output: "agents.html" },
   { pathname: "/main-agents-run", output: "main-agents-run.html" },
 ];
 

@@ -11,26 +11,42 @@ async function readPublished(relativePath) {
   return readFile(path.join(publishRoot, relativePath), "utf8");
 }
 
-test("exports both TenderLab routes as static HTML", async () => {
-  const [home, run] = await Promise.all([
+test("exports all four TenderLab pages as static HTML", async () => {
+  const [home, workflow, agentsPage, run] = await Promise.all([
     readPublished("index.html"),
+    readPublished("workflow.html"),
+    readPublished("agents.html"),
     readPublished("main-agents-run.html"),
   ]);
 
   assert.match(home, /<title>TenderLab\.ai/);
-  assert.match(home, /Agent Command Center/);
-  assert.match(home, /Tender Readiness Score Agent/);
+  assert.match(home, /<h1>Agent Command Center/);
   assert.match(home, /href="\/main-agents-run"/);
-  assert.match(home, />Flat</);
-  assert.match(home, />Hierarchy</);
-  assert.match(home, /aria-label="Architecture view"/);
+  assert.match(home, /aria-current="page"[^>]+href="\/"/);
+  assert.doesNotMatch(home, /AGENT ARCHITECTURE/);
+  assert.doesNotMatch(home, /Context routes the workflow/);
+
+  assert.match(workflow, /Context routes the workflow/);
+  assert.match(workflow, /TenderLab Orchestrator/);
+  assert.match(workflow, /aria-current="page"[^>]+href="\/workflow"/);
+  assert.doesNotMatch(workflow, /<h1>Agent Command Center/);
+  assert.doesNotMatch(workflow, /AGENT ARCHITECTURE/);
+
+  assert.match(agentsPage, /AGENT ARCHITECTURE/);
+  assert.match(agentsPage, /Tender Readiness Score Agent/);
+  assert.match(agentsPage, />Flat</);
+  assert.match(agentsPage, />Hierarchy</);
+  assert.match(agentsPage, /aria-label="Architecture view"/);
+  assert.match(agentsPage, /aria-current="page"[^>]+href="\/agents"/);
+  assert.doesNotMatch(agentsPage, /<h1>Agent Command Center/);
+  assert.doesNotMatch(agentsPage, /Context routes the workflow/);
 
   assert.match(run, /Main Agents Run/);
   assert.match(run, /TenderLab Orchestrator/);
   assert.match(run, /Tender Readiness Score Agent/);
-  assert.match(run, /href="\/"/);
+  assert.match(run, /aria-current="page"[^>]+href="\/main-agents-run"/);
 
-  for (const html of [home, run]) {
+  for (const html of [home, workflow, agentsPage, run]) {
     assert.match(html, /<html[^>]*lang="ru"/);
     assert.match(html, /<script[^>]+src="\/_next\/static\/chunks\//);
     assert.doesNotMatch(html, /codex-preview/);
@@ -41,6 +57,8 @@ test("exports both TenderLab routes as static HTML", async () => {
 test("includes every browser asset referenced by the exported pages", async () => {
   const pages = await Promise.all([
     readPublished("index.html"),
+    readPublished("workflow.html"),
+    readPublished("agents.html"),
     readPublished("main-agents-run.html"),
   ]);
   const referencedAssets = new Set();
@@ -78,6 +96,8 @@ test("defines concrete output metadata for all 64 agents", async () => {
 test("publishes client files only", async () => {
   const topLevel = await readdir(publishRoot);
   assert.ok(topLevel.includes("index.html"));
+  assert.ok(topLevel.includes("workflow.html"));
+  assert.ok(topLevel.includes("agents.html"));
   assert.ok(topLevel.includes("main-agents-run.html"));
   assert.ok(topLevel.includes("_next"));
   assert.ok(!topLevel.includes("server"));
