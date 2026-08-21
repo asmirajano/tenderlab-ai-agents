@@ -8,6 +8,9 @@ Main Agents Run for a furniture company.
 - \`/\` — Agent Command Center and the full agent architecture
 - \`/main-agents-run\` — interactive Main-agent workflow simulation
 
+The current architecture plan and teammate-proposal audit are recorded in
+\`AGENT_ARCHITECTURE_PLAN.md\`.
+
 ## Local development
 
 Requires Node.js 22.13 or later and pnpm 11.19.
