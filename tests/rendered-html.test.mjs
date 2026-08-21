@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publishRoot = path.join(projectRoot, "dist", "firebase");
@@ -265,6 +265,35 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(chronology, /Match 88%/);
   assert.match(chronology, /вероятность победы 61%/);
   assert.match(chronology, /164\/164/);
+});
+
+test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {
+  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const { createSemanticSearchDocument, rankSemanticDocuments, selectVisibleSemanticResults } = await import(
+    pathToFileURL(path.join(projectRoot, "app", "case-simulation", "semantic-search.ts")).href
+  );
+  const records = [...source.matchAll(/^ {2}\{ id: (\d+), name: "([^"]+)", description: "([^"]+)",[^\n]+output: \{ primary: "([^"]+)", artifacts: \[([^\]]+)\], consumers: "([^"]+)" \} \},?$/gm)];
+  assert.equal(records.length, 64, "semantic search must index the canonical 64-agent registry");
+
+  const documents = records.map((record) => createSemanticSearchDocument({
+    id: Number(record[1]),
+    name: record[2],
+    description: record[3],
+    output: [record[4], ...[...record[5].matchAll(/"([^"]+)"/g)].map((artifact) => artifact[1]), record[6]].join(" · "),
+  }));
+  const namesById = new Map(records.map((record) => [Number(record[1]), record[2]]));
+  const topNames = (query, count = 3) => rankSemanticDocuments(query, documents).slice(0, count).map((result) => namesById.get(result.id));
+
+  assert.equal(topNames("Evidence & Provenance Agent", 1)[0], "Evidence & Provenance Agent");
+  assert.equal(rankSemanticDocuments("Evidence & Provenance Agent", documents)[0].score, 100, "exact names must remain strongest");
+  assert.equal(topNames("company readiness", 1)[0], "Tender Readiness Score Agent");
+  assert.equal(topNames("human approval", 1)[0], "Human Approval Agent");
+  assert.equal(topNames("find suitable tender", 1)[0], "Tender Discovery Agent");
+  assert.ok(topNames("certificate verification", 4).includes("Credential & Certificate Agent"));
+  assert.ok(topNames("pricing / bid decision", 5).includes("TenderScore / Bid-No-Bid Agent"));
+  assert.ok(topNames("pricing / bid decision", 12).includes("Pricing & BOQ Agent"), topNames("pricing / bid decision", 20).join(" | "));
+  assert.ok(topNames("evidnce check", 4).includes("Evidence & Provenance Agent"), "minor typos must remain discoverable");
+  assert.ok(selectVisibleSemanticResults(rankSemanticDocuments("company", documents)).length >= 3, "broad intent must return several candidates");
 });
 
 test("defines one responsive readability scale across every application surface", async () => {

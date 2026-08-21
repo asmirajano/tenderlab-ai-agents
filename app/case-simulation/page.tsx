@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   agents,
   getAgentTier,
@@ -20,6 +20,12 @@ import {
   type CaseAgentEngagement,
   type EngagementStatus,
 } from "./case-1-data";
+import {
+  createSemanticSearchDocument,
+  rankSemanticDocuments,
+  selectVisibleSemanticResults,
+  type SemanticSearchResult,
+} from "./semantic-search";
 import "./case-simulation.css";
 
 type StatusFilter = "all" | EngagementStatus;
@@ -51,6 +57,38 @@ const sideClasses: Record<PlatformSide, string> = {
 
 const futureCases = Array.from({ length: 9 }, (_, index) => index + 2);
 const engagementByAgentId = new Map(case1Engagements.map((engagement) => [engagement.agentId, engagement]));
+const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+
+const semanticDocuments = agents.map((agent) => {
+  const engagement = engagementByAgentId.get(agent.id)!;
+  const stage = caseStages.find((candidate) => candidate.id === engagement.stageId)!;
+  const layer = layerById[agent.layer];
+  return createSemanticSearchDocument({
+    id: agent.id,
+    name: agent.name,
+    description: agent.description,
+    workflow: [
+      stage.title,
+      stage.description,
+      stage.handoff,
+      engagement.when,
+      engagement.why,
+      engagement.input,
+      engagement.next,
+      engagement.condition,
+      engagement.coveredBy,
+    ].filter(Boolean).join(" · "),
+    output: [agent.output.primary, ...agent.output.artifacts, agent.output.consumers, engagement.output].join(" · "),
+    rationale: Object.values(agent.platformRationale).filter(Boolean).join(" · "),
+    metadata: [
+      tierLabels[getAgentTier(agent.id)],
+      layer.name,
+      layer.ru,
+      ...agent.platformSides.map((side) => platformSideLabels[side]),
+      statusLabels[engagement.status],
+    ].join(" · "),
+  });
+});
 
 function countByStatus(records: CaseAgentEngagement[]) {
   return {
@@ -75,8 +113,13 @@ export default function CaseSimulationPage() {
   const [tierFilter, setTierFilter] = useState<TierFilter>("all");
   const [stageFilter, setStageFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [highlightedAgentId, setHighlightedAgentId] = useState<number | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [caseExpanded, setCaseExpanded] = useState(true);
+  const matrixScrollRef = useRef<HTMLDivElement | null>(null);
+  const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
 
   const metrics = useMemo(() => countByStatus(case1Engagements), []);
   const conditionalTriggered = case1Engagements.filter((record) => record.status === "conditional" && record.activation === "triggered").length;
@@ -100,14 +143,24 @@ export default function CaseSimulationPage() {
     };
   }), []);
 
-  const filteredAgents = useMemo(() => agents.filter((agent) => {
+  const baseFilteredAgents = useMemo(() => agents.filter((agent) => {
     const engagement = engagementByAgentId.get(agent.id)!;
-    const normalizedQuery = query.trim().toLowerCase();
     return (statusFilter === "all" || engagement.status === statusFilter)
       && (tierFilter === "all" || getAgentTier(agent.id) === tierFilter)
-      && (stageFilter === "all" || engagement.stageId === stageFilter)
-      && (!normalizedQuery || agent.name.toLowerCase().includes(normalizedQuery) || agent.description.toLowerCase().includes(normalizedQuery));
-  }), [query, stageFilter, statusFilter, tierFilter]);
+      && (stageFilter === "all" || engagement.stageId === stageFilter);
+  }), [stageFilter, statusFilter, tierFilter]);
+
+  const semanticResults = useMemo(() => {
+    if (!query.trim()) return [];
+    const allowedIds = new Set(baseFilteredAgents.map((agent) => agent.id));
+    return rankSemanticDocuments(query, semanticDocuments.filter((document) => allowedIds.has(document.id)));
+  }, [baseFilteredAgents, query]);
+
+  const visibleSemanticResults = useMemo(() => selectVisibleSemanticResults(semanticResults), [semanticResults]);
+  const semanticResultById = useMemo(() => new Map(semanticResults.map((result) => [result.id, result])), [semanticResults]);
+  const filteredAgents = useMemo(() => query.trim()
+    ? visibleSemanticResults.map((result) => agentById.get(result.id)).filter((agent): agent is Agent => Boolean(agent))
+    : baseFilteredAgents, [baseFilteredAgents, query, visibleSemanticResults]);
 
   const groupedRows = useMemo(() => caseStages.map((stage) => ({
     stage,
@@ -132,6 +185,42 @@ export default function CaseSimulationPage() {
       return !current;
     });
   };
+
+  const selectSemanticResult = (result: SemanticSearchResult) => {
+    const agent = agentById.get(result.id);
+    if (!agent) return;
+    setQuery(agent.name);
+    setSearchOpen(false);
+    setActiveSearchIndex(0);
+    setHighlightedAgentId(agent.id);
+  };
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!visibleSemanticResults.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSearchOpen(true);
+      setActiveSearchIndex((current) => (current + 1) % visibleSemanticResults.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSearchOpen(true);
+      setActiveSearchIndex((current) => (current - 1 + visibleSemanticResults.length) % visibleSemanticResults.length);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      selectSemanticResult(visibleSemanticResults[Math.min(activeSearchIndex, visibleSemanticResults.length - 1)]);
+    } else if (event.key === "Escape") {
+      setSearchOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!highlightedAgentId) return;
+    const timer = window.setTimeout(() => {
+      matrixScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+      rowRefs.current.get(highlightedAgentId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 40);
+    return () => window.clearTimeout(timer);
+  }, [filteredAgents, highlightedAgentId]);
 
   return (
     <main className="case-audit-page">
@@ -291,7 +380,59 @@ export default function CaseSimulationPage() {
         </div>
 
         <div className="matrix-toolbar" aria-label="Фильтры матрицы">
-          <label className="matrix-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти агента" /></label>
+          <div className="semantic-search">
+            <label className="matrix-search">
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={query}
+                onChange={(event) => { setQuery(event.target.value); setSearchOpen(Boolean(event.target.value.trim())); setActiveSearchIndex(0); setHighlightedAgentId(null); }}
+                onFocus={() => setSearchOpen(Boolean(query.trim()))}
+                onBlur={() => window.setTimeout(() => setSearchOpen(false), 140)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Найти по смыслу или названию"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={searchOpen && Boolean(query.trim())}
+                aria-controls="semantic-agent-results"
+              />
+              <b>SEMANTIC</b>
+            </label>
+            {searchOpen && query.trim() && (
+              <div className="semantic-results" id="semantic-agent-results" role="listbox" aria-label="Наиболее релевантные агенты">
+                <header>
+                  <div><span>ПОИСК ПО РОЛИ И РЕЗУЛЬТАТУ</span><b>{visibleSemanticResults.length} кандидатов</b></div>
+                  <small>Точное название имеет наивысший приоритет</small>
+                </header>
+                {visibleSemanticResults.length ? visibleSemanticResults.map((result, index) => {
+                  const agent = agentById.get(result.id)!;
+                  const engagement = engagementByAgentId.get(result.id)!;
+                  const stage = caseStages.find((candidate) => candidate.id === engagement.stageId)!;
+                  return (
+                    <button
+                      className="semantic-result"
+                      type="button"
+                      role="option"
+                      aria-selected={index === activeSearchIndex}
+                      key={result.id}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={() => setActiveSearchIndex(index)}
+                      onClick={() => selectSemanticResult(result)}
+                    >
+                      <strong>{result.score}<small>/100</small></strong>
+                      <span>
+                        <b>{agent.name}</b>
+                        <small>{agent.description}</small>
+                        <i>{stage.number} · {stage.title} · {statusLabels[engagement.status]}</i>
+                        <em>{result.reasons.length ? result.reasons.join(" · ") : "Контекстное совпадение"}</em>
+                      </span>
+                    </button>
+                  );
+                }) : (
+                  <p className="semantic-empty">В текущих фильтрах кандидатов нет. Измените статус, класс или этап.</p>
+                )}
+              </div>
+            )}
+          </div>
           <div className="matrix-segment" aria-label="Фильтр статуса">
             {(["all", "required", "conditional", "not-involved"] as StatusFilter[]).map((status) => (
               <button key={status} type="button" aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>
@@ -307,7 +448,7 @@ export default function CaseSimulationPage() {
             ))}
           </div>
           <label className="stage-select"><span>ЭТАП</span><select value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}><option value="all">Все этапы</option>{caseStages.map((stage) => <option value={stage.id} key={stage.id}>{stage.number} · {stage.title}</option>)}</select></label>
-          <span className="matrix-result-count">{filteredAgents.length} / 64</span>
+          <span className="matrix-result-count">{query.trim() ? `${filteredAgents.length} кандидатов` : `${filteredAgents.length} / 64`}</span>
         </div>
 
         <div className="matrix-legend" aria-label="Легенда матрицы">
@@ -317,7 +458,7 @@ export default function CaseSimulationPage() {
           <small>Conditional: сплошная метка — условие сработало; контурная — резерв.</small>
         </div>
 
-        <div className="matrix-scroll" aria-label="Прокручиваемая матрица Case 1 и будущих кейсов">
+        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Case 1 и будущих кейсов">
           <table className="engagement-matrix">
             <thead>
               <tr>
@@ -328,7 +469,15 @@ export default function CaseSimulationPage() {
             </thead>
             <tbody>
               {groupedRows.map(({ stage, agents: stageAgents }) => (
-                <StageRows stage={stage} stageAgents={stageAgents} onSelect={setSelectedAgentId} key={stage.id} />
+                <StageRows
+                  stage={stage}
+                  stageAgents={stageAgents}
+                  onSelect={setSelectedAgentId}
+                  semanticResults={semanticResultById}
+                  highlightedAgentId={highlightedAgentId}
+                  registerRow={(agentId, node) => { if (node) rowRefs.current.set(agentId, node); else rowRefs.current.delete(agentId); }}
+                  key={stage.id}
+                />
               ))}
             </tbody>
           </table>
@@ -385,7 +534,21 @@ export default function CaseSimulationPage() {
   );
 }
 
-function StageRows({ stage, stageAgents, onSelect }: { stage: (typeof caseStages)[number]; stageAgents: Agent[]; onSelect: (agentId: number) => void }) {
+function StageRows({
+  stage,
+  stageAgents,
+  onSelect,
+  semanticResults,
+  highlightedAgentId,
+  registerRow,
+}: {
+  stage: (typeof caseStages)[number];
+  stageAgents: Agent[];
+  onSelect: (agentId: number) => void;
+  semanticResults: Map<number, SemanticSearchResult>;
+  highlightedAgentId: number | null;
+  registerRow: (agentId: number, node: HTMLTableRowElement | null) => void;
+}) {
   return (
     <>
       <tr className="matrix-stage-row">
@@ -394,12 +557,21 @@ function StageRows({ stage, stageAgents, onSelect }: { stage: (typeof caseStages
       {stageAgents.map((agent) => {
         const engagement = engagementByAgentId.get(agent.id)!;
         const tier = getAgentTier(agent.id);
+        const semanticResult = semanticResults.get(agent.id);
         return (
-          <tr key={agent.id}>
+          <tr
+            className={highlightedAgentId === agent.id ? "semantic-target" : undefined}
+            ref={(node) => registerRow(agent.id, node)}
+            key={agent.id}
+          >
             <th className="agent-column agent-matrix-card" scope="row">
               <span className="matrix-agent-id">{String(agent.id).padStart(2, "0")}</span>
               <i className="matrix-agent-mark" style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{layerById[agent.layer].mark}</i>
-              <span className="matrix-agent-copy"><b>{agent.name}</b><small>{layerById[agent.layer].name} · {tierRuLabels[tier]}</small></span>
+              <span className="matrix-agent-copy">
+                <b>{agent.name}</b>
+                <small>{layerById[agent.layer].name} · {tierRuLabels[tier]}</small>
+                {semanticResult && <em className="matrix-semantic-score">MATCH {semanticResult.score}/100</em>}
+              </span>
               <PlatformBadges agent={agent} compact />
             </th>
             <td className="case-one-column">
