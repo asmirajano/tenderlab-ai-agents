@@ -541,11 +541,11 @@ export default function CaseSimulationPage() {
               </section>
             ) : (
               <section className="detail-io" aria-label="Input, output и handoff">
-                <article><span>01 · INPUT</span><p>{selectedEngagement.input}</p></article>
+                <article><span>A · INPUT</span><p>{selectedEngagement.input}</p></article>
                 <i>→</i>
-                <article className="detail-output"><span>02 · RESULT / OUTPUT</span><p>{selectedEngagement.output}</p><small>CANONICAL DELIVERABLE · {selectedAgent.output.primary}</small></article>
+                <article className="detail-output"><span>B · RESULT / OUTPUT</span><p>{selectedEngagement.output}</p><small>CANONICAL DELIVERABLE · {selectedAgent.output.primary}</small></article>
                 <i>→</i>
-                <article><span>03 · NEXT / HANDOFF</span><p>{selectedEngagement.next}</p></article>
+                <article><span>C · NEXT / HANDOFF</span><p>{selectedEngagement.next}</p></article>
               </section>
             )}
 

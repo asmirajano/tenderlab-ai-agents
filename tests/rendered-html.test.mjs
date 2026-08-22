@@ -280,6 +280,10 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
   assert.match(pageSource, /aria-haspopup="dialog"/);
   assert.match(pageSource, /onClick=\{\(\) => setSelectedAgentId\(agent\.id\)\}/);
+  assert.match(pageSource, />A · INPUT</);
+  assert.match(pageSource, />B · RESULT \/ OUTPUT</);
+  assert.match(pageSource, />C · NEXT \/ HANDOFF</);
+  assert.doesNotMatch(pageSource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {
