@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { agents, layerById } from "../page";
+import { agents, layerById } from "../../packages/catalog-data/src/agents";
 import { processRelationshipLabels, type ProcessActorKind, type ProcessRelationship } from "../process-model";
 import { case1ProcessGraph } from "./case-1-graph";
 

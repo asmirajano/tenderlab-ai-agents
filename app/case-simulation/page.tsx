@@ -3,16 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AgentDetailDrawer,
+  type AgentDetailContext,
+} from "../page";
+import {
   agents,
   getAgentTier,
   layerById,
   platformSideLabels,
   tierLabels,
   type Agent,
-  type AgentDetailContext,
   type AgentTier,
   type PlatformSide,
-} from "../page";
+} from "../../packages/catalog-data/src/agents";
 import TopNavigation from "../top-navigation";
 import CaseOrchestrationMap from "./case-orchestration-map";
 import {

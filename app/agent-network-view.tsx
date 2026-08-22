@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { case1ProcessGraph } from "./case-simulation/case-1-graph";
-import type { Agent } from "./page";
+import type { Agent } from "../packages/catalog-data/src/agents";
 
 type NetworkFilter = "all" | "supports" | "case" | "orchestrates";
 type LayerMeta = Record<string, { name: string; color: string; mark: string }>;

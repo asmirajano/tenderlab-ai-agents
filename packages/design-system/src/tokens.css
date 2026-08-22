@@ -1,0 +1,16 @@
+:root {
+  --tl-ink: #10251d;
+  --tl-muted: #68786f;
+  --tl-line: #d8e1db;
+  --tl-surface: #ffffff;
+  --tl-paper: #f4f7f4;
+  --tl-green: #08775e;
+  --tl-lime: #caf85a;
+  --tl-atlas: #5766d8;
+  --tl-atlas-soft: #eff1ff;
+  --tl-shadow: 0 22px 56px rgba(20, 42, 33, .08);
+  --tl-radius-sm: 10px;
+  --tl-radius-md: 16px;
+  --tl-radius-lg: 24px;
+  --tl-content: 1800px;
+}

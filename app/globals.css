@@ -109,6 +109,34 @@ main { min-height: 100vh; overflow: hidden; }
 .topbar nav a:focus-visible,
 .topbar nav a.nav-active { background: #edf1ed; color: var(--ink); }
 
+.product-jumps {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-self: end;
+}
+
+.atlas-jump,
+.glossary-jump {
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  padding: 10px 11px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.atlas-jump:hover,
+.atlas-jump:focus-visible,
+.glossary-jump:hover,
+.glossary-jump:focus-visible { background: var(--green-soft); color: var(--green); }
+
+.atlas-jump span,
+.glossary-jump span { color: var(--green); }
+.atlas-jump .atlas-short { display: none; }
+
 .core-jump {
   align-items: center;
   background: var(--ink);
@@ -956,7 +984,11 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
   :root { --app-gutter: 22px; }
   .topbar { grid-template-columns: 1fr auto; grid-template-rows: 66px 50px; height: 116px; padding: 0 22px; }
   .topbar .brand { grid-column: 1; grid-row: 1; }
-  .topbar .core-jump { grid-column: 2; grid-row: 1; }
+  .topbar .product-jumps { grid-column: 2; grid-row: 1; }
+  .topbar .glossary-jump { display: none; }
+  .topbar .atlas-jump { background: var(--green-soft); display: inline-flex; font-size: 10px; gap: 3px; padding: 9px 8px; }
+  .topbar .atlas-jump .atlas-long { display: none; }
+  .topbar .atlas-jump .atlas-short { display: inline; }
   .topbar nav { align-self: stretch; display: flex; grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .topbar nav::-webkit-scrollbar { display: none; }
   .topbar nav a { flex: 0 0 auto; font-size: 10px; padding: 8px 10px; white-space: nowrap; }
@@ -989,6 +1021,8 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 }
 
 @media (max-width: 560px) {
+  .product-jumps { gap: 3px; }
+  .topbar .atlas-jump { font-size: 9px; padding: 8px 6px; }
   .core-jump { padding: 9px 10px; }
   .command-titlebar h1 { font-size: 48px; }
   .command-metrics { gap: 8px; }
@@ -1038,6 +1072,10 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
   .drawer-rationale-list article { gap: 9px; grid-template-columns: minmax(0, 1fr); }
   .rationale-side { justify-self: start; }
   .drawer-operations p { padding: 9px 8px; }
+}
+
+@media (max-width: 1180px) and (min-width: 821px) {
+  .glossary-jump { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

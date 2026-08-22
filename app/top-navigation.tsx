@@ -46,7 +46,11 @@ export default function TopNavigation({ active }: { active: PrimaryPage }) {
           </a>
         ))}
       </nav>
-      <a className="core-jump" href="/agents"><span>●</span> 64 agents</a>
+      <div className="product-jumps" aria-label="Related product surfaces">
+        <a className="glossary-jump" href="https://tender-ecosystem-atlas.web.app/glossary?scope=tenderlab">Glossary <span>↗</span></a>
+        <a className="atlas-jump" href="https://tender-ecosystem-atlas.web.app"><span className="atlas-long">Ecosystem Atlas</span><span className="atlas-short">Atlas</span><span>↗</span></a>
+        <a className="core-jump" href="/agents"><span>●</span> 64 agents</a>
+      </div>
     </header>
   );
 }

@@ -40,9 +40,18 @@ jobs:
       - name: Build and test
         run: pnpm run test
 
-      - name: Deploy live site
+      - name: Deploy TenderLab.ai
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
           channelId: live
           projectId: tenderlab-ai-agents
+          target: tenderlab
+
+      - name: Deploy Tender Ecosystem Atlas
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
+          channelId: live
+          projectId: tenderlab-ai-agents
+          target: ecosystem-atlas

@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "tenderlab-ai-agents"
-  }
+  },
+  "targets": {
+    "tenderlab-ai-agents": {
+      "hosting": {
+        "tenderlab": [
+          "tenderlab-ai-agents"
+        ],
+        "ecosystem-atlas": [
+          "tender-ecosystem-atlas"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

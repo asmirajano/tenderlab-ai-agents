@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publishRoot = path.join(projectRoot, "dist", "firebase");
+const agentRegistryPath = path.join(projectRoot, "packages", "catalog-data", "src", "agents.ts");
 
 async function readPublished(relativePath) {
   return readFile(path.join(publishRoot, relativePath), "utf8");
@@ -115,7 +116,7 @@ test("includes every browser asset referenced by the exported pages", async () =
 });
 
 test("defines concrete output metadata for all 64 agents", async () => {
-  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const source = await readFile(agentRegistryPath, "utf8");
   const agentRecords = [...source.matchAll(/^ {2}\{ id: (\d+), name: [^\n]+$/gm)];
   assert.equal(agentRecords.length, 64, "expected 64 canonical agent records");
 
@@ -133,7 +134,7 @@ test("defines concrete output metadata for all 64 agents", async () => {
 });
 
 test("classifies all 64 agents by audited platform use", async () => {
-  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const source = await readFile(agentRegistryPath, "utf8");
   const mapping = source.match(/const platformSidesByAgentId:[^{]+\{([\s\S]*?)\n\};/)?.[1];
   assert.ok(mapping, "expected canonical platform-side mapping");
 
@@ -158,7 +159,10 @@ test("classifies all 64 agents by audited platform use", async () => {
 });
 
 test("defines an individual rationale for every agent and assigned platform side", async () => {
-  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const [source, uiSource] = await Promise.all([
+    readFile(agentRegistryPath, "utf8"),
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+  ]);
   const sideMapping = source.match(/const platformSidesByAgentId:[^{]+\{([\s\S]*?)\n\};/)?.[1];
   const rationaleMapping = source.match(/const platformRationaleByAgentId:[^{]+\{([\s\S]*?)\n\};/)?.[1];
   assert.ok(sideMapping && rationaleMapping, "expected platform-side and rationale registries");
@@ -187,11 +191,14 @@ test("defines an individual rationale for every agent and assigned platform side
 
   assert.equal(allRationales.length, 103, "expected separate Command Center and Client Side rationales for Shared agents");
   assert.equal(new Set(allRationales).size, allRationales.length, "platform rationales must not be duplicated");
-  assert.match(source, /PLATFORM ROLE \/ WHY/);
+  assert.match(uiSource, /PLATFORM ROLE \/ WHY/);
 });
 
 test("orders the agent detail drawer as one progressive profile", async () => {
-  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const [source, registrySource] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(agentRegistryPath, "utf8"),
+  ]);
   const drawer = source.match(/export function AgentDetailDrawer[\s\S]*?<aside[^>]*className="agent-drawer"[^>]*>([\s\S]*?)<\/aside>/)?.[1];
   assert.ok(drawer, "expected the shared canonical agent detail drawer");
 
@@ -210,9 +217,9 @@ test("orders the agent detail drawer as one progressive profile", async () => {
   assert.match(drawer, /HOW IT WORKS/);
   assert.match(drawer, /REALISTIC EXAMPLE/);
   assert.match(source, /ИСПОЛЬЗУЕТСЯ →/);
-  assert.match(source, /Context routed/);
-  assert.match(source, /Condition triggered/);
-  assert.match(source, /On demand/);
+  assert.match(registrySource, /Context routed/);
+  assert.match(registrySource, /Condition triggered/);
+  assert.match(registrySource, /On demand/);
 });
 
 test("defines one complete Case 1 engagement decision for all 64 canonical agents", async () => {
@@ -248,11 +255,12 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
   assert.match(source, /tenderType: "Товары"/);
 });
 
-test("packages Case 1 as a collapsible module with graph-derived Map and Narrative views", async () => {
-  const [pageSource, dataSource, graphSource, agentRegistrySource] = await Promise.all([
+test("packages Case 1 as a collapsible module with a complete review chronology", async () => {
+  const [pageSource, dataSource, graphSource, agentRegistrySource, agentCatalogSource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts"), "utf8"),
+    readFile(agentRegistryPath, "utf8"),
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
   ]);
 
@@ -301,14 +309,14 @@ test("packages Case 1 as a collapsible module with graph-derived Map and Narrati
   assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
   assert.match(pageSource, /aria-haspopup="dialog"/);
   assert.match(pageSource, /onClick=\{\(\) => openAgent\(agent\.id, event\.eventStep\)\}/);
-  assert.match(agentRegistrySource, /export function AgentDetailDrawer/);
-  assert.match(agentRegistrySource, /<AgentDetailDrawer agent=\{selectedAgent\} onClose=/);
+  assert.match(agentCatalogSource, /export function AgentDetailDrawer/);
+  assert.match(agentCatalogSource, /<AgentDetailDrawer agent=\{selectedAgent\} onClose=/);
   assert.match(pageSource, /<AgentDetailDrawer/);
   assert.match(pageSource, /context=\{selectedDetailContext\}/);
-  assert.match(agentRegistrySource, />A · INPUT</);
-  assert.match(agentRegistrySource, />B · RESULT \/ OUTPUT</);
-  assert.match(agentRegistrySource, />C · NEXT \/ HANDOFF</);
-  assert.doesNotMatch(agentRegistrySource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
+  assert.match(agentCatalogSource, />A · INPUT</);
+  assert.match(agentCatalogSource, />B · RESULT \/ OUTPUT</);
+  assert.match(agentCatalogSource, />C · NEXT \/ HANDOFF</);
+  assert.doesNotMatch(agentCatalogSource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
   assert.doesNotMatch(pageSource, /className="case-detail"/);
 
   const actorRegistry = graphSource.match(/export const case1Actors:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
@@ -323,15 +331,16 @@ test("packages Case 1 as a collapsible module with graph-derived Map and Narrati
 });
 
 test("uses one typed relationship model for Case Audit and the Agent Catalog Network", async () => {
-  const [pageSource, networkSource, modelSource, mapSource] = await Promise.all([
+  const [pageSource, networkSource, modelSource, mapSource, registrySource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "agent-network-view.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "process-model.ts"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-orchestration-map.tsx"), "utf8"),
+    readFile(agentRegistryPath, "utf8"),
   ]);
-  assert.match(pageSource, /type ArchitectureView = "flat" \| "hierarchy" \| "network"/);
+  assert.match(registrySource, /type ArchitectureView = "flat" \| "hierarchy" \| "network"/);
   assert.match(pageSource, /<AgentNetworkView/);
-  assert.match(pageSource, /export const subagentParentIds/);
+  assert.match(registrySource, /export const subagentParentIds/);
   assert.match(networkSource, /case1ProcessGraph\.relationships/);
   assert.match(networkSource, /Support = canonical functional grouping/);
   assert.match(networkSource, /Open canonical profile/);
@@ -342,7 +351,7 @@ test("uses one typed relationship model for Case Audit and the Agent Catalog Net
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {
-  const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  const source = await readFile(agentRegistryPath, "utf8");
   const { createSemanticSearchDocument, rankSemanticDocuments, selectVisibleSemanticResults } = await import(
     pathToFileURL(path.join(projectRoot, "app", "case-simulation", "semantic-search.ts")).href
   );

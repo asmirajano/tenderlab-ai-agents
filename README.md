@@ -1,10 +1,18 @@
-# TenderLab.ai Agent Architecture
+# TenderLab.ai + Tender Ecosystem Atlas
 
-Strategic explanation and validation environment for a working 64-agent tender
-architecture. The presentation moves from the system overview to orchestration,
-the canonical agent catalog, and case-based architecture validation.
+Two deliberately separate products share design tokens, stable catalogue IDs,
+and a canonical glossary without merging their domain models:
+
+- **TenderLab.ai** explains and validates the working 64-agent architecture.
+- **Tender Ecosystem Atlas** catalogues procurement Sides, Actor Types,
+  datasets, providers, terminology, and methodology.
+
+Agent ↔ Actor ↔ Dataset relationships are intentionally deferred until the
+independent catalogues have been validated.
 
 ## Routes
+
+### TenderLab.ai
 
 - \`/\` — strategic TenderLab.ai overview
 - \`/architecture\` — orchestration, agent tiers, platform sides, layers, and handoffs
@@ -13,6 +21,18 @@ the canonical agent catalog, and case-based architecture validation.
 
 Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 \`/main-agents-run\` resolves to Validation.
+
+### Tender Ecosystem Atlas
+
+- \`/\` — catalogue overview and product boundary
+- \`/actors\` — Tender Sides and institutional Actor Types
+- \`/data\` — logical datasets, sources/providers, architecture and proprietary assets
+- \`/glossary\` — shared terminology with contextual scopes
+- \`/methodology\` — identity, maturity and governance rules
+
+Shared packages live under \`packages/\`: \`catalog-schema\`, \`catalog-data\`,
+and \`design-system\`. The Atlas is an independent Vite application under
+\`apps/ecosystem-atlas\`.
 
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
@@ -33,20 +53,23 @@ pnpm lint
 pnpm test
 \`\`\`
 
-\`pnpm test\` creates the production build, exports the strategic pages and
-compatibility routes as static Firebase Hosting pages, and verifies the
-published HTML, canonical registry, Case 1 methodology, and browser assets.
+\`pnpm test\` builds both products, exports the TenderLab strategic pages and
+compatibility routes, and verifies published assets, catalogue boundaries,
+canonical registries, Case 1 methodology, and semantic search.
 
 ## Deployment
 
-Firebase Hosting serves \`dist/firebase\`. Pushes to \`main\` are linted, built,
-and tested by GitHub Actions before the live site is updated.
+Firebase Hosting uses two free Hosting sites in the existing Firebase project.
+Pushes to \`main\` are linted, built, and tested once before both live sites are
+updated through named deploy targets.
 
-- Production: https://tenderlab-ai-agents.web.app
+- TenderLab.ai: https://tenderlab-ai-agents.web.app
+- Tender Ecosystem Atlas: https://tender-ecosystem-atlas.web.app
 - Firebase project: \`tenderlab-ai-agents\`
+- Deploy targets: \`tenderlab\`, \`ecosystem-atlas\`
 
-The app is a front-end demonstration. Its agents and tender data are simulated
-in the browser and are not persisted across devices.
+Both products are static front-end applications. No paid Firebase services,
+Cloud Functions, databases, or server-side compute are enabled.
 
 The original \`.openai/hosting.json\` remains in the repository so the previous
 OpenAI Sites deployment can be recovered during the hosting transition.
