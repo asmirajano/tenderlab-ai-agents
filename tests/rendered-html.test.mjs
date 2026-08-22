@@ -232,9 +232,10 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
 });
 
 test("packages Case 1 as a collapsible module with a complete review chronology", async () => {
-  const [pageSource, dataSource] = await Promise.all([
+  const [pageSource, dataSource, agentRegistrySource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
   ]);
 
   assert.match(pageSource, /aria-controls="case-1-content"/);
@@ -265,6 +266,20 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(chronology, /Match 88%/);
   assert.match(chronology, /вероятность победы 61%/);
   assert.match(chronology, /164\/164/);
+
+  const canonicalIds = new Map(
+    [...agentRegistrySource.matchAll(/\{ id: (\d+), name: "([^"]+)"/g)].map((match) => [match[2], Number(match[1])]),
+  );
+  const chronologyNames = [...chronology.matchAll(/agents: \[([^\]]+)\]/g)]
+    .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((item) => item[1].replace(/ — резерв$/, "")));
+  assert.ok(chronologyNames.length > 50, "expected the chronology to reference canonical agents throughout the case");
+  for (const name of chronologyNames) assert.ok(canonicalIds.has(name), `chronology agent must exist in canonical registry: ${name}`);
+  assert.equal(canonicalIds.get("Tender Source Ingestion Agent"), 13);
+  assert.match(pageSource, /const agentByName = new Map\(agents\.map/);
+  assert.match(pageSource, /className="chronology-agent-button"/);
+  assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
+  assert.match(pageSource, /aria-haspopup="dialog"/);
+  assert.match(pageSource, /onClick=\{\(\) => setSelectedAgentId\(agent\.id\)\}/);
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {

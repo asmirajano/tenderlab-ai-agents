@@ -63,6 +63,7 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 - Twelve route stages expose the end-to-end handoff from control and discovery through bid preparation, submission, evaluation, award, contract execution, and learning.
 - All Case 1-specific content is packaged as one accessible, collapsible case module so future approved cases can remain self-contained rather than extending one uninterrupted page.
 - A 20-event Russian review chronology follows the compact workflow. It tells the concrete simulated story from publication through discovery, company consent, qualification, proposal, submission, evaluation, award, execution, closeout, and learning; every event names its initiator, agents, result, and next handoff.
+- Chronology agent chips resolve their labels and IDs from the canonical 64-agent registry. Each chip opens the same Case 1 agent-detail dialog without changing the reader's chronology position.
 - The global Cases × 64 Agents matrix is a separate page-level audit surface outside every individual case module. Collapsing Case 1 never hides the ten-case matrix or its filters.
 - Cases 2–10 remain visible only as future matrix placeholders until Case 1 methodology and assignments are approved.
 

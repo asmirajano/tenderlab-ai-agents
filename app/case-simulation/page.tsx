@@ -58,6 +58,14 @@ const sideClasses: Record<PlatformSide, string> = {
 const futureCases = Array.from({ length: 9 }, (_, index) => index + 2);
 const engagementByAgentId = new Map(case1Engagements.map((engagement) => [engagement.agentId, engagement]));
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
+const chronologyStandbySuffix = " — резерв";
+
+function resolveChronologyAgent(label: string) {
+  const isStandby = label.endsWith(chronologyStandbySuffix);
+  const name = isStandby ? label.slice(0, -chronologyStandbySuffix.length) : label;
+  return { agent: agentByName.get(name), isStandby };
+}
 
 const semanticDocuments = agents.map((agent) => {
   const engagement = engagementByAgentId.get(agent.id)!;
@@ -349,7 +357,26 @@ export default function CaseSimulationPage() {
                 <p className="chronology-narrative">{event.narrative}</p>
                 <div className="chronology-agents">
                   <span>AGENTS</span>
-                  <div>{event.agents.map((agent) => <b key={agent}>{agent}</b>)}</div>
+                  <div>
+                    {event.agents.map((label) => {
+                      const { agent, isStandby } = resolveChronologyAgent(label);
+                      if (!agent) return null;
+                      return (
+                        <button
+                          type="button"
+                          className="chronology-agent-button"
+                          key={label}
+                          aria-haspopup="dialog"
+                          aria-label={`Открыть карточку агента: ${String(agent.id).padStart(2, "0")} · ${agent.name}${isStandby ? " · резерв" : ""}`}
+                          onClick={() => setSelectedAgentId(agent.id)}
+                        >
+                          <span>{String(agent.id).padStart(2, "0")} ·</span>
+                          <b>{agent.name}</b>
+                          {isStandby && <small>резерв</small>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="chronology-handoff">
                   <div><span>РЕЗУЛЬТАТ</span><p>{event.result}</p></div>
