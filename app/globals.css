@@ -618,6 +618,9 @@ main { min-height: 100vh; overflow: hidden; }
 .layer-flow a > strong { font-size: 15px; letter-spacing: -.02em; }
 .layer-flow a > small { color: #829087; font-size: 11px; margin-top: 3px; }
 .layer-flow a > b { color: var(--layer-color); font-family: var(--font-geist-mono), monospace; font-size: 11px; font-weight: 600; position: absolute; right: 14px; top: 16px; }
+.layer-flow a > .layer-agent-count { align-items: baseline; display: inline-flex; gap: 5px; letter-spacing: .04em; }
+.layer-agent-count small { color: inherit; font-size: 8px; font-weight: 700; letter-spacing: .08em; }
+.layer-agent-count span { font-size: 14px; font-weight: 700; line-height: 1; }
 .layer-mix { align-items: center; display: flex; gap: 5px; margin-top: 12px; }
 .layer-mix span { align-items: center; border-radius: 5px; display: inline-flex; font-family: var(--font-geist-mono), monospace; font-size: 8px; height: 22px; justify-content: center; min-width: 22px; padding: 0 5px; }
 .layer-mix .mix-main { background: #dfeee6; color: var(--green); }

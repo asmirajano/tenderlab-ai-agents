@@ -946,7 +946,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
 
         <div className="routing-note"><span><i className="main-dot" />Main — обычно ведёт поток</span><span><i className="specialized-dot" />Specialized — активируется по данным</span><span><i className="optional-dot" />Optional — skipped when not relevant</span></div>
 
-        <div className="architecture-subheading layer-subheading"><span>02 · FUNCTIONAL ORGANIZATION</span><h3>Eight layers cover the tender lifecycle</h3><p>Числа на карточках показывают Main / Specialized / Optional внутри каждого слоя.</p></div>
+        <div className="architecture-subheading layer-subheading"><span>02 · FUNCTIONAL ORGANIZATION</span><h3>Eight layers cover the tender lifecycle</h3><p>Слева — порядок слоя; справа — число агентов. Ниже: Main / Specialized / Optional внутри слоя.</p></div>
 
         <div className="layer-flow">
           {layers.map((layer) => {
@@ -965,7 +965,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                 <i>{layer.mark}</i>
                 <strong>{layer.name}</strong>
                 <small>{layer.ru}</small>
-                <b>{String(count).padStart(2, "0")}</b>
+                <b className="layer-agent-count" aria-label={`${count} agents in ${layer.name}`}><small>AGENTS</small><span>{count}</span></b>
                 <div className="layer-mix"><span className="mix-main">{mainCount}</span><span className="mix-specialized">{specializedCount}</span><span className="mix-optional">{optionalCount}</span></div>
               </a>
             );
