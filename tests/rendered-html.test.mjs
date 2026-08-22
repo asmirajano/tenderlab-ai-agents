@@ -175,15 +175,15 @@ test("defines an individual rationale for every agent and assigned platform side
 
 test("orders the agent detail drawer as one progressive profile", async () => {
   const source = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
-  const drawer = source.match(/\{selectedAgent && \(([\s\S]*?)<\/aside>/)?.[1];
-  assert.ok(drawer, "expected the individual agent detail drawer");
+  const drawer = source.match(/export function AgentDetailDrawer[\s\S]*?<aside[^>]*className="agent-drawer"[^>]*>([\s\S]*?)<\/aside>/)?.[1];
+  assert.ok(drawer, "expected the shared canonical agent detail drawer");
 
   const progressiveSections = [
     'className="drawer-identity"',
     "<AgentPlatformRationale",
     'className="drawer-process"',
     "<AgentDrawerOutput",
-    'className="sim-example"',
+    "sim-example",
     "<AgentOperationalMetadata",
   ];
   const positions = progressiveSections.map((section) => drawer.indexOf(section));
@@ -279,11 +279,16 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource, /className="chronology-agent-button"/);
   assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
   assert.match(pageSource, /aria-haspopup="dialog"/);
-  assert.match(pageSource, /onClick=\{\(\) => setSelectedAgentId\(agent\.id\)\}/);
-  assert.match(pageSource, />A · INPUT</);
-  assert.match(pageSource, />B · RESULT \/ OUTPUT</);
-  assert.match(pageSource, />C · NEXT \/ HANDOFF</);
-  assert.doesNotMatch(pageSource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
+  assert.match(pageSource, /onClick=\{\(\) => openAgent\(agent\.id, event\.step\)\}/);
+  assert.match(agentRegistrySource, /export function AgentDetailDrawer/);
+  assert.match(agentRegistrySource, /<AgentDetailDrawer agent=\{selectedAgent\} onClose=/);
+  assert.match(pageSource, /<AgentDetailDrawer/);
+  assert.match(pageSource, /context=\{selectedDetailContext\}/);
+  assert.match(agentRegistrySource, />A · INPUT</);
+  assert.match(agentRegistrySource, />B · RESULT \/ OUTPUT</);
+  assert.match(agentRegistrySource, />C · NEXT \/ HANDOFF</);
+  assert.doesNotMatch(agentRegistrySource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
+  assert.doesNotMatch(pageSource, /className="case-detail"/);
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {

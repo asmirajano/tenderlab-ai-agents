@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AgentDetailDrawer,
   agents,
   getAgentTier,
   layerById,
   platformSideLabels,
   tierLabels,
   type Agent,
+  type AgentDetailContext,
   type AgentTier,
   type PlatformSide,
 } from "../page";
@@ -125,6 +127,7 @@ export default function CaseSimulationPage() {
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [highlightedAgentId, setHighlightedAgentId] = useState<number | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
   const [caseExpanded, setCaseExpanded] = useState(true);
   const matrixScrollRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
@@ -178,18 +181,56 @@ export default function CaseSimulationPage() {
   const selectedAgent = selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) ?? null : null;
   const selectedEngagement = selectedAgent ? engagementByAgentId.get(selectedAgent.id) ?? null : null;
   const selectedStage = selectedEngagement ? caseStages.find((stage) => stage.id === selectedEngagement.stageId) ?? null : null;
+  const selectedChronologyEvent = selectedChronologyStep
+    ? case1Chronology.find((event) => event.step === selectedChronologyStep) ?? null
+    : null;
+  const selectedDetailContext: AgentDetailContext | undefined = selectedEngagement && selectedStage ? {
+    caseLabel: "CASE 1",
+    caseName: case1.name,
+    company: case1.company,
+    stage: `${selectedStage.number} · ${selectedStage.title}`,
+    status: selectedEngagement.status,
+    statusLabel: statusLabels[selectedEngagement.status],
+    when: selectedEngagement.when,
+    why: selectedEngagement.why,
+    input: selectedEngagement.input,
+    output: selectedEngagement.output,
+    next: selectedEngagement.next,
+    condition: selectedEngagement.condition,
+    activation: selectedEngagement.activation,
+    skipReason: selectedEngagement.coveredBy,
+    event: selectedChronologyEvent ? {
+      step: selectedChronologyEvent.step,
+      period: selectedChronologyEvent.period,
+      phase: selectedChronologyEvent.phase,
+      title: selectedChronologyEvent.title,
+      narrative: selectedChronologyEvent.narrative,
+      result: selectedChronologyEvent.result,
+    } : undefined,
+  } : undefined;
+
+  const openAgent = (agentId: number, chronologyStep: number | null = null) => {
+    setSelectedChronologyStep(chronologyStep);
+    setSelectedAgentId(agentId);
+  };
+
+  const closeAgent = () => {
+    setSelectedAgentId(null);
+    setSelectedChronologyStep(null);
+  };
 
   const openAdjacentAgent = (direction: -1 | 1) => {
     if (!selectedAgent) return;
     const index = filteredAgents.findIndex((agent) => agent.id === selectedAgent.id);
     if (index < 0) return;
     const nextIndex = Math.min(Math.max(index + direction, 0), filteredAgents.length - 1);
+    setSelectedChronologyStep(null);
     setSelectedAgentId(filteredAgents[nextIndex]?.id ?? selectedAgent.id);
   };
 
   const toggleCase = () => {
     setCaseExpanded((current) => {
-      if (current) setSelectedAgentId(null);
+      if (current) closeAgent();
       return !current;
     });
   };
@@ -368,7 +409,7 @@ export default function CaseSimulationPage() {
                           key={label}
                           aria-haspopup="dialog"
                           aria-label={`Открыть карточку агента: ${String(agent.id).padStart(2, "0")} · ${agent.name}${isStandby ? " · резерв" : ""}`}
-                          onClick={() => setSelectedAgentId(agent.id)}
+                          onClick={() => openAgent(agent.id, event.step)}
                         >
                           <span>{String(agent.id).padStart(2, "0")} ·</span>
                           <b>{agent.name}</b>
@@ -499,7 +540,7 @@ export default function CaseSimulationPage() {
                 <StageRows
                   stage={stage}
                   stageAgents={stageAgents}
-                  onSelect={setSelectedAgentId}
+                  onSelect={(agentId) => openAgent(agentId)}
                   semanticResults={semanticResultById}
                   highlightedAgentId={highlightedAgentId}
                   registerRow={(agentId, node) => { if (node) rowRefs.current.set(agentId, node); else rowRefs.current.delete(agentId); }}
@@ -512,50 +553,18 @@ export default function CaseSimulationPage() {
       </section>
 
       {selectedAgent && selectedEngagement && selectedStage && (
-        <div className="case-detail-shell" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAgentId(null); }}>
-          <aside className="case-detail" role="dialog" aria-modal="true" aria-labelledby="case-agent-title">
-            <button className="case-detail-close" type="button" onClick={() => setSelectedAgentId(null)} aria-label="Закрыть">×</button>
-            <div className="case-detail-meta"><span>AGENT {String(selectedAgent.id).padStart(2, "0")}</span><b>{selectedStage.number} · {selectedStage.title}</b></div>
-            <div className="case-detail-title">
-              <i style={{ "--agent-color": layerById[selectedAgent.layer].color } as React.CSSProperties}>{layerById[selectedAgent.layer].mark}</i>
-              <div><h2 id="case-agent-title">{selectedAgent.name}</h2><p>{selectedAgent.description}</p></div>
-            </div>
-            <div className="case-detail-tags">
-              <span className={`case-status status-${selectedEngagement.status}`}>{statusLabels[selectedEngagement.status]}</span>
-              <span>{tierLabels[getAgentTier(selectedAgent.id)]}</span>
-              <span>{layerById[selectedAgent.layer].number} · {layerById[selectedAgent.layer].name}</span>
-              <PlatformBadges agent={selectedAgent} />
-            </div>
-
-            <section className="detail-reason">
-              <div><small>КОГДА</small><b>{selectedEngagement.when}</b></div>
-              <div><small>ПОЧЕМУ</small><b>{selectedEngagement.why}</b></div>
-              {selectedEngagement.condition && <div className={`detail-condition condition-${selectedEngagement.activation}`}><small>УСЛОВИЕ</small><b>{selectedEngagement.condition}</b></div>}
-            </section>
-
-            {selectedEngagement.status === "not-involved" ? (
-              <section className="detail-skip">
-                <span>SKIP ОБОСНОВАН</span>
-                <h3>Практической роли в Case 1 нет</h3>
-                <p>{selectedEngagement.coveredBy}</p>
-              </section>
-            ) : (
-              <section className="detail-io" aria-label="Input, output и handoff">
-                <article><span>A · INPUT</span><p>{selectedEngagement.input}</p></article>
-                <i>→</i>
-                <article className="detail-output"><span>B · RESULT / OUTPUT</span><p>{selectedEngagement.output}</p><small>CANONICAL DELIVERABLE · {selectedAgent.output.primary}</small></article>
-                <i>→</i>
-                <article><span>C · NEXT / HANDOFF</span><p>{selectedEngagement.next}</p></article>
-              </section>
-            )}
-
-            <footer className="case-detail-footer">
+        <AgentDetailDrawer
+          agent={selectedAgent}
+          context={selectedDetailContext}
+          onClose={closeAgent}
+          footer={(
+            <footer className="drawer-case-footer">
               <button type="button" onClick={() => openAdjacentAgent(-1)} disabled={filteredAgents[0]?.id === selectedAgent.id}>← Предыдущий</button>
               <span>CASE 01 · V1</span>
               <button type="button" onClick={() => openAdjacentAgent(1)} disabled={filteredAgents.at(-1)?.id === selectedAgent.id}>Следующий →</button>
             </footer>
-          </aside>
-        </div>
+          )}
+        />
       )}
     </main>
   );

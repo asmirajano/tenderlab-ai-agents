@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-html-link-for-pages -- native navigation preserves independent Firebase pages */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
 
 export type Layer = {
@@ -628,6 +628,121 @@ function AgentOperationalMetadata({ agent }: { agent: Agent }) {
   );
 }
 
+export type AgentDetailContext = {
+  caseLabel: string;
+  caseName: string;
+  company: string;
+  stage: string;
+  status: "required" | "conditional" | "not-involved";
+  statusLabel: string;
+  when: string;
+  why: string;
+  input?: string;
+  output?: string;
+  next?: string;
+  condition?: string;
+  activation?: "triggered" | "standby";
+  skipReason?: string;
+  event?: {
+    step: number;
+    period: string;
+    phase: string;
+    title: string;
+    narrative: string;
+    result: string;
+  };
+};
+
+export function AgentDetailDrawer({
+  agent,
+  onClose,
+  context,
+  footer,
+}: {
+  agent: Agent;
+  onClose: () => void;
+  context?: AgentDetailContext;
+  footer?: ReactNode;
+}) {
+  const example = agentExamples[agent.id];
+  const contextExampleTitle = context?.event?.title ?? context?.caseName;
+  const contextExampleBody = context
+    ? context.event?.narrative ?? `${context.when} ${context.why}`
+    : undefined;
+  const contextExampleResult = context?.event?.result ?? context?.output;
+
+  return (
+    <div className="drawer-shell" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <aside className="agent-drawer" role="dialog" aria-modal="true" aria-labelledby="agent-detail-title" style={{ "--layer-color": layerById[agent.layer].color } as React.CSSProperties}>
+        <button className="drawer-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
+        <header className="drawer-identity">
+          <div className="drawer-icon">{layerById[agent.layer].mark}</div>
+          <div className="drawer-identity-copy">
+            <div className="drawer-topline">
+              <span>{String(agent.id).padStart(2, "0")}</span>
+              <b>{layerById[agent.layer].number} · {layerById[agent.layer].name}</b>
+              {context && <em>CASE CONTEXT</em>}
+            </div>
+            <h3 id="agent-detail-title">{agent.name}</h3>
+            <p className="drawer-purpose"><span>PURPOSE</span>{agent.description}</p>
+          </div>
+        </header>
+        <AgentPlatformRationale agent={agent} />
+        <section className="drawer-process" aria-label={`${agent.name} operating model`}>
+          <div className="drawer-process-heading"><span>HOW IT WORKS</span><b>AI + EVIDENCE + HUMAN</b></div>
+          <div className="drawer-flow">
+            <div><span>AI</span><small>находит</small></div>
+            <i>→</i>
+            <div><span>Evidence</span><small>проверяет</small></div>
+            <i>→</i>
+            <div><span>Human</span><small>решает</small></div>
+          </div>
+        </section>
+        <AgentDrawerOutput agent={agent} />
+
+        {context && (
+          <section className="drawer-case-context" aria-label={`${agent.name} context for ${context.caseLabel}`}>
+            <div className="drawer-context-heading">
+              <div><span>CASE-SPECIFIC CONTEXT</span><b>DEMO · {context.caseLabel}</b></div>
+              <i className={`context-status context-status-${context.status}`}>{context.statusLabel}</i>
+            </div>
+            <p className="drawer-context-location">
+              <span>{context.event ? `EVENT ${String(context.event.step).padStart(2, "0")}` : "WORKFLOW STAGE"}</span>
+              <b>{context.event ? `${context.event.period} · ${context.event.phase}` : context.stage}</b>
+            </p>
+            <div className="drawer-context-reason">
+              <p><small>КОГДА</small><b>{context.when}</b></p>
+              <p><small>ПОЧЕМУ</small><b>{context.why}</b></p>
+              {context.condition && <p className={`context-condition context-condition-${context.activation ?? "triggered"}`}><small>УСЛОВИЕ</small><b>{context.condition}</b></p>}
+            </div>
+            {context.status === "not-involved" ? (
+              <div className="drawer-context-skip"><span>SKIP ОБОСНОВАН</span><p>{context.skipReason}</p></div>
+            ) : (
+              <div className="drawer-context-flow" aria-label="Case-specific input, output and handoff">
+                <article><span>A · INPUT</span><p>{context.input}</p></article>
+                <i>→</i>
+                <article className="context-flow-output"><span>B · RESULT / OUTPUT</span><p>{context.output}</p></article>
+                <i>→</i>
+                <article><span>C · NEXT / HANDOFF</span><p>{context.next}</p></article>
+              </div>
+            )}
+          </section>
+        )}
+
+        <section className={`sim-example ${context ? "sim-example-contextual" : ""}`} aria-label={context ? "Контекстный пример Case" : "Симулированный пример"}>
+          <div className="example-label"><span>{context ? "CASE-SPECIFIC EXAMPLE" : "REALISTIC EXAMPLE"}</span><b>{context ? `DEMO · ${context.caseLabel}` : "DEMO"}</b></div>
+          <div className="example-company"><i />{context?.company ?? example.company}</div>
+          <h4>{contextExampleTitle ?? example.item}</h4>
+          <p>{contextExampleBody ?? example.result}</p>
+          {context && contextExampleResult && <p className="context-example-result"><span>{context.event ? "РЕЗУЛЬТАТ СОБЫТИЯ" : "РЕЗУЛЬТАТ АГЕНТА"}</span>{contextExampleResult}</p>}
+        </section>
+        <AgentOperationalMetadata agent={agent} />
+        {footer}
+      </aside>
+    </div>
+  );
+}
+
 export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" | "case-simulation"> }) {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
@@ -986,41 +1101,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
       </footer>
 
       {selectedAgent && (
-        <div className="drawer-shell" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAgent(null); }}>
-          <aside className="agent-drawer" role="dialog" aria-modal="true" aria-labelledby="agent-title" style={{ "--layer-color": layerById[selectedAgent.layer].color } as React.CSSProperties}>
-            <button className="drawer-close" onClick={() => setSelectedAgent(null)} aria-label="Close">×</button>
-            <header className="drawer-identity">
-              <div className="drawer-icon">{layerById[selectedAgent.layer].mark}</div>
-              <div className="drawer-identity-copy">
-                <div className="drawer-topline">
-                  <span>{String(selectedAgent.id).padStart(2, "0")}</span>
-                  <b>{layerById[selectedAgent.layer].number} · {layerById[selectedAgent.layer].name}</b>
-                </div>
-                <h3 id="agent-title">{selectedAgent.name}</h3>
-                <p className="drawer-purpose"><span>PURPOSE</span>{selectedAgent.description}</p>
-              </div>
-            </header>
-            <AgentPlatformRationale agent={selectedAgent} />
-            <section className="drawer-process" aria-label={`${selectedAgent.name} operating model`}>
-              <div className="drawer-process-heading"><span>HOW IT WORKS</span><b>AI + EVIDENCE + HUMAN</b></div>
-              <div className="drawer-flow">
-                <div><span>AI</span><small>находит</small></div>
-                <i>→</i>
-                <div><span>Evidence</span><small>проверяет</small></div>
-                <i>→</i>
-                <div><span>Human</span><small>решает</small></div>
-              </div>
-            </section>
-            <AgentDrawerOutput agent={selectedAgent} />
-            <section className="sim-example" aria-label="Симулированный пример">
-              <div className="example-label"><span>REALISTIC EXAMPLE</span><b>DEMO</b></div>
-              <div className="example-company"><i />{agentExamples[selectedAgent.id].company}</div>
-              <h4>{agentExamples[selectedAgent.id].item}</h4>
-              <p>{agentExamples[selectedAgent.id].result}</p>
-            </section>
-            <AgentOperationalMetadata agent={selectedAgent} />
-          </aside>
-        </div>
+        <AgentDetailDrawer agent={selectedAgent} onClose={() => setSelectedAgent(null)} />
       )}
     </main>
   );
