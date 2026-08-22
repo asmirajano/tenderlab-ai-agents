@@ -1,5 +1,5 @@
 import { TenderLabPage } from "../page";
 
-export default function WorkflowPage() {
+export default function ArchitecturePage() {
   return <TenderLabPage page="architecture" />;
 }

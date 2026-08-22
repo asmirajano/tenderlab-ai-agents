@@ -519,6 +519,14 @@ const subagentParentIds: Record<number, number[]> = {
   63: [50, 64],
 };
 
+const tenderLifecycle = [
+  { number: "01", name: "Discover", text: "Найти и классифицировать релевантную возможность." },
+  { number: "02", name: "Understand", text: "Преобразовать документы в требования и доказательства." },
+  { number: "03", name: "Decide", text: "Сопоставить компанию, риски и коммерческую привлекательность." },
+  { number: "04", name: "Prepare", text: "Собрать решение, цену, предложение и пакет подачи." },
+  { number: "05", name: "Learn", text: "Сопроводить результат и вернуть знания в систему." },
+];
+
 type AgentCardProps = {
   agent: Agent;
   className?: string;
@@ -743,11 +751,11 @@ export function AgentDetailDrawer({
   );
 }
 
-export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" | "case-simulation"> }) {
+export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation"> }) {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
-  const [architectureView, setArchitectureView] = useState<ArchitectureView>("flat");
+  const [architectureView, setArchitectureView] = useState<ArchitectureView>("hierarchy");
   const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -815,8 +823,8 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
   }, [page]);
 
   useEffect(() => {
-    if (page !== "command-center") return;
-    const legacyRoute = window.location.hash === "#architecture" ? "/workflow" : window.location.hash === "#agents" ? "/agents" : null;
+    if (page !== "overview") return;
+    const legacyRoute = window.location.hash === "#architecture" ? "/architecture" : window.location.hash === "#agents" ? "/agents" : null;
     if (legacyRoute) window.location.replace(legacyRoute);
   }, [page]);
 
@@ -824,90 +832,94 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
     <main className={`page-shell page-${page}`}>
       <TopNavigation active={page} />
 
-      {page === "command-center" && <>
-      <section className="command-hero" id="top">
-        <div className="command-titlebar">
-          <div>
-            <p className="eyebrow"><span /> LIVE OPERATIONS</p>
-            <h1>Agent Command Center</h1>
-            <p>64 агента управляют полным тендерным циклом мебельной компании.</p>
+      {page === "overview" && (
+      <section className="strategic-overview" id="top">
+        <div className="overview-hero">
+          <div className="overview-copy">
+            <p className="eyebrow"><span /> STRATEGIC SYSTEM OVERVIEW</p>
+            <h1>Tender intelligence,<br /><em>coordinated end to end.</em></h1>
+            <p>TenderLab.ai превращает разрозненный тендерный процесс в управляемую систему: от поиска возможности и проверки компании до заявки, контракта и накопления знаний.</p>
+            <div className="overview-actions">
+              <a className="action-primary" href="/architecture">Explore architecture <span>→</span></a>
+              <a className="action-secondary" href="/case-simulation">Review Case 1 <span>↗</span></a>
+            </div>
           </div>
-          <div className="system-health">
-            <span><i /> SYSTEM ONLINE</span>
-            <b>15 AUG 2026</b>
-          </div>
-        </div>
-
-        <div className="command-metrics" aria-label="Platform metrics">
-          <div className="command-metric primary"><span>ACTIVE AGENTS</span><strong>12<sup>/64</sup></strong><i>+3 today</i></div>
-          <div className="command-metric"><span>OPEN TENDERS</span><strong>27</strong><i>6 priority</i></div>
-          <div className="command-metric"><span>AVG. MATCH</span><strong>82<sup>%</sup></strong><i>↑ 8.4%</i></div>
-          <div className="command-metric"><span>DEADLINES</span><strong>04</strong><i>next 7 days</i></div>
-        </div>
-
-        <div className="command-grid">
-          <section className="operation-board" aria-label="Active tender operation">
-            <div className="panel-head">
-              <div><span className="panel-kicker">ACTIVE OPERATION</span><h2>WB-KZ-2026-118</h2></div>
-              <div className="operation-score"><b>72%</b><span>complete</span></div>
-            </div>
-            <div className="tender-meta">
-              <span>KAZAKHSTAN</span><i>•</i><span>WORLD BANK</span><i>•</i><span>SCHOOL FURNITURE</span><b>12d : 04h</b>
-            </div>
-            <div className="operation-progress"><i /></div>
-            <div className="agent-run-list">
-              <button className="main-run" onClick={() => setSelectedAgent(agents[23])}>
-                <span className="run-icon done">✓</span><div><b>Requirement Parser Agent</b><small>186 требований извлечено</small></div><em>DONE</em><strong>02:14</strong>
-              </button>
-              <button className="main-run" onClick={() => setSelectedAgent(agents[30])}>
-                <span className="run-icon running">◌</span><div><b>Company-to-Tender Match Score Agent</b><small>Расчёт соответствия компании</small></div><em className="live">RUNNING</em><strong>68%</strong>
-              </button>
-              <button className="specialized-run" onClick={() => setSelectedAgent(agents[33])}>
-                <span className="run-icon review">!</span><div><b>Gap Analysis Agent</b><small>Требуется подтверждение 3 сертификатов</small></div><em className="attention">REVIEW</em><strong>03</strong>
-              </button>
-              <button className="optional-run skipped-run" onClick={() => setSelectedAgent(agents[39])}>
-                <span className="run-icon skipped">—</span><div><b>Partner Discovery Agent</b><small>Не требуется: монтаж закрывает компания</small></div><em className="skipped">SKIPPED</em><strong>—</strong>
-              </button>
-              <button className="main-run" onClick={() => setSelectedAgent(agents[38])}>
-                <span className="run-icon queued">→</span><div><b>Solution Architecture Agent</b><small>Ожидает завершения Match Score</small></div><em>QUEUED</em><strong>—</strong>
-              </button>
-            </div>
-            <div className="board-foot">
-              <span><i /> 3 active · 1 review · 1 skipped</span>
-              <a href="/agents?mode=main">View main agents →</a>
-            </div>
-          </section>
-
-          <aside className="activity-panel" aria-label="Agent activity">
-            <div className="panel-head slim"><div><span className="panel-kicker">COMMAND QUEUE</span><h2>Live activity</h2></div><span className="activity-count">07</span></div>
-            <div className="activity-feed">
-              <div><span className="feed-dot blue" /><p><b>Tender Discovery Agent</b><small>Найдено 14 новых возможностей</small></p><time>now</time></div>
-              <div><span className="feed-dot green" /><p><b>Company Verification Agent</b><small>Профиль OakLine Furniture подтверждён</small></p><time>4m</time></div>
-              <div><span className="feed-dot amber" /><p><b>Human Approval Agent</b><small>Ожидает решения Bid / No-Bid</small></p><time>12m</time></div>
-              <div><span className="feed-dot violet" /><p><b>Quotation Normalization Agent</b><small>Сравнено 8 предложений</small></p><time>31m</time></div>
-            </div>
-            <a className="activity-link" href="/agents">Open all agents <span>↗</span></a>
+          <aside className="architecture-status" aria-label="Architecture validation status">
+            <span>WORKING ARCHITECTURE</span>
+            <strong>64</strong>
+            <p>current agent roles</p>
+            <div><b>8</b><small>functional layers</small></div>
+            <div><b>1 / 10</b><small>cases active</small></div>
+            <i>UNDER VALIDATION</i>
           </aside>
         </div>
-      </section>
 
-      <section className="principle-bar" aria-label="Operating principle">
-        <span>OPERATING CONTROL</span>
-        <div><b>AI</b><small>находит</small></div><i>→</i>
-        <div><b>Evidence</b><small>проверяет</small></div><i>→</i>
-        <div><b>Human</b><small>утверждает</small></div>
-      </section>
-      </>}
+        <div className="system-drilldown" aria-label="TenderLab system hierarchy">
+          <article className="drilldown-platform">
+            <span>01 · PLATFORM</span>
+            <strong>TenderLab.ai</strong>
+            <p>Единая tender intelligence platform для консультантов и компаний-участников.</p>
+          </article>
+          <i aria-hidden="true">→</i>
+          <article>
+            <span>02 · USER SIDES</span>
+            <div className="drilldown-pair"><b>Consultant Command Center</b><b>Client Side</b></div>
+            <p>Люди получают нужные функции, решения и точки согласования.</p>
+          </article>
+          <i aria-hidden="true">→</i>
+          <article className="drilldown-control">
+            <span>03 · CONTROL PLANE</span>
+            <strong>Agent Command Center</strong>
+            <p><b>TenderLab Orchestrator</b> маршрутизирует контекст, агентов и approvals.</p>
+          </article>
+          <i aria-hidden="true">→</i>
+          <article>
+            <span>04 · EXECUTION</span>
+            <strong>64-agent architecture</strong>
+            <p>Только релевантные Main, Specialized и Optional agents включаются в конкретный путь.</p>
+          </article>
+        </div>
 
-      {page === "workflow" && (
+        <div className="overview-section-heading">
+          <div><p className="eyebrow"><span /> WHY AGENTS</p><h2>One lifecycle. Different specialist decisions.</h2></div>
+          <p>Архитектура разделяет ответственность, сохраняет evidence и делает каждый handoff проверяемым.</p>
+        </div>
+        <div className="lifecycle-strip">
+          {tenderLifecycle.map((stage) => (
+            <article key={stage.number}>
+              <span>{stage.number}</span><strong>{stage.name}</strong><p>{stage.text}</p>
+            </article>
+          ))}
+        </div>
+
+        <section className="validation-callout" aria-label="Architecture validation method">
+          <div><span>VALIDATION METHOD</span><h2>64 roles are a hypothesis—not a conclusion.</h2></div>
+          <p>Каждый из 10 procurement cases проверяет, какие агенты действительно нужны, где есть overlap и какие capabilities отсутствуют. Case 2 остаётся закрытым до утверждения Case 1.</p>
+          <a href="/case-simulation">Open Validation <span>→</span></a>
+        </section>
+      </section>
+      )}
+
+      {page === "architecture" && (
       <section className="architecture-section" id="architecture">
         <div className="section-heading compact-heading">
           <div>
-            <p className="eyebrow"><span /> DYNAMIC ARCHITECTURE</p>
-            <h2>Context routes the workflow.</h2>
+            <p className="eyebrow"><span /> SYSTEM ARCHITECTURE</p>
+            <h2>Context activates the right agents.</h2>
           </div>
           <p>ACTIVATE ↗ BRANCH ↔ SKIP ↘ REJOIN</p>
         </div>
+
+        <p className="architecture-lede">TenderLab.ai не запускает все 64 роли по линейной цепочке. User side, tender context, available evidence и текущие решения формируют ограниченный маршрут выполнения.</p>
+
+        <div className="platform-architecture" aria-label="Platform sides and responsibilities">
+          <article className="platform-consultant"><span>USER SIDE 01</span><strong>Consultant Command Center</strong><p>44 агента поддерживают discovery, анализ, scoring, campaign decisions и контроль консультантов.</p></article>
+          <article className="platform-client"><span>USER SIDE 02</span><strong>Client Side</strong><p>45 агентов создают результаты и действия для производителей, поставщиков и tender participants.</p></article>
+          <article className="platform-control"><span>CONTROL PLANE</span><strong>Agent Command Center</strong><p>TenderLab Orchestrator координирует routing, evidence, approvals, retries и state.</p></article>
+          <article className="platform-backend"><span>PROCESSING</span><strong>Backend</strong><p>14 агентов выполняют ingestion, provenance, versioning и системную обработку без прямого UI.</p></article>
+        </div>
+
+        <div className="architecture-subheading"><span>01 · DYNAMIC ROUTING</span><h3>From context to a bounded execution path</h3></div>
 
         <div className="routing-map" aria-label="Dynamic agent routing">
           <div className="context-inputs">
@@ -934,6 +946,8 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
 
         <div className="routing-note"><span><i className="main-dot" />Main — обычно ведёт поток</span><span><i className="specialized-dot" />Specialized — активируется по данным</span><span><i className="optional-dot" />Optional — skipped when not relevant</span></div>
 
+        <div className="architecture-subheading layer-subheading"><span>02 · FUNCTIONAL ORGANIZATION</span><h3>Eight layers cover the tender lifecycle</h3><p>Числа на карточках показывают Main / Specialized / Optional внутри каждого слоя.</p></div>
+
         <div className="layer-flow">
           {layers.map((layer) => {
             const layerAgents = agents.filter((agent) => agent.layer === layer.id);
@@ -957,6 +971,17 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
             );
           })}
         </div>
+
+        <div className="architecture-subheading handoff-subheading"><span>03 · GOVERNED HANDOFF</span><h3>Every agent must leave a usable artifact</h3></div>
+        <div className="handoff-model" aria-label="Agent handoff model">
+          <article><span>A · INPUT</span><strong>Контекст и evidence</strong><p>Тендер, company profile, documents или результат предыдущего решения.</p></article>
+          <i>→</i>
+          <article className="handoff-agent"><span>AGENT WORK</span><strong>AI + Evidence + Human</strong><p>AI выполняет ограниченную задачу, evidence подтверждает вывод, человек утверждает критические решения.</p></article>
+          <i>→</i>
+          <article className="handoff-output"><span>B · RESULT / OUTPUT</span><strong>Конкретный deliverable</strong><p>Score, dataset, decision, shortlist, report, generated document или updated state.</p></article>
+          <i>→</i>
+          <article><span>C · NEXT / HANDOFF</span><strong>Следующий потребитель</strong><p>Downstream agent, consultant, client user, buyer process или knowledge base.</p></article>
+        </div>
       </section>
       )}
 
@@ -964,8 +989,8 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
       <section className="agents-section" id="agents">
         <div className="section-heading agents-heading">
           <div>
-            <p className="eyebrow"><span /> AGENT ARCHITECTURE</p>
-            <h2>{visibleAgents.length}<sup>/64</sup> agents</h2>
+            <p className="eyebrow"><span /> CANONICAL AGENT CATALOG</p>
+            <h2>{visibleAgents.length}<sup>/64</sup> current roles</h2>
           </div>
           <div className="catalog-tools">
             <div className="view-switch" role="group" aria-label="Architecture view">
@@ -992,6 +1017,8 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
             </label>
           </div>
         </div>
+
+        <div className="catalog-status-note"><span>WORKING ARCHITECTURE · UNDER VALIDATION</span><p>Canonical IDs, classifications and relationships remain stable while Case Audit tests whether roles should be changed, merged, removed or added.</p><a href="/case-simulation">Validation →</a></div>
 
         <div className="layer-filters" role="group" aria-label="Filter by layer">
           <button className={activeLayer === "all" ? "active" : ""} onClick={() => setActiveLayer("all")}>All layers</button>
@@ -1108,5 +1135,5 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "main-run" 
 }
 
 export default function Home() {
-  return <TenderLabPage page="command-center" />;
+  return <TenderLabPage page="overview" />;
 }

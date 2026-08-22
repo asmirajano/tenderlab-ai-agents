@@ -273,7 +273,7 @@ export default function CaseSimulationPage() {
 
   return (
     <main className="case-audit-page">
-      <TopNavigation active="case-simulation" />
+      <TopNavigation active="validation" />
 
       <section className="case-audit-hero">
         <div>

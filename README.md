@@ -1,12 +1,18 @@
-# TenderLab.ai Agent Command Center
+# TenderLab.ai Agent Architecture
 
-Interactive demonstration of a 64-agent tender architecture and a 20-step
-Main Agents Run for a furniture company.
+Strategic explanation and validation environment for a working 64-agent tender
+architecture. The presentation moves from the system overview to orchestration,
+the canonical agent catalog, and case-based architecture validation.
 
 ## Routes
 
-- \`/\` — Agent Command Center and the full agent architecture
-- \`/main-agents-run\` — interactive Main-agent workflow simulation
+- \`/\` — strategic TenderLab.ai overview
+- \`/architecture\` — orchestration, agent tiers, platform sides, layers, and handoffs
+- \`/agents\` — canonical 64-agent hierarchy and catalog
+- \`/case-simulation\` — Validation / Case Audit, currently limited to Case 1
+
+Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
+\`/main-agents-run\` resolves to Validation.
 
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
@@ -27,8 +33,9 @@ pnpm lint
 pnpm test
 \`\`\`
 
-\`pnpm test\` creates the production build, exports the two routes as static
-Firebase Hosting pages, and verifies the published HTML and browser assets.
+\`pnpm test\` creates the production build, exports the strategic pages and
+compatibility routes as static Firebase Hosting pages, and verifies the
+published HTML, canonical registry, Case 1 methodology, and browser assets.
 
 ## Deployment
 

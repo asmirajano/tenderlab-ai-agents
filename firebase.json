@@ -8,6 +8,18 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/workflow",
+        "destination": "/architecture",
+        "type": 301
+      },
+      {
+        "source": "/main-agents-run",
+        "destination": "/case-simulation",
+        "type": 301
+      }
+    ],
     "headers": [
       {
         "source": "/_next/static/**",
@@ -20,6 +32,15 @@
       },
       {
         "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/architecture",
         "headers": [
           {
             "key": "Cache-Control",

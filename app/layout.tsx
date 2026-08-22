@@ -14,21 +14,21 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tenderlab-ai-agents.web.app"),
-  title: "TenderLab.ai — Agent Command Center",
-  description: "64 AI agents coordinating the full international tender lifecycle.",
+  title: "TenderLab.ai — Agent Architecture",
+  description: "A working 64-agent architecture for the international tender lifecycle, progressively explained and tested against realistic procurement cases.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "TenderLab.ai — Agent Command Center",
-    description: "64 AI agents. 8 operational layers. One tender operating system.",
+    title: "TenderLab.ai — Agent Architecture",
+    description: "64 current agent roles. 8 functional layers. One architecture under validation.",
     images: [{ url: "/og.png", width: 1664, height: 944 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TenderLab.ai — Agent Command Center",
-    description: "64 AI agents. 8 operational layers. One tender operating system.",
+    title: "TenderLab.ai — Agent Architecture",
+    description: "64 current agent roles. 8 functional layers. One architecture under validation.",
     images: ["/og.png"],
   },
 };
