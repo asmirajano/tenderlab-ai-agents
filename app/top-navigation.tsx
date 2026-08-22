@@ -4,13 +4,14 @@
 
 import { useEffect, useRef } from "react";
 
-export type PrimaryPage = "overview" | "architecture" | "agents" | "validation";
+export type PrimaryPage = "overview" | "architecture" | "agents" | "validation" | "glossary";
 
 const navItems: Array<{ id: PrimaryPage; label: string; href: string }> = [
   { id: "overview", label: "Overview", href: "/" },
   { id: "architecture", label: "Architecture", href: "/architecture" },
   { id: "agents", label: "Agent Catalog", href: "/agents" },
   { id: "validation", label: "Validation", href: "/case-simulation" },
+  { id: "glossary", label: "Glossary", href: "/glossary" },
 ];
 
 export default function TopNavigation({ active }: { active: PrimaryPage }) {
@@ -47,7 +48,6 @@ export default function TopNavigation({ active }: { active: PrimaryPage }) {
         ))}
       </nav>
       <div className="product-jumps" aria-label="Related product surfaces">
-        <a className="glossary-jump" href="https://tender-ecosystem-atlas.web.app/glossary?scope=tenderlab">Glossary <span>↗</span></a>
         <a className="atlas-jump" href="https://tender-ecosystem-atlas.web.app"><span className="atlas-long">Ecosystem Atlas</span><span className="atlas-short">Atlas</span><span>↗</span></a>
         <a className="core-jump" href="/agents"><span>●</span> 64 agents</a>
       </div>

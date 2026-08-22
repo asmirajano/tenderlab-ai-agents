@@ -12,14 +12,15 @@ async function readPublished(relativePath) {
   return readFile(path.join(publishRoot, relativePath), "utf8");
 }
 
-test("exports the four-page strategic presentation and compatibility routes", async () => {
-  const [home, architecture, workflow, agentsPage, run, caseSimulation] = await Promise.all([
+test("exports the strategic presentation, validation tools, glossary, and compatibility routes", async () => {
+  const [home, architecture, workflow, agentsPage, run, caseSimulation, glossary] = await Promise.all([
     readPublished("index.html"),
     readPublished("architecture.html"),
     readPublished("workflow.html"),
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
     readPublished("case-simulation.html"),
+    readPublished("glossary.html"),
   ]);
 
   assert.match(home, /<title>TenderLab\.ai — Agent Architecture/);
@@ -84,9 +85,20 @@ test("exports the four-page strategic presentation and compatibility routes", as
   assert.match(caseSimulation, /aria-current="page"[^>]+href="\/case-simulation"/);
   assert.doesNotMatch(caseSimulation, /href="\/main-agents-run"/);
 
-  for (const html of [home, architecture, workflow, agentsPage, run, caseSimulation]) {
+  assert.match(glossary, /TENDERLAB KNOWLEDGE SYSTEM/);
+  assert.match(glossary, /TenderLab/);
+  assert.match(glossary, /Glossary/);
+  assert.match(glossary, /Critical Path/);
+  assert.match(glossary, /Fan-Out \/ Fan-In/);
+  assert.match(glossary, /Dependency Graph/);
+  assert.match(glossary, /aria-current="page"[^>]+href="\/glossary"/);
+  assert.doesNotMatch(glossary, /tender-ecosystem-atlas\.web\.app\/glossary/);
+
+  for (const html of [home, architecture, workflow, agentsPage, run, caseSimulation, glossary]) {
     assert.match(html, /<html[^>]*lang="ru"/);
     assert.match(html, /<script[^>]+src="\/_next\/static\/chunks\//);
+    assert.match(html, /Glossary/);
+    assert.match(html, /aria-haspopup="dialog"/);
     assert.doesNotMatch(html, /codex-preview/);
     assert.doesNotMatch(html, /Your site is taking shape/);
   }
@@ -100,6 +112,7 @@ test("includes every browser asset referenced by the exported pages", async () =
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
     readPublished("case-simulation.html"),
+    readPublished("glossary.html"),
   ]);
   const referencedAssets = new Set();
 
@@ -330,6 +343,35 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(graphSource, /Every Case 1 waiting activity needs an explicit trigger/);
 });
 
+test("defines one TenderLab-specific canonical glossary for the page and contextual panel", async () => {
+  const { contextualGlossaryTermsByPath, scoreTenderGlossaryTerm, tenderGlossaryCategoryLabels, tenderGlossaryTerms } = await import(
+    pathToFileURL(path.join(projectRoot, "app", "tender-glossary.ts")).href
+  );
+  const uiSource = await readFile(path.join(projectRoot, "app", "tender-glossary-ui.tsx"), "utf8");
+
+  assert.ok(tenderGlossaryTerms.length >= 40, "expected the initial TenderLab process vocabulary plus agent-architecture terms");
+  assert.equal(new Set(tenderGlossaryTerms.map((item) => item.term.toLocaleLowerCase("en-US"))).size, tenderGlossaryTerms.length);
+  assert.equal(Object.keys(tenderGlossaryCategoryLabels).length, 6);
+  for (const item of tenderGlossaryTerms) {
+    assert.ok(item.translation.length > 5, `${item.term} needs a Russian translation`);
+    assert.ok(item.explanation.length > 60, `${item.term} needs a specific technical definition`);
+    assert.ok(item.simpleExplanation.length > 35, `${item.term} needs a plain-language explanation`);
+    assert.ok(item.example.length > 35, `${item.term} needs a TenderLab example`);
+    assert.ok(item.notToConfuseWith.length > 40, `${item.term} needs a specific comparison`);
+  }
+  for (const term of ["Workflow", "Event", "Actor", "AI Agent", "Dependency", "Waiting State", "Decision Gate", "Critical Path", "Fan-Out / Fan-In", "Dependency Graph", "Swimlane", "Orchestration", "Handoff", "Input", "Output", "Parallel Execution"]) {
+    assert.ok(tenderGlossaryTerms.some((item) => item.term === term), `missing required TenderLab term: ${term}`);
+  }
+  assert.ok(contextualGlossaryTermsByPath["/case-simulation"].includes("Critical Path"));
+  assert.ok(contextualGlossaryTermsByPath["/agents"].includes("Agent Registry"));
+  assert.equal([...tenderGlossaryTerms].sort((left, right) => scoreTenderGlossaryTerm(right, "критический путь") - scoreTenderGlossaryTerm(left, "критический путь"))[0].term, "Critical Path");
+  assert.match(uiSource, /export function TenderGlossaryShell/);
+  assert.match(uiSource, /export function TenderGlossaryBrowser/);
+  assert.match(uiSource, /Быстрые определения в контексте текущей страницы/);
+  assert.match(uiSource, /Открыть полный Glossary/);
+  assert.match(uiSource, /splitGlossaryReferences/);
+});
+
 test("uses one typed relationship model for Case Audit and the Agent Catalog Network", async () => {
   const [pageSource, networkSource, modelSource, mapSource, registrySource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
@@ -405,6 +447,7 @@ test("publishes client files only", async () => {
   assert.ok(topLevel.includes("agents.html"));
   assert.ok(topLevel.includes("main-agents-run.html"));
   assert.ok(topLevel.includes("case-simulation.html"));
+  assert.ok(topLevel.includes("glossary.html"));
   assert.ok(topLevel.includes("_next"));
   assert.ok(!topLevel.includes("server"));
   await assert.rejects(access(path.join(publishRoot, ".env")));
