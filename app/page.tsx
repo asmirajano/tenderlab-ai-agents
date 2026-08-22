@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
+import AgentNetworkView from "./agent-network-view";
 
 export type Layer = {
   id: string;
@@ -441,7 +442,7 @@ const agentExamples: Record<number, AgentExample> = {
 export const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer])) as Record<string, Layer>;
 
 export type AgentTier = "main" | "specialized" | "optional";
-type ArchitectureView = "flat" | "hierarchy";
+type ArchitectureView = "flat" | "hierarchy" | "network";
 
 const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
 const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
@@ -472,7 +473,7 @@ if (agentsMissingOutput.length > 0) {
 
 // Explicit architecture relationships. A subagent can support several Main agents.
 // Both Flat and Hierarchy views render the canonical `agents` registry above.
-const subagentParentIds: Record<number, number[]> = {
+export const subagentParentIds: Record<number, number[]> = {
   2: [1, 35, 56, 58],
   3: [1, 9, 24, 31, 47, 56, 64],
   4: [1, 21, 58, 64],
@@ -1004,6 +1005,11 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                 className={architectureView === "hierarchy" ? "active" : ""}
                 onClick={() => setArchitectureView("hierarchy")}
               >Hierarchy</button>
+              <button
+                aria-pressed={architectureView === "network"}
+                className={architectureView === "network" ? "active" : ""}
+                onClick={() => setArchitectureView("network")}
+              >Network</button>
             </div>
             <div className="mode-switch" role="group" aria-label="Agent set">
               <button aria-pressed={mode === "all"} className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
@@ -1057,7 +1063,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
               <AgentCard agent={agent} key={agent.id} onSelect={setSelectedAgent} />
             ))}
           </div>
-        ) : (
+        ) : architectureView === "hierarchy" ? (
           <div className="hierarchy-view">
             <div className="hierarchy-toolbar">
               <p><span>→</span> MAIN → supporting subagents → Result / Output. Shared agents repeat under each relevant parent.</p>
@@ -1112,6 +1118,14 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
               })}
             </div>
           </div>
+        ) : (
+          <AgentNetworkView
+            allAgents={agents}
+            visibleAgents={visibleAgents}
+            supportMap={subagentParentIds}
+            layerMeta={layerById}
+            onOpenAgent={setSelectedAgent}
+          />
         ) : (
           <div className="empty-state">
             <span>⌕</span><strong>Ничего не найдено</strong>

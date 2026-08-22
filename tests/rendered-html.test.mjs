@@ -48,6 +48,7 @@ test("exports the four-page strategic presentation and compatibility routes", as
   assert.match(agentsPage, /Tender Readiness Score Agent/);
   assert.match(agentsPage, />Flat</);
   assert.match(agentsPage, />Hierarchy</);
+  assert.match(agentsPage, />Network</);
   assert.match(agentsPage, /aria-label="Architecture view"/);
   assert.match(agentsPage, /USED IN \/ PLATFORM SIDE/);
   assert.match(agentsPage, /aria-label="Filter by platform side"/);
@@ -70,6 +71,9 @@ test("exports the four-page strategic presentation and compatibility routes", as
   assert.match(caseSimulation, /Anatolia Workspace A\.Ş\./);
   assert.match(caseSimulation, /aria-controls="case-1-content"/);
   assert.match(caseSimulation, /aria-expanded="true"/);
+  assert.match(caseSimulation, /CASE 1 · ORCHESTRATION MAP/);
+  assert.match(caseSimulation, /События, ответственность и зависимости/);
+  assert.match(caseSimulation, /Map<\/b><small>оркестрация и зависимости/);
   assert.match(caseSimulation, /Хронология событий — Case 1/);
   assert.match(caseSimulation, /Заказчик публикует международную закупку/);
   assert.match(caseSimulation, /Контракт исполняется и результат возвращается в систему/);
@@ -244,17 +248,21 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
   assert.match(source, /tenderType: "Товары"/);
 });
 
-test("packages Case 1 as a collapsible module with a complete review chronology", async () => {
-  const [pageSource, dataSource, agentRegistrySource] = await Promise.all([
+test("packages Case 1 as a collapsible module with graph-derived Map and Narrative views", async () => {
+  const [pageSource, dataSource, graphSource, agentRegistrySource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts"), "utf8"),
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
   ]);
 
   assert.match(pageSource, /aria-controls="case-1-content"/);
   assert.match(pageSource, /aria-expanded=\{caseExpanded\}/);
   assert.match(pageSource, /hidden=\{!caseExpanded\}/);
-  assert.match(pageSource, /case1Chronology\.map/);
+  assert.match(pageSource, /case1ProcessGraph\.activities\.map/);
+  assert.match(pageSource, /useState<"map" \| "narrative">\("map"\)/);
+  assert.match(pageSource, /<CaseOrchestrationMap onOpenAgent=\{openAgent\}/);
+  assert.match(pageSource, /matrixSectionRef\.current\?\.scrollIntoView/);
 
   const moduleContentPosition = pageSource.indexOf('className="case-module-content"');
   const chronologyPosition = pageSource.indexOf('className="case-chronology"');
@@ -292,7 +300,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource, /className="chronology-agent-button"/);
   assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
   assert.match(pageSource, /aria-haspopup="dialog"/);
-  assert.match(pageSource, /onClick=\{\(\) => openAgent\(agent\.id, event\.step\)\}/);
+  assert.match(pageSource, /onClick=\{\(\) => openAgent\(agent\.id, event\.eventStep\)\}/);
   assert.match(agentRegistrySource, /export function AgentDetailDrawer/);
   assert.match(agentRegistrySource, /<AgentDetailDrawer agent=\{selectedAgent\} onClose=/);
   assert.match(pageSource, /<AgentDetailDrawer/);
@@ -302,6 +310,35 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(agentRegistrySource, />C · NEXT \/ HANDOFF</);
   assert.doesNotMatch(agentRegistrySource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
   assert.doesNotMatch(pageSource, /className="case-detail"/);
+
+  const actorRegistry = graphSource.match(/export const case1Actors:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
+  const activityRegistry = graphSource.match(/const activitySpecs:[^{]+\{([\s\S]*?)\n\};/)?.[1];
+  const dependencyRegistry = graphSource.match(/const dependencySpecs:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
+  assert.ok(actorRegistry && activityRegistry && dependencyRegistry, "expected actors, activities, and typed relationships");
+  assert.equal([...actorRegistry.matchAll(/\{ id: "[^"]+"/g)].length, 5, "expected five canonical Actor lanes");
+  assert.deepEqual([...activityRegistry.matchAll(/^ {2}(\d+): /gm)].map((match) => Number(match[1])), Array.from({ length: 20 }, (_, index) => index + 1));
+  assert.ok([...dependencyRegistry.matchAll(/^ {2}\{ from: /gm)].length >= 25, "expected a non-linear dependency network");
+  for (const relation of ["branches-to", "joins-at", "waits-for", "approved-by", "rework", "feedback"]) assert.match(dependencyRegistry, new RegExp(`type: "${relation}"`));
+  assert.match(graphSource, /Every Case 1 waiting activity needs an explicit trigger/);
+});
+
+test("uses one typed relationship model for Case Audit and the Agent Catalog Network", async () => {
+  const [pageSource, networkSource, modelSource, mapSource] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-network-view.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "process-model.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-orchestration-map.tsx"), "utf8"),
+  ]);
+  assert.match(pageSource, /type ArchitectureView = "flat" \| "hierarchy" \| "network"/);
+  assert.match(pageSource, /<AgentNetworkView/);
+  assert.match(pageSource, /export const subagentParentIds/);
+  assert.match(networkSource, /case1ProcessGraph\.relationships/);
+  assert.match(networkSource, /Support = canonical functional grouping/);
+  assert.match(networkSource, /Open canonical profile/);
+  assert.match(mapSource, /processRelationshipLabels/);
+  assert.match(mapSource, /Critical path/);
+  assert.match(mapSource, /Managed waits/);
+  for (const relation of ["orchestrated-by", "consumes", "produces", "handoff", "depends-on", "blocks", "triggered-by", "approved-by", "joins-at", "waits-for", "retry", "rework", "feedback"]) assert.match(modelSource, new RegExp(`\\| "${relation}"`));
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {

@@ -14,14 +14,15 @@ import {
   type PlatformSide,
 } from "../page";
 import TopNavigation from "../top-navigation";
+import CaseOrchestrationMap from "./case-orchestration-map";
 import {
   case1,
-  case1Chronology,
   case1Engagements,
   caseStages,
   type CaseAgentEngagement,
   type EngagementStatus,
 } from "./case-1-data";
+import { case1ProcessGraph } from "./case-1-graph";
 import {
   createSemanticSearchDocument,
   rankSemanticDocuments,
@@ -61,14 +62,6 @@ const futureCases = Array.from({ length: 9 }, (_, index) => index + 2);
 const engagementByAgentId = new Map(case1Engagements.map((engagement) => [engagement.agentId, engagement]));
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
-const chronologyStandbySuffix = " — резерв";
-
-function resolveChronologyAgent(label: string) {
-  const isStandby = label.endsWith(chronologyStandbySuffix);
-  const name = isStandby ? label.slice(0, -chronologyStandbySuffix.length) : label;
-  return { agent: agentByName.get(name), isStandby };
-}
-
 const semanticDocuments = agents.map((agent) => {
   const engagement = engagementByAgentId.get(agent.id)!;
   const stage = caseStages.find((candidate) => candidate.id === engagement.stageId)!;
@@ -129,7 +122,9 @@ export default function CaseSimulationPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
   const [caseExpanded, setCaseExpanded] = useState(true);
+  const [caseView, setCaseView] = useState<"map" | "narrative">("map");
   const matrixScrollRef = useRef<HTMLDivElement | null>(null);
+  const matrixSectionRef = useRef<HTMLElement | null>(null);
   const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
 
   const metrics = useMemo(() => countByStatus(case1Engagements), []);
@@ -182,7 +177,7 @@ export default function CaseSimulationPage() {
   const selectedEngagement = selectedAgent ? engagementByAgentId.get(selectedAgent.id) ?? null : null;
   const selectedStage = selectedEngagement ? caseStages.find((stage) => stage.id === selectedEngagement.stageId) ?? null : null;
   const selectedChronologyEvent = selectedChronologyStep
-    ? case1Chronology.find((event) => event.step === selectedChronologyStep) ?? null
+    ? case1ProcessGraph.activities.find((event) => event.eventStep === selectedChronologyStep) ?? null
     : null;
   const selectedDetailContext: AgentDetailContext | undefined = selectedEngagement && selectedStage ? {
     caseLabel: "CASE 1",
@@ -200,7 +195,7 @@ export default function CaseSimulationPage() {
     activation: selectedEngagement.activation,
     skipReason: selectedEngagement.coveredBy,
     event: selectedChronologyEvent ? {
-      step: selectedChronologyEvent.step,
+      step: selectedChronologyEvent.eventStep,
       period: selectedChronologyEvent.period,
       phase: selectedChronologyEvent.phase,
       title: selectedChronologyEvent.title,
@@ -355,6 +350,19 @@ export default function CaseSimulationPage() {
         </div>
       </section>
 
+      <nav className="case-view-switcher" aria-label="Представление Case 1">
+        <div><span>CASE VIEW</span><p>Одна модель данных — три способа проверки.</p></div>
+        <div role="group" aria-label="Case presentation">
+          <button type="button" aria-pressed={caseView === "map"} onClick={() => setCaseView("map")}><b>Map</b><small>оркестрация и зависимости</small></button>
+          <button type="button" aria-pressed={caseView === "narrative"} onClick={() => setCaseView("narrative")}><b>Narrative</b><small>хронологический рассказ</small></button>
+          <button type="button" aria-pressed="false" onClick={() => matrixSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}><b>Matrix ↘</b><small>Cases × 64 Agents</small></button>
+        </div>
+      </nav>
+
+      <div className="case-view-panel" hidden={caseView !== "map"}><CaseOrchestrationMap onOpenAgent={openAgent} /></div>
+
+      <div className="case-view-panel" hidden={caseView !== "narrative"}>
+
       <section className="engagement-flow" aria-label="Последовательность участия">
         <div className="section-heading">
           <div><p>ЦЕПОЧКА ВЫПОЛНЕНИЯ →</p><h2>Этапы, агенты и передаваемый результат</h2></div>
@@ -387,9 +395,9 @@ export default function CaseSimulationPage() {
           <p>Это история конкретного тендера, а не абстрактная схема агентов. Каждый шаг показывает инициатора, фактическое действие, подключённых агентов, полученный результат и следующий переход.</p>
         </div>
         <ol className="chronology-list">
-          {case1Chronology.map((event) => (
-            <li className="chronology-event" key={event.step}>
-              <div className="chronology-marker" aria-hidden="true"><span>{String(event.step).padStart(2, "0")}</span><i /></div>
+          {case1ProcessGraph.activities.map((event) => (
+            <li className="chronology-event" key={event.id}>
+              <div className="chronology-marker" aria-hidden="true"><span>{String(event.eventStep).padStart(2, "0")}</span><i /></div>
               <article>
                 <header>
                   <div><small>{event.period} · {event.phase}</small><h3>{event.title}</h3></div>
@@ -399,17 +407,17 @@ export default function CaseSimulationPage() {
                 <div className="chronology-agents">
                   <span>AGENTS</span>
                   <div>
-                    {event.agents.map((label) => {
-                      const { agent, isStandby } = resolveChronologyAgent(label);
+                    {[...event.agentNames.map((name) => ({ name, isStandby: false })), ...event.standbyAgentNames.map((name) => ({ name, isStandby: true }))].map(({ name, isStandby }) => {
+                      const agent = agentByName.get(name);
                       if (!agent) return null;
                       return (
                         <button
                           type="button"
                           className="chronology-agent-button"
-                          key={label}
+                          key={`${name}-${isStandby ? "standby" : "active"}`}
                           aria-haspopup="dialog"
                           aria-label={`Открыть карточку агента: ${String(agent.id).padStart(2, "0")} · ${agent.name}${isStandby ? " · резерв" : ""}`}
-                          onClick={() => openAgent(agent.id, event.step)}
+                          onClick={() => openAgent(agent.id, event.eventStep)}
                         >
                           <span>{String(agent.id).padStart(2, "0")} ·</span>
                           <b>{agent.name}</b>
@@ -429,6 +437,7 @@ export default function CaseSimulationPage() {
           ))}
         </ol>
       </section>
+      </div>
 
       <section className="case-audit-findings" aria-label="Предварительные архитектурные наблюдения">
         <div className="section-heading"><div><p>ARCHITECTURE REVIEW</p><h2>Что Case 1 уже позволяет проверить</h2></div><span>Это наблюдения V1, а не окончательные выводы.</span></div>
@@ -441,7 +450,7 @@ export default function CaseSimulationPage() {
         </div>
       </section>
 
-      <section className="engagement-matrix-section" aria-label="Главная матрица Cases × 64 Agents">
+      <section className="engagement-matrix-section" aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
           <span>Нажмите статус Case 1, чтобы увидеть input, output и handoff.</span>
