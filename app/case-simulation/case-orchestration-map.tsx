@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { agents, layerById } from "../../packages/catalog-data/src/agents";
 import { processRelationshipLabels, type ProcessActorKind, type ProcessRelationship } from "../process-model";
 import { case1ProcessGraph } from "./case-1-graph";
@@ -50,6 +50,10 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   const [actorFilter, setActorFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
   const [selectedActivityId, setSelectedActivityId] = useState("activity-07");
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const mapScrollRef = useRef<HTMLDivElement>(null);
+  const focusToggleRef = useRef<HTMLButtonElement>(null);
+  const scrollPositionRef = useRef({ left: 0, top: 0 });
 
   const selected = case1ProcessGraph.activities.find((activity) => activity.id === selectedActivityId) ?? case1ProcessGraph.activities[0];
   const incoming = case1ProcessGraph.relationships.filter((relationship) => relationship.to === selected.id);
@@ -76,11 +80,64 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
     return isActivityFocused(source) && isActivityFocused(target);
   };
 
+  const toggleFocusMode = () => {
+    const scrollArea = mapScrollRef.current;
+    if (scrollArea) scrollPositionRef.current = { left: scrollArea.scrollLeft, top: scrollArea.scrollTop };
+    setIsFocusMode((current) => !current);
+  };
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const scrollArea = mapScrollRef.current;
+      if (scrollArea) {
+        scrollArea.scrollLeft = scrollPositionRef.current.left;
+        scrollArea.scrollTop = scrollPositionRef.current.top;
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isFocusMode]);
+
+  useEffect(() => {
+    if (!isFocusMode) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const scrollArea = mapScrollRef.current;
+      if (scrollArea) scrollPositionRef.current = { left: scrollArea.scrollLeft, top: scrollArea.scrollTop };
+      setIsFocusMode(false);
+      window.requestAnimationFrame(() => focusToggleRef.current?.focus());
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isFocusMode]);
+
   return (
-    <section className="orchestration-map-section" aria-labelledby="orchestration-map-title">
+    <section className={`orchestration-map-section ${isFocusMode ? "is-focus-mode" : ""}`} aria-labelledby="orchestration-map-title" data-focus-mode={isFocusMode ? "active" : "inactive"}>
       <div className="section-heading orchestration-heading">
         <div><p>CASE 1 · ORCHESTRATION MAP</p><h2 id="orchestration-map-title">События, ответственность и зависимости</h2></div>
-        <span>Время нелинейно: ветви могут работать параллельно, ожидать Actor или сходиться по ALL-правилу.</span>
+        <div className="orchestration-heading-actions">
+          <span>Время нелинейно: ветви могут работать параллельно, ожидать Actor или сходиться по ALL-правилу.</span>
+          <button
+            ref={focusToggleRef}
+            className="orchestration-focus-button"
+            type="button"
+            aria-label={isFocusMode ? "Выйти из Focus Mode" : "Открыть карту в Focus Mode"}
+            aria-pressed={isFocusMode}
+            onClick={toggleFocusMode}
+            title={isFocusMode ? "Свернуть карту (Esc)" : "Развернуть карту на весь экран"}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d={isFocusMode ? "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" : "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"} /></svg>
+            <b>{isFocusMode ? "Свернуть" : "Focus mode"}</b>
+            {isFocusMode ? <small>Esc</small> : null}
+          </button>
+        </div>
       </div>
 
       <div className="orchestration-toolbar" aria-label="Фильтры карты оркестрации">
@@ -97,7 +154,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
       </div>
 
       <div className="orchestration-workspace">
-        <div className="orchestration-scroll" aria-label="Прокручиваемая карта Case 1">
+        <div ref={mapScrollRef} className="orchestration-scroll" aria-label="Прокручиваемая карта Case 1">
           <div className="orchestration-canvas" style={{ width: canvas.width, height: canvas.header + laneOrder.length * canvas.laneHeight + 92 }}>
             <div className="map-time-axis" aria-hidden="true">
               {timeBands.map((band) => (
