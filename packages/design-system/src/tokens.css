@@ -13,4 +13,14 @@
   --tl-radius-md: 16px;
   --tl-radius-lg: 24px;
   --tl-content: 1800px;
+
+  /* Semantic typography: readable at 100% zoom and gently enlarged on wide displays. */
+  --tl-type-micro: clamp(.75rem, .71rem + .12vw, .875rem);
+  --tl-type-meta: clamp(.8125rem, .77rem + .13vw, .9375rem);
+  --tl-type-secondary: clamp(.875rem, .82rem + .17vw, 1.0625rem);
+  --tl-type-body: clamp(1rem, .92rem + .22vw, 1.25rem);
+  --tl-type-control: clamp(.9375rem, .88rem + .17vw, 1.125rem);
+  --tl-type-card-title: clamp(1.125rem, 1rem + .34vw, 1.5rem);
+  --tl-leading-tight: 1.18;
+  --tl-leading-body: 1.58;
 }

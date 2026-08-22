@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-html { background: var(--tl-paper); color: var(--tl-ink); font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: clamp(16px, calc(14px + .18vw), 19px); scroll-behavior: smooth; }
+html { background: var(--tl-paper); color: var(--tl-ink); font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: clamp(16px, calc(15px + .11vw), 18px); scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; }
 button, input, select { color: inherit; font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -89,6 +89,7 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .side-taxonomy button:hover, .side-taxonomy button.active { background: color-mix(in srgb, var(--item-color) 8%, white); border-color: color-mix(in srgb, var(--item-color) 38%, var(--tl-line)); }
 .side-taxonomy button > span { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; font-weight: 800; }
 .side-taxonomy button strong { font-size: 14px; line-height: 1.25; }
+.side-taxonomy button strong { min-width: 0; overflow-wrap: anywhere; }
 .side-taxonomy button small { align-self: end; color: #829087; font-size: 10px; }
 
 .catalogue-controls { align-items: center; background: rgba(255,255,255,.88); border: 1px solid var(--tl-line); border-radius: 14px; display: flex; gap: 12px; padding: 12px; position: sticky; top: 94px; z-index: 20; }
@@ -311,15 +312,16 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   .data-tabs { justify-content: flex-start; margin-left: 0; margin-right: 0; max-width: none; }
 }
 
-/* Readability floor shared by dense catalogue metadata and widescreen layouts. */
+/* Semantic typography layer shared by every Atlas page and dense catalogue view. */
 .shared-brand-copy small,
+.kicker,
 .boundary-divider small,
 .dataset-table > header,
 .source-grid article > div:first-child span,
 .source-grid article > div:first-child b,
 .glossary-list article > div:first-child span,
 .glossary-list article > div:first-child b,
-.atlas-footer > span { font-size: 11px; }
+.atlas-footer > span { font-size: var(--tl-type-micro); line-height: 1.4; }
 
 .status-tag,
 .catalogue-entry > div span,
@@ -340,7 +342,7 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .dataset-table em,
 .governance-rail span,
 .glossary-list footer small,
-.method-grid article span { font-size: 11px; }
+.method-grid article span { font-size: var(--tl-type-micro); line-height: 1.4; }
 
 .atlas-stats small,
 .section-title p,
@@ -360,10 +362,116 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .source-grid > article > small,
 .layer-stack article > b,
 .layer-stack article span,
-.id-model code { font-size: 12px; }
+.id-model code { font-size: var(--tl-type-meta); line-height: 1.45; }
 
 .segmented.large button,
 .data-controls select,
 .dataset-table > button > span,
 .source-grid a,
-.atlas-footer p { font-size: 13px; }
+.atlas-footer p { font-size: var(--tl-type-secondary); line-height: 1.5; }
+
+.atlas-nav a,
+.open-tenderlab,
+.catalogue-search input,
+.segmented button,
+.empty-state button,
+.not-found a { font-size: var(--tl-type-control); }
+
+.page-intro aside p,
+.atlas-stats span,
+.boundary-grid article a,
+.deferred-banner p,
+.actor-card > p,
+.actor-card > small,
+.atlas-drawer section > p,
+.actor-detail-grid section p,
+.io-panel p,
+.context-note p,
+.proprietary-intro p,
+.source-grid p,
+.architecture-heading p,
+.governance-rail p,
+.glossary-list h3,
+.glossary-list p,
+.method-grid p { font-size: var(--tl-type-secondary); line-height: var(--tl-leading-body); }
+
+.boundary-grid article p,
+.catalogue-entry p,
+.drawer-ru,
+.not-found p { font-size: var(--tl-type-body); line-height: var(--tl-leading-body); }
+
+.side-taxonomy button strong,
+.dataset-table b,
+.layer-stack article strong { font-size: var(--tl-type-card-title); line-height: var(--tl-leading-tight); }
+
+.page-intro aside { padding: clamp(26px, 1.8vw, 34px); }
+.page-intro aside > strong { font-size: clamp(1.625rem, 1.4rem + .35vw, 2rem); }
+.atlas-stats article { gap: 8px; min-height: 154px; padding: clamp(22px, 1.5vw, 30px); }
+.catalogue-controls { gap: 14px; padding: 14px; }
+.catalogue-search { min-height: 52px; padding-inline: 16px; }
+.catalogue-search input { padding: 14px 10px; }
+.segmented button { min-height: 44px; padding: 11px 15px; }
+.segmented.large button { min-height: 48px; padding: 12px 20px; }
+.data-controls select { min-height: 52px; padding: 13px 16px; }
+.side-taxonomy button { min-height: 174px; padding: 21px; }
+.actor-card { min-height: 340px; padding: 26px; }
+.actor-card footer { padding: 17px 25px; }
+.family-strip button { gap: 9px; min-height: 124px; padding: 16px; }
+.family-strip strong { font-size: var(--tl-type-secondary); line-height: 1.3; }
+.dataset-table > header,
+.dataset-table > button { gap: 24px; padding: 21px 24px; }
+.dataset-table > header { min-height: 54px; }
+.dataset-table > button { min-height: 112px; }
+.dataset-table > button > span { line-height: 1.5; }
+.dataset-table small { margin-top: 7px; }
+.dataset-table em { padding: 6px 9px; }
+.source-grid article,
+.glossary-list article,
+.method-grid article { padding: 28px; }
+.source-grid article { min-height: 380px; }
+.glossary-list article { min-height: 370px; }
+.method-grid article { min-height: 320px; }
+.layer-stack article { gap: 18px; grid-template-columns: 54px 1fr; min-height: 82px; padding: 18px 21px; }
+.layer-stack article > b { height: 42px; width: 42px; }
+.atlas-drawer > section { padding: 26px; }
+.actor-detail-grid section,
+.context-note { padding: 20px; }
+.io-panel section { padding: 24px; }
+
+@media (min-width: 1800px) {
+  :root {
+    --tl-type-micro: .875rem;
+    --tl-type-meta: .9375rem;
+    --tl-type-secondary: 1.0625rem;
+    --tl-type-body: 1.25rem;
+    --tl-type-control: 1.0625rem;
+    --tl-type-card-title: 1.375rem;
+  }
+  .atlas-main { max-width: 1880px; }
+  .atlas-nav a { padding: 14px 18px; }
+  .family-strip { gap: 10px; }
+}
+
+@media (max-width: 900px) {
+  .family-strip button { min-height: 112px; }
+  .dataset-table > button { min-height: 0; }
+}
+
+@media (max-width: 620px) {
+  :root {
+    --tl-type-micro: .75rem;
+    --tl-type-meta: .8125rem;
+    --tl-type-secondary: .9rem;
+    --tl-type-body: 1rem;
+    --tl-type-control: .875rem;
+    --tl-type-card-title: 1.0625rem;
+  }
+  .atlas-nav a { font-size: var(--tl-type-control); }
+  .atlas-stats article { min-height: 132px; }
+  .side-taxonomy button { min-height: 138px; }
+  .actor-card { min-height: 315px; }
+  .family-strip button { min-height: 110px; }
+  .source-grid article,
+  .glossary-list article,
+  .method-grid article { min-height: 0; padding: 22px; }
+}

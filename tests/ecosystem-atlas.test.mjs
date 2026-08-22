@@ -46,3 +46,19 @@ test("keeps actors, datasets, sources, and glossary as independent canonical reg
   assert.doesNotMatch(actors, /agentIds?|agents:/i, "actor definitions must not embed Agent relationships yet");
   assert.doesNotMatch(datasets, /agentIds?|agents:/i, "dataset definitions must not embed Agent relationships yet");
 });
+
+test("uses one responsive semantic typography system across the Atlas", async () => {
+  const [tokens, styles] = await Promise.all([
+    readFile(path.join(projectRoot, "packages", "design-system", "src", "tokens.css"), "utf8"),
+    readFile(path.join(projectRoot, "apps", "ecosystem-atlas", "src", "styles.css"), "utf8"),
+  ]);
+
+  for (const token of ["micro", "meta", "secondary", "body", "control", "card-title"]) {
+    assert.match(tokens, new RegExp(`--tl-type-${token}:`));
+    assert.match(styles, new RegExp(`var\\(--tl-type-${token}\\)`));
+  }
+  assert.match(styles, /@media \(min-width: 1800px\)/);
+  assert.match(styles, /@media \(max-width: 620px\)/);
+  assert.match(styles, /\.dataset-table > header[\s\S]*var\(--tl-type-micro\)/);
+  assert.match(styles, /\.catalogue-search input[\s\S]*var\(--tl-type-control\)/);
+});
