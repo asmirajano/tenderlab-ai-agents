@@ -165,6 +165,7 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .dataset-table > button > span:first-child { display: grid; gap: 5px; }
 .dataset-table b { color: var(--tl-ink); font-size: 13px; }
 .dataset-table small { color: #89958d; display: block; font-size: 9px; margin-top: 4px; }
+.dataset-table .dataset-canonical-id { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 800; letter-spacing: .055em; margin: 0 0 2px; overflow-wrap: anywhere; }
 .dataset-table i { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 9px; font-style: normal; font-weight: 800; margin-right: 7px; }
 .dataset-table em { border-radius: 5px; display: inline-block; font-size: 8px; font-style: normal; font-weight: 800; padding: 5px 7px; }
 .priority-core { background: #e6f5ee; color: #08775e; }
@@ -172,6 +173,9 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .priority-expansion { background: #fff5de; color: #9a6a12; }
 .priority-specialized { background: #f4ecf6; color: #8b579a; }
 .proprietary-intro { background: linear-gradient(110deg, #e5f5ed, #f8fbf9); border: 1px solid #bddfcf; border-radius: 16px; margin-top: 28px; padding: 28px 32px; }
+.atlas-drawer > .dataset-example { background: color-mix(in srgb, var(--item-color) 8%, white); border-color: color-mix(in srgb, var(--item-color) 32%, var(--tl-line)); }
+.atlas-drawer > .dataset-example > span { color: var(--item-color); }
+.atlas-drawer > .dataset-example > strong { font-size: var(--tl-type-body); line-height: var(--tl-leading-body); }
 .proprietary-intro h2 { font-size: clamp(28px, 3vw, 48px); }
 .proprietary-intro p { color: var(--tl-muted); font-size: 14px; line-height: 1.55; margin: 15px 0 0; }
 .source-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }

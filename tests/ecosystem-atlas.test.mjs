@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const atlasRoot = path.join(projectRoot, "apps", "ecosystem-atlas", "dist");
@@ -38,6 +38,8 @@ test("keeps actors, datasets, sources, and glossary as independent canonical reg
   assert.equal([...actors.matchAll(/^ {2}side\(/gm)].length, 7, "expected seven canonical Tender Sides");
   assert.equal([...actors.matchAll(/^ {2}actor\(/gm)].length, 44, "expected 44 institutional Actor Types");
   assert.equal([...datasets.matchAll(/^ {2}d\(/gm)].length, 96, "expected the comprehensive logical dataset catalogue");
+  assert.equal([...datasets.matchAll(/^ {2}"?[A-Z][A-Z0-9-]*"?:\s*"[^"\r\n]*[А-Яа-яЁё][^"\r\n]*",?$/gm)].length, 96, "expected one Russian example for every dataset");
+  assert.match(schema, /exampleRu: string/);
   assert.equal([...datasets.matchAll(/^ {2}source\(/gm)].length, 17, "expected representative source/provider records");
   assert.equal([...glossary.matchAll(/^ {2}term\(/gm)].length, 35, "expected a shared canonical glossary");
 
@@ -61,4 +63,16 @@ test("uses one responsive semantic typography system across the Atlas", async ()
   assert.match(styles, /@media \(max-width: 620px\)/);
   assert.match(styles, /\.dataset-table > header[\s\S]*var\(--tl-type-micro\)/);
   assert.match(styles, /\.catalogue-search input[\s\S]*var\(--tl-type-control\)/);
+});
+
+test("gives every canonical dataset a stable ID and a unique Russian example", async () => {
+  const moduleUrl = pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "datasets.ts")).href;
+  const { tenderDatasets } = await import(moduleUrl);
+  assert.equal(tenderDatasets.length, 96);
+  assert.equal(new Set(tenderDatasets.map((item) => item.id)).size, 96);
+  assert.equal(new Set(tenderDatasets.map((item) => item.exampleRu)).size, 96);
+  for (const item of tenderDatasets) {
+    assert.match(item.id, /^dataset:TEA-DS-[A-Z0-9-]+$/);
+    assert.match(item.exampleRu, /[А-Яа-яЁё]/, `${item.id} needs a Russian example`);
+  }
 });

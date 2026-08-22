@@ -53,6 +53,7 @@ export type DataFamily = CatalogueRecord & {
 export type TenderDataset = CatalogueRecord & {
   familyId: string;
   contains: string;
+  exampleRu: string;
   exampleSources: string[];
   origin: DataOrigin;
   visibility: DataVisibility[];

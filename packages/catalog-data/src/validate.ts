@@ -13,6 +13,7 @@ export function validateEcosystemCatalogues() {
 
   const sideIds = new Set(tenderSides.map((item) => item.id));
   const familyIds = new Set(dataFamilies.map((item) => item.id));
+  const datasetExamples = new Set<string>();
 
   for (const item of actorTypes) {
     for (const sideId of item.sideIds) {
@@ -22,6 +23,9 @@ export function validateEcosystemCatalogues() {
 
   for (const item of tenderDatasets) {
     if (!familyIds.has(item.familyId)) throw new Error(`Dataset ${item.id} references unknown family ${item.familyId}`);
+    if (!item.exampleRu?.trim() || !/[А-Яа-яЁё]/.test(item.exampleRu)) throw new Error(`Dataset ${item.id} needs a Russian example`);
+    if (datasetExamples.has(item.exampleRu)) throw new Error(`Dataset ${item.id} duplicates another example`);
+    datasetExamples.add(item.exampleRu);
   }
 
   return {

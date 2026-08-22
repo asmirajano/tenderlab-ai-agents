@@ -247,6 +247,7 @@ function DatasetDrawer({ dataset, onClose }: { dataset: TenderDataset; onClose: 
         <h2 id="dataset-drawer-title">{dataset.name.en}</h2><p className="drawer-ru">{dataset.name.ru}</p>
         <div className="drawer-badges"><span>{family.code} · {family.name.en}</span><span>{priorityLabels[dataset.priority]}</span><span>Difficulty {dataset.difficulty}</span></div>
         <section><span>WHAT IT CONTAINS</span><strong>{dataset.contains}</strong><p>{dataset.value}</p></section>
+        <section className="dataset-example"><span>ПРИМЕР · DEMO</span><strong>{dataset.exampleRu}</strong></section>
         <div className="actor-detail-grid">
           <section><span>ORIGIN</span><p>{dataset.origin}</p></section>
           <section><span>VISIBILITY</span><p>{dataset.visibility.join(" · ")}</p></section>
@@ -276,7 +277,7 @@ function DataPage() {
     return tenderDatasets.filter((item) => {
       const familyMatch = tab === "proprietary" ? item.familyId === proprietaryFamily : familyId === "all" || item.familyId === familyId;
       const priorityMatch = priority === "all" || item.priority === priority;
-      const haystack = [item.name.en, item.name.ru, item.contains, item.value, ...item.exampleSources].join(" ").toLocaleLowerCase("ru");
+      const haystack = [item.id, item.name.en, item.name.ru, item.contains, item.value, item.exampleRu, ...item.exampleSources].join(" ").toLocaleLowerCase("ru");
       return familyMatch && priorityMatch && (!normalized || haystack.includes(normalized));
     });
   }, [familyId, priority, query, tab]);
@@ -301,7 +302,7 @@ function DataPage() {
           <header><span>DATASET</span><span>FAMILY</span><span>MODEL</span><span>PRIORITY</span><span>VALUE</span><span /></header>
           {filtered.map((item) => {
             const family = dataFamilies.find((candidate) => candidate.id === item.familyId)!;
-            return <button key={item.id} onClick={() => setSelected(item)} style={{ "--item-color": family.color } as CSSProperties}><span><b>{item.name.en}</b><small>{item.name.ru}</small></span><span><i>{family.code}</i>{family.name.en}</span><span>{item.origin}<small>{item.visibility.join(" · ")}</small></span><span><em className={`priority-${item.priority}`}>{priorityLabels[item.priority]}</em><small>Difficulty {item.difficulty}</small></span><span>{item.value}</span><span>→</span></button>;
+            return <button key={item.id} onClick={() => setSelected(item)} style={{ "--item-color": family.color } as CSSProperties}><span><small className="dataset-canonical-id">{item.id.replace("dataset:", "")}</small><b>{item.name.en}</b><small>{item.name.ru}</small></span><span><i>{family.code}</i>{family.name.en}</span><span>{item.origin}<small>{item.visibility.join(" · ")}</small></span><span><em className={`priority-${item.priority}`}>{priorityLabels[item.priority]}</em><small>Difficulty {item.difficulty}</small></span><span>{item.value}</span><span>→</span></button>;
           })}
         </section>
         {filtered.length === 0 && <div className="empty-state"><strong>Ничего не найдено</strong><button onClick={() => { setQuery(""); setFamilyId("all"); setPriority("all"); }}>Сбросить фильтры</button></div>}
