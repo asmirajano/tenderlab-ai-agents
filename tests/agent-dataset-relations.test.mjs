@@ -12,21 +12,25 @@ test("classifies every Agent deliverable and validates typed Dataset contributio
   assert.deepEqual(result, {
     agents: 64,
     deliverables: 64,
-    datasetContributions: 74,
-    datasetGaps: 21,
-    nonDatasetDeliverables: 25,
+    datasetContributions: 93,
+    datasetGaps: 2,
+    datasetGapFindings: 21,
+    nonDatasetDeliverables: 8,
   });
   assert.equal(new Set(registry.agentDeliverables.map((item) => item.agentId)).size, 64);
   assert.ok(registry.agentDatasetContributions.every((item) => item.status === "proposed"));
   assert.ok(registry.agentDatasetContributions.every((item) => item.provenanceRequirement));
 });
 
-test("does not confuse company discovery with procurement evaluation shortlists", async () => {
+test("resolves company discovery to the canonical Company × Tender assessment Dataset", async () => {
   const moduleUrl = pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-dataset-relations.ts")).href;
   const registry = await import(moduleUrl);
   const discoveryId = "agent:TL-A014";
-  assert.equal(registry.datasetContributionsForAgent(discoveryId).length, 0);
-  assert.equal(registry.datasetGapsForAgent(discoveryId)[0]?.proposedName, "Company × Tender Discovery Results");
+  const contributions = registry.datasetContributionsForAgent(discoveryId);
+  assert.equal(contributions.length, 1);
+  assert.equal(contributions[0]?.datasetId, "dataset:TEA-DS-COMPANY-TENDER-OPPORTUNITY-ASSESSMENTS");
+  assert.equal(registry.datasetGapsForAgent(discoveryId).length, 0);
+  assert.equal(registry.agentDatasetGapFindings.find((item) => item.agentId === discoveryId)?.status, "resolved");
 });
 
 test("builds stable cross-app Dataset profile links from Dataset slugs", async () => {
@@ -38,13 +42,25 @@ test("builds stable cross-app Dataset profile links from Dataset slugs", async (
   );
 });
 
-test("resolves all 74 relationships through the canonical Dataset registry without duplicated Dataset metadata", async () => {
+test("preserves resolved, rejected, and unresolved Dataset Gap audit findings", async () => {
+  const moduleUrl = pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-dataset-relations.ts")).href;
+  const registry = await import(moduleUrl);
+  assert.equal(registry.agentDatasetGapFindings.length, 21);
+  assert.deepEqual(registry.agentDatasetGaps.map((item) => item.agentId).sort(), ["agent:TL-A034", "agent:TL-A057"]);
+  assert.equal(registry.agentDatasetGapFindings.find((item) => item.agentId === "agent:TL-A039")?.status, "rejected");
+  assert.equal(
+    registry.datasetContributionsForAgent("agent:TL-A039")[0]?.datasetId,
+    "dataset:TEA-DS-BIDS",
+  );
+});
+
+test("resolves all 93 relationships through the canonical Dataset registry without duplicated Dataset metadata", async () => {
   const [relationsModule, datasetsModule] = await Promise.all([
     import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-dataset-relations.ts")).href),
     import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "datasets.ts")).href),
   ]);
   const datasetIds = new Set(datasetsModule.tenderDatasets.map((item) => item.id));
-  assert.equal(relationsModule.agentDatasetContributions.length, 74);
+  assert.equal(relationsModule.agentDatasetContributions.length, 93);
   for (const relation of relationsModule.agentDatasetContributions) {
     assert.ok(datasetIds.has(relation.datasetId), `${relation.id} must resolve to the canonical Dataset registry`);
     assert.match(relationsModule.tenderEcosystemDatasetUrl(relation.datasetId), /^https:\/\/tender-ecosystem-atlas\.web\.app\/data\?dataset=.+/);
