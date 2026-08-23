@@ -424,7 +424,7 @@ function AgentDetailDrawerView({
               {context && <em>CASE CONTEXT</em>}
             </div>
             <h3 id="agent-detail-title">{agent.name}</h3>
-             <p className="drawer-purpose"><span>SIMPLY / ПРОСТО</span><AgentReferenceText text={agent.profile.simply} subjectAgentId={agent.id} onOpenAgent={onOpenReference} /></p>
+             <p className="drawer-purpose"><span className="drawer-field-label">SIMPLY / ПРОСТО</span><AgentReferenceText text={agent.profile.simply} subjectAgentId={agent.id} onOpenAgent={onOpenReference} /></p>
           </div>
         </header>
         <section className="drawer-working-state" aria-label={`${agent.name} personal working state`}>

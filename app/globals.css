@@ -852,6 +852,9 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 
 .agent-drawer {
   --layer-color: #176b51;
+  --drawer-body-color: #536159;
+  --drawer-body-line-height: 1.55;
+  --drawer-body-weight: 400;
   animation: drawer-in 240ms ease both;
   background:
     linear-gradient(color-mix(in srgb, var(--layer-color) 8%, white), white 44%);
@@ -866,6 +869,22 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
   width: min(96vw, 760px);
 }
 
+/* Canonical drawer typography: labels retain the product's compact technical
+   voice; explanatory values always return to the readable body face. */
+.agent-drawer p,
+.agent-drawer li {
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-weight: var(--drawer-body-weight);
+  letter-spacing: normal;
+  text-transform: none;
+}
+.agent-drawer .agent-inline-reference {
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-weight: 520;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 @keyframes drawer-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
 
 .drawer-close { align-items: center; background: white; border: 1px solid var(--line); border-radius: 50%; cursor: pointer; display: flex; font-size: 22px; height: 40px; justify-content: center; position: absolute; right: 22px; top: 22px; width: 40px; z-index: 2; }
@@ -878,10 +897,10 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .drawer-icon { align-items: center; background: color-mix(in srgb, var(--layer-color) 10%, white); border: 1px solid color-mix(in srgb, var(--layer-color) 28%, var(--line)); border-radius: 15px; color: var(--layer-color); display: flex; font-size: 32px; height: 74px; justify-content: center; width: 74px; }
 .drawer-identity h3 { font-size: clamp(32px, 3.2vw, 44px); font-weight: 590; letter-spacing: -.055em; line-height: 1.02; margin: 15px 0 11px; }
 .drawer-purpose { color: #657269; display: grid; font-size: 15px; gap: 5px; line-height: 1.48; margin: 0; }
-.drawer-purpose > span { color: #8a968e; font-family: var(--font-geist-mono), monospace; font-size: 8px; font-weight: 750; letter-spacing: .1em; }
+.drawer-purpose > .drawer-field-label { color: #8a968e; font-family: var(--font-geist-mono), monospace; font-size: 8px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .drawer-canonical-profile { background: rgba(255,255,255,.9); border: 1px solid color-mix(in srgb, var(--layer-color) 26%, var(--line)); border-radius: 13px; margin-top: 24px; overflow: hidden; }
 .drawer-profile-heading { align-items: center; background: color-mix(in srgb, var(--layer-color) 8%, white); border-bottom: 1px solid color-mix(in srgb, var(--layer-color) 20%, var(--line)); display: flex; gap: 14px; justify-content: space-between; padding: 14px 17px; }
-.drawer-profile-heading > span, .drawer-canonical-profile small, .drawer-overlap-finding > span, .drawer-contract-flow span, .drawer-contract-rules small { color: var(--green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.drawer-profile-heading > span, .drawer-canonical-profile small, .drawer-overlap-finding > span, .drawer-contract-flow article > span, .drawer-contract-rules small { color: var(--green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .profile-status { border-radius: 5px; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); letter-spacing: .05em; padding: 5px 7px; }
 .profile-status-structured { background: #dff1e7; color: #176b51; }
 .profile-status-needs-review { background: #fff0d3; color: #94620b; }
@@ -889,11 +908,11 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .drawer-profile-summary article { min-width: 0; padding: 15px 17px; }
 .drawer-profile-summary article:nth-child(even) { border-left: 1px solid var(--line); }
 .drawer-profile-summary article:nth-child(n+3) { border-top: 1px solid var(--line); }
-.drawer-profile-summary p, .drawer-overlap-finding p, .drawer-contract-rules p { color: #536159; font-size: var(--type-small); line-height: 1.5; margin: 7px 0 0; }
+.drawer-profile-summary p, .drawer-overlap-finding p, .drawer-contract-rules p { color: var(--drawer-body-color); font-size: var(--type-small); font-weight: var(--drawer-body-weight); line-height: var(--drawer-body-line-height); margin: 7px 0 0; }
 .drawer-profile-lists { border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .drawer-profile-lists article { padding: 15px 17px; }
 .drawer-profile-lists article + article { border-left: 1px solid var(--line); }
-.drawer-profile-lists ul, .drawer-contract-flow ul, .comparison-profile-list { color: #536159; display: grid; gap: 5px; line-height: 1.45; margin: 9px 0 0; padding-left: 18px; }
+.drawer-profile-lists ul, .drawer-contract-flow ul, .comparison-profile-list { color: var(--drawer-body-color); display: grid; gap: 5px; line-height: var(--drawer-body-line-height); margin: 9px 0 0; padding-left: 18px; }
 .drawer-profile-lists li, .drawer-contract-flow li, .comparison-profile-list li { font-size: var(--type-small); }
 .drawer-overlap-finding { background: #fffaf0; border-top: 1px solid #ead6a8; padding: 14px 17px; }
 .drawer-overlap-finding > b { color: #76551c; display: block; font-size: var(--type-label); line-height: 1.45; margin-top: 6px; }
@@ -913,7 +932,7 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .drawer-contract-flow { align-items: stretch; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr) 18px minmax(0, 1fr); margin-top: 13px; }
 .drawer-contract-flow article { background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 9px; min-width: 0; padding: 12px; }
 .drawer-contract-flow > i { align-self: center; color: var(--layer-color); font-style: normal; text-align: center; }
-.drawer-contract-flow p { color: #536159; font-size: var(--type-small); line-height: 1.5; margin: 9px 0 0; }
+.drawer-contract-flow p { color: var(--drawer-body-color); font-size: var(--type-small); font-weight: var(--drawer-body-weight); line-height: var(--drawer-body-line-height); margin: 9px 0 0; }
 .drawer-contract-rules { background: #f5f8f6; border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; overflow: hidden; }
 .drawer-contract-rules article { min-width: 0; padding: 12px; }
 .drawer-contract-rules article + article { border-left: 1px solid var(--line); }
@@ -965,7 +984,7 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .drawer-rationale-list article:last-child { padding-bottom: 0; }
 .drawer-rationale-list article + article { border-top: 1px solid var(--line); }
 .drawer-rationale-list.rationale-single article { grid-template-columns: minmax(0, 1fr); }
-.drawer-rationale-list p { color: #5f6d64; font-size: 13px; line-height: 1.5; margin: -2px 0 0; }
+.drawer-rationale-list p { color: #5f6d64; font-size: 13px; font-weight: var(--drawer-body-weight); line-height: var(--drawer-body-line-height); margin: -2px 0 0; }
 .rationale-side { border: 1px solid #d8dfda; border-radius: 5px; font-family: var(--font-geist-mono), monospace; font-size: 8px; font-weight: 750; letter-spacing: .04em; line-height: 1.25; padding: 6px 7px; text-align: center; text-transform: uppercase; }
 .rationale-command-center { background: #f1effb; border-color: #d9d3ed; color: #665a98; }
 .rationale-client-side { background: #eaf6f4; border-color: #c8e3dc; color: #21745e; }
@@ -997,7 +1016,7 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .drawer-context-reason { background: white; border: 1px solid var(--line); border-radius: 9px; margin-top: 12px; overflow: hidden; }
 .drawer-context-reason p { display: grid; gap: 5px; margin: 0; padding: 11px 12px; }
 .drawer-context-reason p + p { border-top: 1px solid var(--line); }
-.drawer-context-reason b { color: #344239; font-size: var(--type-small); font-weight: 580; line-height: 1.45; }
+.drawer-context-reason b { color: #344239; font-size: var(--type-small); font-weight: 450; line-height: var(--drawer-body-line-height); }
 .drawer-context-reason .context-condition { background: #fff8e9; }
 .drawer-context-reason .context-condition-standby { background: #f3f5f3; }
 .drawer-context-flow { display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1.15fr) 18px minmax(0, 1fr); margin-top: 12px; }
@@ -1014,7 +1033,7 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 .drawer-execution-purpose p { display: grid; gap: 6px; margin: 0; padding: 13px 14px; }
 .drawer-execution-purpose p + p { border-top: 1px solid var(--line); }
 .drawer-execution-purpose small, .drawer-execution-evidence > span, .drawer-execution-necessity span, .drawer-execution-necessity p small, .drawer-event-result-reference > span { color: var(--green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 780; letter-spacing: .08em; }
-.drawer-execution-purpose b { color: #26352d; font-size: var(--type-small); font-weight: 620; line-height: 1.5; }
+.drawer-execution-purpose b { color: #26352d; font-size: var(--type-small); font-weight: 450; line-height: var(--drawer-body-line-height); }
 .drawer-execution-evidence { background: #f8faf8; border: 1px solid var(--line); border-radius: 9px; padding: 14px; }
 .drawer-execution-evidence ul { display: grid; gap: 8px; list-style: none; margin: 11px 0 0; padding: 0; }
 .drawer-execution-evidence li { color: #48574e; font-size: var(--type-small); line-height: 1.5; padding-left: 17px; position: relative; }
@@ -1253,7 +1272,7 @@ body { font-size: var(--type-body); line-height: 1.5; }
 .hierarchy-toggle small,
 .output-card-heading span,
 .main-output-card > p span,
-.drawer-purpose > span,
+.drawer-purpose > .drawer-field-label,
 .drawer-process-heading > span,
 .drawer-process-heading > b,
 .drawer-output-heading > span,
