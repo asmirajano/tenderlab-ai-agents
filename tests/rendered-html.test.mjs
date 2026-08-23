@@ -429,11 +429,13 @@ test("uses one typed relationship model for Case Audit and the Agent Catalog Net
 });
 
 test("provides a registry-backed cross-view Agent Comparison workspace", async () => {
-  const [pageSource, comparisonSource, networkSource, globalStyles] = await Promise.all([
+  const [pageSource, comparisonSource, networkSource, mapSource, globalStyles, caseStyles] = await Promise.all([
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "agent-comparison.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "agent-network-view.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-orchestration-map.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "globals.css"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
   ]);
 
   assert.match(pageSource, /comparisonIds/);
@@ -447,10 +449,19 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(comparisonSource, /Heuristic only/);
   assert.match(comparisonSource, /ADD AGENT/);
   assert.match(networkSource, /onToggleCompare/);
+  assert.match(mapSource, /import \{ AgentComparisonBar, AgentComparisonModal \} from "\.\.\/agent-comparison"/);
+  assert.match(mapSource, /className="event-agent-compare"/);
+  assert.match(mapSource, /aria-pressed=\{comparisonIds\.includes\(agent\.id\)\}/);
+  assert.match(mapSource, /<AgentComparisonBar selectedIds=\{comparisonIds\}/);
+  assert.match(mapSource, /<AgentComparisonModal/);
+  assert.match(mapSource, /const selectActivity = \(activityId: string\) => \{[\s\S]*setComparisonIds\(\[\]\);[\s\S]*setComparisonOpen\(false\)/);
+  assert.match(mapSource, /onClick=\{\(\) => selectActivity\(activity\.id\)\}/);
   assert.match(globalStyles, /\.comparison-modal \{/);
   assert.match(globalStyles, /height: calc\(100dvh - 36px\)/);
   assert.match(globalStyles, /\.comparison-table thead th/);
   assert.match(globalStyles, /position: sticky/);
+  assert.match(caseStyles, /\.event-agent-compare\[aria-pressed="true"\]/);
+  assert.match(caseStyles, /\.inspector-agent-audit-row/);
 });
 
 test("provides a filter-aware 64-Agent Matrix as the fourth Catalog view", async () => {

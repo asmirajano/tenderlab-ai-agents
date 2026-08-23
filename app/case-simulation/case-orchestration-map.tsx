@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { agents, layerById } from "../../packages/catalog-data/src/agents";
+import { AgentComparisonBar, AgentComparisonModal } from "../agent-comparison";
 import { eventAgentAuditLabels, processRelationshipLabels, type ProcessActorKind, type ProcessRelationship } from "../process-model";
 import { case1ProcessGraph } from "./case-1-graph";
 
@@ -51,6 +52,8 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   const [agentFilter, setAgentFilter] = useState("all");
   const [selectedActivityId, setSelectedActivityId] = useState("activity-01");
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [comparisonIds, setComparisonIds] = useState<number[]>([]);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
   const mapScrollRef = useRef<HTMLDivElement>(null);
   const focusToggleRef = useRef<HTMLButtonElement>(null);
   const scrollPositionRef = useRef({ left: 0, top: 0 });
@@ -91,6 +94,18 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
     const scrollArea = mapScrollRef.current;
     if (scrollArea) scrollPositionRef.current = { left: scrollArea.scrollLeft, top: scrollArea.scrollTop };
     setIsFocusMode((current) => !current);
+  };
+
+  const toggleComparisonAgent = (agentId: number) => {
+    setComparisonIds((current) => current.includes(agentId)
+      ? current.filter((id) => id !== agentId)
+      : [...current, agentId]);
+  };
+
+  const selectActivity = (activityId: string) => {
+    setSelectedActivityId(activityId);
+    setComparisonIds([]);
+    setComparisonOpen(false);
   };
 
   useEffect(() => {
@@ -199,7 +214,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
                   className={`orchestration-node node-${activity.kind} ${activity.critical ? "is-critical" : ""} ${focused ? "is-focused" : "is-muted"} ${selectedNode ? "is-selected" : ""}`}
                   style={{ left: position.x, top: position.y, width: canvas.nodeWidth, minHeight: canvas.nodeHeight }}
                   aria-pressed={selectedNode}
-                  onClick={() => setSelectedActivityId(activity.id)}
+                  onClick={() => selectActivity(activity.id)}
                   key={activity.id}
                 >
                   <span className="node-topline"><b>E{String(activity.eventStep).padStart(2, "0")}</b><i>{activity.stateLabel}</i></span>
@@ -229,18 +244,35 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
           </section>
           <div className={`inspector-agents ${selectedEventAudit ? "is-audited" : ""}`}>
             <span>{selectedEventAudit ? "AGENT EXECUTION AUDIT" : "AGENTS"}</span>
-            <div>
+            <div className="inspector-agent-list">
               {selectedExecutions.length > 0 ? selectedExecutions.map((execution) => {
                 const agent = agents.find((candidate) => candidate.id === execution.agentId);
                 return agent ? (
-                  <button className={`agent-audit-${execution.necessity} ${execution.validationStatus === "needs-review" ? "is-proposed" : ""}`} type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)} key={agent.id} title={execution.condition}>
-                    <i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>
-                    <span>{agent.name}<small>{eventAgentAuditLabels[execution.necessity]}{execution.validationStatus === "needs-review" ? " · PROPOSED" : ""}</small></span>
-                  </button>
+                  <div className={`inspector-agent-audit-row ${comparisonIds.includes(agent.id) ? "is-compare-selected" : ""}`} key={agent.id}>
+                    <button className={`inspector-agent-open agent-audit-${execution.necessity} ${execution.validationStatus === "needs-review" ? "is-proposed" : ""}`} type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)} title={execution.condition}>
+                      <i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>
+                      <span>{agent.name}<small>{eventAgentAuditLabels[execution.necessity]}{execution.validationStatus === "needs-review" ? " · PROPOSED" : ""}</small></span>
+                    </button>
+                    <button
+                      type="button"
+                      className="event-agent-compare"
+                      aria-pressed={comparisonIds.includes(agent.id)}
+                      aria-label={`${comparisonIds.includes(agent.id) ? "Убрать" : "Выбрать"} ${String(agent.id).padStart(2, "0")} · ${agent.name} для сравнения`}
+                      onClick={() => toggleComparisonAgent(agent.id)}
+                    >
+                      <i aria-hidden="true">{comparisonIds.includes(agent.id) ? "✓" : "+"}</i>
+                      <span>{comparisonIds.includes(agent.id) ? "Selected" : "Compare"}</span>
+                    </button>
+                  </div>
                 ) : null;
               }) : selected.agentNames.map((name) => {
                 const agent = agentByName.get(name);
-                return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)} key={name}><i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>{name}</button> : null;
+                return agent ? (
+                  <div className={`inspector-agent-audit-row ${comparisonIds.includes(agent.id) ? "is-compare-selected" : ""}`} key={name}>
+                    <button className="inspector-agent-open" type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)}><i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>{name}</button>
+                    <button type="button" className="event-agent-compare" aria-pressed={comparisonIds.includes(agent.id)} aria-label={`${comparisonIds.includes(agent.id) ? "Убрать" : "Выбрать"} ${String(agent.id).padStart(2, "0")} · ${agent.name} для сравнения`} onClick={() => toggleComparisonAgent(agent.id)}><i aria-hidden="true">{comparisonIds.includes(agent.id) ? "✓" : "+"}</i><span>{comparisonIds.includes(agent.id) ? "Selected" : "Compare"}</span></button>
+                  </div>
+                ) : null;
               })}
             </div>
             {selectedEventAudit && (
@@ -269,6 +301,15 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
         <article><span>{case1ProcessGraph.activities.filter((activity) => activity.kind === "wait").length}</span><b>Managed waits</b><small>каждое ожидание имеет Trigger</small></article>
         <article className="audit-ok"><span>0</span><b>Orphan outputs</b><small>terminal outcome отмечен отдельно</small></article>
       </div>
+      <AgentComparisonBar selectedIds={comparisonIds} onClear={() => setComparisonIds([])} onCompare={() => setComparisonOpen(true)} />
+      {comparisonOpen && comparisonIds.length >= 2 && (
+        <AgentComparisonModal
+          selectedIds={comparisonIds}
+          onAdd={(agentId) => setComparisonIds((current) => current.includes(agentId) ? current : [...current, agentId])}
+          onRemove={(agentId) => setComparisonIds((current) => current.filter((id) => id !== agentId))}
+          onClose={() => setComparisonOpen(false)}
+        />
+      )}
     </section>
   );
 }

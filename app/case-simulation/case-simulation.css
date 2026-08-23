@@ -654,23 +654,30 @@
 .orchestration-inspector dt { color: #718078; font-family: var(--font-geist-mono), monospace; font-size: 9.5px; font-weight: 800; letter-spacing: .06em; }
 .orchestration-inspector dd { font-size: var(--type-small); font-weight: 650; line-height: 1.4; margin: 0; }
 .inspector-agents { margin-top: 23px; }
-.inspector-agents > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.inspector-agents button { align-items: center; background: #f7f9f7; border: 1px solid #d5ded8; border-radius: 7px; display: flex; font-size: 11px; font-weight: 680; gap: 6px; padding: 6px 8px; text-align: left; }
-.inspector-agents button i { border-left: 3px solid var(--agent-color); color: var(--green); font-family: var(--font-geist-mono), monospace; font-size: 9px; font-style: normal; padding-left: 5px; }
+.inspector-agents > .inspector-agent-list { display: grid; gap: 6px; margin-top: 10px; }
+.inspector-agent-audit-row { display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr) auto; }
+.inspector-agent-audit-row.is-compare-selected { border-radius: 8px; box-shadow: 0 0 0 2px rgba(23,107,81,.14); }
+.inspector-agent-open { align-items: center; background: #f7f9f7; border: 1px solid #d5ded8; border-radius: 7px; display: flex; font-size: 11px; font-weight: 680; gap: 6px; min-width: 0; padding: 6px 8px; text-align: left; }
+.inspector-agent-open > i { border-left: 3px solid var(--agent-color); color: var(--green); flex: 0 0 auto; font-family: var(--font-geist-mono), monospace; font-size: 9px; font-style: normal; padding-left: 5px; }
+.event-agent-compare { align-items: center; align-self: stretch; background: white; border: 1px solid #cbd7cf; border-radius: 7px; color: #526158; cursor: pointer; display: inline-flex; flex-direction: column; font-family: var(--font-geist-mono), monospace; font-size: 8px; font-weight: 800; gap: 2px; justify-content: center; letter-spacing: .03em; min-width: 65px; padding: 4px 6px; text-transform: uppercase; }
+.event-agent-compare > i { align-items: center; background: #eef3ef; border-radius: 50%; color: var(--green); display: inline-flex; font-size: 10px; font-style: normal; height: 17px; justify-content: center; width: 17px; }
+.event-agent-compare:hover, .event-agent-compare:focus-visible { border-color: var(--green); color: var(--green); outline: 3px solid var(--green-soft); outline-offset: 1px; }
+.event-agent-compare[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: white; }
+.event-agent-compare[aria-pressed="true"] > i { background: var(--signal); color: var(--ink); }
 .inspector-event-description { background: #f7faf8; border: 1px solid var(--line); border-radius: 10px; margin-top: 13px; padding: 13px; }
 .inspector-event-description > span { color: var(--green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .08em; }
 .inspector-event-description > p { color: #344239; font-size: var(--type-small); line-height: 1.5; margin: 9px 0 0; }
 .inspector-event-description > small { border-top: 1px solid var(--line); color: #65736a; display: block; font-size: var(--type-micro); line-height: 1.45; margin-top: 10px; padding-top: 9px; }
 .inspector-event-description > small b { color: var(--green); display: block; font-family: var(--font-geist-mono), monospace; letter-spacing: .06em; margin-bottom: 4px; }
-.inspector-agents.is-audited button { align-items: flex-start; min-width: 100%; }
-.inspector-agents.is-audited button > span { display: grid; gap: 3px; }
-.inspector-agents.is-audited button > span small { color: #647269; font-family: var(--font-geist-mono), monospace; font-size: 8.5px; font-weight: 800; letter-spacing: .04em; }
-.inspector-agents button.agent-audit-justified { background: #edf7f2; border-color: #b8d8c8; }
-.inspector-agents button.agent-audit-conditional { background: #fff9eb; border-color: #e6cc8c; }
-.inspector-agents button.agent-audit-misplaced { background: #fff8ea; border-color: #e5c886; }
-.inspector-agents button.agent-audit-misplaced > span small { color: #9b5e00; }
-.inspector-agents button.agent-audit-redundant { background: #fff1ef; border-color: #e6b4ad; }
-.inspector-agents button.is-proposed { border-style: dashed; box-shadow: inset 0 0 0 1px rgba(154, 94, 0, .08); }
+.inspector-agents.is-audited .inspector-agent-open { align-items: flex-start; width: 100%; }
+.inspector-agents.is-audited .inspector-agent-open > span { display: grid; gap: 3px; min-width: 0; }
+.inspector-agents.is-audited .inspector-agent-open > span small { color: #647269; font-family: var(--font-geist-mono), monospace; font-size: 8.5px; font-weight: 800; letter-spacing: .04em; }
+.inspector-agent-open.agent-audit-justified { background: #edf7f2; border-color: #b8d8c8; }
+.inspector-agent-open.agent-audit-conditional { background: #fff9eb; border-color: #e6cc8c; }
+.inspector-agent-open.agent-audit-misplaced { background: #fff8ea; border-color: #e5c886; }
+.inspector-agent-open.agent-audit-misplaced > span small { color: #9b5e00; }
+.inspector-agent-open.agent-audit-redundant { background: #fff1ef; border-color: #e6b4ad; }
+.inspector-agent-open.is-proposed { border-style: dashed; box-shadow: inset 0 0 0 1px rgba(154, 94, 0, .08); }
 .inspector-agent-audit-summary { display: grid !important; gap: 6px !important; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 10px !important; }
 .inspector-agent-audit-summary p { background: #f4f7f5; border: 1px solid var(--line); border-radius: 7px; display: grid; gap: 2px; margin: 0; padding: 8px; }
 .inspector-agent-audit-summary p b { color: var(--green); font-size: var(--type-body); }
