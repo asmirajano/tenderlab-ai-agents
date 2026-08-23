@@ -505,12 +505,14 @@ function AgentDetailDrawerView({
 export function AgentDetailDrawer({
   agent,
   onClose,
+  onNavigateAgent,
   context,
   footer,
   navigationBack,
 }: {
   agent: Agent;
   onClose: () => void;
+  onNavigateAgent?: (agent: Agent) => void;
   context?: AgentDetailContext;
   footer?: ReactNode;
   navigationBack?: { canGoBack: boolean; onBack: () => void };
@@ -520,21 +522,15 @@ export function AgentDetailDrawer({
   const activeAgentId = agentPath.at(-1) ?? agent.id;
   const activeAgent = agents.find((candidate) => candidate.id === activeAgentId) ?? agent;
   const openReference = (nextAgent: Agent) => {
+    if (onNavigateAgent) {
+      onNavigateAgent(nextAgent);
+      return;
+    }
     setAgentPath((current) => [...current, nextAgent.id]);
   };
   const goBack = () => {
     setAgentPath((current) => current.length > 1 ? current.slice(0, -1) : current);
   };
-
-  useEffect(() => {
-    const followReference = (event: Event) => {
-      const nextId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
-      if (!agents.some((candidate) => candidate.id === nextId)) return;
-      setAgentPath((current) => current.at(-1) === nextId ? current : [...current, nextId]);
-    };
-    window.addEventListener("tenderlab:navigate-agent-drawer", followReference);
-    return () => window.removeEventListener("tenderlab:navigate-agent-drawer", followReference);
-  }, []);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -659,6 +655,14 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
     setSelectedAgent(agent);
   };
 
+  const openReferencedAgent = (nextAgent: Agent) => {
+    setSelectedAgent((current) => {
+      if (!current || current.id === nextAgent.id) return current;
+      setSelectedAgentHistory((history) => [...history, current]);
+      return nextAgent;
+    });
+  };
+
   const closeAgentProfile = () => {
     setSelectedAgent(null);
     setSelectedAgentHistory([]);
@@ -714,21 +718,6 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, []);
-
-  useEffect(() => {
-    const openReferencedAgent = (event: Event) => {
-      const agentId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
-      const nextAgent = agentById.get(agentId);
-      if (!nextAgent) return;
-      setSelectedAgent((current) => {
-        if (!current || current.id === nextAgent.id) return current;
-        setSelectedAgentHistory((history) => [...history, current]);
-        return nextAgent;
-      });
-    };
-    window.addEventListener("tenderlab:open-agent-reference", openReferencedAgent);
-    return () => window.removeEventListener("tenderlab:open-agent-reference", openReferencedAgent);
   }, []);
 
   useEffect(() => {
@@ -1179,7 +1168,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
       </footer>
 
       {selectedAgent && (
-        <AgentDetailDrawer key={selectedAgent.id} agent={selectedAgent} onClose={closeAgentProfile} navigationBack={{ canGoBack: selectedAgentHistory.length > 0, onBack: backToPreviousAgent }} />
+        <AgentDetailDrawer key={selectedAgent.id} agent={selectedAgent} onClose={closeAgentProfile} onNavigateAgent={openReferencedAgent} navigationBack={{ canGoBack: selectedAgentHistory.length > 0, onBack: backToPreviousAgent }} />
       )}
       {page === "agents" && (
         <AgentComparisonBar selectedIds={comparisonIds} onClear={() => setComparisonIds([])} onCompare={() => setComparisonOpen(true)} />

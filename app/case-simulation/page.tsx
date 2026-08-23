@@ -238,6 +238,15 @@ export default function CaseSimulationPage() {
     setSelectedAgentId(agentId);
   };
 
+  const openReferencedAgent = (nextAgent: Agent) => {
+    setSelectedChronologyStep(null);
+    setSelectedAgentId((current) => {
+      if (!current || current === nextAgent.id) return current;
+      setSelectedAgentHistory((history) => [...history, current]);
+      return nextAgent.id;
+    });
+  };
+
   const closeAgent = () => {
     setSelectedAgentHistory([]);
     setSelectedAgentId(null);
@@ -251,21 +260,6 @@ export default function CaseSimulationPage() {
       return current.slice(0, -1);
     });
   };
-
-  useEffect(() => {
-    const openReferencedAgent = (event: Event) => {
-      const nextId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
-      if (!agents.some((candidate) => candidate.id === nextId)) return;
-      setSelectedAgentId((current) => {
-        if (!current || current === nextId) return current;
-        setSelectedAgentHistory((history) => [...history, current]);
-        setSelectedChronologyStep(null);
-        return nextId;
-      });
-    };
-    window.addEventListener("tenderlab:open-agent-reference", openReferencedAgent);
-    return () => window.removeEventListener("tenderlab:open-agent-reference", openReferencedAgent);
-  }, []);
 
   const openAdjacentAgent = (direction: -1 | 1) => {
     if (!selectedAgent) return;
@@ -660,6 +654,7 @@ export default function CaseSimulationPage() {
           agent={selectedAgent}
           context={selectedDetailContext}
           onClose={closeAgent}
+          onNavigateAgent={openReferencedAgent}
           navigationBack={{ canGoBack: selectedAgentHistory.length > 0, onBack: backToPreviousAgent }}
           footer={(
             <footer className="drawer-case-footer">
