@@ -12,15 +12,14 @@ async function readPublished(relativePath) {
   return readFile(path.join(publishRoot, relativePath), "utf8");
 }
 
-test("exports the strategic presentation, validation tools, glossary, and compatibility routes", async () => {
-  const [home, architecture, workflow, agentsPage, run, caseSimulation, glossary] = await Promise.all([
+test("exports the strategic presentation, validation tools, and compatibility routes", async () => {
+  const [home, architecture, workflow, agentsPage, run, caseSimulation] = await Promise.all([
     readPublished("index.html"),
     readPublished("architecture.html"),
     readPublished("workflow.html"),
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
     readPublished("case-simulation.html"),
-    readPublished("glossary.html"),
   ]);
 
   assert.match(home, /<title>TenderLab\.ai — Agent Architecture/);
@@ -85,19 +84,11 @@ test("exports the strategic presentation, validation tools, glossary, and compat
   assert.match(caseSimulation, /aria-current="page"[^>]+href="\/case-simulation"/);
   assert.doesNotMatch(caseSimulation, /href="\/main-agents-run"/);
 
-  assert.match(glossary, /TENDERLAB KNOWLEDGE SYSTEM/);
-  assert.match(glossary, /TenderLab/);
-  assert.match(glossary, /Glossary/);
-  assert.match(glossary, /Critical Path/);
-  assert.match(glossary, /Fan-Out \/ Fan-In/);
-  assert.match(glossary, /Dependency Graph/);
-  assert.match(glossary, /aria-current="page"[^>]+href="\/glossary"/);
-  assert.doesNotMatch(glossary, /tender-ecosystem-atlas\.web\.app\/glossary/);
-
-  for (const html of [home, architecture, workflow, agentsPage, run, caseSimulation, glossary]) {
+  for (const html of [home, architecture, workflow, agentsPage, run, caseSimulation]) {
     assert.match(html, /<html[^>]*lang="ru"/);
     assert.match(html, /<script[^>]+src="\/_next\/static\/chunks\//);
     assert.match(html, /Glossary/);
+    assert.doesNotMatch(html, /href="\/glossary"/);
     assert.match(html, /aria-haspopup="dialog"/);
     assert.doesNotMatch(html, /codex-preview/);
     assert.doesNotMatch(html, /Your site is taking shape/);
@@ -112,7 +103,6 @@ test("includes every browser asset referenced by the exported pages", async () =
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
     readPublished("case-simulation.html"),
-    readPublished("glossary.html"),
   ]);
   const referencedAssets = new Set();
 
@@ -343,7 +333,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(graphSource, /Every Case 1 waiting activity needs an explicit trigger/);
 });
 
-test("defines one TenderLab-specific canonical glossary for the page and contextual panel", async () => {
+test("defines one TenderLab-specific canonical glossary for the contextual panel", async () => {
   const { contextualGlossaryTermsByPath, scoreTenderGlossaryTerm, tenderGlossaryCategoryLabels, tenderGlossaryTerms } = await import(
     pathToFileURL(path.join(projectRoot, "app", "tender-glossary.ts")).href
   );
@@ -368,7 +358,7 @@ test("defines one TenderLab-specific canonical glossary for the page and context
   assert.match(uiSource, /export function TenderGlossaryShell/);
   assert.match(uiSource, /export function TenderGlossaryBrowser/);
   assert.match(uiSource, /Быстрые определения в контексте текущей страницы/);
-  assert.match(uiSource, /Открыть полный Glossary/);
+  assert.doesNotMatch(uiSource, /Открыть полный Glossary/);
   assert.match(uiSource, /splitGlossaryReferences/);
 });
 
@@ -447,7 +437,7 @@ test("publishes client files only", async () => {
   assert.ok(topLevel.includes("agents.html"));
   assert.ok(topLevel.includes("main-agents-run.html"));
   assert.ok(topLevel.includes("case-simulation.html"));
-  assert.ok(topLevel.includes("glossary.html"));
+  assert.ok(!topLevel.includes("glossary.html"));
   assert.ok(topLevel.includes("_next"));
   assert.ok(!topLevel.includes("server"));
   await assert.rejects(access(path.join(publishRoot, ".env")));

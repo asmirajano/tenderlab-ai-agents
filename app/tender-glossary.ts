@@ -430,7 +430,6 @@ export const contextualGlossaryTermsByPath: Record<string, string[]> = {
   "/agents": ["AI Agent", "Agent Registry", "Main Agent", "Specialized Agent", "Optional Agent", "Shared Agent", "Cross-Stage Agent", "Agent Engagement"],
   "/case-simulation": ["Case", "Event", "Actor", "Dependency", "Waiting State", "Decision Gate", "Critical Path", "Dependency Graph", "Swimlane"],
   "/main-agents-run": ["State", "Input", "Output", "Handoff", "Human Approval", "Waiting State", "Retry"],
-  "/glossary": [],
 };
 
 const normalize = (value: string) => value.toLocaleLowerCase("ru-RU").replace(/[–—/·(),.:]/g, " ").replace(/\s+/g, " ").trim();

@@ -101,7 +101,7 @@ function GlossaryDetail({ item, onClose, onNavigate, compact = false }: {
   );
 }
 
-export function TenderGlossaryBrowser({ mode, contextTerms = [] }: { mode: "panel" | "page"; contextTerms?: string[] }) {
+export function TenderGlossaryBrowser({ contextTerms = [] }: { contextTerms?: string[] }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<TenderGlossaryCategory | "all">("all");
   const [selected, setSelected] = useState<TenderGlossaryTerm | null>(null);
@@ -116,8 +116,8 @@ export function TenderGlossaryBrowser({ mode, contextTerms = [] }: { mode: "pane
   [category, contextSet, query]);
 
   useEffect(() => {
-    if (mode === "panel") searchRef.current?.focus();
-  }, [mode]);
+    searchRef.current?.focus();
+  }, []);
 
   const closeSelected = useCallback(() => {
     setSelected(null);
@@ -162,61 +162,29 @@ export function TenderGlossaryBrowser({ mode, contextTerms = [] }: { mode: "pane
     </>
   );
 
-  if (mode === "panel") {
-    return (
-      <div className="tender-glossary-panel-browser">
-        {controls}
-        <div className="tender-glossary-result-meta">
-          <span><b>{visible.length}</b> совпадений</span>
-          <span><b>{visible.filter((result) => result.contextual).length}</b> по текущей странице</span>
-        </div>
-        <div className="tender-glossary-panel-list">
-          {visible.map(({ item, contextual }) => (
-            <button className="tender-glossary-panel-item" key={item.term} onClick={(event) => openSelected(item, event.currentTarget)} type="button">
-              <span>{tenderGlossaryCategoryLabels[item.category]}{contextual ? " · В контексте" : ""}</span>
-              <strong lang="en">{item.term}</strong>
-              <p>{item.translation}</p>
-            </button>
-          ))}
-          {!visible.length ? <p className="tender-glossary-empty">Термин не найден. Попробуйте роль, процесс, результат или русское объяснение.</p> : null}
-        </div>
-        {selected ? (
-          <div className="tender-glossary-panel-detail">
-            <GlossaryDetail compact item={selected} onClose={closeSelected} onNavigate={setSelected} />
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
   return (
-    <section aria-label="TenderLab Glossary browser" className="tender-glossary-page-browser">
-      <div className="tender-glossary-page-controls">{controls}</div>
+    <div className="tender-glossary-panel-browser">
+      {controls}
       <div className="tender-glossary-result-meta">
-        <span><b>{visible.length}</b> лучших совпадений</span>
-        <span>Одна каноническая база для страницы и quick-panel</span>
+        <span><b>{visible.length}</b> совпадений</span>
+        <span><b>{visible.filter((result) => result.contextual).length}</b> по текущей странице</span>
       </div>
-      <div className="tender-glossary-grid">
-        {visible.map(({ item }) => (
-          <button className="tender-glossary-card" key={item.term} onClick={(event) => openSelected(item, event.currentTarget)} type="button">
-            <span>{tenderGlossaryCategoryLabels[item.category]}</span>
+      <div className="tender-glossary-panel-list">
+        {visible.map(({ item, contextual }) => (
+          <button className="tender-glossary-panel-item" key={item.term} onClick={(event) => openSelected(item, event.currentTarget)} type="button">
+            <span>{tenderGlossaryCategoryLabels[item.category]}{contextual ? " · В контексте" : ""}</span>
             <strong lang="en">{item.term}</strong>
-            <em>{item.translation}</em>
-            <p>{item.simpleExplanation}</p>
-            <small>Открыть определение ↗</small>
+            <p>{item.translation}</p>
           </button>
         ))}
+        {!visible.length ? <p className="tender-glossary-empty">Термин не найден. Попробуйте роль, процесс, результат или русское объяснение.</p> : null}
       </div>
-      {!visible.length ? <p className="tender-glossary-empty">Нет совпадений. Сбросьте фильтр или измените запрос.</p> : null}
       {selected ? (
-        <div className="tender-glossary-modal" role="presentation">
-          <button aria-label="Закрыть модальное окно Glossary" className="tender-glossary-modal-backdrop" onClick={closeSelected} type="button" />
-          <div aria-labelledby="tender-glossary-detail-title" aria-modal="true" className="tender-glossary-modal-dialog" role="dialog">
-            <GlossaryDetail item={selected} onClose={closeSelected} onNavigate={setSelected} />
-          </div>
+        <div className="tender-glossary-panel-detail">
+          <GlossaryDetail compact item={selected} onClose={closeSelected} onNavigate={setSelected} />
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -269,11 +237,7 @@ export function TenderGlossaryShell({ children }: { children: ReactNode }) {
               </div>
               <button aria-label="Закрыть TenderLab Glossary" className="tender-glossary-close" onClick={close} type="button">×</button>
             </header>
-            <TenderGlossaryBrowser contextTerms={contextTerms} mode="panel" />
-            <footer>
-              <a href="/glossary">Открыть полный Glossary <span>→</span></a>
-              <small>Отдельная база TenderLab.ai · не App Roadmap</small>
-            </footer>
+            <TenderGlossaryBrowser contextTerms={contextTerms} />
           </aside>
         </div>
       ) : null}

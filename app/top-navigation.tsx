@@ -4,14 +4,13 @@
 
 import { useEffect, useRef } from "react";
 
-export type PrimaryPage = "overview" | "architecture" | "agents" | "validation" | "glossary";
+export type PrimaryPage = "overview" | "architecture" | "agents" | "validation";
 
 const navItems: Array<{ id: PrimaryPage; label: string; href: string }> = [
   { id: "overview", label: "Overview", href: "/" },
   { id: "architecture", label: "Architecture", href: "/architecture" },
   { id: "agents", label: "Agent Catalog", href: "/agents" },
   { id: "validation", label: "Validation", href: "/case-simulation" },
-  { id: "glossary", label: "Glossary", href: "/glossary" },
 ];
 
 export default function TopNavigation({ active }: { active: PrimaryPage }) {
