@@ -401,6 +401,16 @@ function AgentDetailDrawerView({
         aria-labelledby="agent-detail-title"
         data-navigation-depth={navigationDepth}
         data-controlled-navigation={controlledNavigation ? "true" : "false"}
+        onClickCapture={(event) => {
+          const reference = (event.target as HTMLElement).closest<HTMLElement>("[data-agent-reference-id]");
+          if (!reference) return;
+          const referencedAgentId = Number(reference.dataset.agentReferenceId);
+          const referencedAgent = agents.find((candidate) => candidate.id === referencedAgentId);
+          if (!referencedAgent) return;
+          event.preventDefault();
+          event.stopPropagation();
+          onOpenReference(referencedAgent);
+        }}
         style={{ "--layer-color": layerById[agent.layer].color } as React.CSSProperties}
       >
         <button className="drawer-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
