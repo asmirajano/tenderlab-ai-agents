@@ -307,6 +307,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
           selectedIds={comparisonIds}
           onAdd={(agentId) => setComparisonIds((current) => current.includes(agentId) ? current : [...current, agentId])}
           onRemove={(agentId) => setComparisonIds((current) => current.filter((id) => id !== agentId))}
+          onOpenAgent={(agent) => onOpenAgent(agent.id, selected.eventStep)}
           onClose={() => setComparisonOpen(false)}
         />
       )}

@@ -106,7 +106,6 @@ export function AgentReferenceButton({ agent, onOpenAgent }: { agent: Agent; onO
       onClick={(event) => {
         event.preventDefault();
         onOpenAgent(agent);
-        window.dispatchEvent(new CustomEvent("tenderlab:open-agent-reference", { detail: { agentId: agent.id } }));
       }}
       aria-label={`Открыть профиль ${label}`}
       title={`Open ${label}`}
