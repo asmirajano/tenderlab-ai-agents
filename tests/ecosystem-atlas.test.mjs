@@ -70,7 +70,8 @@ test("gives every canonical dataset a stable ID and three structured demo record
   const moduleUrl = pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "datasets.ts")).href;
   const { tenderDatasets } = await import(moduleUrl);
   assert.match(app, /<span>DATASET ID<\/span>/, "Dataset profiles must label the canonical ID explicitly");
-  assert.match(app, /<header><span>DATASET ID<\/span><span>DATASET<\/span>/, "The catalogue must expose ID as a dedicated column");
+  assert.match(app, /<header><span>№<\/span><span>DATASET ID<\/span><span>DATASET<\/span>/, "The catalogue must expose sequence and canonical ID as dedicated columns");
+  assert.match(app, /function datasetSequence\(dataset: TenderDataset\)/, "Dataset sequence must be derived from the canonical registry order");
   assert.equal(tenderDatasets.length, 96);
   assert.equal(new Set(tenderDatasets.map((item) => item.id)).size, 96);
   for (const item of tenderDatasets) {
