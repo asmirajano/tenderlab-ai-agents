@@ -72,6 +72,58 @@ export type TenderDataset = CatalogueRecord & {
   difficulty: "L" | "M" | "H" | "VH";
 };
 
+export type AgentDeliverableDisposition =
+  | "dataset-record"
+  | "operational-state"
+  | "audit-only"
+  | "transient"
+  | "potential-dataset-gap";
+
+export type AgentDatasetRelationshipType =
+  | "creates-record"
+  | "updates-record"
+  | "enriches-record"
+  | "validates-record"
+  | "appends-event"
+  | "materializes-asset";
+
+export type AgentDatasetRelationStatus = "proposed" | "validated" | "deprecated";
+
+export type AgentDeliverable = {
+  id: string;
+  agentId: string;
+  name: string;
+  payloadFields: string[];
+  disposition: AgentDeliverableDisposition;
+  rationale: string;
+};
+
+export type AgentDatasetContribution = {
+  id: string;
+  agentId: string;
+  deliverableId: string;
+  datasetId: string;
+  relationshipType: AgentDatasetRelationshipType;
+  provides: string[];
+  targetFields: string[];
+  recordIdentity?: string;
+  condition: string;
+  rationale: string;
+  provenanceRequirement: string;
+  status: AgentDatasetRelationStatus;
+  validationFinding?: string;
+};
+
+export type AgentDatasetGap = {
+  id: string;
+  agentId: string;
+  deliverableId: string;
+  proposedName: string;
+  neededRecord: string;
+  whyExistingDatasetsDoNotFit: string;
+  status: "proposed" | "resolved" | "rejected";
+};
+
 export type DataSourceRecord = CatalogueRecord & {
   provider: string;
   datasets: string[];

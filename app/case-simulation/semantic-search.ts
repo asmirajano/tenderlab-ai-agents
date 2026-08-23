@@ -1,5 +1,5 @@
 export type SemanticSearchField = {
-  key: "name" | "alias" | "description" | "workflow" | "output" | "rationale" | "metadata";
+  key: "name" | "alias" | "description" | "scope" | "activity" | "exclusion" | "input" | "trigger" | "boundary" | "distinction" | "workflow" | "output" | "rationale" | "metadata";
   label: string;
   text: string;
   weight: number;
@@ -23,6 +23,13 @@ type SearchDocumentInput = {
   id: number;
   name: string;
   description?: string;
+  scope?: string;
+  activities?: string;
+  exclusions?: string;
+  inputs?: string;
+  trigger?: string;
+  boundary?: string;
+  distinction?: string;
   workflow?: string;
   output?: string;
   rationale?: string;
@@ -30,7 +37,7 @@ type SearchDocumentInput = {
 };
 
 const STOP_WORDS = new Set([
-  "a", "an", "and", "agent", "for", "in", "is", "of", "or", "that", "the", "to", "which", "who", "with",
+  "a", "an", "and", "agent", "action", "for", "from", "in", "is", "just", "normal", "of", "or", "our", "responsible", "responsibility", "that", "the", "to", "which", "who", "with",
   "агент", "в", "для", "и", "или", "который", "на", "по", "с", "что", "это",
 ]);
 
@@ -58,17 +65,37 @@ const CONCEPT_GROUPS = [
   ["ocr", "translation", "language", "scan", "перевод", "язык", "скан", "распознаван"],
   ["deadline", "alert", "reminder", "calendar", "срок", "уведомлен", "напоминан", "календар"],
   ["buyer", "customer", "competitor", "market", "заказчик", "покупател", "конкурент", "рынок"],
+  ["new", "newly", "publish", "published", "publication", "announce", "announced", "notice", "нов", "публикац", "опублик", "объяв", "анонс", "извещен"],
+  ["monitor", "monitoring", "detect", "detection", "fetch", "collect", "capture", "acquire", "acquisition", "ingest", "ingestion", "receive", "crawl", "монитор", "обнаруж", "получ", "забира", "собира", "загруз"],
+  ["radar", "portal", "source", "feed", "endpoint", "website", "api", "радар", "портал", "источник", "фид", "сайт"],
 ];
 
 const FIELD_WEIGHTS: Record<SemanticSearchField["key"], number> = {
   name: 1,
   alias: .96,
   description: .82,
+  scope: .92,
+  activity: .9,
+  exclusion: .66,
+  input: .78,
+  trigger: .94,
+  boundary: .9,
+  distinction: .9,
   workflow: .78,
   output: .88,
   rationale: .7,
   metadata: .56,
 };
+
+const SOURCE_QUERY_SIGNALS = ["new", "newly", "publish", "announc", "monitor", "detect", "radar", "portal", "source", "feed", "fetch", "collect", "capture", "acquire", "ingest", "receive", "crawl", "notice", "нов", "публи", "объяв", "анонс", "монитор", "обнаруж", "радар", "портал", "источник", "получ", "забира", "собира", "загруз"];
+const SOURCE_OWNER_ACTIONS = ["fetch", "acquire", "acquisition", "monitor", "crawl", "collect", "capture", "receive", "download", "получ", "забира", "скачив", "монитор", "собира", "загруз"];
+const SOURCE_OWNER_CHANNELS = ["source", "portal", "feed", "endpoint", "website", "api", "источник", "портал", "сайт", "фид"];
+const POST_AWARD_SIGNALS = ["award", "outcome", "feedback", "execution", "contract performance", "learning", "присужд", "результат", "обратн", "исполнен", "обучен"];
+const SUBMISSION_SIGNALS = ["proposal", "submission", "submit", "final package", "signature", "receipt", "предложен", "подач", "подпис", "финальн", "квитанц"];
+
+function includesSignal(token: string, signals: string[]) {
+  return signals.some((signal) => token === signal || (Math.min(token.length, signal.length) >= 4 && (token.startsWith(signal) || signal.startsWith(token))));
+}
 
 export function normalizeSearchText(value: string) {
   return value
@@ -114,7 +141,14 @@ export function createSemanticSearchDocument(input: SearchDocumentInput): Semant
   const fields: SemanticSearchField[] = [
     { key: "name", label: "Название", text: input.name, weight: FIELD_WEIGHTS.name },
     { key: "alias", label: "Alias / аббревиатура", text: aliases.join(" · "), weight: FIELD_WEIGHTS.alias },
-    { key: "description", label: "Роль", text: input.description ?? "", weight: FIELD_WEIGHTS.description },
+    { key: "description", label: "Core Purpose / Simply", text: input.description ?? "", weight: FIELD_WEIGHTS.description },
+    { key: "scope", label: "Responsibility / Scope", text: input.scope ?? "", weight: FIELD_WEIGHTS.scope },
+    { key: "activity", label: "What It Does", text: input.activities ?? "", weight: FIELD_WEIGHTS.activity },
+    { key: "exclusion", label: "What It Should NOT Do", text: input.exclusions ?? "", weight: FIELD_WEIGHTS.exclusion },
+    { key: "input", label: "Typical Inputs", text: input.inputs ?? "", weight: FIELD_WEIGHTS.input },
+    { key: "trigger", label: "Trigger / Activation", text: input.trigger ?? "", weight: FIELD_WEIGHTS.trigger },
+    { key: "boundary", label: "Responsibility Boundary", text: input.boundary ?? "", weight: FIELD_WEIGHTS.boundary },
+    { key: "distinction", label: "Key Distinction", text: input.distinction ?? "", weight: FIELD_WEIGHTS.distinction },
     { key: "workflow", label: "Workflow", text: input.workflow ?? "", weight: FIELD_WEIGHTS.workflow },
     { key: "output", label: "Result / Output", text: input.output ?? "", weight: FIELD_WEIGHTS.output },
     { key: "rationale", label: "Platform rationale", text: input.rationale ?? "", weight: FIELD_WEIGHTS.rationale },
@@ -190,7 +224,7 @@ export function rankSemanticDocuments(query: string, documents: SemanticSearchDo
       }
       if (best >= .35) matchedTokens += 1;
       const roleSimilarity = document.fields
-        .filter((field) => field.key === "name" || field.key === "alias" || field.key === "description")
+        .filter((field) => field.key === "name" || field.key === "alias" || field.key === "description" || field.key === "scope" || field.key === "activity" || field.key === "trigger" || field.key === "boundary" || field.key === "distinction")
         .flatMap((field) => tokenize(field.text))
         .reduce((highest, fieldToken) => Math.max(highest, tokenSimilarity(queryToken, fieldToken)), 0);
       if (roleSimilarity >= .35) roleMatchedTokens += 1;
@@ -204,7 +238,29 @@ export function rankSemanticDocuments(query: string, documents: SemanticSearchDo
     const phraseInName = normalizedName.includes(normalizedQuery) ? .16 : 0;
     const phraseInAlias = normalizedAliases.some((alias) => alias.includes(normalizedQuery)) ? .12 : 0;
     const phraseInOtherField = document.fields.some((field) => field.key !== "name" && field.key !== "alias" && normalizeSearchText(field.text).includes(normalizedQuery)) ? .08 : 0;
-    const rawScore = average * 58 + coverage * 22 + roleCoverage * 16 + (phraseInName + phraseInAlias + phraseInOtherField) * 50;
+    const directOwnershipTokens = document.fields
+      .filter((field) => ["scope", "activity", "input", "trigger", "boundary"].includes(field.key))
+      .flatMap((field) => tokenize(field.text));
+    const sourceOwnerActions = new Set(directOwnershipTokens.filter((token) => includesSignal(token, SOURCE_OWNER_ACTIONS))).size;
+    const sourceOwnerChannels = new Set(directOwnershipTokens.filter((token) => includesSignal(token, SOURCE_OWNER_CHANNELS))).size;
+    const publicationAdjacent = directOwnershipTokens.some((token) => conceptIds(token).includes(CONCEPT_GROUPS.length - 3));
+    const negativeOwnershipTokens = document.fields
+      .filter((field) => field.key === "exclusion")
+      .flatMap((field) => tokenize(field.text));
+    const explicitlyRejectsSourceOwnership = negativeOwnershipTokens.some((token) => includesSignal(token, SOURCE_OWNER_ACTIONS))
+      && negativeOwnershipTokens.some((token) => includesSignal(token, SOURCE_OWNER_CHANNELS));
+    const hasTenderIntent = queryTokens.some((token) => conceptIds(token).includes(6));
+    const sourceIntent = queryTokens.some((token) => includesSignal(token, SOURCE_QUERY_SIGNALS));
+    const postAwardLifecycle = directOwnershipTokens.some((token) => includesSignal(token, POST_AWARD_SIGNALS));
+    const submissionLifecycle = directOwnershipTokens.some((token) => includesSignal(token, SUBMISSION_SIGNALS));
+    const sourceOwnershipBonus = sourceIntent && hasTenderIntent && !explicitlyRejectsSourceOwnership && !postAwardLifecycle && !submissionLifecycle && sourceOwnerActions >= 2 && sourceOwnerChannels >= 1 ? 18 : 0;
+    if (sourceOwnershipBonus) reasonScores.set("Responsibility / Scope", (reasonScores.get("Responsibility / Scope") ?? 0) + 1.2);
+    let rawScore = average * 58 + coverage * 22 + roleCoverage * 16 + (phraseInName + phraseInAlias + phraseInOtherField) * 50 + sourceOwnershipBonus;
+    if (sourceIntent && hasTenderIntent && !sourceOwnershipBonus) {
+      rawScore = rawScore * .45 + (publicationAdjacent ? 15 : 0);
+      if (postAwardLifecycle || submissionLifecycle) rawScore *= .42;
+      if (publicationAdjacent) reasonScores.set("Trigger / Activation", (reasonScores.get("Trigger / Activation") ?? 0) + .8);
+    }
     const score = Math.max(1, Math.min(97, Math.round(rawScore)));
     const reasons = [...reasonScores.entries()].sort((left, right) => right[1] - left[1]).slice(0, 2).map(([label]) => label);
     return { id: document.id, score, exact: false, reasons };

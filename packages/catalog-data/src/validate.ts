@@ -2,6 +2,7 @@ import { assertUniqueCatalogueRecords } from "../../catalog-schema/src";
 import { actorTypes, tenderSides } from "./actors";
 import { dataFamilies, dataSources, tenderDatasets } from "./datasets";
 import { glossaryTerms } from "./glossary";
+import { validateAgentDatasetRelationships } from "./agent-dataset-relations";
 
 export function validateEcosystemCatalogues() {
   assertUniqueCatalogueRecords(tenderSides, "Tender sides");
@@ -35,5 +36,6 @@ export function validateEcosystemCatalogues() {
     datasets: tenderDatasets.length,
     sources: dataSources.length,
     glossaryTerms: glossaryTerms.length,
+    agentDatasetRelationships: validateAgentDatasetRelationships(),
   };
 }

@@ -578,6 +578,64 @@ test("ranks canonical agents by name, intent, synonyms, partial wording, and typ
   assert.ok(selectVisibleSemanticResults(rankSemanticDocuments("company", documents)).length >= 3, "broad intent must return several candidates");
 });
 
+test("finds the source-acquisition owner from natural-language tender publication intent", async () => {
+  const [catalogSource, semanticSource] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "semantic-search.ts"), "utf8"),
+  ]);
+  const { createSemanticSearchDocument, rankSemanticDocuments } = await import(
+    pathToFileURL(path.join(projectRoot, "app", "case-simulation", "semantic-search.ts")).href
+  );
+  const documents = [
+    createSemanticSearchDocument({
+      id: 13,
+      name: "Tender Source Ingestion Agent",
+      description: "Собирает объявления и файлы из источников. Забирает notice из официальных источников.",
+      scope: "Source acquisition and normalization notices and fetch status across procurement sources.",
+      activities: "Мониторит источники · Скачивает оригиналы · Создаёт source records",
+      inputs: "Procurement source endpoints · Crawl/API schedules",
+      trigger: "Источник публикует или изменяет notice.",
+      boundary: "Заканчивается на надёжно полученном source package.",
+    }),
+    createSemanticSearchDocument({
+      id: 14,
+      name: "Tender Discovery Agent",
+      description: "Находит потенциально подходящие возможности.",
+      scope: "Candidate retrieval and ranking opportunities by company relevance.",
+      activities: "Формирует candidate set · Ранжирует relevance",
+      trigger: "Поступили новые или обновлённые tenders.",
+      boundary: "Завершает широкий поиск shortlist.",
+    }),
+    createSemanticSearchDocument({
+      id: 21,
+      name: "Document Intake Agent",
+      description: "Загружает и индексирует уже полученный тендерный пакет.",
+      scope: "Internal corpus ingestion of already acquired tender files.",
+    }),
+  ];
+
+  for (const query of [
+    "new tenders",
+    "who fetches newly published tenders?",
+    "agent responsible for monitoring tender portals",
+    "buyer just announced a tender",
+    "find tenders from our radar platforms",
+    "who receives a new procurement notice?",
+    "A Buyer publishes a new tender. Which Agent is responsible for detecting/fetching it from radar platforms?",
+  ]) {
+    assert.equal(rankSemanticDocuments(query, documents)[0].id, 13, `source-acquisition intent must rank Agent 13 first: ${query}`);
+  }
+  assert.match(catalogSource, /catalogSemanticDocuments = agents\.map/);
+  for (const profileField of ["responsibilityScope", "activities", "exclusions", "typicalInputs", "trigger", "responsibilityBoundary", "keyDistinction", "potentialOverlaps"]) {
+    assert.match(catalogSource, new RegExp(`agent\\.profile\\.${profileField}`));
+  }
+  assert.match(catalogSource, /ARCHITECTURE SEARCH/);
+  assert.match(catalogSource, /Potential architecture gap/);
+  assert.match(catalogSource, /релевантных кандидатов скрывают активные фильтры/);
+  assert.match(semanticSource, /SOURCE_OWNER_ACTIONS/);
+  assert.match(semanticSource, /SOURCE_OWNER_CHANNELS/);
+});
+
 test("defines one responsive readability scale across every application surface", async () => {
   const [globalStyles, runStyles, caseStyles] = await Promise.all([
     readFile(path.join(projectRoot, "app", "globals.css"), "utf8"),

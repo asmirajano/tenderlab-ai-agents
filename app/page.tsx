@@ -16,7 +16,6 @@ import {
   type AgentReviewFilter,
 } from "./agent-workspace";
 import {
-  agentSearchText,
   agents,
   agentExamples,
   getAgentTier,
@@ -36,6 +35,83 @@ import {
   type PlatformFilter,
 } from "../packages/catalog-data/src/agents";
 import type { EventAgentExecution } from "./process-model";
+import {
+  datasetContributionsForAgent,
+  datasetGapsForAgent,
+  datasetRelationshipLabels,
+  deliverableDispositionLabels,
+  deliverableForAgent,
+  tenderDatasets,
+  tenderEcosystemDatasetUrl,
+} from "../packages/catalog-data/src";
+import {
+  createSemanticSearchDocument,
+  rankSemanticDocuments,
+  selectVisibleSemanticResults,
+  type SemanticSearchResult,
+} from "./case-simulation/semantic-search";
+
+const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+const catalogSemanticDocuments = agents.map((agent) => {
+  const layer = layerById[agent.layer];
+  return createSemanticSearchDocument({
+    id: agent.id,
+    name: agent.name,
+    description: [agent.description, agent.profile.simply].join(" · "),
+    scope: agent.profile.responsibilityScope,
+    activities: agent.profile.activities.join(" · "),
+    exclusions: agent.profile.exclusions.join(" · "),
+    inputs: agent.profile.typicalInputs.join(" · "),
+    trigger: agent.profile.trigger,
+    boundary: agent.profile.responsibilityBoundary,
+    distinction: [
+      agent.profile.keyDistinction,
+      ...agent.profile.potentialOverlaps.map((overlap) => overlap.note),
+      agent.profile.validationFinding ?? "",
+    ].filter(Boolean).join(" · "),
+    workflow: [
+      agent.profile.workflowStage,
+      agent.profile.authority,
+      agent.profile.skipCondition,
+      ...agent.profile.upstream,
+    ].join(" · "),
+    output: [agent.output.primary, ...agent.output.artifacts, agent.output.consumers].join(" · "),
+    rationale: Object.values(agent.platformRationale).filter(Boolean).join(" · "),
+    metadata: [
+      tierLabels[getAgentTier(agent.id)],
+      layer.name,
+      layer.ru,
+      ...agent.platformSides.map((side) => platformSideLabels[side]),
+    ].join(" · "),
+  });
+});
+
+function semanticMatchExplanation(agent: Agent, result: SemanticSearchResult) {
+  if (result.exact) return "Точное совпадение с названием или alias Agent.";
+  const field = result.reasons[0];
+  const evidence: Record<string, string> = {
+    "Core Purpose / Simply": agent.profile.simply,
+    "Responsibility / Scope": agent.profile.responsibilityScope,
+    "What It Does": agent.profile.activities.join("; "),
+    "What It Should NOT Do": agent.profile.exclusions.join("; "),
+    "Typical Inputs": agent.profile.typicalInputs.join("; "),
+    "Trigger / Activation": agent.profile.trigger,
+    "Responsibility Boundary": agent.profile.responsibilityBoundary,
+    "Key Distinction": agent.profile.keyDistinction,
+    "Result / Output": `${agent.output.primary}: ${agent.output.artifacts.join("; ")}`,
+    Workflow: `${agent.profile.workflowStage}. ${agent.profile.authority}`,
+    "Platform rationale": Object.values(agent.platformRationale).filter(Boolean)[0] ?? agent.description,
+    "Класс / слой / сторона": `${layerById[agent.layer].name} · ${tierLabels[getAgentTier(agent.id)]}`,
+  };
+  return field && evidence[field] ? `${field}: ${evidence[field]}` : agent.profile.simply;
+}
+
+function semanticAssessment(score: number, leaderScore = score) {
+  if (score >= 78 && score >= leaderScore - 5) return { id: "strong", label: "Strong match", text: "Вероятно, capability уже имеет явного владельца." };
+  if (score >= 55) return { id: "partial", label: "Partial matches", text: "Проверьте overlap и границы ответственности нескольких Agents." };
+  if (score >= 35) return { id: "weak", label: "Weak match", text: "Возможен пробел capability или недостаточно ясная Agent definition." };
+  return { id: "gap", label: "Potential architecture gap", text: "Значимого владельца capability среди 64 Agents не найдено — требуется review." };
+}
 
 type AgentCardProps = {
   agent: Agent;
@@ -153,6 +229,57 @@ function AgentOperationalMetadata({ agent }: { agent: Agent }) {
         <p><small>AGENT TYPE</small><b className={`operations-tier operations-${tier}`}>{tierLabels[tier]}</b></p>
         <p><small>ACTIVATION</small><b>{tierActivationLabels[tier]}</b></p>
       </div>
+    </section>
+  );
+}
+
+function AgentDataOutputs({ agent }: { agent: Agent }) {
+  const deliverable = deliverableForAgent(agent.registryId);
+  const contributions = datasetContributionsForAgent(agent.registryId);
+  const gaps = datasetGapsForAgent(agent.registryId);
+  if (!deliverable) return null;
+
+  return (
+    <section className="drawer-data-outputs" aria-label={`${agent.name} data outputs and datasets`}>
+      <div className="drawer-data-heading">
+        <div><span>DATA OUTPUTS / DATASETS</span><p>Canonical Deliverable → typed Dataset contribution</p></div>
+        <b>{deliverableDispositionLabels[deliverable.disposition]}</b>
+      </div>
+      <article className="drawer-deliverable-record">
+        <small>CANONICAL DELIVERABLE</small>
+        <strong>{deliverable.name}</strong>
+        <p>{deliverable.rationale}</p>
+      </article>
+      {contributions.length > 0 && (
+        <div className="drawer-dataset-relations">
+          {contributions.map((relation) => {
+            const dataset = tenderDatasets.find((item) => item.id === relation.datasetId);
+            const href = tenderEcosystemDatasetUrl(relation.datasetId);
+            if (!dataset) return null;
+            return (
+              <article key={relation.id}>
+                <div className="dataset-relation-topline"><span>{datasetRelationshipLabels[relation.relationshipType]}</span><b>{relation.status}</b></div>
+                <strong>{dataset.name.en}</strong>
+                <small>{dataset.id}</small>
+                <p>{relation.rationale}</p>
+                <div>{relation.provides.map((item) => <i key={item}>{item}</i>)}</div>
+                {href && <a href={href} target="_blank" rel="noreferrer">Open Dataset profile ↗</a>}
+              </article>
+            );
+          })}
+        </div>
+      )}
+      {gaps.map((gap) => (
+        <article className="drawer-dataset-gap" key={gap.id}>
+          <div><span>POTENTIAL DATASET GAP</span><b>{gap.status}</b></div>
+          <strong>{gap.proposedName}</strong>
+          <p>{gap.neededRecord}</p>
+          <small>{gap.whyExistingDatasetsDoNotFit}</small>
+        </article>
+      ))}
+      {contributions.length === 0 && gaps.length === 0 && (
+        <p className="drawer-no-dataset"><span>NO DATASET RELATION</span>{deliverable.rationale}</p>
+      )}
     </section>
   );
 }
@@ -281,6 +408,7 @@ export function AgentDetailDrawer({
         <AgentPlatformRationale agent={agent} />
         <AgentOperatingContract agent={agent} />
         <AgentDrawerOutput agent={agent} />
+        <AgentDataOutputs agent={agent} />
 
         {context && (
           <section className="drawer-case-context" aria-label={`${agent.name} context for ${context.caseLabel}`}>
@@ -365,24 +493,33 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
   const [architectureView, setArchitectureView] = useState<ArchitectureView>("hierarchy");
   const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [comparisonIds, setComparisonIds] = useState<number[]>([]);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const { states: workingStates, user: workspaceUser } = useAgentWorkspace();
 
-  const catalogFilteredAgents = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase();
-    return agents.filter((agent) => {
+  const scopeFilteredAgents = useMemo(() => agents.filter((agent) => {
       const layerMatch = activeLayer === "all" || agent.layer === activeLayer;
       const modeMatch = mode === "all" || getAgentTier(agent.id) === mode;
       const platformMatch = matchesPlatformFilter(agent, platformFilter);
-      const searchMatch =
-        !normalizedQuery ||
-        agent.name.toLocaleLowerCase().includes(normalizedQuery) ||
-        agentSearchText(agent).toLocaleLowerCase().includes(normalizedQuery);
-      return layerMatch && modeMatch && platformMatch && searchMatch;
-    });
-  }, [activeLayer, mode, platformFilter, query]);
+      return layerMatch && modeMatch && platformMatch;
+    }), [activeLayer, mode, platformFilter]);
+
+  const allSemanticResults = useMemo(() => query.trim()
+    ? rankSemanticDocuments(query, catalogSemanticDocuments)
+    : [], [query]);
+  const scopeSemanticResults = useMemo(() => {
+    if (!query.trim()) return [];
+    const allowedIds = new Set(scopeFilteredAgents.map((agent) => agent.id));
+    return allSemanticResults.filter((result) => allowedIds.has(result.id));
+  }, [allSemanticResults, query, scopeFilteredAgents]);
+  const visibleScopeSemanticResults = useMemo(() => selectVisibleSemanticResults(scopeSemanticResults), [scopeSemanticResults]);
+
+  const catalogFilteredAgents = useMemo(() => query.trim()
+    ? visibleScopeSemanticResults.map((result) => agentById.get(result.id)).filter((agent): agent is Agent => Boolean(agent))
+    : scopeFilteredAgents, [query, scopeFilteredAgents, visibleScopeSemanticResults]);
 
   const reviewCounts = useMemo(() => {
     const counts: Record<Exclude<AgentReviewFilter, "all">, number> = {
@@ -399,6 +536,13 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
     ? catalogFilteredAgents
     : catalogFilteredAgents.filter((agent) => reviewStatusFor(workingStates, agent.id) === reviewFilter),
   [catalogFilteredAgents, reviewFilter, workingStates]);
+
+  const visibleAgentIds = useMemo(() => new Set(visibleAgents.map((agent) => agent.id)), [visibleAgents]);
+  const visibleSemanticResults = useMemo(() => visibleScopeSemanticResults.filter((result) => visibleAgentIds.has(result.id)), [visibleAgentIds, visibleScopeSemanticResults]);
+  const hiddenSemanticMatches = useMemo(() => query.trim()
+    ? selectVisibleSemanticResults(allSemanticResults).filter((result) => !visibleAgentIds.has(result.id))
+    : [], [allSemanticResults, query, visibleAgentIds]);
+  const searchAssessment = semanticAssessment(allSemanticResults[0]?.score ?? 0);
 
   const hierarchyGroups = useMemo(() => {
     const visibleIds = new Set(visibleAgents.map((agent) => agent.id));
@@ -430,6 +574,39 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
     setComparisonIds((current) => current.includes(agentId)
       ? current.filter((id) => id !== agentId)
       : [...current, agentId]);
+  };
+
+  const selectSemanticResult = (result: SemanticSearchResult) => {
+    const agent = agentById.get(result.id);
+    if (!agent) return;
+    setSelectedAgent(agent);
+    setSearchOpen(false);
+  };
+
+  const handleSemanticSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown" && visibleSemanticResults.length) {
+      event.preventDefault();
+      setSearchOpen(true);
+      setActiveSearchIndex((current) => (current + 1) % visibleSemanticResults.length);
+    } else if (event.key === "ArrowUp" && visibleSemanticResults.length) {
+      event.preventDefault();
+      setSearchOpen(true);
+      setActiveSearchIndex((current) => (current - 1 + visibleSemanticResults.length) % visibleSemanticResults.length);
+    } else if (event.key === "Enter" && visibleSemanticResults.length) {
+      event.preventDefault();
+      selectSemanticResult(visibleSemanticResults[Math.min(activeSearchIndex, visibleSemanticResults.length - 1)]);
+    } else if (event.key === "Escape") {
+      setSearchOpen(false);
+    }
+  };
+
+  const revealAllSemanticMatches = () => {
+    setActiveLayer("all");
+    setMode("all");
+    setPlatformFilter("all");
+    setReviewFilter("all");
+    setActiveSearchIndex(0);
+    setSearchOpen(true);
   };
 
   useEffect(() => {
@@ -653,10 +830,71 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
               <button aria-pressed={mode === "specialized"} className={mode === "specialized" ? "active" : ""} onClick={() => setMode("specialized")}>Specialized</button>
               <button aria-pressed={mode === "optional"} className={mode === "optional" ? "active" : ""} onClick={() => setMode("optional")}>Optional</button>
             </div>
-            <label className="search-box">
-              <span>⌕</span>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти агента" />
-            </label>
+            <div className="catalog-semantic-search">
+              <label className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setSearchOpen(Boolean(event.target.value.trim()));
+                    setActiveSearchIndex(0);
+                  }}
+                  onFocus={() => setSearchOpen(Boolean(query.trim()))}
+                  onBlur={() => window.setTimeout(() => setSearchOpen(false), 160)}
+                  onKeyDown={handleSemanticSearchKeyDown}
+                  placeholder="Название, функция или описание задачи..."
+                  role="combobox"
+                  aria-label="Semantic Agent search"
+                  aria-autocomplete="list"
+                  aria-expanded={searchOpen && Boolean(query.trim())}
+                  aria-controls="catalog-semantic-results"
+                />
+                <b>SEMANTIC</b>
+              </label>
+              {searchOpen && query.trim() && (
+                <div className="catalog-semantic-results" id="catalog-semantic-results" role="listbox" aria-label="Ranked semantic Agent candidates">
+                  <header className={`semantic-assessment assessment-${searchAssessment.id}`}>
+                    <div><span>ARCHITECTURE SEARCH</span><strong>{searchAssessment.label}</strong></div>
+                    <p>{searchAssessment.text}</p>
+                  </header>
+                  {hiddenSemanticMatches.length > 0 && (
+                    <div className="semantic-filter-warning">
+                      <span><b>{hiddenSemanticMatches.length}</b> релевантных кандидатов скрывают активные фильтры.</span>
+                      <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={revealAllSemanticMatches}>Показать все</button>
+                    </div>
+                  )}
+                  <div className="semantic-candidate-list">
+                    {visibleSemanticResults.length ? visibleSemanticResults.map((result, index) => {
+                      const agent = agentById.get(result.id)!;
+                      const assessment = semanticAssessment(result.score, allSemanticResults[0]?.score ?? result.score);
+                      return (
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={index === activeSearchIndex}
+                          className="catalog-semantic-result"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseEnter={() => setActiveSearchIndex(index)}
+                          onClick={() => selectSemanticResult(result)}
+                          key={result.id}
+                        >
+                          <strong className={`score-${assessment.id}`}>{result.score}<small>%</small></strong>
+                          <span>
+                            <b><i>{String(agent.id).padStart(2, "0")}</i>{agent.name}</b>
+                            <small>{semanticMatchExplanation(agent, result)}</small>
+                            <em>{assessment.label} · {result.reasons.length ? result.reasons.join(" · ") : "Contextual match"}</em>
+                          </span>
+                        </button>
+                      );
+                    }) : (
+                      <p className="catalog-semantic-empty">В текущих фильтрах кандидатов нет. Сбросьте фильтры или рассмотрите capability как возможный архитектурный пробел.</p>
+                    )}
+                  </div>
+                  <footer>Результаты — диагностические сигналы. Search не создаёт и не меняет canonical Agents.</footer>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -806,9 +1044,10 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             onCompare={() => setComparisonOpen(true)}
           />
         ) : (
-          <div className="empty-state">
-            <span>⌕</span><strong>Ничего не найдено</strong>
-            <button onClick={() => { setQuery(""); setActiveLayer("all"); setMode("all"); setPlatformFilter("all"); setReviewFilter("all"); }}>Сбросить</button>
+          <div className={`empty-state ${query.trim() ? `semantic-empty-state assessment-${searchAssessment.id}` : ""}`.trim()}>
+            <span>⌕</span><strong>{query.trim() ? searchAssessment.label : "Ничего не найдено"}</strong>
+            {query.trim() && <p>{hiddenSemanticMatches.length ? `${hiddenSemanticMatches.length} релевантных кандидатов скрыты активными фильтрами.` : searchAssessment.text}</p>}
+            <button onClick={() => { if (query.trim()) revealAllSemanticMatches(); else { setQuery(""); setActiveLayer("all"); setMode("all"); setPlatformFilter("all"); setReviewFilter("all"); } }}>{query.trim() ? "Показать все semantic matches" : "Сбросить"}</button>
           </div>
         )}
       </section>

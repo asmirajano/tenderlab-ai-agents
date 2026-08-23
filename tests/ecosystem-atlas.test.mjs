@@ -25,6 +25,7 @@ test("builds the independent Tender Ecosystem Atlas SPA", async () => {
   }
   assert.match(bundle, /Independent catalogues now/);
   assert.match(bundle, /Relationship Registry/);
+  assert.match(bundle, /dataset=/, "Dataset catalogue should support stable deep links from TenderLab Agent profiles");
 });
 
 test("keeps actors, datasets, sources, and glossary as independent canonical registries", async () => {
