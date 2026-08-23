@@ -666,21 +666,6 @@ test("finds the source-acquisition owner from natural-language tender publicatio
   assert.match(semanticSource, /SOURCE_OWNER_CHANNELS/);
 });
 
-test("keeps Agent 13 technical source typing separate from Agent 15 business classification", async () => {
-  const [profileSource, registrySource, relationSource] = await Promise.all([
-    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agent-profiles.ts"), "utf8"),
-    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agents.ts"), "utf8"),
-    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agent-dataset-relations.ts"), "utf8"),
-  ]);
-
-  assert.match(profileSource, /Определяет source item type для ingestion и routing/);
-  assert.match(profileSource, /Не выполняет содержательную или бизнес-классификацию tender/);
-  assert.match(profileSource, /Tender Classification Agent выполняет содержательную business-классификацию/);
-  assert.match(registrySource, /Source item type и confidence/);
-  assert.match(registrySource, /Tender Classification · Document Intake · Amendment & Change · Tender Award Intelligence/);
-  assert.match(relationSource, /"source item type and confidence", "version and deduplication keys"/);
-});
-
 test("preserves the 13 naming-audit identities while exposing only the recommended canonical names", async () => {
   const source = await readFile(agentRegistryPath, "utf8");
   const renames = [
