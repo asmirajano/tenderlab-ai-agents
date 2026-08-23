@@ -517,6 +517,8 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   position: sticky;
   top: 92px;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
   max-height: calc(100vh - 116px);
   overflow: hidden;
   border: 1px solid var(--line);
@@ -524,10 +526,8 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   background: rgba(248, 251, 247, .96);
 }
 
-.spec-catalogue > div,
-.spec-catalogue > label { padding: 20px; border-bottom: 1px solid var(--line); }
-.spec-catalogue > div > span,
-.spec-catalogue > label > span,
+.spec-catalogue-header { padding: 22px 22px 18px; border-bottom: 1px solid var(--line); }
+.spec-catalogue-header > span,
 .agent-specification section > span,
 .agent-specification footer > span,
 .spec-identity p,
@@ -543,15 +543,30 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 }
 .spec-catalogue h1 { margin: 8px 0; font-size: clamp(1.65rem, 1.3rem + .75vw, 2.25rem); line-height: 1; }
 .spec-catalogue p { margin: 0; color: var(--muted); line-height: 1.5; }
-.spec-catalogue > label { display: flex; align-items: center; gap: 8px; background: #fff; }
+.spec-catalogue-search { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: #fff; }
+.spec-catalogue-search label { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 10px; border: 1px solid #bfd0c8; border-radius: 10px; background: #fbfdfb; }
+.spec-catalogue-search label:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(21, 111, 82, .12); }
+.spec-catalogue-search > small { color: var(--muted); font: 700 var(--tl-type-micro)/1 var(--mono); white-space: nowrap; }
+.spec-catalogue-search > button { position: absolute; right: 72px; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.15rem; cursor: pointer; }
+.spec-catalogue-search > button:hover { background: #eaf1ed; color: var(--ink); }
 .spec-catalogue input { width: 100%; border: 0; outline: 0; background: transparent; font: inherit; }
-.spec-catalogue nav { overflow: auto; }
-.spec-catalogue nav a { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
-.spec-catalogue nav a:hover,
-.spec-catalogue nav a.active { background: #eaf6f0; }
-.spec-catalogue nav a b { color: var(--green); font-family: var(--mono); }
-.spec-catalogue nav a span { display: grid; gap: 4px; font-weight: 700; }
-.spec-catalogue nav a small { color: var(--muted); font: 600 var(--tl-type-micro)/1.3 var(--mono); text-transform: uppercase; }
+.spec-catalogue nav { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; scroll-behavior: smooth; }
+.spec-catalogue nav a { position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 10px; min-height: 74px; padding: 13px 16px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; transition: background .16s ease, box-shadow .16s ease; }
+.spec-catalogue nav a:hover { background: #f0f7f3; }
+.spec-catalogue nav a:focus-visible { z-index: 1; outline: 3px solid rgba(21, 111, 82, .3); outline-offset: -3px; }
+.spec-catalogue nav a.active { background: #dff1e9; box-shadow: inset 4px 0 0 var(--green); }
+.spec-catalogue nav a.active::after { content: "READING"; position: absolute; top: 10px; right: 12px; color: var(--green); font: 800 .62rem/1 var(--mono); letter-spacing: .08em; }
+.spec-catalogue nav a b { display: grid; place-items: start center; padding-top: 2px; color: var(--green); font: 800 var(--tl-type-meta)/1.2 var(--mono); }
+.spec-catalogue nav a span { display: grid; gap: 8px; min-width: 0; }
+.spec-catalogue nav a.active span { padding-right: 42px; }
+.spec-catalogue nav a strong { font-size: var(--tl-type-secondary); line-height: 1.25; }
+.spec-catalogue nav a small { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font: 700 var(--tl-type-micro)/1.2 var(--mono); text-transform: uppercase; }
+.spec-catalogue nav a small i,
+.spec-catalogue nav a small em { padding: 4px 6px; border: 1px solid #ccd8d2; border-radius: 5px; font-style: normal; }
+.spec-catalogue nav a small i { background: #fff; color: var(--muted); }
+.spec-catalogue nav a small em { background: #edf3f0; color: #52635c; }
+.spec-catalogue nav a small em.status-structured { border-color: #add5c5; background: #e4f4ed; color: #176f54; }
+.spec-catalogue nav a small em.status-needs-review { border-color: #e2c989; background: #fff5d9; color: #8a6110; }
 
 .agent-specification { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-top: 4px solid var(--item-color); border-radius: 20px; background: #fff; box-shadow: 0 22px 55px rgba(20, 46, 35, .07); }
 .spec-identity { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 22px; align-items: start; padding: clamp(26px, 2.3vw, 46px); background: linear-gradient(135deg, color-mix(in srgb, var(--item-color) 9%, white), white 58%); }
@@ -630,12 +645,15 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 
 @media (max-width: 1180px) {
   .agent-spec-workspace { grid-template-columns: 1fr; }
-  .spec-catalogue { position: relative; top: 0; max-height: none; }
+  .spec-catalogue { position: relative; top: 0; grid-template-rows: auto auto auto; max-height: none; }
   .spec-catalogue nav { display: flex; overflow-x: auto; }
-  .spec-catalogue nav a { min-width: 250px; border-right: 1px solid var(--line); }
+  .spec-catalogue nav a { min-width: 270px; border-right: 1px solid var(--line); }
 }
 
 @media (max-width: 760px) {
+  .spec-catalogue-header { padding: 18px; }
+  .spec-catalogue-search { padding: 10px 12px; }
+  .spec-catalogue nav a { min-width: min(82vw, 300px); }
   .spec-identity { grid-template-columns: auto 1fr; }
   .spec-identity > a { grid-column: 1 / -1; text-align: center; }
   .spec-id { min-width: 68px; }

@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   agentDatasetContributions,
   agentDatasetGaps,
@@ -100,18 +100,43 @@ export function AgentSpecificationsPage({ requestedSlug }: { requestedSlug?: str
   const initialAgent = agents.find((agent) => agent.slug === requestedSlug) ?? agents[0];
   const [selectedId, setSelectedId] = useState(initialAgent.id);
   const [query, setQuery] = useState("");
+  const activeAgentRef = useRef<HTMLAnchorElement>(null);
   const selected = agents.find((agent) => agent.id === selectedId) ?? agents[0];
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return agents;
-    return agents.filter((agent) => [agent.name, agent.description, agent.profile.simply, agent.profile.responsibilityScope, ...agent.aliases].join(" ").toLowerCase().includes(normalized));
+    return agents.filter((agent) => [
+      agent.id,
+      String(agent.id).padStart(2, "0"),
+      agent.registryId,
+      agent.name,
+      agent.description,
+      agent.profile.simply,
+      agent.profile.responsibilityScope,
+      ...agent.aliases,
+    ].join(" ").toLowerCase().includes(normalized));
   }, [query]);
+
+  useEffect(() => {
+    activeAgentRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedId]);
 
   return <div className="agent-spec-workspace">
     <aside className="spec-catalogue">
-      <div><span>CANONICAL REGISTRY</span><h1>64 Agent Specifications</h1><p>Quick profiles and analytical views are projections of these same records.</p></div>
-      <label><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find Agent" /></label>
-      <nav>{filtered.map((agent) => <a className={selected.id === agent.id ? "active" : ""} href={`/agents/${agent.slug}`} onClick={(event) => { event.preventDefault(); setSelectedId(agent.id); window.history.replaceState(null, "", `/agents/${agent.slug}`); }} key={agent.registryId}><b>{String(agent.id).padStart(2, "0")}</b><span>{agent.name}<small>V{agent.governance.specificationVersion} · {agent.governance.status}</small></span></a>)}</nav>
+      <header className="spec-catalogue-header"><span>CANONICAL REGISTRY</span><h1>64 Agent Specifications</h1><p>Navigate the canonical Full Specifications.</p></header>
+      <div className="spec-catalogue-search">
+        <label><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ID, name or alias" aria-label="Search Agent Specifications by ID, name or alias" /></label>
+        <small>{filtered.length} of {agents.length}</small>
+        {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear Agent search">×</button>}
+      </div>
+      <nav aria-label="Agent Specification Navigator">{filtered.map((agent) => {
+        const isActive = selected.id === agent.id;
+        const statusClass = agent.governance.status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        return <a ref={isActive ? activeAgentRef : undefined} className={isActive ? "active" : ""} aria-current={isActive ? "page" : undefined} href={`/agents/${agent.slug}`} onClick={(event) => { event.preventDefault(); setSelectedId(agent.id); window.history.replaceState(null, "", `/agents/${agent.slug}`); }} key={agent.registryId}>
+          <b>{String(agent.id).padStart(2, "0")}</b>
+          <span><strong>{agent.name}</strong><small><i>v{agent.governance.specificationVersion}</i><em className={`status-${statusClass}`}>{agent.governance.status}</em></small></span>
+        </a>;
+      })}</nav>
     </aside>
     <FullSpecification agent={selected} />
   </div>;
