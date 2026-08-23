@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { case1ProcessGraph } from "./case-simulation/case-1-graph";
 import type { Agent } from "../packages/catalog-data/src/agents";
 import { AgentReviewBadge, AgentReviewControl } from "./agent-workspace";
+import { AgentReferenceText } from "./agent-reference-text";
 
 type NetworkFilter = "all" | "supports" | "case" | "orchestrates";
 type LayerMeta = Record<string, { name: string; color: string; mark: string }>;
@@ -135,9 +136,9 @@ export default function AgentNetworkView({
           <i>{layerMeta[focusAgent.layer].mark}</i>
           <h3>{focusAgent.name}</h3>
           <p>{focusAgent.profile.simply}</p>
-          <div className="network-focus-boundary"><span>KEY DISTINCTION</span><strong>{focusAgent.profile.keyDistinction}</strong></div>
+          <div className="network-focus-boundary"><span>KEY DISTINCTION</span><strong><AgentReferenceText text={focusAgent.profile.keyDistinction} subjectAgentId={focusAgent.id} onOpenAgent={onOpenAgent} /></strong></div>
           <AgentReviewControl agentId={focusAgent.id} canonicalRegistryId={focusAgent.registryId} />
-          <section><span>RESULT / OUTPUT</span><strong>{focusAgent.output.primary}</strong><small>{focusAgent.output.consumers}</small></section>
+          <section><span>RESULT / OUTPUT</span><strong>{focusAgent.output.primary}</strong><small><AgentReferenceText text={focusAgent.output.consumers} subjectAgentId={focusAgent.id} onOpenAgent={onOpenAgent} /></small></section>
           <div className="network-focus-actions">
             <button type="button" onClick={() => onOpenAgent(focusAgent)}>Open canonical profile ↗</button>
             <button type="button" aria-pressed={comparisonIds.includes(focusAgent.id)} onClick={() => onToggleCompare(focusAgent.id)}>{comparisonIds.includes(focusAgent.id) ? "✓ Selected" : "+ Compare"}</button>

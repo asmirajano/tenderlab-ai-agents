@@ -208,7 +208,7 @@ test("orders the agent detail drawer as one progressive profile", async () => {
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
     readFile(agentRegistryPath, "utf8"),
   ]);
-  const drawer = source.match(/export function AgentDetailDrawer[\s\S]*?<aside[^>]*className="agent-drawer"[^>]*>([\s\S]*?)<\/aside>/)?.[1];
+  const drawer = source.match(/function AgentDetailDrawerView[\s\S]*?<aside[^>]*className="agent-drawer"[^>]*>([\s\S]*?)<\/aside>/)?.[1];
   assert.ok(drawer, "expected the shared canonical agent detail drawer");
 
   const progressiveSections = [
@@ -322,7 +322,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource, /aria-haspopup="dialog"/);
   assert.match(pageSource, /onClick=\{\(\) => openAgent\(agent\.id, event\.eventStep\)\}/);
   assert.match(agentCatalogSource, /export function AgentDetailDrawer/);
-  assert.match(agentCatalogSource, /<AgentDetailDrawer agent=\{selectedAgent\} onClose=/);
+  assert.match(agentCatalogSource, /<AgentDetailDrawer[\s\S]{0,180}agent=\{selectedAgent\}[\s\S]{0,180}onClose=/);
   assert.match(pageSource, /<AgentDetailDrawer/);
   assert.match(pageSource, /context=\{selectedDetailContext\}/);
   assert.match(agentCatalogSource, />A · INPUT</);
@@ -520,6 +520,22 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(caseStyles, /\.inspector-agent-audit-row/);
 });
 
+test("renders canonical Agent cross-references by stable ID with profile history", async () => {
+  const [pageSource, matrixSource, comparisonSource, referenceSource] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-matrix-view.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-comparison.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-reference-text.tsx"), "utf8"),
+  ]);
+  assert.match(referenceSource, /const label = `\$\{agent\.name\} \(\$\{agent\.id\}\)`/);
+  assert.match(referenceSource, /href=\{`#agent-\$\{agent\.id\}`\}/);
+  assert.match(referenceSource, /onOpenAgent\(agent\)/);
+  assert.match(pageSource, /setAgentPath\(\(current\) => \[\.\.\.current, nextAgent\.id\]\)/);
+  assert.match(pageSource, /drawer-agent-back/);
+  assert.match(matrixSource, /buildAgentValidationRows\(analyses, "matrix", onOpenAgent\)/);
+  assert.match(comparisonSource, /StructuredOverlapCell agent=\{agent\} onOpenAgent=\{onOpenAgent\}/);
+});
+
 test("renders a compact canonical Agent to Dataset handoff with specific deep links", async () => {
   const pageSource = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
   assert.match(pageSource, /DATA OUTPUTS \/ DATASETS/);
@@ -648,6 +664,21 @@ test("finds the source-acquisition owner from natural-language tender publicatio
   assert.match(catalogSource, /релевантных кандидатов скрывают активные фильтры/);
   assert.match(semanticSource, /SOURCE_OWNER_ACTIONS/);
   assert.match(semanticSource, /SOURCE_OWNER_CHANNELS/);
+});
+
+test("keeps Agent 13 technical source typing separate from Agent 15 business classification", async () => {
+  const [profileSource, registrySource, relationSource] = await Promise.all([
+    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agent-profiles.ts"), "utf8"),
+    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agents.ts"), "utf8"),
+    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agent-dataset-relations.ts"), "utf8"),
+  ]);
+
+  assert.match(profileSource, /Определяет source item type для ingestion и routing/);
+  assert.match(profileSource, /Не выполняет содержательную или бизнес-классификацию tender/);
+  assert.match(profileSource, /Tender Classification Agent выполняет содержательную business-классификацию/);
+  assert.match(registrySource, /Source item type и confidence/);
+  assert.match(registrySource, /Tender Classification · Document Intake · Amendment & Change · Tender Award Intelligence/);
+  assert.match(relationSource, /"source item type and confidence", "version and deduplication keys"/);
 });
 
 test("preserves the 13 naming-audit identities while exposing only the recommended canonical names", async () => {

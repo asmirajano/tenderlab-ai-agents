@@ -139,6 +139,7 @@ export default function CaseSimulationPage() {
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [highlightedAgentId, setHighlightedAgentId] = useState<number | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [selectedAgentHistory, setSelectedAgentHistory] = useState<number[]>([]);
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
   const [caseExpanded, setCaseExpanded] = useState(true);
   const [caseView, setCaseView] = useState<"map" | "narrative">("map");
@@ -232,20 +233,46 @@ export default function CaseSimulationPage() {
   } : undefined;
 
   const openAgent = (agentId: number, chronologyStep: number | null = null) => {
+    setSelectedAgentHistory([]);
     setSelectedChronologyStep(chronologyStep);
     setSelectedAgentId(agentId);
   };
 
   const closeAgent = () => {
+    setSelectedAgentHistory([]);
     setSelectedAgentId(null);
     setSelectedChronologyStep(null);
   };
+
+  const backToPreviousAgent = () => {
+    setSelectedAgentHistory((current) => {
+      const previousId = current.at(-1);
+      if (previousId) setSelectedAgentId(previousId);
+      return current.slice(0, -1);
+    });
+  };
+
+  useEffect(() => {
+    const openReferencedAgent = (event: Event) => {
+      const nextId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
+      if (!agents.some((candidate) => candidate.id === nextId)) return;
+      setSelectedAgentId((current) => {
+        if (!current || current === nextId) return current;
+        setSelectedAgentHistory((history) => [...history, current]);
+        setSelectedChronologyStep(null);
+        return nextId;
+      });
+    };
+    window.addEventListener("tenderlab:open-agent-reference", openReferencedAgent);
+    return () => window.removeEventListener("tenderlab:open-agent-reference", openReferencedAgent);
+  }, []);
 
   const openAdjacentAgent = (direction: -1 | 1) => {
     if (!selectedAgent) return;
     const index = filteredAgents.findIndex((agent) => agent.id === selectedAgent.id);
     if (index < 0) return;
     const nextIndex = Math.min(Math.max(index + direction, 0), filteredAgents.length - 1);
+    setSelectedAgentHistory([]);
     setSelectedChronologyStep(null);
     setSelectedAgentId(filteredAgents[nextIndex]?.id ?? selectedAgent.id);
   };
@@ -629,9 +656,11 @@ export default function CaseSimulationPage() {
 
       {selectedAgent && selectedEngagement && selectedStage && (
         <AgentDetailDrawer
+          key={selectedAgent.id}
           agent={selectedAgent}
           context={selectedDetailContext}
           onClose={closeAgent}
+          navigationBack={{ canGoBack: selectedAgentHistory.length > 0, onBack: backToPreviousAgent }}
           footer={(
             <footer className="drawer-case-footer">
               <button type="button" onClick={() => openAdjacentAgent(-1)} disabled={filteredAgents[0]?.id === selectedAgent.id}>← Предыдущий</button>

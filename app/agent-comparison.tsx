@@ -12,6 +12,7 @@ import {
   type Agent,
 } from "../packages/catalog-data/src/agents";
 import { AgentReviewBadge } from "./agent-workspace";
+import { AgentReferenceButton, AgentReferenceList, AgentReferenceText } from "./agent-reference-text";
 
 export type ComparisonTone = "unique" | "overlap" | "boundary" | "duplicate";
 
@@ -107,45 +108,46 @@ export function analyzeAgentPair(left: Agent, right: Agent): PairAnalysis {
   return { agentId: right.id, score, tone, label, evidence };
 }
 
-function ProfileList({ items }: { items: string[] }) {
-  return <ul className="comparison-profile-list">{items.map((item) => <li key={item}>{item}</li>)}</ul>;
+function ProfileList({ items, agent, onOpenAgent }: { items: string[]; agent: Agent; onOpenAgent?: (agent: Agent) => void }) {
+  return <AgentReferenceList className="comparison-profile-list" items={items} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} />;
 }
 
-function StructuredOverlapCell({ agent }: { agent: Agent }) {
+function StructuredOverlapCell({ agent, onOpenAgent }: { agent: Agent; onOpenAgent?: (agent: Agent) => void }) {
   return (
     <div className="comparison-explicit-overlaps">
       {agent.profile.potentialOverlaps.map((finding) => (
         <article key={`${agent.id}-${finding.agentIds.join("-")}`}>
-          <span>{finding.agentIds.map((id) => {
+          <span className="comparison-overlap-references">{finding.agentIds.map((id) => {
             const counterpart = agents.find((candidate) => candidate.id === id);
-            return counterpart ? `${String(id).padStart(2, "0")} · ${counterpart.name}` : String(id).padStart(2, "0");
-          }).join(" · ")}</span>
-          <p>{finding.note}</p>
+            return counterpart ? <AgentReferenceButton key={id} agent={counterpart} onOpenAgent={onOpenAgent} /> : <i key={id}>{id}</i>;
+          })}</span>
+          <p><AgentReferenceText text={finding.note} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>
         </article>
       ))}
     </div>
   );
 }
 
-function Signal({ analysis, compact = false }: { analysis: PairAnalysis; compact?: boolean }) {
+function Signal({ analysis, compact = false, onOpenAgent }: { analysis: PairAnalysis; compact?: boolean; onOpenAgent?: (agent: Agent) => void }) {
   const counterpart = agents.find((agent) => agent.id === analysis.agentId)!;
   return (
     <div className={`comparison-signal signal-${analysis.tone} ${compact ? "is-compact" : ""}`.trim()}>
       <span>{analysis.label}<b>{analysis.score}/100</b></span>
-      <strong>{String(counterpart.id).padStart(2, "0")} · {counterpart.name}</strong>
+      <strong><AgentReferenceButton agent={counterpart} onOpenAgent={onOpenAgent} /></strong>
       <p>{analysis.evidence.join(" · ")}</p>
     </div>
   );
 }
 
-function RelationshipCell({ agent, compact = false }: { agent: Agent; compact?: boolean }) {
-  const parents = [...parentsOf(agent)].map((id) => agents.find((candidate) => candidate.id === id)?.name).filter(Boolean);
-  const children = childrenOf(agent).map((child) => child.name);
+function RelationshipCell({ agent, compact = false, onOpenAgent }: { agent: Agent; compact?: boolean; onOpenAgent?: (agent: Agent) => void }) {
+  const parents = [...parentsOf(agent)].map((id) => agents.find((candidate) => candidate.id === id)).filter((item): item is Agent => Boolean(item));
+  const children = childrenOf(agent);
+  const renderAgents = (items: Agent[], limit: number) => <>{items.slice(0, limit).map((item) => <AgentReferenceButton key={item.id} agent={item} onOpenAgent={onOpenAgent} />)}{items.length > limit ? <span>+{items.length - limit}</span> : null}</>;
   return (
     <div className={`comparison-relationships ${compact ? "is-compact" : ""}`.trim()}>
-      {parents.length ? <p><b>Supports Main</b>{parents.slice(0, compact ? 2 : 4).join(" · ")}{parents.length > (compact ? 2 : 4) ? ` · +${parents.length - (compact ? 2 : 4)}` : ""}</p> : null}
-      {children.length ? <p><b>Supported by</b>{children.slice(0, compact ? 2 : 4).join(" · ")}{children.length > (compact ? 2 : 4) ? ` · +${children.length - (compact ? 2 : 4)}` : ""}</p> : null}
-      <p><b>Output consumed by</b>{agent.output.consumers}</p>
+      {parents.length ? <p><b>Supports Main</b>{renderAgents(parents, compact ? 2 : 4)}</p> : null}
+      {children.length ? <p><b>Supported by</b>{renderAgents(children, compact ? 2 : 4)}</p> : null}
+      <p><b>Output consumed by</b><AgentReferenceText text={agent.output.consumers} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>
     </div>
   );
 }
@@ -169,29 +171,30 @@ export function buildAgentAnalysisMap(subjects: Agent[], candidates: Agent[] = s
 export function buildAgentValidationRows(
   analyses: Map<number, PairAnalysis[]>,
   density: "comparison" | "matrix" = "comparison",
+  onOpenAgent?: (agent: Agent) => void,
 ): AgentValidationRow[] {
   const compact = density === "matrix";
   return [
-    { id: "simply", label: "Simply / простыми словами", render: (agent) => <strong>{agent.profile.simply}</strong> },
-    { id: "purpose", label: "Core purpose", render: (agent) => agent.description },
-    { id: "scope", label: "Responsibility / scope", render: (agent) => agent.profile.responsibilityScope },
-    { id: "does", label: "What it does", render: (agent) => <ProfileList items={agent.profile.activities} /> },
-    { id: "not-do", label: "What it explicitly should NOT do", render: (agent) => <ProfileList items={agent.profile.exclusions} /> },
-    { id: "inputs", label: "Typical inputs", render: (agent) => <ProfileList items={agent.profile.typicalInputs} /> },
-    { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong>{agent.output.primary}</strong>{agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}</div> },
-    { id: "trigger", label: "Trigger / activation", render: (agent) => <div className="comparison-trigger"><strong>{agent.profile.trigger}</strong><p><b>SKIP</b>{agent.profile.skipCondition}</p></div> },
-    { id: "authority", label: "Decisions / authority", render: (agent) => agent.profile.authority },
-    { id: "boundary", label: "Responsibility boundary", render: (agent) => agent.profile.responsibilityBoundary },
-    { id: "distinction", label: "Key distinction", render: (agent) => <strong>{agent.profile.keyDistinction}</strong> },
-    { id: "overlap", label: "Potential overlap", render: (agent) => <StructuredOverlapCell agent={agent} /> },
+    { id: "simply", label: "Simply / простыми словами", render: (agent) => <strong><AgentReferenceText text={agent.profile.simply} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong> },
+    { id: "purpose", label: "Core purpose", render: (agent) => <AgentReferenceText text={agent.description} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },
+    { id: "scope", label: "Responsibility / scope", render: (agent) => <AgentReferenceText text={agent.profile.responsibilityScope} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },
+    { id: "does", label: "What it does", render: (agent) => <ProfileList items={agent.profile.activities} agent={agent} onOpenAgent={onOpenAgent} /> },
+    { id: "not-do", label: "What it explicitly should NOT do", render: (agent) => <ProfileList items={agent.profile.exclusions} agent={agent} onOpenAgent={onOpenAgent} /> },
+    { id: "inputs", label: "Typical inputs", render: (agent) => <ProfileList items={agent.profile.typicalInputs} agent={agent} onOpenAgent={onOpenAgent} /> },
+    { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong><AgentReferenceText text={agent.output.primary} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong>{agent.output.artifacts.map((artifact) => <span key={artifact}><AgentReferenceText text={artifact} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></span>)}</div> },
+    { id: "trigger", label: "Trigger / activation", render: (agent) => <div className="comparison-trigger"><strong><AgentReferenceText text={agent.profile.trigger} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong><p><b>SKIP</b><AgentReferenceText text={agent.profile.skipCondition} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></div> },
+    { id: "authority", label: "Decisions / authority", render: (agent) => <AgentReferenceText text={agent.profile.authority} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },
+    { id: "boundary", label: "Responsibility boundary", render: (agent) => <AgentReferenceText text={agent.profile.responsibilityBoundary} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },
+    { id: "distinction", label: "Key distinction", render: (agent) => <strong><AgentReferenceText text={agent.profile.keyDistinction} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong> },
+    { id: "overlap", label: "Potential overlap", render: (agent) => <StructuredOverlapCell agent={agent} onOpenAgent={onOpenAgent} /> },
     { id: "stage", label: "Primary workflow stage", render: (agent) => agent.profile.workflowStage },
     { id: "classification", label: "Layer / category", render: (agent) => <div className="comparison-classification"><span style={{ "--comparison-color": layerById[agent.layer].color } as CSSProperties}>{layerById[agent.layer].number} · {layerById[agent.layer].name}</span><b>{tierLabels[getAgentTier(agent.id)]}</b></div> },
     { id: "platform", label: "Platform side", render: (agent) => <div className="comparison-platform">{agent.platformSides.map((side) => <span key={side}>{platformSideLabels[side]}</span>)}</div> },
-    { id: "workflow", label: "Related workflow role", render: (agent) => <RelationshipCell agent={agent} compact={compact} /> },
-    { id: "definition-status", label: "Definition status", render: (agent) => <div className={`comparison-definition-status status-${agent.profile.definitionStatus}`}><b>{agent.profile.definitionStatus === "structured" ? "STRUCTURED" : "NEEDS REVIEW"}</b><p>{agent.profile.validationFinding ?? "Все обязательные границы и canonical profile fields структурированы."}</p></div> },
+    { id: "workflow", label: "Related workflow role", render: (agent) => <RelationshipCell agent={agent} compact={compact} onOpenAgent={onOpenAgent} /> },
+    { id: "definition-status", label: "Definition status", render: (agent) => <div className={`comparison-definition-status status-${agent.profile.definitionStatus}`}><b>{agent.profile.definitionStatus === "structured" ? "STRUCTURED" : "NEEDS REVIEW"}</b><p><AgentReferenceText text={agent.profile.validationFinding ?? "Все обязательные границы и canonical profile fields структурированы."} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></div> },
     { id: "risk", label: "Cross-profile similarity signal", render: (agent) => {
       const strongest = analyses.get(agent.id)?.[0];
-      return strongest ? <><Signal analysis={strongest} compact={compact} /><small className="comparison-caution">Heuristic only · не является решением о merge/delete.</small></> : "—";
+      return strongest ? <><Signal analysis={strongest} compact={compact} onOpenAgent={onOpenAgent} /><small className="comparison-caution">Heuristic only · не является решением о merge/delete.</small></> : "—";
     } },
   ];
 }
@@ -201,11 +204,13 @@ export function AgentComparisonModal({
   onAdd,
   onRemove,
   onClose,
+  onOpenAgent,
 }: {
   selectedIds: number[];
   onAdd: (agentId: number) => void;
   onRemove: (agentId: number) => void;
   onClose: () => void;
+  onOpenAgent?: (agent: Agent) => void;
 }) {
   const [query, setQuery] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -222,7 +227,7 @@ export function AgentComparisonModal({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && !document.querySelector(".drawer-shell")) onClose(); };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -230,7 +235,7 @@ export function AgentComparisonModal({
     };
   }, [onClose]);
 
-  const rows = buildAgentValidationRows(analyses);
+  const rows = buildAgentValidationRows(analyses, "comparison", onOpenAgent);
 
   return (
     <div className="comparison-modal-shell" role="presentation">

@@ -840,7 +840,15 @@ footer { align-items: center; background: white; border-top: 1px solid var(--lin
 footer p { color: #829087; font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: .11em; margin: 0; }
 footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; font-size: 9px; justify-self: end; letter-spacing: .07em; }
 
-.drawer-shell { align-items: stretch; background: rgba(26, 39, 33, .22); display: flex; inset: 0; justify-content: flex-end; position: fixed; z-index: 100; }
+.drawer-shell { align-items: stretch; background: rgba(26, 39, 33, .22); display: flex; inset: 0; justify-content: flex-end; position: fixed; z-index: 160; }
+.drawer-agent-back { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--green); cursor: pointer; display: inline-flex; font-family: var(--mono); font-size: .72rem; font-weight: 800; gap: 7px; left: 28px; padding: 9px 13px; position: absolute; text-transform: uppercase; top: 22px; z-index: 2; }
+.agent-inline-reference { background: color-mix(in srgb, var(--layer-color, #167459) 7%, #fff); border: 1px solid color-mix(in srgb, var(--layer-color, #167459) 28%, var(--line)); border-radius: 5px; color: #126c53; cursor: pointer; display: inline-flex; font: inherit; font-weight: 750; gap: 4px; line-height: 1.35; margin: 1px 3px 1px 0; padding: 1px 5px; text-align: left; vertical-align: baseline; }
+.agent-inline-reference:hover, .agent-inline-reference:focus-visible { background: #e7f6ef; border-color: #167459; outline: 2px solid rgba(22,116,89,.16); outline-offset: 1px; }
+.agent-inline-reference > span { font-family: var(--mono); font-size: .72em; }
+.agent-reference-label { color: #126c53; font-weight: 750; }
+.drawer-overlap-references, .comparison-overlap-references { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; }
+.comparison-overlap-references .agent-inline-reference { font-size: .78rem; }
+.comparison-relationships p .agent-inline-reference { display: flex; margin: 4px 0 0; width: fit-content; }
 
 .agent-drawer {
   --layer-color: #176b51;

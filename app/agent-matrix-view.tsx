@@ -69,7 +69,7 @@ export default function AgentMatrixView({
     () => buildAgentAnalysisMap(displayedAgents, agents),
     [displayedAgents],
   );
-  const rows = useMemo(() => buildAgentValidationRows(analyses, "matrix"), [analyses]);
+  const rows = useMemo(() => buildAgentValidationRows(analyses, "matrix", onOpenAgent), [analyses, onOpenAgent]);
 
   useEffect(() => {
     if (!focusMode) return;

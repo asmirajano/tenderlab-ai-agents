@@ -7,6 +7,7 @@ import TopNavigation, { type PrimaryPage } from "./top-navigation";
 import AgentNetworkView from "./agent-network-view";
 import AgentMatrixView from "./agent-matrix-view";
 import { AgentComparisonBar, AgentComparisonModal } from "./agent-comparison";
+import { AgentReferenceButton, AgentReferenceList, AgentReferenceText } from "./agent-reference-text";
 import {
   AgentReviewControl,
   AgentWorkspaceAccount,
@@ -177,23 +178,23 @@ function MainAgentOutputCard({ agent }: { agent: Agent }) {
   );
 }
 
-function AgentDrawerOutput({ agent }: { agent: Agent }) {
+function AgentDrawerOutput({ agent, onOpenAgent }: { agent: Agent; onOpenAgent?: (agent: Agent) => void }) {
   return (
     <section className="drawer-output" aria-label={`${agent.name} result and output`}>
       <div className="drawer-output-heading">
         <span>RESULT / OUTPUT</span>
         <b>DELIVERABLE</b>
       </div>
-      <h4>{agent.output.primary}</h4>
+      <h4><AgentReferenceText text={agent.output.primary} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></h4>
       <div className="drawer-output-artifacts" aria-label="Expected output structure">
-        {agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}
+        {agent.output.artifacts.map((artifact) => <span key={artifact}><AgentReferenceText text={artifact} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></span>)}
       </div>
-      <p><span>ИСПОЛЬЗУЕТСЯ →</span>{agent.output.consumers}</p>
+      <p><span>ИСПОЛЬЗУЕТСЯ →</span><AgentReferenceText text={agent.output.consumers} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>
     </section>
   );
 }
 
-function AgentPlatformRationale({ agent }: { agent: Agent }) {
+function AgentPlatformRationale({ agent, onOpenAgent }: { agent: Agent; onOpenAgent?: (agent: Agent) => void }) {
   const classification = agent.platformSides.length > 1
     ? "Shared"
     : platformSideLabels[agent.platformSides[0]];
@@ -210,7 +211,7 @@ function AgentPlatformRationale({ agent }: { agent: Agent }) {
             {agent.platformSides.length > 1 && (
               <span className={`rationale-side rationale-${side}`}>{platformSideLabels[side]}</span>
             )}
-            <p>{agent.platformRationale[side]}</p>
+            <p><AgentReferenceText text={agent.platformRationale[side]} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>
           </article>
         ))}
       </div>
@@ -283,12 +284,7 @@ function AgentDataOutputs({ agent }: { agent: Agent }) {
   );
 }
 
-function AgentCanonicalProfile({ agent }: { agent: Agent }) {
-  const overlapNames = agent.profile.potentialOverlaps.flatMap((finding) => finding.agentIds).map((id) => {
-    const counterpart = agents.find((candidate) => candidate.id === id);
-    return counterpart ? `${String(id).padStart(2, "0")} · ${counterpart.name}` : String(id).padStart(2, "0");
-  });
-
+function AgentCanonicalProfile({ agent, onOpenAgent }: { agent: Agent; onOpenAgent?: (agent: Agent) => void }) {
   return (
     <section className="drawer-canonical-profile" aria-label={`${agent.name} canonical mandate and boundaries`}>
       <div className="drawer-profile-heading">
@@ -296,40 +292,43 @@ function AgentCanonicalProfile({ agent }: { agent: Agent }) {
         <b className={`profile-status profile-status-${agent.profile.definitionStatus}`}>{agent.profile.definitionStatus === "structured" ? "STRUCTURED" : "NEEDS REVIEW"}</b>
       </div>
       <div className="drawer-profile-summary">
-        <article><small>CORE PURPOSE</small><p>{agent.description}</p></article>
-        <article><small>RESPONSIBILITY / SCOPE</small><p>{agent.profile.responsibilityScope}</p></article>
-        <article><small>KEY DISTINCTION</small><p>{agent.profile.keyDistinction}</p></article>
-        <article><small>RESPONSIBILITY BOUNDARY</small><p>{agent.profile.responsibilityBoundary}</p></article>
+        <article><small>CORE PURPOSE</small><p><AgentReferenceText text={agent.description} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
+        <article><small>RESPONSIBILITY / SCOPE</small><p><AgentReferenceText text={agent.profile.responsibilityScope} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
+        <article><small>KEY DISTINCTION</small><p><AgentReferenceText text={agent.profile.keyDistinction} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
+        <article><small>RESPONSIBILITY BOUNDARY</small><p><AgentReferenceText text={agent.profile.responsibilityBoundary} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
       </div>
       <div className="drawer-profile-lists">
-        <article><small>WHAT IT DOES</small><ul>{agent.profile.activities.map((item) => <li key={item}>{item}</li>)}</ul></article>
-        <article><small>WHAT IT EXPLICITLY SHOULD NOT DO</small><ul>{agent.profile.exclusions.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><small>WHAT IT DOES</small><AgentReferenceList items={agent.profile.activities} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></article>
+        <article><small>WHAT IT EXPLICITLY SHOULD NOT DO</small><AgentReferenceList items={agent.profile.exclusions} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></article>
       </div>
       <div className="drawer-overlap-finding">
         <span>POTENTIAL OVERLAP</span>
-        <b>{overlapNames.join(" · ")}</b>
-        {agent.profile.potentialOverlaps.map((finding) => <p key={finding.agentIds.join("-")}>{finding.note}</p>)}
-        {agent.profile.validationFinding && <p className="drawer-validation-note"><small>VALIDATION FINDING</small>{agent.profile.validationFinding}</p>}
+        <div className="drawer-overlap-references">{agent.profile.potentialOverlaps.flatMap((finding) => finding.agentIds).map((id) => {
+          const counterpart = agents.find((candidate) => candidate.id === id);
+          return counterpart ? <AgentReferenceButton key={id} agent={counterpart} onOpenAgent={onOpenAgent} /> : null;
+        })}</div>
+        {agent.profile.potentialOverlaps.map((finding) => <p key={finding.agentIds.join("-")}><AgentReferenceText text={finding.note} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>)}
+        {agent.profile.validationFinding && <p className="drawer-validation-note"><small>VALIDATION FINDING</small><AgentReferenceText text={agent.profile.validationFinding} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>}
       </div>
     </section>
   );
 }
 
-function AgentOperatingContract({ agent }: { agent: Agent }) {
+function AgentOperatingContract({ agent, onOpenAgent }: { agent: Agent; onOpenAgent?: (agent: Agent) => void }) {
   return (
     <section className="drawer-process drawer-operating-contract" aria-label={`${agent.name} operating contract`}>
       <div className="drawer-process-heading"><span>HOW IT WORKS / OPERATING CONTRACT</span><b>{agent.profile.workflowStage}</b></div>
       <div className="drawer-contract-flow">
-        <article><span>A · TYPICAL INPUTS</span><ul>{agent.profile.typicalInputs.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><span>A · TYPICAL INPUTS</span><AgentReferenceList items={agent.profile.typicalInputs} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></article>
         <i>→</i>
-        <article><span>B · EXECUTION</span><ul>{agent.profile.activities.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><span>B · EXECUTION</span><AgentReferenceList items={agent.profile.activities} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></article>
         <i>→</i>
-        <article><span>C · NEXT / HANDOFF</span><p>{agent.output.consumers}</p></article>
+        <article><span>C · NEXT / HANDOFF</span><p><AgentReferenceText text={agent.output.consumers} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
       </div>
       <div className="drawer-contract-rules">
-        <article><small>TRIGGER / ACTIVATION</small><p>{agent.profile.trigger}</p></article>
-        <article><small>SKIP CONDITION</small><p>{agent.profile.skipCondition}</p></article>
-        <article><small>DECISIONS / AUTHORITY</small><p>{agent.profile.authority}</p></article>
+        <article><small>TRIGGER / ACTIVATION</small><p><AgentReferenceText text={agent.profile.trigger} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
+        <article><small>SKIP CONDITION</small><p><AgentReferenceText text={agent.profile.skipCondition} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
+        <article><small>DECISIONS / AUTHORITY</small><p><AgentReferenceText text={agent.profile.authority} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></article>
       </div>
     </section>
   );
@@ -364,14 +363,22 @@ export type AgentDetailContext = {
   };
 };
 
-export function AgentDetailDrawer({
+function AgentDetailDrawerView({
   agent,
   onClose,
+  onOpenReference,
+  onBack,
+  canGoBack,
+  navigationDepth,
   context,
   footer,
 }: {
   agent: Agent;
   onClose: () => void;
+  onOpenReference: (agent: Agent) => void;
+  onBack: () => void;
+  canGoBack: boolean;
+  navigationDepth: number;
   context?: AgentDetailContext;
   footer?: ReactNode;
 }) {
@@ -385,8 +392,16 @@ export function AgentDetailDrawer({
 
   return (
     <div className="drawer-shell" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <aside className="agent-drawer" role="dialog" aria-modal="true" aria-labelledby="agent-detail-title" style={{ "--layer-color": layerById[agent.layer].color } as React.CSSProperties}>
+      <aside
+        className="agent-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="agent-detail-title"
+        data-navigation-depth={navigationDepth}
+        style={{ "--layer-color": layerById[agent.layer].color } as React.CSSProperties}
+      >
         <button className="drawer-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
+        {canGoBack && <button className="drawer-agent-back" type="button" onClick={onBack} aria-label="Вернуться к предыдущему Agent">← Back</button>}
         <header className="drawer-identity">
           <div className="drawer-icon">{layerById[agent.layer].mark}</div>
           <div className="drawer-identity-copy">
@@ -396,17 +411,17 @@ export function AgentDetailDrawer({
               {context && <em>CASE CONTEXT</em>}
             </div>
             <h3 id="agent-detail-title">{agent.name}</h3>
-             <p className="drawer-purpose"><span>SIMPLY / ПРОСТО</span>{agent.profile.simply}</p>
+             <p className="drawer-purpose"><span>SIMPLY / ПРОСТО</span><AgentReferenceText text={agent.profile.simply} subjectAgentId={agent.id} onOpenAgent={onOpenReference} /></p>
           </div>
         </header>
         <section className="drawer-working-state" aria-label={`${agent.name} personal working state`}>
           <div><span>MY WORKING STATE</span><p>Личный статус не изменяет canonical Agent definition или Case Audit.</p></div>
           <AgentReviewControl agentId={agent.id} canonicalRegistryId={agent.registryId} />
         </section>
-        <AgentCanonicalProfile agent={agent} />
-        <AgentPlatformRationale agent={agent} />
-        <AgentOperatingContract agent={agent} />
-        <AgentDrawerOutput agent={agent} />
+        <AgentCanonicalProfile agent={agent} onOpenAgent={onOpenReference} />
+        <AgentPlatformRationale agent={agent} onOpenAgent={onOpenReference} />
+        <AgentOperatingContract agent={agent} onOpenAgent={onOpenReference} />
+        <AgentDrawerOutput agent={agent} onOpenAgent={onOpenReference} />
         <AgentDataOutputs agent={agent} />
 
         {context && (
@@ -484,6 +499,66 @@ export function AgentDetailDrawer({
   );
 }
 
+export function AgentDetailDrawer({
+  agent,
+  onClose,
+  context,
+  footer,
+  navigationBack,
+}: {
+  agent: Agent;
+  onClose: () => void;
+  context?: AgentDetailContext;
+  footer?: ReactNode;
+  navigationBack?: { canGoBack: boolean; onBack: () => void };
+}) {
+  const [agentPath, setAgentPath] = useState<number[]>([agent.id]);
+
+  const activeAgentId = agentPath.at(-1) ?? agent.id;
+  const activeAgent = agents.find((candidate) => candidate.id === activeAgentId) ?? agent;
+  const openReference = (nextAgent: Agent) => {
+    setAgentPath((current) => [...current, nextAgent.id]);
+  };
+  const goBack = () => {
+    setAgentPath((current) => current.length > 1 ? current.slice(0, -1) : current);
+  };
+
+  useEffect(() => {
+    const followReference = (event: Event) => {
+      const nextId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
+      if (!agents.some((candidate) => candidate.id === nextId)) return;
+      setAgentPath((current) => [...current, nextId]);
+    };
+    window.addEventListener("tenderlab:open-agent-reference", followReference);
+    return () => window.removeEventListener("tenderlab:open-agent-reference", followReference);
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (agentPath.length > 1) goBack();
+      else onClose();
+    };
+    window.addEventListener("keydown", handleEscape, true);
+    return () => window.removeEventListener("keydown", handleEscape, true);
+  }, [agentPath.length, onClose]);
+
+  return (
+    <AgentDetailDrawerView
+      agent={activeAgent}
+      context={activeAgent.id === agent.id ? context : undefined}
+      footer={activeAgent.id === agent.id ? footer : undefined}
+      onClose={onClose}
+      onOpenReference={openReference}
+      onBack={agentPath.length > 1 ? goBack : navigationBack?.onBack ?? goBack}
+      canGoBack={agentPath.length > 1 || Boolean(navigationBack?.canGoBack)}
+      navigationDepth={agentPath.length}
+    />
+  );
+}
+
 export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation"> }) {
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
@@ -495,6 +570,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [selectedAgentHistory, setSelectedAgentHistory] = useState<Agent[]>([]);
   const [comparisonIds, setComparisonIds] = useState<number[]>([]);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const { states: workingStates, user: workspaceUser } = useAgentWorkspace();
@@ -575,10 +651,28 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
       : [...current, agentId]);
   };
 
+  const openRootAgent = (agent: Agent) => {
+    setSelectedAgentHistory([]);
+    setSelectedAgent(agent);
+  };
+
+  const closeAgentProfile = () => {
+    setSelectedAgent(null);
+    setSelectedAgentHistory([]);
+  };
+
+  const backToPreviousAgent = () => {
+    setSelectedAgentHistory((current) => {
+      const previous = current.at(-1);
+      if (previous) setSelectedAgent(previous);
+      return current.slice(0, -1);
+    });
+  };
+
   const selectSemanticResult = (result: SemanticSearchResult) => {
     const agent = agentById.get(result.id);
     if (!agent) return;
-    setSelectedAgent(agent);
+    openRootAgent(agent);
     setSearchOpen(false);
   };
 
@@ -610,10 +704,28 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedAgent(null);
+      if (event.key === "Escape") {
+        setSelectedAgent(null);
+        setSelectedAgentHistory([]);
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
+
+  useEffect(() => {
+    const openReferencedAgent = (event: Event) => {
+      const agentId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
+      const nextAgent = agentById.get(agentId);
+      if (!nextAgent) return;
+      setSelectedAgent((current) => {
+        if (!current || current.id === nextAgent.id) return current;
+        setSelectedAgentHistory((history) => [...history, current]);
+        return nextAgent;
+      });
+    };
+    window.addEventListener("tenderlab:open-agent-reference", openReferencedAgent);
+    return () => window.removeEventListener("tenderlab:open-agent-reference", openReferencedAgent);
   }, []);
 
   useEffect(() => {
@@ -954,7 +1066,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
         {visibleAgents.length > 0 ? architectureView === "flat" ? (
           <div className="agent-grid">
             {visibleAgents.map((agent) => (
-              <AgentCard agent={agent} compareSelected={comparisonIds.includes(agent.id)} key={agent.id} onSelect={setSelectedAgent} onToggleCompare={toggleComparisonAgent} />
+              <AgentCard agent={agent} compareSelected={comparisonIds.includes(agent.id)} key={agent.id} onSelect={openRootAgent} onToggleCompare={toggleComparisonAgent} />
             ))}
           </div>
         ) : architectureView === "hierarchy" ? (
@@ -976,7 +1088,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                     style={{ "--layer-color": layerById[parent.layer].color } as React.CSSProperties}
                   >
                     <div className="hierarchy-parent-row">
-                      <AgentCard agent={parent} className="hierarchy-parent-card" compareSelected={comparisonIds.includes(parent.id)} onSelect={setSelectedAgent} onToggleCompare={toggleComparisonAgent} />
+                      <AgentCard agent={parent} className="hierarchy-parent-card" compareSelected={comparisonIds.includes(parent.id)} onSelect={openRootAgent} onToggleCompare={toggleComparisonAgent} />
                       <div className="hierarchy-link" aria-hidden="true"><span>→</span><small>SUPPORTS</small></div>
                       <button
                         aria-label={`${collapsed ? "Expand" : "Collapse"} ${parent.name} subagents`}
@@ -1000,7 +1112,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                                 agent={agent}
                                 className="hierarchy-child-card"
                                 compareSelected={comparisonIds.includes(agent.id)}
-                                onSelect={setSelectedAgent}
+                                onSelect={openRootAgent}
                                 onToggleCompare={toggleComparisonAgent}
                                 parentCount={subagentParentIds[agent.id]?.length ?? 1}
                               />
@@ -1020,7 +1132,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             visibleAgents={visibleAgents}
             supportMap={subagentParentIds}
             layerMeta={layerById}
-            onOpenAgent={setSelectedAgent}
+            onOpenAgent={openRootAgent}
             comparisonIds={comparisonIds}
             onToggleCompare={toggleComparisonAgent}
           />
@@ -1038,7 +1150,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             onLayerChange={setActiveLayer}
             onPlatformChange={setPlatformFilter}
             onReviewFilterChange={setReviewFilter}
-            onOpenAgent={setSelectedAgent}
+            onOpenAgent={openRootAgent}
             onToggleCompare={toggleComparisonAgent}
             onCompare={() => setComparisonOpen(true)}
           />
@@ -1059,7 +1171,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
       </footer>
 
       {selectedAgent && (
-        <AgentDetailDrawer agent={selectedAgent} onClose={() => setSelectedAgent(null)} />
+        <AgentDetailDrawer key={selectedAgent.id} agent={selectedAgent} onClose={closeAgentProfile} navigationBack={{ canGoBack: selectedAgentHistory.length > 0, onBack: backToPreviousAgent }} />
       )}
       {page === "agents" && (
         <AgentComparisonBar selectedIds={comparisonIds} onClear={() => setComparisonIds([])} onCompare={() => setComparisonOpen(true)} />
@@ -1069,6 +1181,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
           selectedIds={comparisonIds}
           onAdd={(agentId) => setComparisonIds((current) => current.includes(agentId) ? current : [...current, agentId])}
           onRemove={(agentId) => setComparisonIds((current) => current.filter((id) => id !== agentId))}
+          onOpenAgent={openRootAgent}
           onClose={() => setComparisonOpen(false)}
         />
       )}
