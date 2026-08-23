@@ -180,7 +180,7 @@ export const agentProfiles: Record<number, AgentProfile> = {
     trigger: "Credential добавлен, изменился, приближается expiry или требуется для tender.",
     skipCondition: "Нет credential-dependent requirement и реестр актуален.",
     authority: "Может пометить valid / expired / scope mismatch; признание эквивалентности и допуск остаются у соответствующих review gates.",
-    responsibilityBoundary: "Управляет reusable credential inventory; Credentials & Experience Agent отбирает evidence под конкретную заявку.",
+    responsibilityBoundary: "Управляет reusable credential inventory; Bid Credentials & Experience Agent отбирает evidence под конкретную заявку.",
     keyDistinction: "Жизненный цикл сертификата компании, а не tender-specific evidence pack.",
     workflowStage: "Company readiness и bid evidence",
     upstream: ["Company documents", "Issuers/registries", "Company Verification"],

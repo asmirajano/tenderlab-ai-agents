@@ -72,6 +72,7 @@ const semanticDocuments = agents.map((agent) => {
   return createSemanticSearchDocument({
     id: agent.id,
     name: agent.name,
+    aliases: agent.previousNames,
     description: agent.description,
     workflow: [
       stage.title,

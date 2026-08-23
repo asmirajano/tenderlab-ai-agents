@@ -56,6 +56,7 @@ const catalogSemanticDocuments = agents.map((agent) => {
   return createSemanticSearchDocument({
     id: agent.id,
     name: agent.name,
+    aliases: agent.previousNames,
     description: [agent.description, agent.profile.simply].join(" · "),
     scope: agent.profile.responsibilityScope,
     activities: agent.profile.activities.join(" · "),

@@ -22,6 +22,7 @@ export type SemanticSearchResult = {
 type SearchDocumentInput = {
   id: number;
   name: string;
+  aliases?: string[];
   description?: string;
   scope?: string;
   activities?: string;
@@ -137,7 +138,7 @@ function deriveAliases(name: string) {
 }
 
 export function createSemanticSearchDocument(input: SearchDocumentInput): SemanticSearchDocument {
-  const aliases = deriveAliases(input.name);
+  const aliases = [...new Set([...deriveAliases(input.name), ...(input.aliases ?? [])])];
   const fields: SemanticSearchField[] = [
     { key: "name", label: "Название", text: input.name, weight: FIELD_WEIGHTS.name },
     { key: "alias", label: "Alias / аббревиатура", text: aliases.join(" · "), weight: FIELD_WEIGHTS.alias },

@@ -315,7 +315,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
     .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((item) => item[1].replace(/ — резерв$/, "")));
   assert.ok(chronologyNames.length > 50, "expected the chronology to reference canonical agents throughout the case");
   for (const name of chronologyNames) assert.ok(canonicalIds.has(name), `chronology agent must exist in canonical registry: ${name}`);
-  assert.equal(canonicalIds.get("Tender Source Ingestion Agent"), 13);
+  assert.equal(canonicalIds.get("Tender Source Acquisition Agent"), 13);
   assert.match(pageSource, /const agentByName = new Map\(agents\.map/);
   assert.match(pageSource, /chronology-agent-button/);
   assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
@@ -565,7 +565,7 @@ test("ranks canonical agents by name, intent, synonyms, partial wording, and typ
   const { createSemanticSearchDocument, rankSemanticDocuments, selectVisibleSemanticResults } = await import(
     pathToFileURL(path.join(projectRoot, "app", "case-simulation", "semantic-search.ts")).href
   );
-  const records = [...source.matchAll(/^ {2}\{ id: (\d+), name: "([^"]+)", description: "([^"]+)",[^\n]+output: \{ primary: "([^"]+)", artifacts: \[([^\]]+)\], consumers: "([^"]+)" \} \},?$/gm)];
+  const records = [...source.matchAll(/^ {2}\{ id: (\d+), name: "([^"]+)"(?:, previousNames: \[[^\]]+\])?, description: "([^"]+)",[^\n]+output: \{ primary: "([^"]+)", artifacts: \[([^\]]+)\], consumers: "([^"]+)" \} \},?$/gm)];
   assert.equal(records.length, 64, "semantic search must index the canonical 64-agent registry");
 
   const documents = records.map((record) => createSemanticSearchDocument({
@@ -583,8 +583,8 @@ test("ranks canonical agents by name, intent, synonyms, partial wording, and typ
   assert.equal(topNames("human approval", 1)[0], "Human Approval Agent");
   assert.equal(topNames("find suitable tender", 1)[0], "Tender Discovery Agent");
   assert.ok(topNames("certificate verification", 4).includes("Credential & Certificate Agent"));
-  assert.ok(topNames("pricing / bid decision", 5).includes("TenderScore / Bid-No-Bid Agent"));
-  assert.ok(topNames("pricing / bid decision", 12).includes("Pricing & BOQ Agent"), topNames("pricing / bid decision", 20).join(" | "));
+  assert.ok(topNames("pricing / bid decision", 5).includes("Bid / No-Bid Decision Agent"));
+  assert.ok(topNames("pricing / bid decision", 15).includes("Pricing & BOQ Agent"), topNames("pricing / bid decision", 20).join(" | "));
   assert.ok(topNames("evidnce check", 4).includes("Evidence & Provenance Agent"), "minor typos must remain discoverable");
   assert.ok(selectVisibleSemanticResults(rankSemanticDocuments("company", documents)).length >= 3, "broad intent must return several candidates");
 });
@@ -600,7 +600,8 @@ test("finds the source-acquisition owner from natural-language tender publicatio
   const documents = [
     createSemanticSearchDocument({
       id: 13,
-      name: "Tender Source Ingestion Agent",
+      name: "Tender Source Acquisition Agent",
+      aliases: ["Tender Source Ingestion Agent"],
       description: "Собирает объявления и файлы из источников. Забирает notice из официальных источников.",
       scope: "Source acquisition and normalization notices and fetch status across procurement sources.",
       activities: "Мониторит источники · Скачивает оригиналы · Создаёт source records",
@@ -636,6 +637,8 @@ test("finds the source-acquisition owner from natural-language tender publicatio
   ]) {
     assert.equal(rankSemanticDocuments(query, documents)[0].id, 13, `source-acquisition intent must rank Agent 13 first: ${query}`);
   }
+  assert.equal(rankSemanticDocuments("Tender Source Ingestion Agent", documents)[0].id, 13, "a superseded name must resolve through its historical alias");
+  assert.ok(rankSemanticDocuments("Tender Source Ingestion Agent", documents)[0].score >= 95, "an exact historical alias must remain a strong traceability match");
   assert.match(catalogSource, /catalogSemanticDocuments = agents\.map/);
   for (const profileField of ["responsibilityScope", "activities", "exclusions", "typicalInputs", "trigger", "responsibilityBoundary", "keyDistinction", "potentialOverlaps"]) {
     assert.match(catalogSource, new RegExp(`agent\\.profile\\.${profileField}`));
@@ -645,6 +648,31 @@ test("finds the source-acquisition owner from natural-language tender publicatio
   assert.match(catalogSource, /релевантных кандидатов скрывают активные фильтры/);
   assert.match(semanticSource, /SOURCE_OWNER_ACTIONS/);
   assert.match(semanticSource, /SOURCE_OWNER_CHANNELS/);
+});
+
+test("preserves the 13 naming-audit identities while exposing only the recommended canonical names", async () => {
+  const source = await readFile(agentRegistryPath, "utf8");
+  const renames = [
+    [13, "Tender Source Ingestion Agent", "Tender Source Acquisition Agent"],
+    [22, "OCR & Language Agent", "Tender OCR & Translation Agent"],
+    [28, "Strict-Spec Agent", "Specification Fidelity Agent"],
+    [30, "Ambiguity & Clarification Agent", "Pre-Bid Clarification Agent"],
+    [32, "Solution-Based Matching Agent", "Participation Solution-Fit Agent"],
+    [34, "Gap Analysis Agent", "Tender Gap Remediation Agent"],
+    [35, "TenderScore / Bid-No-Bid Agent", "Bid / No-Bid Decision Agent"],
+    [36, "Capacity & Execution Agent", "Pre-Bid Execution Feasibility Agent"],
+    [42, "Local Representation Agent", "Local Service & Representation Agent"],
+    [55, "Credentials & Experience Agent", "Bid Credentials & Experience Agent"],
+    [59, "Clarification Response Agent", "Post-Bid Clarification Response Agent"],
+    [61, "Award & Contract Agent", "Award-to-Contract Agent"],
+    [64, "Outcome Learning Agent", "Tender Outcome Learning Agent"],
+  ];
+
+  assert.equal([...source.matchAll(/previousNames: \[/g)].length, 13, "only the approved rename set may receive historical aliases");
+  for (const [id, previousName, canonicalName] of renames) {
+    assert.match(source, new RegExp(`\\{ id: ${id}, name: "${canonicalName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}", previousNames: \\["${previousName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\]`));
+    assert.doesNotMatch(source, new RegExp(`\\{ id: ${id}, name: "${previousName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+  }
 });
 
 test("defines one responsive readability scale across every application surface", async () => {
