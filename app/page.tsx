@@ -370,6 +370,7 @@ function AgentDetailDrawerView({
   onBack,
   canGoBack,
   navigationDepth,
+  controlledNavigation,
   context,
   footer,
 }: {
@@ -379,6 +380,7 @@ function AgentDetailDrawerView({
   onBack: () => void;
   canGoBack: boolean;
   navigationDepth: number;
+  controlledNavigation: boolean;
   context?: AgentDetailContext;
   footer?: ReactNode;
 }) {
@@ -398,6 +400,7 @@ function AgentDetailDrawerView({
         aria-modal="true"
         aria-labelledby="agent-detail-title"
         data-navigation-depth={navigationDepth}
+        data-controlled-navigation={controlledNavigation ? "true" : "false"}
         style={{ "--layer-color": layerById[agent.layer].color } as React.CSSProperties}
       >
         <button className="drawer-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
@@ -521,13 +524,9 @@ export function AgentDetailDrawer({
 
   const activeAgentId = agentPath.at(-1) ?? agent.id;
   const activeAgent = agents.find((candidate) => candidate.id === activeAgentId) ?? agent;
-  const openReference = (nextAgent: Agent) => {
-    if (onNavigateAgent) {
-      onNavigateAgent(nextAgent);
-      return;
-    }
+  const openReference = onNavigateAgent ?? ((nextAgent: Agent) => {
     setAgentPath((current) => [...current, nextAgent.id]);
-  };
+  });
   const goBack = () => {
     setAgentPath((current) => current.length > 1 ? current.slice(0, -1) : current);
   };
@@ -554,6 +553,7 @@ export function AgentDetailDrawer({
       onBack={agentPath.length > 1 ? goBack : navigationBack?.onBack ?? goBack}
       canGoBack={agentPath.length > 1 || Boolean(navigationBack?.canGoBack)}
       navigationDepth={agentPath.length}
+      controlledNavigation={Boolean(onNavigateAgent)}
     />
   );
 }
