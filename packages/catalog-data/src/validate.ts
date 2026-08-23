@@ -13,7 +13,6 @@ export function validateEcosystemCatalogues() {
 
   const sideIds = new Set(tenderSides.map((item) => item.id));
   const familyIds = new Set(dataFamilies.map((item) => item.id));
-  const datasetExamples = new Set<string>();
 
   for (const item of actorTypes) {
     for (const sideId of item.sideIds) {
@@ -23,9 +22,10 @@ export function validateEcosystemCatalogues() {
 
   for (const item of tenderDatasets) {
     if (!familyIds.has(item.familyId)) throw new Error(`Dataset ${item.id} references unknown family ${item.familyId}`);
-    if (!item.exampleRu?.trim() || !/[А-Яа-яЁё]/.test(item.exampleRu)) throw new Error(`Dataset ${item.id} needs a Russian example`);
-    if (datasetExamples.has(item.exampleRu)) throw new Error(`Dataset ${item.id} duplicates another example`);
-    datasetExamples.add(item.exampleRu);
+    if (!item.demo || item.demo.columns.length < 3) throw new Error(`Dataset ${item.id} needs at least three demo columns`);
+    if (item.demo.rows.length !== 3) throw new Error(`Dataset ${item.id} needs exactly three demo rows`);
+    if (item.demo.rows.some((row) => row.length !== item.demo.columns.length)) throw new Error(`Dataset ${item.id} has a malformed demo row`);
+    if ([...item.demo.columns, ...item.demo.rows.flat()].some((value) => !value.trim())) throw new Error(`Dataset ${item.id} has an empty demo value`);
   }
 
   return {

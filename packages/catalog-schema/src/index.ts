@@ -50,10 +50,15 @@ export type DataFamily = CatalogueRecord & {
   color: string;
 };
 
+export type DatasetDemo = {
+  columns: string[];
+  rows: string[][];
+};
+
 export type TenderDataset = CatalogueRecord & {
   familyId: string;
   contains: string;
-  exampleRu: string;
+  demo: DatasetDemo;
   exampleSources: string[];
   origin: DataOrigin;
   visibility: DataVisibility[];

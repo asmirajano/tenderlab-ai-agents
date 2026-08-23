@@ -15,6 +15,7 @@ import {
 } from "../../../packages/catalog-data/src";
 import type {
   ActorType,
+  DatasetDemo,
   GlossaryScope,
   TenderDataset,
 } from "../../../packages/catalog-schema/src";
@@ -232,6 +233,18 @@ function ActorsPage() {
   );
 }
 
+function DatasetDemoTable({ demo, name }: { demo: DatasetDemo; name: string }) {
+  return (
+    <div className="dataset-demo-table-wrap">
+      <table className="dataset-demo-table">
+        <caption>Симулированные строки dataset «{name}»</caption>
+        <thead><tr>{demo.columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
+        <tbody>{demo.rows.map((row, rowIndex) => <tr key={`${rowIndex}-${row.join("-")}`}>{row.map((cell, cellIndex) => <td key={`${cellIndex}-${cell}`}>{cell}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
 function DatasetDrawer({ dataset, onClose }: { dataset: TenderDataset; onClose: () => void }) {
   const family = dataFamilies.find((item) => item.id === dataset.familyId)!;
   useEffect(() => {
@@ -247,7 +260,7 @@ function DatasetDrawer({ dataset, onClose }: { dataset: TenderDataset; onClose: 
         <h2 id="dataset-drawer-title">{dataset.name.en}</h2><p className="drawer-ru">{dataset.name.ru}</p>
         <div className="drawer-badges"><span>{family.code} · {family.name.en}</span><span>{priorityLabels[dataset.priority]}</span><span>Difficulty {dataset.difficulty}</span></div>
         <section><span>WHAT IT CONTAINS</span><strong>{dataset.contains}</strong><p>{dataset.value}</p></section>
-        <section className="dataset-example"><span>ПРИМЕР · DEMO</span><strong>{dataset.exampleRu}</strong></section>
+        <section className="dataset-example"><span>ПРИМЕР · DEMO · СИМУЛИРОВАННЫЕ ДАННЫЕ</span><DatasetDemoTable demo={dataset.demo} name={dataset.name.ru || dataset.name.en} /></section>
         <div className="actor-detail-grid">
           <section><span>ORIGIN</span><p>{dataset.origin}</p></section>
           <section><span>VISIBILITY</span><p>{dataset.visibility.join(" · ")}</p></section>
@@ -277,7 +290,7 @@ function DataPage() {
     return tenderDatasets.filter((item) => {
       const familyMatch = tab === "proprietary" ? item.familyId === proprietaryFamily : familyId === "all" || item.familyId === familyId;
       const priorityMatch = priority === "all" || item.priority === priority;
-      const haystack = [item.id, item.name.en, item.name.ru, item.contains, item.value, item.exampleRu, ...item.exampleSources].join(" ").toLocaleLowerCase("ru");
+      const haystack = [item.id, item.name.en, item.name.ru, item.contains, item.value, ...item.demo.columns, ...item.demo.rows.flat(), ...item.exampleSources].join(" ").toLocaleLowerCase("ru");
       return familyMatch && priorityMatch && (!normalized || haystack.includes(normalized));
     });
   }, [familyId, priority, query, tab]);
