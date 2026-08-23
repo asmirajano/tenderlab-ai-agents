@@ -59,6 +59,8 @@ test("exports the strategic presentation, validation tools, and compatibility ro
   assert.match(agentsPage, />Shared(?:<!-- -->)? <b>39<\/b>/);
   assert.match(agentsPage, /aria-current="page"[^>]+href="\/agents"/);
   assert.match(agentsPage, /aria-pressed="true"[^>]*>Hierarchy<\/button>/);
+  assert.match(agentsPage, />Compare<\/span>/);
+  assert.match(agentsPage, /aria-label="Open TenderLab Orchestrator profile"/);
   assert.doesNotMatch(agentsPage, /Context activates the right agents/);
 
   assert.match(run, /Main Run moved to Validation/);
@@ -380,6 +382,31 @@ test("uses one typed relationship model for Case Audit and the Agent Catalog Net
   assert.match(mapSource, /Critical path/);
   assert.match(mapSource, /Managed waits/);
   for (const relation of ["orchestrated-by", "consumes", "produces", "handoff", "depends-on", "blocks", "triggered-by", "approved-by", "joins-at", "waits-for", "retry", "rework", "feedback"]) assert.match(modelSource, new RegExp(`\\| "${relation}"`));
+});
+
+test("provides a registry-backed cross-view Agent Comparison workspace", async () => {
+  const [pageSource, comparisonSource, networkSource, globalStyles] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-comparison.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-network-view.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "globals.css"), "utf8"),
+  ]);
+
+  assert.match(pageSource, /comparisonIds/);
+  assert.match(pageSource, /<AgentComparisonBar/);
+  assert.match(pageSource, /<AgentComparisonModal/);
+  assert.match(pageSource, /compareSelected=\{comparisonIds\.includes\(agent\.id\)\}/);
+  assert.match(comparisonSource, /from "\.\.\/packages\/catalog-data\/src\/agents"/);
+  assert.match(comparisonSource, /What it explicitly should NOT do/);
+  assert.match(comparisonSource, /Potential duplication/);
+  assert.match(comparisonSource, /NOT STRUCTURED/);
+  assert.match(comparisonSource, /Heuristic only/);
+  assert.match(comparisonSource, /ADD AGENT/);
+  assert.match(networkSource, /onToggleCompare/);
+  assert.match(globalStyles, /\.comparison-modal \{/);
+  assert.match(globalStyles, /height: calc\(100dvh - 36px\)/);
+  assert.match(globalStyles, /\.comparison-table thead th/);
+  assert.match(globalStyles, /position: sticky/);
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {

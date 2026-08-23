@@ -1,0 +1,237 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  agents,
+  getAgentTier,
+  layerById,
+  platformSideLabels,
+  subagentParentIds,
+  tierActivationLabels,
+  tierLabels,
+  type Agent,
+} from "../packages/catalog-data/src/agents";
+
+type ComparisonTone = "unique" | "overlap" | "boundary" | "duplicate";
+
+type PairAnalysis = {
+  agentId: number;
+  score: number;
+  tone: ComparisonTone;
+  label: string;
+  evidence: string[];
+};
+
+const stopWords = new Set([
+  "agent", "and", "the", "для", "или", "и", "в", "на", "по", "из", "с", "к", "а", "о", "до", "result", "output",
+  "agents", "tender", "tenders", "company", "данные", "документы", "решения", "проверяет", "создает", "создаёт", "формирует",
+]);
+
+function words(value: string) {
+  return new Set(value
+    .toLocaleLowerCase("ru-RU")
+    .replace(/[^a-zа-яё0-9]+/gi, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 3 && !stopWords.has(word)));
+}
+
+function overlapRatio(left: Set<string>, right: Set<string>) {
+  if (!left.size || !right.size) return 0;
+  const shared = [...left].filter((item) => right.has(item)).length;
+  return shared / Math.min(left.size, right.size);
+}
+
+function sharedValues(left: Set<string>, right: Set<string>) {
+  return [...left].filter((item) => right.has(item));
+}
+
+function splitConsumers(value: string) {
+  return new Set(value.split("·").map((item) => item.trim()).filter(Boolean));
+}
+
+function parentsOf(agent: Agent) {
+  return new Set(subagentParentIds[agent.id] ?? []);
+}
+
+function childrenOf(agent: Agent) {
+  return agents.filter((candidate) => subagentParentIds[candidate.id]?.includes(agent.id));
+}
+
+function analyzePair(left: Agent, right: Agent): PairAnalysis {
+  const purposeOverlap = overlapRatio(words(left.description), words(right.description));
+  const outputOverlap = overlapRatio(
+    words([left.output.primary, ...left.output.artifacts].join(" ")),
+    words([right.output.primary, ...right.output.artifacts].join(" ")),
+  );
+  const sharedConsumers = sharedValues(splitConsumers(left.output.consumers), splitConsumers(right.output.consumers));
+  const sharedParents = sharedValues(parentsOf(left), parentsOf(right));
+  const sharedSides = left.platformSides.filter((side) => right.platformSides.includes(side));
+  const sameLayer = left.layer === right.layer;
+  const sameTier = getAgentTier(left.id) === getAgentTier(right.id);
+  const score = Math.min(100, Math.round(
+    purposeOverlap * 30 +
+    outputOverlap * 30 +
+    Math.min(sharedConsumers.length, 2) * 6 +
+    Math.min(sharedParents.length, 2) * 7 +
+    (sameLayer ? 8 : 0) +
+    (sameTier ? 3 : 0) +
+    Math.min(sharedSides.length, 2) * 3,
+  ));
+
+  let tone: ComparisonTone = "unique";
+  let label = "Unique";
+  if (score >= 65) {
+    tone = "duplicate";
+    label = "Potential duplication";
+  } else if (score >= 45) {
+    tone = "boundary";
+    label = "Boundary issue";
+  } else if (score >= 24) {
+    tone = "overlap";
+    label = "Overlap";
+  }
+
+  const evidence: string[] = [];
+  if (purposeOverlap >= .25) evidence.push("схожая формулировка purpose");
+  if (outputOverlap >= .25) evidence.push("сходные output terms");
+  if (sameLayer) evidence.push(`общий слой ${layerById[left.layer].name}`);
+  if (sharedConsumers.length) evidence.push(`общие consumers: ${sharedConsumers.slice(0, 2).join(", ")}`);
+  if (sharedParents.length) evidence.push(`${sharedParents.length} общих Main parent`);
+  if (sharedSides.length) evidence.push(`общая platform side: ${sharedSides.map((side) => platformSideLabels[side]).join(", ")}`);
+  if (!evidence.length) evidence.push("явных общих сигналов в текущем registry не найдено");
+
+  return { agentId: right.id, score, tone, label, evidence };
+}
+
+function MissingField({ children }: { children: ReactNode }) {
+  return <div className="comparison-missing"><b>NOT STRUCTURED</b><span>{children}</span></div>;
+}
+
+function Signal({ analysis }: { analysis: PairAnalysis }) {
+  const counterpart = agents.find((agent) => agent.id === analysis.agentId)!;
+  return (
+    <div className={`comparison-signal signal-${analysis.tone}`}>
+      <span>{analysis.label}<b>{analysis.score}/100</b></span>
+      <strong>{String(counterpart.id).padStart(2, "0")} · {counterpart.name}</strong>
+      <p>{analysis.evidence.join(" · ")}</p>
+    </div>
+  );
+}
+
+function RelationshipCell({ agent }: { agent: Agent }) {
+  const parents = [...parentsOf(agent)].map((id) => agents.find((candidate) => candidate.id === id)?.name).filter(Boolean);
+  const children = childrenOf(agent).map((child) => child.name);
+  return (
+    <div className="comparison-relationships">
+      {parents.length ? <p><b>Supports Main</b>{parents.slice(0, 4).join(" · ")}{parents.length > 4 ? ` · +${parents.length - 4}` : ""}</p> : null}
+      {children.length ? <p><b>Supported by</b>{children.slice(0, 4).join(" · ")}{children.length > 4 ? ` · +${children.length - 4}` : ""}</p> : null}
+      <p><b>Output consumed by</b>{agent.output.consumers}</p>
+    </div>
+  );
+}
+
+export function AgentComparisonModal({
+  selectedIds,
+  onAdd,
+  onRemove,
+  onClose,
+}: {
+  selectedIds: number[];
+  onAdd: (agentId: number) => void;
+  onRemove: (agentId: number) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const selectedAgents = useMemo(
+    () => selectedIds.map((id) => agents.find((agent) => agent.id === id)).filter((agent): agent is Agent => Boolean(agent)),
+    [selectedIds],
+  );
+  const analyses = useMemo(() => new Map(selectedAgents.map((agent) => {
+    const matches = selectedAgents
+      .filter((candidate) => candidate.id !== agent.id)
+      .map((candidate) => analyzePair(agent, candidate))
+      .sort((left, right) => right.score - left.score);
+    return [agent.id, matches];
+  })), [selectedAgents]);
+  const addOptions = agents.filter((agent) => !selectedIds.includes(agent.id) && (
+    !query.trim() || `${agent.id} ${agent.name} ${agent.description}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+  )).slice(0, 8);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose]);
+
+  const rows: Array<{ id: string; label: string; render: (agent: Agent) => ReactNode }> = [
+    { id: "purpose", label: "Core purpose", render: (agent) => agent.description },
+    { id: "scope", label: "Responsibility / scope", render: () => <MissingField>Отдельная граница ответственности отсутствует в canonical registry.</MissingField> },
+    { id: "does", label: "What it does", render: () => <MissingField>Capability statement отдельно от purpose не представлен.</MissingField> },
+    { id: "not-do", label: "What it explicitly should NOT do", render: () => <MissingField>Negative scope / exclusions пока не определены.</MissingField> },
+    { id: "inputs", label: "Typical inputs", render: (agent) => <MissingField>Явные inputs отсутствуют. Доступны только functional parents: {parentsOf(agent).size || "нет"}.</MissingField> },
+    { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong>{agent.output.primary}</strong>{agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}</div> },
+    { id: "authority", label: "Decisions / authority", render: () => <MissingField>Decision rights и human authority не структурированы по агенту.</MissingField> },
+    { id: "trigger", label: "Trigger / activation", render: (agent) => <div><strong>{tierActivationLabels[getAgentTier(agent.id)]}</strong><p>Per-agent trigger и skip condition не представлены.</p></div> },
+    { id: "classification", label: "Layer / category", render: (agent) => <div className="comparison-classification"><span style={{ "--comparison-color": layerById[agent.layer].color } as CSSProperties}>{layerById[agent.layer].number} · {layerById[agent.layer].name}</span><b>{tierLabels[getAgentTier(agent.id)]}</b></div> },
+    { id: "platform", label: "Platform side", render: (agent) => <div className="comparison-platform">{agent.platformSides.map((side) => <span key={side}>{platformSideLabels[side]}</span>)}</div> },
+    { id: "workflow", label: "Related workflow role", render: (agent) => <RelationshipCell agent={agent} /> },
+    { id: "overlap", label: "Potential overlap", render: (agent) => analyses.get(agent.id)?.length ? <div className="comparison-signals">{analyses.get(agent.id)!.slice(0, 2).map((analysis) => <Signal analysis={analysis} key={analysis.agentId} />)}</div> : "Добавьте ещё одного агента." },
+    { id: "distinction", label: "Key distinction", render: (agent) => <div><strong>{agent.output.primary}</strong><p>Это наиболее конкретный differentiator, подтверждённый текущими output metadata.</p></div> },
+    { id: "risk", label: "Duplication risk", render: (agent) => {
+      const strongest = analyses.get(agent.id)?.[0];
+      return strongest ? <><Signal analysis={strongest} /><small className="comparison-caution">Heuristic only · не является решением о merge/delete.</small></> : "—";
+    } },
+  ];
+
+  return (
+    <div className="comparison-modal-shell" role="presentation">
+      <div className="comparison-modal" role="dialog" aria-modal="true" aria-labelledby="comparison-title">
+        <header>
+          <div><span>AGENT ARCHITECTURE VALIDATION</span><h2 id="comparison-title">Agent Comparison</h2><p>Side-by-side audit of responsibility boundaries, outputs and duplication signals.</p></div>
+          <div className="comparison-legend" aria-label="Comparison signal legend"><span className="signal-unique">Unique</span><span className="signal-overlap">Overlap</span><span className="signal-boundary">Boundary issue</span><span className="signal-duplicate">Potential duplication</span></div>
+          <button ref={closeRef} type="button" className="comparison-close" onClick={onClose} aria-label="Закрыть сравнение">×</button>
+        </header>
+
+        <section className="comparison-selection" aria-label="Selected agents and add agent search">
+          <div className="comparison-selected-chips">{selectedAgents.map((agent) => <button type="button" onClick={() => onRemove(agent.id)} key={agent.id}><b>{String(agent.id).padStart(2, "0")}</b>{agent.name}<span>×</span></button>)}</div>
+          <label><span>ADD AGENT</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ID, name or responsibility" /></label>
+          {query && <div className="comparison-add-results">{addOptions.map((agent) => <button type="button" key={agent.id} onClick={() => { onAdd(agent.id); setQuery(""); }}><b>{String(agent.id).padStart(2, "0")}</b><span>{agent.name}</span><small>{layerById[agent.layer].name} · {tierLabels[getAgentTier(agent.id)]}</small></button>)}{!addOptions.length && <p>Агент не найден.</p>}</div>}
+        </section>
+
+        <div className="comparison-table-scroll">
+          <table className="comparison-table">
+            <thead><tr><th>DIMENSION</th>{selectedAgents.map((agent) => <th key={agent.id}><span>{String(agent.id).padStart(2, "0")} · {layerById[agent.layer].name}</span><strong>{agent.name}</strong><button type="button" onClick={() => onRemove(agent.id)}>Remove</button></th>)}</tr></thead>
+            <tbody>{rows.map((row) => <tr key={row.id}><th scope="row">{row.label}</th>{selectedAgents.map((agent) => <td key={agent.id}>{row.render(agent)}</td>)}</tr>)}</tbody>
+          </table>
+        </div>
+        <footer><p><b>DATA COVERAGE:</b> Purpose, output, layer, tier, platform side and functional parent relationships come from the canonical 64-Agent registry. Missing fields are shown explicitly. Overlap scores are transparent heuristics for human review.</p><button type="button" onClick={onClose}>Close comparison</button></footer>
+      </div>
+    </div>
+  );
+}
+
+export function AgentComparisonBar({
+  selectedIds,
+  onCompare,
+  onClear,
+}: {
+  selectedIds: number[];
+  onCompare: () => void;
+  onClear: () => void;
+}) {
+  if (!selectedIds.length) return null;
+  return (
+    <aside className="comparison-bar" aria-label="Agent comparison selection">
+      <div><span>COMPARISON SET</span><strong>{selectedIds.length} agents selected</strong><p>{selectedIds.slice(0, 4).map((id) => agents.find((agent) => agent.id === id)?.name).join(" · ")}{selectedIds.length > 4 ? ` · +${selectedIds.length - 4}` : ""}</p></div>
+      <button type="button" className="comparison-clear" onClick={onClear}>Clear</button>
+      <button type="button" className="comparison-run" onClick={onCompare} disabled={selectedIds.length < 2}>Compare <span>↗</span></button>
+    </aside>
+  );
+}

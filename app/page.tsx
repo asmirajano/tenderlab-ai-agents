@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
 import AgentNetworkView from "./agent-network-view";
+import { AgentComparisonBar, AgentComparisonModal } from "./agent-comparison";
 import {
   agents,
   agentExamples,
@@ -28,20 +29,30 @@ import {
 type AgentCardProps = {
   agent: Agent;
   className?: string;
+  compareSelected?: boolean;
   onSelect: (agent: Agent) => void;
+  onToggleCompare: (agentId: number) => void;
   parentCount?: number;
 };
 
-function AgentCard({ agent, className = "", onSelect, parentCount = 0 }: AgentCardProps) {
+function AgentCard({ agent, className = "", compareSelected = false, onSelect, onToggleCompare, parentCount = 0 }: AgentCardProps) {
   const layer = layerById[agent.layer];
   const tier = getAgentTier(agent.id);
 
   return (
-    <button
-      className={`agent-card tier-${tier} ${className}`.trim()}
-      onClick={() => onSelect(agent)}
+    <article
+      className={`agent-card tier-${tier} ${compareSelected ? "is-compare-selected" : ""} ${className}`.trim()}
       style={{ "--layer-color": layer.color } as React.CSSProperties}
     >
+      <button className="agent-card-open" type="button" onClick={() => onSelect(agent)} aria-label={`Open ${agent.name} profile`} />
+      <button
+        aria-pressed={compareSelected}
+        className="agent-compare-toggle"
+        onClick={() => onToggleCompare(agent.id)}
+        type="button"
+      >
+        <i aria-hidden="true">{compareSelected ? "✓" : "+"}</i><span>{compareSelected ? "Selected" : "Compare"}</span>
+      </button>
       <span className="card-index">{String(agent.id).padStart(2, "0")}</span>
       <span className="agent-symbol">{layer.mark}</span>
       <span className={`tier-badge badge-${tier}`}>{tierLabels[tier]}</span>
@@ -55,7 +66,7 @@ function AgentCard({ agent, className = "", onSelect, parentCount = 0 }: AgentCa
       {parentCount > 1 && <span className="shared-support">↔ Shared · {parentCount} Main</span>}
       <span className="card-layer">{layer.number} · {layer.name}</span>
       <span className="card-arrow">↗</span>
-    </button>
+    </article>
   );
 }
 
@@ -257,6 +268,8 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
   const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [comparisonIds, setComparisonIds] = useState<number[]>([]);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
 
   const visibleAgents = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -296,6 +309,12 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
       else next.add(agentId);
       return next;
     });
+  };
+
+  const toggleComparisonAgent = (agentId: number) => {
+    setComparisonIds((current) => current.includes(agentId)
+      ? current.filter((id) => id !== agentId)
+      : [...current, agentId]);
   };
 
   useEffect(() => {
@@ -557,7 +576,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
         {visibleAgents.length > 0 ? architectureView === "flat" ? (
           <div className="agent-grid">
             {visibleAgents.map((agent) => (
-              <AgentCard agent={agent} key={agent.id} onSelect={setSelectedAgent} />
+              <AgentCard agent={agent} compareSelected={comparisonIds.includes(agent.id)} key={agent.id} onSelect={setSelectedAgent} onToggleCompare={toggleComparisonAgent} />
             ))}
           </div>
         ) : architectureView === "hierarchy" ? (
@@ -579,7 +598,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                     style={{ "--layer-color": layerById[parent.layer].color } as React.CSSProperties}
                   >
                     <div className="hierarchy-parent-row">
-                      <AgentCard agent={parent} className="hierarchy-parent-card" onSelect={setSelectedAgent} />
+                      <AgentCard agent={parent} className="hierarchy-parent-card" compareSelected={comparisonIds.includes(parent.id)} onSelect={setSelectedAgent} onToggleCompare={toggleComparisonAgent} />
                       <div className="hierarchy-link" aria-hidden="true"><span>→</span><small>SUPPORTS</small></div>
                       <button
                         aria-label={`${collapsed ? "Expand" : "Collapse"} ${parent.name} subagents`}
@@ -602,7 +621,9 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                               <AgentCard
                                 agent={agent}
                                 className="hierarchy-child-card"
+                                compareSelected={comparisonIds.includes(agent.id)}
                                 onSelect={setSelectedAgent}
+                                onToggleCompare={toggleComparisonAgent}
                                 parentCount={subagentParentIds[agent.id]?.length ?? 1}
                               />
                             </div>
@@ -622,6 +643,8 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             supportMap={subagentParentIds}
             layerMeta={layerById}
             onOpenAgent={setSelectedAgent}
+            comparisonIds={comparisonIds}
+            onToggleCompare={toggleComparisonAgent}
           />
         ) : (
           <div className="empty-state">
@@ -640,6 +663,17 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
 
       {selectedAgent && (
         <AgentDetailDrawer agent={selectedAgent} onClose={() => setSelectedAgent(null)} />
+      )}
+      {page === "agents" && (
+        <AgentComparisonBar selectedIds={comparisonIds} onClear={() => setComparisonIds([])} onCompare={() => setComparisonOpen(true)} />
+      )}
+      {page === "agents" && comparisonOpen && comparisonIds.length >= 2 && (
+        <AgentComparisonModal
+          selectedIds={comparisonIds}
+          onAdd={(agentId) => setComparisonIds((current) => current.includes(agentId) ? current : [...current, agentId])}
+          onRemove={(agentId) => setComparisonIds((current) => current.filter((id) => id !== agentId))}
+          onClose={() => setComparisonOpen(false)}
+        />
       )}
     </main>
   );

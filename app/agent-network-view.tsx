@@ -33,12 +33,16 @@ export default function AgentNetworkView({
   supportMap,
   layerMeta,
   onOpenAgent,
+  comparisonIds,
+  onToggleCompare,
 }: {
   allAgents: Agent[];
   visibleAgents: Agent[];
   supportMap: Record<number, number[]>;
   layerMeta: LayerMeta;
   onOpenAgent: (agent: Agent) => void;
+  comparisonIds: number[];
+  onToggleCompare: (agentId: number) => void;
 }) {
   const [networkFilter, setNetworkFilter] = useState<NetworkFilter>("all");
   const [focusAgentId, setFocusAgentId] = useState(visibleAgents[0]?.id ?? 1);
@@ -131,7 +135,10 @@ export default function AgentNetworkView({
           <h3>{focusAgent.name}</h3>
           <p>{focusAgent.description}</p>
           <section><span>RESULT / OUTPUT</span><strong>{focusAgent.output.primary}</strong><small>{focusAgent.output.consumers}</small></section>
-          <button type="button" onClick={() => onOpenAgent(focusAgent)}>Open canonical profile ↗</button>
+          <div className="network-focus-actions">
+            <button type="button" onClick={() => onOpenAgent(focusAgent)}>Open canonical profile ↗</button>
+            <button type="button" aria-pressed={comparisonIds.includes(focusAgent.id)} onClick={() => onToggleCompare(focusAgent.id)}>{comparisonIds.includes(focusAgent.id) ? "✓ Selected" : "+ Compare"}</button>
+          </div>
         </article>
         <div className="network-direction" aria-hidden="true"><span>→</span><small>OUTPUT</small></div>
         <section className="network-column network-downstream"><header><span>OUTPUTS / DOWNSTREAM</span><b>{network.downstream.length}</b></header><div>{network.downstream.length ? network.downstream.map(renderRelation) : <p className="network-empty">Нет связей в текущем фильтре.</p>}</div></section>
