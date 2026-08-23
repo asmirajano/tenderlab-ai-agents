@@ -5,6 +5,8 @@
  * must import this module instead of defining parallel agent records.
  */
 
+import { agentProfiles, type AgentProfile } from "./agent-profiles.ts";
+
 export type Layer = {
   id: string;
   number: string;
@@ -34,6 +36,7 @@ export type Agent = {
   output: AgentOutput;
   platformSides: PlatformSide[];
   platformRationale: PlatformRationale;
+  profile: AgentProfile;
 };
 
 export const layers: Layer[] = [
@@ -47,7 +50,7 @@ export const layers: Layer[] = [
   { id: "learning", number: "08", name: "Learn", ru: "Результат", mark: "↻", color: "#9cdd67" },
 ];
 
-const agentDefinitions: Omit<Agent, "registryId" | "platformSides" | "platformRationale">[] = [
+const agentDefinitions: Omit<Agent, "registryId" | "platformSides" | "platformRationale" | "profile">[] = [
   { id: 1, name: "TenderLab Orchestrator", description: "Координирует ограниченные этапы, повторы, уверенность, доказательства и согласования.", layer: "governance", core: true, output: { primary: "Маршрут кейса и состояние выполнения", artifacts: ["Граф активации", "Правила повторов", "Пороги и согласования"], consumers: "Все активные агенты · Human Approval" } },
   { id: 2, name: "Human Approval Agent", description: "Передаёт критические решения ответственному человеку.", layer: "governance", output: { primary: "Протокол утверждённого решения", artifacts: ["Решение и условия", "Ответственный и timestamp", "Комментарии и исключения"], consumers: "Orchestrator · Следующий разрешённый этап" } },
   { id: 3, name: "Evidence & Provenance Agent", description: "Связывает выводы и оценки уверенности с проверяемыми источниками.", layer: "governance", output: { primary: "Пакет доказательств и происхождения", artifacts: ["Source citations", "Confidence levels", "Неподтверждённые пробелы"], consumers: "Scoring · Compliance · Human Approval" } },
@@ -328,7 +331,21 @@ export const agents: Agent[] = agentDefinitions.map((agent) => ({
   registryId: `agent:TL-A${String(agent.id).padStart(3, "0")}`,
   platformSides: platformSidesByAgentId[agent.id],
   platformRationale: platformRationaleByAgentId[agent.id],
+  profile: agentProfiles[agent.id],
 }));
+
+export const agentSearchText = (agent: Agent) => [
+  agent.name,
+  agent.description,
+  agent.profile.simply,
+  agent.profile.responsibilityScope,
+  ...agent.profile.activities,
+  ...agent.profile.exclusions,
+  ...agent.profile.typicalInputs,
+  agent.profile.keyDistinction,
+  agent.output.primary,
+  ...agent.output.artifacts,
+].join(" ");
 
 const missingPlatformClassifications = agents.filter((agent) => !agent.platformSides?.length);
 const mixedBackendClassifications = agents.filter(

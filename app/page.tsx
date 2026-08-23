@@ -8,6 +8,15 @@ import AgentNetworkView from "./agent-network-view";
 import AgentMatrixView from "./agent-matrix-view";
 import { AgentComparisonBar, AgentComparisonModal } from "./agent-comparison";
 import {
+  AgentReviewControl,
+  AgentWorkspaceAccount,
+  agentReviewOptions,
+  reviewStatusFor,
+  useAgentWorkspace,
+  type AgentReviewFilter,
+} from "./agent-workspace";
+import {
+  agentSearchText,
   agents,
   agentExamples,
   getAgentTier,
@@ -59,12 +68,13 @@ function AgentCard({ agent, className = "", compareSelected = false, onSelect, o
       <span className="agent-symbol">{layer.mark}</span>
       <span className={`tier-badge badge-${tier}`}>{tierLabels[tier]}</span>
       <strong>{agent.name}</strong>
-      <p>{agent.description}</p>
+      <p>{agent.profile.simply}</p>
       <span className="platform-badges" aria-label="Used in">
         {agent.platformSides.map((side) => (
           <span className={`platform-badge platform-${side}`} key={side}>{platformSideLabels[side]}</span>
         ))}
       </span>
+      <AgentReviewControl agentId={agent.id} canonicalRegistryId={agent.registryId} compact />
       {parentCount > 1 && <span className="shared-support">↔ Shared · {parentCount} Main</span>}
       <span className="card-layer">{layer.number} · {layer.name}</span>
       <span className="card-arrow">↗</span>
@@ -147,6 +157,58 @@ function AgentOperationalMetadata({ agent }: { agent: Agent }) {
   );
 }
 
+function AgentCanonicalProfile({ agent }: { agent: Agent }) {
+  const overlapNames = agent.profile.potentialOverlaps.flatMap((finding) => finding.agentIds).map((id) => {
+    const counterpart = agents.find((candidate) => candidate.id === id);
+    return counterpart ? `${String(id).padStart(2, "0")} · ${counterpart.name}` : String(id).padStart(2, "0");
+  });
+
+  return (
+    <section className="drawer-canonical-profile" aria-label={`${agent.name} canonical mandate and boundaries`}>
+      <div className="drawer-profile-heading">
+        <span>CANONICAL RESPONSIBILITY PROFILE</span>
+        <b className={`profile-status profile-status-${agent.profile.definitionStatus}`}>{agent.profile.definitionStatus === "structured" ? "STRUCTURED" : "NEEDS REVIEW"}</b>
+      </div>
+      <div className="drawer-profile-summary">
+        <article><small>CORE PURPOSE</small><p>{agent.description}</p></article>
+        <article><small>RESPONSIBILITY / SCOPE</small><p>{agent.profile.responsibilityScope}</p></article>
+        <article><small>KEY DISTINCTION</small><p>{agent.profile.keyDistinction}</p></article>
+        <article><small>RESPONSIBILITY BOUNDARY</small><p>{agent.profile.responsibilityBoundary}</p></article>
+      </div>
+      <div className="drawer-profile-lists">
+        <article><small>WHAT IT DOES</small><ul>{agent.profile.activities.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><small>WHAT IT EXPLICITLY SHOULD NOT DO</small><ul>{agent.profile.exclusions.map((item) => <li key={item}>{item}</li>)}</ul></article>
+      </div>
+      <div className="drawer-overlap-finding">
+        <span>POTENTIAL OVERLAP</span>
+        <b>{overlapNames.join(" · ")}</b>
+        {agent.profile.potentialOverlaps.map((finding) => <p key={finding.agentIds.join("-")}>{finding.note}</p>)}
+        {agent.profile.validationFinding && <p className="drawer-validation-note"><small>VALIDATION FINDING</small>{agent.profile.validationFinding}</p>}
+      </div>
+    </section>
+  );
+}
+
+function AgentOperatingContract({ agent }: { agent: Agent }) {
+  return (
+    <section className="drawer-process drawer-operating-contract" aria-label={`${agent.name} operating contract`}>
+      <div className="drawer-process-heading"><span>HOW IT WORKS / OPERATING CONTRACT</span><b>{agent.profile.workflowStage}</b></div>
+      <div className="drawer-contract-flow">
+        <article><span>A · TYPICAL INPUTS</span><ul>{agent.profile.typicalInputs.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <i>→</i>
+        <article><span>B · EXECUTION</span><ul>{agent.profile.activities.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <i>→</i>
+        <article><span>C · NEXT / HANDOFF</span><p>{agent.output.consumers}</p></article>
+      </div>
+      <div className="drawer-contract-rules">
+        <article><small>TRIGGER / ACTIVATION</small><p>{agent.profile.trigger}</p></article>
+        <article><small>SKIP CONDITION</small><p>{agent.profile.skipCondition}</p></article>
+        <article><small>DECISIONS / AUTHORITY</small><p>{agent.profile.authority}</p></article>
+      </div>
+    </section>
+  );
+}
+
 export type AgentDetailContext = {
   caseLabel: string;
   caseName: string;
@@ -208,20 +270,16 @@ export function AgentDetailDrawer({
               {context && <em>CASE CONTEXT</em>}
             </div>
             <h3 id="agent-detail-title">{agent.name}</h3>
-            <p className="drawer-purpose"><span>PURPOSE</span>{agent.description}</p>
+             <p className="drawer-purpose"><span>SIMPLY / ПРОСТО</span>{agent.profile.simply}</p>
           </div>
         </header>
-        <AgentPlatformRationale agent={agent} />
-        <section className="drawer-process" aria-label={`${agent.name} operating model`}>
-          <div className="drawer-process-heading"><span>HOW IT WORKS</span><b>AI + EVIDENCE + HUMAN</b></div>
-          <div className="drawer-flow">
-            <div><span>AI</span><small>находит</small></div>
-            <i>→</i>
-            <div><span>Evidence</span><small>проверяет</small></div>
-            <i>→</i>
-            <div><span>Human</span><small>решает</small></div>
-          </div>
+        <section className="drawer-working-state" aria-label={`${agent.name} personal working state`}>
+          <div><span>MY WORKING STATE</span><p>Личный статус не изменяет canonical Agent definition или Case Audit.</p></div>
+          <AgentReviewControl agentId={agent.id} canonicalRegistryId={agent.registryId} />
         </section>
+        <AgentCanonicalProfile agent={agent} />
+        <AgentPlatformRationale agent={agent} />
+        <AgentOperatingContract agent={agent} />
         <AgentDrawerOutput agent={agent} />
 
         {context && (
@@ -303,14 +361,16 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
   const [activeLayer, setActiveLayer] = useState<string>("all");
   const [mode, setMode] = useState<"all" | AgentTier>("all");
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
+  const [reviewFilter, setReviewFilter] = useState<AgentReviewFilter>("all");
   const [architectureView, setArchitectureView] = useState<ArchitectureView>("hierarchy");
   const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [comparisonIds, setComparisonIds] = useState<number[]>([]);
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const { states: workingStates, user: workspaceUser } = useAgentWorkspace();
 
-  const visibleAgents = useMemo(() => {
+  const catalogFilteredAgents = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return agents.filter((agent) => {
       const layerMatch = activeLayer === "all" || agent.layer === activeLayer;
@@ -319,10 +379,26 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
       const searchMatch =
         !normalizedQuery ||
         agent.name.toLocaleLowerCase().includes(normalizedQuery) ||
-        agent.description.toLocaleLowerCase().includes(normalizedQuery);
+        agentSearchText(agent).toLocaleLowerCase().includes(normalizedQuery);
       return layerMatch && modeMatch && platformMatch && searchMatch;
     });
   }, [activeLayer, mode, platformFilter, query]);
+
+  const reviewCounts = useMemo(() => {
+    const counts: Record<Exclude<AgentReviewFilter, "all">, number> = {
+      understood: 0,
+      "in-progress": 0,
+      unclear: 0,
+      unreviewed: 0,
+    };
+    for (const agent of catalogFilteredAgents) counts[reviewStatusFor(workingStates, agent.id)] += 1;
+    return counts;
+  }, [catalogFilteredAgents, workingStates]);
+
+  const visibleAgents = useMemo(() => reviewFilter === "all"
+    ? catalogFilteredAgents
+    : catalogFilteredAgents.filter((agent) => reviewStatusFor(workingStates, agent.id) === reviewFilter),
+  [catalogFilteredAgents, reviewFilter, workingStates]);
 
   const hierarchyGroups = useMemo(() => {
     const visibleIds = new Set(visibleAgents.map((agent) => agent.id));
@@ -617,6 +693,27 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
           <small>Shared = Command Center + Client Side</small>
         </div>
 
+        <div className="agent-workspace-panel">
+          <div className="workspace-filter-block">
+            <span>MY REVIEW STATUS</span>
+            <div className="workspace-status-switch" role="group" aria-label="Filter by personal Agent review status">
+              {agentReviewOptions.map((option) => (
+                <button
+                  aria-pressed={reviewFilter === option.id}
+                  className={`status-${option.id} ${reviewFilter === option.id ? "active" : ""}`.trim()}
+                  disabled={!workspaceUser && option.id !== "all"}
+                  key={option.id}
+                  onClick={() => setReviewFilter(option.id)}
+                >
+                  <i>{option.mark}</i>{option.shortLabel}
+                  <b>{option.id === "all" ? catalogFilteredAgents.length : workspaceUser ? reviewCounts[option.id] : "—"}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+          <AgentWorkspaceAccount />
+        </div>
+
         {visibleAgents.length > 0 ? architectureView === "flat" ? (
           <div className="agent-grid">
             {visibleAgents.map((agent) => (
@@ -697,11 +794,13 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             mode={mode}
             activeLayer={activeLayer}
             platformFilter={platformFilter}
+            reviewFilter={reviewFilter}
             selectedIds={comparisonIds}
             onQueryChange={setQuery}
             onModeChange={setMode}
             onLayerChange={setActiveLayer}
             onPlatformChange={setPlatformFilter}
+            onReviewFilterChange={setReviewFilter}
             onOpenAgent={setSelectedAgent}
             onToggleCompare={toggleComparisonAgent}
             onCompare={() => setComparisonOpen(true)}
@@ -709,7 +808,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
         ) : (
           <div className="empty-state">
             <span>⌕</span><strong>Ничего не найдено</strong>
-            <button onClick={() => { setQuery(""); setActiveLayer("all"); setMode("all"); setPlatformFilter("all"); }}>Сбросить</button>
+            <button onClick={() => { setQuery(""); setActiveLayer("all"); setMode("all"); setPlatformFilter("all"); setReviewFilter("all"); }}>Сбросить</button>
           </div>
         )}
       </section>

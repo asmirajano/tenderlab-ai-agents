@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { case1ProcessGraph } from "./case-simulation/case-1-graph";
 import type { Agent } from "../packages/catalog-data/src/agents";
+import { AgentReviewBadge, AgentReviewControl } from "./agent-workspace";
 
 type NetworkFilter = "all" | "supports" | "case" | "orchestrates";
 type LayerMeta = Record<string, { name: string; color: string; mark: string }>;
@@ -111,7 +112,7 @@ export default function AgentNetworkView({
         <span><i>{String(agent.id).padStart(2, "0")}</i><small>{meta.name}</small></span>
         <strong>{agent.name}</strong>
         <p>{relation.labels.slice(0, 2).join(" · ")}</p>
-        <div>{[...relation.kinds].map((kind) => <em className={`relation-${kind}`} key={kind}>{kind === "supports" ? "SUPPORT" : kind === "case" ? "CASE HANDOFF" : "ORCHESTRATES"}</em>)}{relation.eventIds.length > 0 && <b>{relation.eventIds.slice(0, 4).join(" · ")}{relation.eventIds.length > 4 ? ` +${relation.eventIds.length - 4}` : ""}</b>}</div>
+        <div>{[...relation.kinds].map((kind) => <em className={`relation-${kind}`} key={kind}>{kind === "supports" ? "SUPPORT" : kind === "case" ? "CASE HANDOFF" : "ORCHESTRATES"}</em>)}<AgentReviewBadge agentId={agent.id} />{relation.eventIds.length > 0 && <b>{relation.eventIds.slice(0, 4).join(" · ")}{relation.eventIds.length > 4 ? ` +${relation.eventIds.length - 4}` : ""}</b>}</div>
       </button>
     );
   };
@@ -133,7 +134,9 @@ export default function AgentNetworkView({
           <div><span>{String(focusAgent.id).padStart(2, "0")} · {layerMeta[focusAgent.layer].name}</span><b>FOCUS</b></div>
           <i>{layerMeta[focusAgent.layer].mark}</i>
           <h3>{focusAgent.name}</h3>
-          <p>{focusAgent.description}</p>
+          <p>{focusAgent.profile.simply}</p>
+          <div className="network-focus-boundary"><span>KEY DISTINCTION</span><strong>{focusAgent.profile.keyDistinction}</strong></div>
+          <AgentReviewControl agentId={focusAgent.id} canonicalRegistryId={focusAgent.registryId} />
           <section><span>RESULT / OUTPUT</span><strong>{focusAgent.output.primary}</strong><small>{focusAgent.output.consumers}</small></section>
           <div className="network-focus-actions">
             <button type="button" onClick={() => onOpenAgent(focusAgent)}>Open canonical profile ↗</button>

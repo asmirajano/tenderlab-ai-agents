@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
+  agentSearchText,
   agents,
   getAgentTier,
   layerById,
   platformSideLabels,
   subagentParentIds,
-  tierActivationLabels,
   tierLabels,
   type Agent,
 } from "../packages/catalog-data/src/agents";
+import { AgentReviewBadge } from "./agent-workspace";
 
 export type ComparisonTone = "unique" | "overlap" | "boundary" | "duplicate";
 
@@ -58,7 +59,10 @@ function childrenOf(agent: Agent) {
 }
 
 export function analyzeAgentPair(left: Agent, right: Agent): PairAnalysis {
-  const purposeOverlap = overlapRatio(words(left.description), words(right.description));
+  const purposeOverlap = overlapRatio(
+    words([left.description, left.profile.responsibilityScope, ...left.profile.activities, left.profile.keyDistinction].join(" ")),
+    words([right.description, right.profile.responsibilityScope, ...right.profile.activities, right.profile.keyDistinction].join(" ")),
+  );
   const outputOverlap = overlapRatio(
     words([left.output.primary, ...left.output.artifacts].join(" ")),
     words([right.output.primary, ...right.output.artifacts].join(" ")),
@@ -103,8 +107,24 @@ export function analyzeAgentPair(left: Agent, right: Agent): PairAnalysis {
   return { agentId: right.id, score, tone, label, evidence };
 }
 
-function MissingField({ children }: { children: ReactNode }) {
-  return <div className="comparison-missing"><b>NOT STRUCTURED</b><span>{children}</span></div>;
+function ProfileList({ items }: { items: string[] }) {
+  return <ul className="comparison-profile-list">{items.map((item) => <li key={item}>{item}</li>)}</ul>;
+}
+
+function StructuredOverlapCell({ agent }: { agent: Agent }) {
+  return (
+    <div className="comparison-explicit-overlaps">
+      {agent.profile.potentialOverlaps.map((finding) => (
+        <article key={`${agent.id}-${finding.agentIds.join("-")}`}>
+          <span>{finding.agentIds.map((id) => {
+            const counterpart = agents.find((candidate) => candidate.id === id);
+            return counterpart ? `${String(id).padStart(2, "0")} · ${counterpart.name}` : String(id).padStart(2, "0");
+          }).join(" · ")}</span>
+          <p>{finding.note}</p>
+        </article>
+      ))}
+    </div>
+  );
 }
 
 function Signal({ analysis, compact = false }: { analysis: PairAnalysis; compact?: boolean }) {
@@ -152,20 +172,24 @@ export function buildAgentValidationRows(
 ): AgentValidationRow[] {
   const compact = density === "matrix";
   return [
+    { id: "simply", label: "Simply / простыми словами", render: (agent) => <strong>{agent.profile.simply}</strong> },
     { id: "purpose", label: "Core purpose", render: (agent) => agent.description },
-    { id: "scope", label: "Responsibility / scope", render: () => <MissingField>Отдельная граница ответственности отсутствует в canonical registry.</MissingField> },
-    { id: "does", label: "What it does", render: () => <MissingField>Capability statement отдельно от purpose не представлен.</MissingField> },
-    { id: "not-do", label: "What it explicitly should NOT do", render: () => <MissingField>Negative scope / exclusions пока не определены.</MissingField> },
-    { id: "inputs", label: "Typical inputs", render: (agent) => <MissingField>Явные inputs отсутствуют. Доступны только functional parents: {parentsOf(agent).size || "нет"}.</MissingField> },
+    { id: "scope", label: "Responsibility / scope", render: (agent) => agent.profile.responsibilityScope },
+    { id: "does", label: "What it does", render: (agent) => <ProfileList items={agent.profile.activities} /> },
+    { id: "not-do", label: "What it explicitly should NOT do", render: (agent) => <ProfileList items={agent.profile.exclusions} /> },
+    { id: "inputs", label: "Typical inputs", render: (agent) => <ProfileList items={agent.profile.typicalInputs} /> },
     { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong>{agent.output.primary}</strong>{agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}</div> },
-    { id: "authority", label: "Decisions / authority", render: () => <MissingField>Decision rights и human authority не структурированы по агенту.</MissingField> },
-    { id: "trigger", label: "Trigger / activation", render: (agent) => <div><strong>{tierActivationLabels[getAgentTier(agent.id)]}</strong><p>Per-agent trigger и skip condition не представлены.</p></div> },
+    { id: "trigger", label: "Trigger / activation", render: (agent) => <div className="comparison-trigger"><strong>{agent.profile.trigger}</strong><p><b>SKIP</b>{agent.profile.skipCondition}</p></div> },
+    { id: "authority", label: "Decisions / authority", render: (agent) => agent.profile.authority },
+    { id: "boundary", label: "Responsibility boundary", render: (agent) => agent.profile.responsibilityBoundary },
+    { id: "distinction", label: "Key distinction", render: (agent) => <strong>{agent.profile.keyDistinction}</strong> },
+    { id: "overlap", label: "Potential overlap", render: (agent) => <StructuredOverlapCell agent={agent} /> },
+    { id: "stage", label: "Primary workflow stage", render: (agent) => agent.profile.workflowStage },
     { id: "classification", label: "Layer / category", render: (agent) => <div className="comparison-classification"><span style={{ "--comparison-color": layerById[agent.layer].color } as CSSProperties}>{layerById[agent.layer].number} · {layerById[agent.layer].name}</span><b>{tierLabels[getAgentTier(agent.id)]}</b></div> },
     { id: "platform", label: "Platform side", render: (agent) => <div className="comparison-platform">{agent.platformSides.map((side) => <span key={side}>{platformSideLabels[side]}</span>)}</div> },
     { id: "workflow", label: "Related workflow role", render: (agent) => <RelationshipCell agent={agent} compact={compact} /> },
-    { id: "overlap", label: "Potential overlap", render: (agent) => analyses.get(agent.id)?.length ? <div className="comparison-signals">{analyses.get(agent.id)!.slice(0, compact ? 1 : 2).map((analysis) => <Signal analysis={analysis} compact={compact} key={analysis.agentId} />)}</div> : "Добавьте ещё одного агента." },
-    { id: "distinction", label: "Key distinction", render: (agent) => <div><strong>{agent.output.primary}</strong><p>Это наиболее конкретный differentiator, подтверждённый текущими output metadata.</p></div> },
-    { id: "risk", label: "Duplication risk", render: (agent) => {
+    { id: "definition-status", label: "Definition status", render: (agent) => <div className={`comparison-definition-status status-${agent.profile.definitionStatus}`}><b>{agent.profile.definitionStatus === "structured" ? "STRUCTURED" : "NEEDS REVIEW"}</b><p>{agent.profile.validationFinding ?? "Все обязательные границы и canonical profile fields структурированы."}</p></div> },
+    { id: "risk", label: "Cross-profile similarity signal", render: (agent) => {
       const strongest = analyses.get(agent.id)?.[0];
       return strongest ? <><Signal analysis={strongest} compact={compact} /><small className="comparison-caution">Heuristic only · не является решением о merge/delete.</small></> : "—";
     } },
@@ -191,7 +215,7 @@ export function AgentComparisonModal({
   );
   const analyses = useMemo(() => buildAgentAnalysisMap(selectedAgents), [selectedAgents]);
   const addOptions = agents.filter((agent) => !selectedIds.includes(agent.id) && (
-    !query.trim() || `${agent.id} ${agent.name} ${agent.description}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+    !query.trim() || `${agent.id} ${agentSearchText(agent)}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )).slice(0, 8);
 
   useEffect(() => {
@@ -225,11 +249,14 @@ export function AgentComparisonModal({
 
         <div className="comparison-table-scroll">
           <table className="comparison-table">
-            <thead><tr><th>DIMENSION</th>{selectedAgents.map((agent) => <th key={agent.id}><span>{String(agent.id).padStart(2, "0")} · {layerById[agent.layer].name}</span><strong>{agent.name}</strong><button type="button" onClick={() => onRemove(agent.id)}>Remove</button></th>)}</tr></thead>
-            <tbody>{rows.map((row) => <tr key={row.id}><th scope="row">{row.label}</th>{selectedAgents.map((agent) => <td key={agent.id}>{row.render(agent)}</td>)}</tr>)}</tbody>
+            <thead><tr><th>DIMENSION</th>{selectedAgents.map((agent) => <th key={agent.id}><span>{String(agent.id).padStart(2, "0")} · {layerById[agent.layer].name}</span><strong>{agent.name}</strong><AgentReviewBadge agentId={agent.id} /><button type="button" onClick={() => onRemove(agent.id)}>Remove</button></th>)}</tr></thead>
+            <tbody>
+              <tr className="comparison-review-row"><th scope="row">My review status</th>{selectedAgents.map((agent) => <td key={agent.id}><AgentReviewBadge agentId={agent.id} /></td>)}</tr>
+              {rows.map((row) => <tr key={row.id}><th scope="row">{row.label}</th>{selectedAgents.map((agent) => <td key={agent.id}>{row.render(agent)}</td>)}</tr>)}
+            </tbody>
           </table>
         </div>
-        <footer><p><b>DATA COVERAGE:</b> Purpose, output, layer, tier, platform side and functional parent relationships come from the canonical 64-Agent registry. Missing fields are shown explicitly. Overlap scores are transparent heuristics for human review.</p><button type="button" onClick={onClose}>Close comparison</button></footer>
+        <footer><p><b>DATA COVERAGE:</b> All profile dimensions come from the canonical 64-Agent registry. Explicit overlap notes are architecture findings; similarity scores remain transparent heuristics for human review, not merge decisions.</p><button type="button" onClick={onClose}>Close comparison</button></footer>
       </div>
     </div>
   );

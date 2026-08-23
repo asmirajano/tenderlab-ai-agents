@@ -53,6 +53,10 @@ test("exports the strategic presentation, validation tools, and compatibility ro
   assert.match(agentsPage, /aria-label="Architecture view"/);
   assert.match(agentsPage, /USED IN \/ PLATFORM SIDE/);
   assert.match(agentsPage, /aria-label="Filter by platform side"/);
+  assert.match(agentsPage, /MY REVIEW STATUS/);
+  assert.match(agentsPage, /PERSONAL WORKSPACE/);
+  assert.match(agentsPage, /Войти через Google/);
+  assert.match(agentsPage, /aria-label="Filter by personal Agent review status"/);
   assert.match(agentsPage, />Command Center(?:<!-- -->)? <b>44<\/b>/);
   assert.match(agentsPage, />Client Side(?:<!-- -->)? <b>45<\/b>/);
   assert.match(agentsPage, />Backend(?:<!-- -->)? <b>14<\/b>/);
@@ -209,8 +213,10 @@ test("orders the agent detail drawer as one progressive profile", async () => {
 
   const progressiveSections = [
     'className="drawer-identity"',
+    'className="drawer-working-state"',
+    "<AgentCanonicalProfile",
     "<AgentPlatformRationale",
-    'className="drawer-process"',
+    "<AgentOperatingContract",
     "<AgentDrawerOutput",
     "sim-example",
     "<AgentOperationalMetadata",
@@ -218,8 +224,9 @@ test("orders the agent detail drawer as one progressive profile", async () => {
   const positions = progressiveSections.map((section) => drawer.indexOf(section));
   assert.ok(positions.every((position) => position >= 0), "every profile section must remain present");
   assert.deepEqual([...positions].sort((a, b) => a - b), positions, "profile sections must follow the intended information hierarchy");
-  assert.match(drawer, /PURPOSE/);
-  assert.match(drawer, /HOW IT WORKS/);
+  assert.match(drawer, /SIMPLY \/ ПРОСТО/);
+  assert.match(source, /CORE PURPOSE/);
+  assert.match(source, /HOW IT WORKS \/ OPERATING CONTRACT/);
   assert.match(drawer, /REALISTIC EXAMPLE/);
   assert.match(source, /ИСПОЛЬЗУЕТСЯ →/);
   assert.match(registrySource, /Context routed/);
@@ -428,6 +435,48 @@ test("uses one typed relationship model for Case Audit and the Agent Catalog Net
   for (const relation of ["orchestrated-by", "consumes", "produces", "handoff", "depends-on", "blocks", "triggered-by", "approved-by", "joins-at", "waits-for", "retry", "rework", "feedback"]) assert.match(modelSource, new RegExp(`\\| "${relation}"`));
 });
 
+test("keeps personal Agent review state separate and synchronizable", async () => {
+  const [pageSource, workspaceSource, layoutSource, rulesSource, firebaseConfig] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-workspace.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "layout.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "firestore.rules"), "utf8"),
+    readFile(path.join(projectRoot, "firebase.json"), "utf8"),
+  ]);
+
+  assert.match(layoutSource, /<AgentWorkspaceProvider>/);
+  assert.match(pageSource, /<AgentReviewControl agentId=\{agent\.id\} canonicalRegistryId=\{agent\.registryId\}/);
+  assert.match(pageSource, /MY WORKING STATE/);
+  assert.match(workspaceSource, /"understood" \| "in-progress" \| "unclear"/);
+  assert.match(workspaceSource, /collection\(services\.db, "users", nextUser\.uid, "agentReview"\)/);
+  assert.match(workspaceSource, /signInWithPopup/);
+  assert.match(workspaceSource, /serverTimestamp\(\)/);
+  assert.match(rulesSource, /request\.auth\.uid == userId/);
+  assert.match(rulesSource, /canonicalRegistryId == agentRegistryId/);
+  assert.match(rulesSource, /reviewStatus in \['understood', 'in-progress', 'unclear'\]/);
+  assert.match(firebaseConfig, /"googleSignIn"/);
+  assert.match(firebaseConfig, /"rules": "firestore\.rules"/);
+});
+
+test("defines complete canonical responsibility profiles for all 64 Agents", async () => {
+  const [{ agents }, { agentProfiles }] = await Promise.all([
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agents.ts")).href),
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-profiles.ts")).href),
+  ]);
+  assert.equal(agents.length, 64);
+  assert.equal(Object.keys(agentProfiles).length, 64);
+  const requiredProseFields = ["simply", "responsibilityScope", "trigger", "skipCondition", "authority", "responsibilityBoundary", "keyDistinction"];
+  for (const agent of agents) {
+    assert.equal(agent.profile, agentProfiles[agent.id], `Agent ${agent.id} must use the canonical profile object`);
+    for (const field of requiredProseFields) assert.ok(agent.profile[field].length > 17, `Agent ${agent.id} needs ${field}`);
+    assert.ok(agent.profile.workflowStage.length >= 3, `Agent ${agent.id} needs workflowStage`);
+    for (const field of ["activities", "exclusions", "typicalInputs"]) assert.ok(agent.profile[field].length >= 2, `Agent ${agent.id} needs ${field}`);
+    assert.ok(agent.profile.upstream.length >= 1, `Agent ${agent.id} needs upstream`);
+    assert.ok(agent.profile.potentialOverlaps.length >= 1, `Agent ${agent.id} needs an explicit overlap/boundary review`);
+    assert.doesNotMatch(JSON.stringify(agent.profile), /NOT STRUCTURED/i);
+  }
+});
+
 test("provides a registry-backed cross-view Agent Comparison workspace", async () => {
   const [pageSource, comparisonSource, networkSource, mapSource, globalStyles, caseStyles] = await Promise.all([
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
@@ -441,14 +490,21 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(pageSource, /comparisonIds/);
   assert.match(pageSource, /<AgentComparisonBar/);
   assert.match(pageSource, /<AgentComparisonModal/);
+  assert.match(pageSource, /CANONICAL RESPONSIBILITY PROFILE/);
+  assert.match(pageSource, /SIMPLY \/ ПРОСТО/);
+  assert.match(pageSource, /<AgentOperatingContract agent=\{agent\}/);
   assert.match(pageSource, /compareSelected=\{comparisonIds\.includes\(agent\.id\)\}/);
   assert.match(comparisonSource, /from "\.\.\/packages\/catalog-data\/src\/agents"/);
   assert.match(comparisonSource, /What it explicitly should NOT do/);
   assert.match(comparisonSource, /Potential duplication/);
-  assert.match(comparisonSource, /NOT STRUCTURED/);
+  assert.match(comparisonSource, /Simply \/ простыми словами/);
+  assert.match(comparisonSource, /Responsibility boundary/);
+  assert.match(comparisonSource, /Definition status/);
+  assert.doesNotMatch(comparisonSource, /NOT STRUCTURED/);
   assert.match(comparisonSource, /Heuristic only/);
   assert.match(comparisonSource, /ADD AGENT/);
   assert.match(networkSource, /onToggleCompare/);
+  assert.match(networkSource, /focusAgent\.profile\.keyDistinction/);
   assert.match(mapSource, /import \{ AgentComparisonBar, AgentComparisonModal \} from "\.\.\/agent-comparison"/);
   assert.match(mapSource, /className="event-agent-compare"/);
   assert.match(mapSource, /aria-pressed=\{comparisonIds\.includes\(agent\.id\)\}/);
@@ -486,7 +542,8 @@ test("provides a filter-aware 64-Agent Matrix as the fourth Catalog view", async
   assert.match(matrixSource, /onToggleCompare/);
   assert.match(matrixSource, /Focus Mode/);
   assert.match(matrixSource, /Hidden \{hiddenIds\.size\}/);
-  assert.match(matrixSource, /NOT STRUCTURED exposes missing registry fields/);
+  assert.match(matrixSource, /18 canonical dimensions/);
+  assert.match(matrixSource, /same enriched canonical 64-Agent registry/);
   assert.match(globalStyles, /\.agent-matrix-view\.is-focus/);
   assert.match(globalStyles, /\.agent-matrix-table thead th/);
   assert.match(globalStyles, /\.agent-matrix-table tbody th/);

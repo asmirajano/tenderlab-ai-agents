@@ -1,4 +1,16 @@
 {
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "TenderLab.ai",
+        "supportEmail": "asmirajano@gmail.com"
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "rules": "firestore.rules"
+  },
   "hosting": [
     {
     "target": "tenderlab",

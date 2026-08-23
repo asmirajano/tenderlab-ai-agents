@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TenderGlossaryShell } from "./tender-glossary-ui";
+import { AgentWorkspaceProvider } from "./agent-workspace";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +39,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ru">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <TenderGlossaryShell>{children}</TenderGlossaryShell>
+        <AgentWorkspaceProvider>
+          <TenderGlossaryShell>{children}</TenderGlossaryShell>
+        </AgentWorkspaceProvider>
       </body>
     </html>
   );

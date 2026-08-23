@@ -13,6 +13,12 @@ import {
   type PlatformFilter,
 } from "../packages/catalog-data/src/agents";
 import { buildAgentAnalysisMap, buildAgentValidationRows } from "./agent-comparison";
+import {
+  AgentReviewBadge,
+  AgentReviewControl,
+  agentReviewOptions,
+  type AgentReviewFilter,
+} from "./agent-workspace";
 
 type MatrixProps = {
   visibleAgents: Agent[];
@@ -20,11 +26,13 @@ type MatrixProps = {
   mode: "all" | AgentTier;
   activeLayer: string;
   platformFilter: PlatformFilter;
+  reviewFilter: AgentReviewFilter;
   selectedIds: number[];
   onQueryChange: (value: string) => void;
   onModeChange: (value: "all" | AgentTier) => void;
   onLayerChange: (value: string) => void;
   onPlatformChange: (value: PlatformFilter) => void;
+  onReviewFilterChange: (value: AgentReviewFilter) => void;
   onOpenAgent: (agent: Agent) => void;
   onToggleCompare: (agentId: number) => void;
   onCompare: () => void;
@@ -36,11 +44,13 @@ export default function AgentMatrixView({
   mode,
   activeLayer,
   platformFilter,
+  reviewFilter,
   selectedIds,
   onQueryChange,
   onModeChange,
   onLayerChange,
   onPlatformChange,
+  onReviewFilterChange,
   onOpenAgent,
   onToggleCompare,
   onCompare,
@@ -98,7 +108,7 @@ export default function AgentMatrixView({
         <div>
           <span>AGENT ARCHITECTURE VALIDATION</span>
           <h3>64-Agent Matrix</h3>
-          <p>Columns = Agents · Rows = shared architectural dimensions · NOT STRUCTURED exposes missing registry fields.</p>
+          <p>Columns = Agents · Rows = 18 canonical dimensions · boundaries and review findings stay visible across all 64 profiles.</p>
         </div>
         <div className="matrix-metrics" aria-label="Matrix coverage">
           <span><b>{displayedAgents.length}</b> visible</span>
@@ -120,6 +130,7 @@ export default function AgentMatrixView({
         <label><span>CLASS</span><select value={mode} onChange={(event) => onModeChange(event.target.value as "all" | AgentTier)}><option value="all">All classes</option><option value="main">Main</option><option value="specialized">Specialized</option><option value="optional">Optional</option></select></label>
         <label><span>LAYER</span><select value={activeLayer} onChange={(event) => onLayerChange(event.target.value)}><option value="all">All layers</option>{layers.map((layer) => <option value={layer.id} key={layer.id}>{layer.number} · {layer.name}</option>)}</select></label>
         <label><span>PLATFORM SIDE</span><select value={platformFilter} onChange={(event) => onPlatformChange(event.target.value as PlatformFilter)}>{platformFilterOptions.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
+        <label><span>MY REVIEW STATUS</span><select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value as AgentReviewFilter)}>{agentReviewOptions.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
         <details className="matrix-hidden-menu">
           <summary>Hidden {hiddenIds.size}</summary>
           <div>
@@ -143,6 +154,7 @@ export default function AgentMatrixView({
                       <span>{String(agent.id).padStart(2, "0")} · {layerById[agent.layer].name}</span>
                       <button type="button" className="matrix-agent-name" onClick={() => onOpenAgent(agent)}>{agent.name}</button>
                       <small>{tierLabels[getAgentTier(agent.id)]}</small>
+                      <AgentReviewControl agentId={agent.id} canonicalRegistryId={agent.registryId} compact />
                       <div>
                         <button type="button" aria-pressed={selected} onClick={() => onToggleCompare(agent.id)}>{selected ? "✓ Selected" : "+ Compare"}</button>
                         <button type="button" onClick={() => hideAgent(agent.id)}>Hide</button>
@@ -153,6 +165,10 @@ export default function AgentMatrixView({
               </tr>
             </thead>
             <tbody>
+              <tr className="matrix-review-status-row">
+                <th scope="row"><span>My review status</span></th>
+                {displayedAgents.map((agent) => <td key={agent.id}><AgentReviewBadge agentId={agent.id} /></td>)}
+              </tr>
               {rows.map((row) => (
                 <tr key={row.id}>
                   <th scope="row"><span>{row.label}</span></th>
@@ -167,7 +183,7 @@ export default function AgentMatrixView({
       </div>
 
       <footer className="matrix-footer">
-        <p><b>ONE SOURCE OF TRUTH:</b> Matrix and Compare share the same 14 dimension definitions and canonical 64-Agent registry. Overlap scores are review signals, not merge decisions.</p>
+        <p><b>ONE SOURCE OF TRUTH:</b> Matrix, Compare, Agent Cards, Hierarchy and Network share the same enriched canonical 64-Agent registry. Overlap findings are review signals, not merge decisions.</p>
         <span>Shift + mouse wheel or trackpad to inspect Agent columns →</span>
       </footer>
     </section>

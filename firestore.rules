@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function ownsUserPath(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+    }
+
+    function validAgentReview(agentRegistryId) {
+      return agentRegistryId.matches('agent:TL-A(00[1-9]|0[1-5][0-9]|06[0-4])')
+        && request.resource.data.keys().hasOnly([
+          'agentId',
+          'canonicalRegistryId',
+          'reviewStatus',
+          'favorite',
+          'priority',
+          'note',
+          'tags',
+          'schemaVersion',
+          'updatedAt'
+        ])
+        && request.resource.data.agentId is int
+        && request.resource.data.agentId >= 1
+        && request.resource.data.agentId <= 64
+        && request.resource.data.canonicalRegistryId == agentRegistryId
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.updatedAt == request.time
+        && (!('reviewStatus' in request.resource.data)
+          || request.resource.data.reviewStatus in ['understood', 'in-progress', 'unclear'])
+        && (!('favorite' in request.resource.data) || request.resource.data.favorite is bool)
+        && (!('priority' in request.resource.data)
+          || request.resource.data.priority in ['low', 'normal', 'high'])
+        && (!('note' in request.resource.data)
+          || (request.resource.data.note is string && request.resource.data.note.size() <= 3000))
+        && (!('tags' in request.resource.data)
+          || (request.resource.data.tags is list && request.resource.data.tags.size() <= 12));
+    }
+
+    match /users/{userId}/agentReview/{agentRegistryId} {
+      allow read: if ownsUserPath(userId);
+      allow create, update: if ownsUserPath(userId) && validAgentReview(agentRegistryId);
+      allow delete: if ownsUserPath(userId);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
