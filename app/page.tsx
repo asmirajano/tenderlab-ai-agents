@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
 import AgentNetworkView from "./agent-network-view";
+import AgentMatrixView from "./agent-matrix-view";
 import { AgentComparisonBar, AgentComparisonModal } from "./agent-comparison";
 import {
   agents,
@@ -564,6 +565,11 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                 className={architectureView === "network" ? "active" : ""}
                 onClick={() => setArchitectureView("network")}
               >Network</button>
+              <button
+                aria-pressed={architectureView === "matrix"}
+                className={architectureView === "matrix" ? "active" : ""}
+                onClick={() => setArchitectureView("matrix")}
+              >Matrix</button>
             </div>
             <div className="mode-switch" role="group" aria-label="Agent set">
               <button aria-pressed={mode === "all"} className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
@@ -674,7 +680,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
               })}
             </div>
           </div>
-        ) : (
+        ) : architectureView === "network" ? (
           <AgentNetworkView
             allAgents={agents}
             visibleAgents={visibleAgents}
@@ -683,6 +689,22 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             onOpenAgent={setSelectedAgent}
             comparisonIds={comparisonIds}
             onToggleCompare={toggleComparisonAgent}
+          />
+        ) : (
+          <AgentMatrixView
+            visibleAgents={visibleAgents}
+            query={query}
+            mode={mode}
+            activeLayer={activeLayer}
+            platformFilter={platformFilter}
+            selectedIds={comparisonIds}
+            onQueryChange={setQuery}
+            onModeChange={setMode}
+            onLayerChange={setActiveLayer}
+            onPlatformChange={setPlatformFilter}
+            onOpenAgent={setSelectedAgent}
+            onToggleCompare={toggleComparisonAgent}
+            onCompare={() => setComparisonOpen(true)}
           />
         ) : (
           <div className="empty-state">

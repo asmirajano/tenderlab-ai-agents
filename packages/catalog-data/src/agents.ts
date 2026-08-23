@@ -443,7 +443,7 @@ export const agentExamples: Record<number, AgentExample> = {
 export const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer])) as Record<string, Layer>;
 
 export type AgentTier = "main" | "specialized" | "optional";
-export type ArchitectureView = "flat" | "hierarchy" | "network";
+export type ArchitectureView = "flat" | "hierarchy" | "network" | "matrix";
 
 const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
 const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);

@@ -453,6 +453,34 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(globalStyles, /position: sticky/);
 });
 
+test("provides a filter-aware 64-Agent Matrix as the fourth Catalog view", async () => {
+  const [pageSource, matrixSource, comparisonSource, registrySource, globalStyles] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-matrix-view.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-comparison.tsx"), "utf8"),
+    readFile(agentRegistryPath, "utf8"),
+    readFile(path.join(projectRoot, "app", "globals.css"), "utf8"),
+  ]);
+
+  assert.match(registrySource, /type ArchitectureView = "flat" \| "hierarchy" \| "network" \| "matrix"/);
+  assert.match(pageSource, />Matrix<\/button>/);
+  assert.match(pageSource, /<AgentMatrixView/);
+  assert.match(matrixSource, /buildAgentValidationRows/);
+  assert.match(matrixSource, /buildAgentAnalysisMap/);
+  assert.match(comparisonSource, /export function buildAgentValidationRows/);
+  assert.match(matrixSource, /visibleAgents\.filter/);
+  assert.match(matrixSource, /onModeChange/);
+  assert.match(matrixSource, /onLayerChange/);
+  assert.match(matrixSource, /onPlatformChange/);
+  assert.match(matrixSource, /onToggleCompare/);
+  assert.match(matrixSource, /Focus Mode/);
+  assert.match(matrixSource, /Hidden \{hiddenIds\.size\}/);
+  assert.match(matrixSource, /NOT STRUCTURED exposes missing registry fields/);
+  assert.match(globalStyles, /\.agent-matrix-view\.is-focus/);
+  assert.match(globalStyles, /\.agent-matrix-table thead th/);
+  assert.match(globalStyles, /\.agent-matrix-table tbody th/);
+});
+
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {
   const source = await readFile(agentRegistryPath, "utf8");
   const { createSemanticSearchDocument, rankSemanticDocuments, selectVisibleSemanticResults } = await import(

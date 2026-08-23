@@ -12,9 +12,9 @@ import {
   type Agent,
 } from "../packages/catalog-data/src/agents";
 
-type ComparisonTone = "unique" | "overlap" | "boundary" | "duplicate";
+export type ComparisonTone = "unique" | "overlap" | "boundary" | "duplicate";
 
-type PairAnalysis = {
+export type PairAnalysis = {
   agentId: number;
   score: number;
   tone: ComparisonTone;
@@ -57,7 +57,7 @@ function childrenOf(agent: Agent) {
   return agents.filter((candidate) => subagentParentIds[candidate.id]?.includes(agent.id));
 }
 
-function analyzePair(left: Agent, right: Agent): PairAnalysis {
+export function analyzeAgentPair(left: Agent, right: Agent): PairAnalysis {
   const purposeOverlap = overlapRatio(words(left.description), words(right.description));
   const outputOverlap = overlapRatio(
     words([left.output.primary, ...left.output.artifacts].join(" ")),
@@ -107,10 +107,10 @@ function MissingField({ children }: { children: ReactNode }) {
   return <div className="comparison-missing"><b>NOT STRUCTURED</b><span>{children}</span></div>;
 }
 
-function Signal({ analysis }: { analysis: PairAnalysis }) {
+function Signal({ analysis, compact = false }: { analysis: PairAnalysis; compact?: boolean }) {
   const counterpart = agents.find((agent) => agent.id === analysis.agentId)!;
   return (
-    <div className={`comparison-signal signal-${analysis.tone}`}>
+    <div className={`comparison-signal signal-${analysis.tone} ${compact ? "is-compact" : ""}`.trim()}>
       <span>{analysis.label}<b>{analysis.score}/100</b></span>
       <strong>{String(counterpart.id).padStart(2, "0")} · {counterpart.name}</strong>
       <p>{analysis.evidence.join(" · ")}</p>
@@ -118,16 +118,58 @@ function Signal({ analysis }: { analysis: PairAnalysis }) {
   );
 }
 
-function RelationshipCell({ agent }: { agent: Agent }) {
+function RelationshipCell({ agent, compact = false }: { agent: Agent; compact?: boolean }) {
   const parents = [...parentsOf(agent)].map((id) => agents.find((candidate) => candidate.id === id)?.name).filter(Boolean);
   const children = childrenOf(agent).map((child) => child.name);
   return (
-    <div className="comparison-relationships">
-      {parents.length ? <p><b>Supports Main</b>{parents.slice(0, 4).join(" · ")}{parents.length > 4 ? ` · +${parents.length - 4}` : ""}</p> : null}
-      {children.length ? <p><b>Supported by</b>{children.slice(0, 4).join(" · ")}{children.length > 4 ? ` · +${children.length - 4}` : ""}</p> : null}
+    <div className={`comparison-relationships ${compact ? "is-compact" : ""}`.trim()}>
+      {parents.length ? <p><b>Supports Main</b>{parents.slice(0, compact ? 2 : 4).join(" · ")}{parents.length > (compact ? 2 : 4) ? ` · +${parents.length - (compact ? 2 : 4)}` : ""}</p> : null}
+      {children.length ? <p><b>Supported by</b>{children.slice(0, compact ? 2 : 4).join(" · ")}{children.length > (compact ? 2 : 4) ? ` · +${children.length - (compact ? 2 : 4)}` : ""}</p> : null}
       <p><b>Output consumed by</b>{agent.output.consumers}</p>
     </div>
   );
+}
+
+export type AgentValidationRow = {
+  id: string;
+  label: string;
+  render: (agent: Agent) => ReactNode;
+};
+
+export function buildAgentAnalysisMap(subjects: Agent[], candidates: Agent[] = subjects) {
+  return new Map(subjects.map((agent) => {
+    const matches = candidates
+      .filter((candidate) => candidate.id !== agent.id)
+      .map((candidate) => analyzeAgentPair(agent, candidate))
+      .sort((left, right) => right.score - left.score);
+    return [agent.id, matches];
+  }));
+}
+
+export function buildAgentValidationRows(
+  analyses: Map<number, PairAnalysis[]>,
+  density: "comparison" | "matrix" = "comparison",
+): AgentValidationRow[] {
+  const compact = density === "matrix";
+  return [
+    { id: "purpose", label: "Core purpose", render: (agent) => agent.description },
+    { id: "scope", label: "Responsibility / scope", render: () => <MissingField>Отдельная граница ответственности отсутствует в canonical registry.</MissingField> },
+    { id: "does", label: "What it does", render: () => <MissingField>Capability statement отдельно от purpose не представлен.</MissingField> },
+    { id: "not-do", label: "What it explicitly should NOT do", render: () => <MissingField>Negative scope / exclusions пока не определены.</MissingField> },
+    { id: "inputs", label: "Typical inputs", render: (agent) => <MissingField>Явные inputs отсутствуют. Доступны только functional parents: {parentsOf(agent).size || "нет"}.</MissingField> },
+    { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong>{agent.output.primary}</strong>{agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}</div> },
+    { id: "authority", label: "Decisions / authority", render: () => <MissingField>Decision rights и human authority не структурированы по агенту.</MissingField> },
+    { id: "trigger", label: "Trigger / activation", render: (agent) => <div><strong>{tierActivationLabels[getAgentTier(agent.id)]}</strong><p>Per-agent trigger и skip condition не представлены.</p></div> },
+    { id: "classification", label: "Layer / category", render: (agent) => <div className="comparison-classification"><span style={{ "--comparison-color": layerById[agent.layer].color } as CSSProperties}>{layerById[agent.layer].number} · {layerById[agent.layer].name}</span><b>{tierLabels[getAgentTier(agent.id)]}</b></div> },
+    { id: "platform", label: "Platform side", render: (agent) => <div className="comparison-platform">{agent.platformSides.map((side) => <span key={side}>{platformSideLabels[side]}</span>)}</div> },
+    { id: "workflow", label: "Related workflow role", render: (agent) => <RelationshipCell agent={agent} compact={compact} /> },
+    { id: "overlap", label: "Potential overlap", render: (agent) => analyses.get(agent.id)?.length ? <div className="comparison-signals">{analyses.get(agent.id)!.slice(0, compact ? 1 : 2).map((analysis) => <Signal analysis={analysis} compact={compact} key={analysis.agentId} />)}</div> : "Добавьте ещё одного агента." },
+    { id: "distinction", label: "Key distinction", render: (agent) => <div><strong>{agent.output.primary}</strong><p>Это наиболее конкретный differentiator, подтверждённый текущими output metadata.</p></div> },
+    { id: "risk", label: "Duplication risk", render: (agent) => {
+      const strongest = analyses.get(agent.id)?.[0];
+      return strongest ? <><Signal analysis={strongest} compact={compact} /><small className="comparison-caution">Heuristic only · не является решением о merge/delete.</small></> : "—";
+    } },
+  ];
 }
 
 export function AgentComparisonModal({
@@ -147,13 +189,7 @@ export function AgentComparisonModal({
     () => selectedIds.map((id) => agents.find((agent) => agent.id === id)).filter((agent): agent is Agent => Boolean(agent)),
     [selectedIds],
   );
-  const analyses = useMemo(() => new Map(selectedAgents.map((agent) => {
-    const matches = selectedAgents
-      .filter((candidate) => candidate.id !== agent.id)
-      .map((candidate) => analyzePair(agent, candidate))
-      .sort((left, right) => right.score - left.score);
-    return [agent.id, matches];
-  })), [selectedAgents]);
+  const analyses = useMemo(() => buildAgentAnalysisMap(selectedAgents), [selectedAgents]);
   const addOptions = agents.filter((agent) => !selectedIds.includes(agent.id) && (
     !query.trim() || `${agent.id} ${agent.name} ${agent.description}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )).slice(0, 8);
@@ -170,25 +206,7 @@ export function AgentComparisonModal({
     };
   }, [onClose]);
 
-  const rows: Array<{ id: string; label: string; render: (agent: Agent) => ReactNode }> = [
-    { id: "purpose", label: "Core purpose", render: (agent) => agent.description },
-    { id: "scope", label: "Responsibility / scope", render: () => <MissingField>Отдельная граница ответственности отсутствует в canonical registry.</MissingField> },
-    { id: "does", label: "What it does", render: () => <MissingField>Capability statement отдельно от purpose не представлен.</MissingField> },
-    { id: "not-do", label: "What it explicitly should NOT do", render: () => <MissingField>Negative scope / exclusions пока не определены.</MissingField> },
-    { id: "inputs", label: "Typical inputs", render: (agent) => <MissingField>Явные inputs отсутствуют. Доступны только functional parents: {parentsOf(agent).size || "нет"}.</MissingField> },
-    { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong>{agent.output.primary}</strong>{agent.output.artifacts.map((artifact) => <span key={artifact}>{artifact}</span>)}</div> },
-    { id: "authority", label: "Decisions / authority", render: () => <MissingField>Decision rights и human authority не структурированы по агенту.</MissingField> },
-    { id: "trigger", label: "Trigger / activation", render: (agent) => <div><strong>{tierActivationLabels[getAgentTier(agent.id)]}</strong><p>Per-agent trigger и skip condition не представлены.</p></div> },
-    { id: "classification", label: "Layer / category", render: (agent) => <div className="comparison-classification"><span style={{ "--comparison-color": layerById[agent.layer].color } as CSSProperties}>{layerById[agent.layer].number} · {layerById[agent.layer].name}</span><b>{tierLabels[getAgentTier(agent.id)]}</b></div> },
-    { id: "platform", label: "Platform side", render: (agent) => <div className="comparison-platform">{agent.platformSides.map((side) => <span key={side}>{platformSideLabels[side]}</span>)}</div> },
-    { id: "workflow", label: "Related workflow role", render: (agent) => <RelationshipCell agent={agent} /> },
-    { id: "overlap", label: "Potential overlap", render: (agent) => analyses.get(agent.id)?.length ? <div className="comparison-signals">{analyses.get(agent.id)!.slice(0, 2).map((analysis) => <Signal analysis={analysis} key={analysis.agentId} />)}</div> : "Добавьте ещё одного агента." },
-    { id: "distinction", label: "Key distinction", render: (agent) => <div><strong>{agent.output.primary}</strong><p>Это наиболее конкретный differentiator, подтверждённый текущими output metadata.</p></div> },
-    { id: "risk", label: "Duplication risk", render: (agent) => {
-      const strongest = analyses.get(agent.id)?.[0];
-      return strongest ? <><Signal analysis={strongest} /><small className="comparison-caution">Heuristic only · не является решением о merge/delete.</small></> : "—";
-    } },
-  ];
+  const rows = buildAgentValidationRows(analyses);
 
   return (
     <div className="comparison-modal-shell" role="presentation">
