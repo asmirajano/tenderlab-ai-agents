@@ -513,7 +513,8 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(mapSource, /const selectActivity = \(activityId: string\) => \{[\s\S]*setComparisonIds\(\[\]\);[\s\S]*setComparisonOpen\(false\)/);
   assert.match(mapSource, /onClick=\{\(\) => selectActivity\(activity\.id\)\}/);
   assert.match(globalStyles, /\.comparison-modal \{/);
-  assert.match(globalStyles, /height: calc\(100dvh - 36px\)/);
+  assert.match(globalStyles, /\.comparison-modal-shell \{[^}]*padding: clamp\(7px, \.65vw, 12px\)/);
+  assert.match(globalStyles, /\.comparison-modal \{[^}]*height: 100%[^}]*max-width: none[^}]*width: 100%/);
   assert.match(globalStyles, /\.comparison-table thead th/);
   assert.match(globalStyles, /position: sticky/);
   assert.match(caseStyles, /\.event-agent-compare\[aria-pressed="true"\]/);
