@@ -22,7 +22,10 @@ test("Validation comparison reuses canonical clickable Agent references", async 
   assert.match(comparisonSource, /ProfileList items=\{agent\.profile\.typicalInputs\}/);
   assert.match(referenceSource, /const label = `\$\{agent\.name\} \(\$\{agent\.id\}\)`/);
   assert.match(referenceSource, /data-agent-reference-id=\{agent\.id\}/);
+  assert.match(referenceSource, /closest\("\.agent-drawer"\)/);
+  assert.match(referenceSource, /tenderlab:navigate-agent-drawer/);
   assert.doesNotMatch(referenceSource, /dispatchEvent\(new CustomEvent\("tenderlab:open-agent-reference"/);
   assert.match(drawerSource, /setAgentPath\(\(current\) => \[\.\.\.current, nextAgent\.id\]\)/);
+  assert.match(drawerSource, /addEventListener\("tenderlab:navigate-agent-drawer", followReference\)/);
   assert.match(drawerSource, /drawer-agent-back/);
 });

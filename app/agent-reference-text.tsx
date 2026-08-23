@@ -105,6 +105,10 @@ export function AgentReferenceButton({ agent, onOpenAgent }: { agent: Agent; onO
       data-agent-reference-id={agent.id}
       onClick={(event) => {
         event.preventDefault();
+        if (event.currentTarget.closest(".agent-drawer")) {
+          window.dispatchEvent(new CustomEvent("tenderlab:navigate-agent-drawer", { detail: { agentId: agent.id } }));
+          return;
+        }
         onOpenAgent(agent);
       }}
       aria-label={`Открыть профиль ${label}`}

@@ -1,11 +1,11 @@
-import { agents } from "../../packages/catalog-data/src/agents";
+import { agents } from "../../packages/catalog-data/src/agents.ts";
 import type {
   CaseAuditSummary,
   CaseEventAudit,
   EventAgentAuditDecision,
   EventAgentExecution,
 } from "../process-model";
-import { case1Chronology, case1Engagements } from "./case-1-data";
+import { case1Chronology, case1Engagements } from "./case-1-data.ts";
 
 type ExecutionSpec = {
   eventStep: number;

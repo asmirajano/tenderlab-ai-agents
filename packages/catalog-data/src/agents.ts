@@ -5,7 +5,13 @@
  * must import this module instead of defining parallel agent records.
  */
 
-import { agentProfiles, type AgentProfile } from "./agent-profiles.ts";
+import type {
+  AgentOutputSpecification,
+  AgentPlatformSide,
+  AgentSpecification,
+  AgentTier as CanonicalAgentTier,
+} from "../../catalog-schema/src/agent-specification";
+import { agentProfiles } from "./agent-profiles.ts";
 
 export type Layer = {
   id: string;
@@ -16,30 +22,22 @@ export type Layer = {
   color: string;
 };
 
-export type AgentOutput = {
-  primary: string;
-  artifacts: string[];
-  consumers: string;
-};
-
-export type PlatformSide = "command-center" | "client-side" | "backend";
+export type AgentOutput = AgentOutputSpecification;
+export type PlatformSide = AgentPlatformSide;
 export type PlatformFilter = "all" | PlatformSide | "shared";
 type PlatformRationale = Partial<Record<PlatformSide, string>>;
 
-export type Agent = {
+type AgentDefinitionSeed = {
   id: number;
-  registryId: string;
   name: string;
-  /** Historical display names retained for traceability and backwards-compatible search. */
   previousNames?: string[];
   description: string;
   layer: string;
   core?: boolean;
   output: AgentOutput;
-  platformSides: PlatformSide[];
-  platformRationale: PlatformRationale;
-  profile: AgentProfile;
 };
+
+export type Agent = AgentSpecification;
 
 export const layers: Layer[] = [
   { id: "governance", number: "01", name: "Control", ru: "Управление", mark: "⌘", color: "#8b7cff" },
@@ -52,7 +50,7 @@ export const layers: Layer[] = [
   { id: "learning", number: "08", name: "Learn", ru: "Результат", mark: "↻", color: "#9cdd67" },
 ];
 
-const agentDefinitions: Omit<Agent, "registryId" | "platformSides" | "platformRationale" | "profile">[] = [
+const agentDefinitions: AgentDefinitionSeed[] = [
   { id: 1, name: "TenderLab Orchestrator", description: "Координирует ограниченные этапы, повторы, уверенность, доказательства и согласования.", layer: "governance", core: true, output: { primary: "Маршрут кейса и состояние выполнения", artifacts: ["Граф активации", "Правила повторов", "Пороги и согласования"], consumers: "Все активные агенты · Human Approval" } },
   { id: 2, name: "Human Approval Agent", description: "Передаёт критические решения ответственному человеку.", layer: "governance", output: { primary: "Протокол утверждённого решения", artifacts: ["Решение и условия", "Ответственный и timestamp", "Комментарии и исключения"], consumers: "Orchestrator · Следующий разрешённый этап" } },
   { id: 3, name: "Evidence & Provenance Agent", description: "Связывает выводы и оценки уверенности с проверяемыми источниками.", layer: "governance", output: { primary: "Пакет доказательств и происхождения", artifacts: ["Source citations", "Confidence levels", "Неподтверждённые пробелы"], consumers: "Scoring · Compliance · Human Approval" } },
@@ -67,7 +65,7 @@ const agentDefinitions: Omit<Agent, "registryId" | "platformSides" | "platformRa
   { id: 11, name: "Supplier Intelligence Agent", description: "Накапливает проверенные данные о поставщиках.", layer: "company", output: { primary: "Проверенный supplier intelligence dataset", artifacts: ["Supplier profiles", "История поставок", "Риски и performance"], consumers: "Solution Architecture · Cost · Learning" } },
   { id: 12, name: "Partner Capability Graph Agent", description: "Картирует партнёров и их возможности.", layer: "company", output: { primary: "Граф партнёров и компетенций", artifacts: ["Partner nodes", "Capability coverage", "Незакрытые gaps"], consumers: "Participation Route · Solution · JV" } },
 
-  { id: 13, name: "Tender Source Acquisition Agent", previousNames: ["Tender Source Ingestion Agent"], description: "Собирает объявления, оригиналы, вложения и файлы из источников.", layer: "universe", output: { primary: "Нормализованный поток тендерных источников", artifacts: ["Notice objects", "Original attachments", "Source metadata"], consumers: "Tender Discovery · Document Intake" } },
+  { id: 13, name: "Tender Source Acquisition Agent", previousNames: ["Tender Source Ingestion Agent"], description: "Собирает и технически типизирует объявления, оригиналы, вложения и другие procurement publications из источников.", layer: "universe", output: { primary: "Нормализованный поток procurement source items", artifacts: ["Source item type и confidence", "Version / deduplication keys", "Original attachments и provenance"], consumers: "Tender Classification · Document Intake · Amendment & Change · Tender Award Intelligence" } },
   { id: 14, name: "Tender Discovery Agent", description: "Находит потенциально подходящие возможности.", layer: "universe", core: true, output: { primary: "Ранжированный shortlist тендеров", artifacts: ["Оценка релевантности", "Срок и источник", "Причины исключения"], consumers: "Document Intake · Match Score" } },
   { id: 15, name: "Tender Classification Agent", description: "Классифицирует отрасль, страну и процедуру.", layer: "universe", output: { primary: "Классификационная карточка тендера", artifacts: ["Sector и category", "Country и buyer type", "Procedure и procurement method"], consumers: "Filtering · Discovery · Market Intelligence" } },
   { id: 16, name: "Tender Filtering Agent", description: "Отсеивает явно нерелевантные возможности.", layer: "universe", output: { primary: "Отфильтрованный набор возможностей", artifacts: ["Pass / Reject flags", "Причины исключения", "Применённые thresholds"], consumers: "Tender Discovery · Alerts" } },
@@ -328,13 +326,60 @@ const platformRationaleByAgentId: Record<number, PlatformRationale> = {
   64: { backend: "Автоматически возвращает award, score, buyer feedback и delivery outcome в knowledge graph и модели, улучшая будущие Discovery и Scoring." },
 };
 
-export const agents: Agent[] = agentDefinitions.map((agent) => ({
-  ...agent,
-  registryId: `agent:TL-A${String(agent.id).padStart(3, "0")}`,
-  platformSides: platformSidesByAgentId[agent.id],
-  platformRationale: platformRationaleByAgentId[agent.id],
-  profile: agentProfiles[agent.id],
-}));
+const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
+const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
+const tierForAgent = (agentId: number): CanonicalAgentTier => mainAgentIds.has(agentId) ? "main" : optionalAgentIds.has(agentId) ? "optional" : "specialized";
+const slugForAgent = (name: string) => name.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const specificationVersionForAgent = (agentId: number) => agentId === 13 ? "1.1.0" : "1.0.0";
+
+/**
+ * The single canonical runtime registry. Identity, capability, output, platform,
+ * governance and migration-completeness fields are assembled once here. Every
+ * TenderLab and Tender Ecosystem view must project from this array.
+ */
+export const agentSpecifications: AgentSpecification[] = agentDefinitions.map((agent) => {
+  const previousNames = agent.previousNames ?? [];
+  const profile = agentProfiles[agent.id];
+  return {
+    id: agent.id,
+    registryId: `agent:TL-A${String(agent.id).padStart(3, "0")}`,
+    slug: slugForAgent(agent.name),
+    name: agent.name,
+    aliases: [...previousNames],
+    previousNames: [...previousNames],
+    description: agent.description,
+    layer: agent.layer,
+    tier: tierForAgent(agent.id),
+    core: Boolean(agent.core),
+    governance: {
+      specificationVersion: specificationVersionForAgent(agent.id),
+      status: profile.definitionStatus,
+      schemaVersion: "1.0.0",
+      updatedAt: "2026-08-23",
+      sourceRefs: [],
+    },
+    profile,
+    output: agent.output,
+    platformSides: platformSidesByAgentId[agent.id],
+    platformRationale: platformRationaleByAgentId[agent.id],
+    get example() { return agentExamples[agent.id]; },
+    humanControls: {
+      status: "not-structured",
+      note: "Human controls пока представлены внутри authority и Case approval evidence; отдельный canonical contract требует Agent-by-Agent review.",
+    },
+    errorBehavior: {
+      status: "not-structured",
+      note: "Retry, failure, low-confidence и termination behavior пока не утверждены как отдельный canonical section.",
+    },
+    implementationRequirements: {
+      status: "not-structured",
+      note: "Runtime, tools, integrations, security и observability requirements будут определяться отдельно от capability definition.",
+    },
+  };
+});
+
+/** Backwards-compatible name; it is the same array, not a second registry. */
+export const agents: Agent[] = agentSpecifications;
 
 export const agentSearchText = (agent: Agent) => [
   agent.name,
@@ -462,16 +507,11 @@ export const agentExamples: Record<number, AgentExample> = {
 
 export const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer])) as Record<string, Layer>;
 
-export type AgentTier = "main" | "specialized" | "optional";
+export type AgentTier = CanonicalAgentTier;
 export type ArchitectureView = "flat" | "hierarchy" | "network" | "matrix";
 
-const mainAgentIds = new Set([1, 6, 9, 14, 21, 24, 25, 31, 32, 35, 39, 47, 48, 50, 51, 52, 53, 56, 58, 64]);
-const optionalAgentIds = new Set([11, 12, 18, 19, 20, 22, 28, 29, 30, 33, 40, 41, 42, 43, 44, 45, 46, 59, 60, 61, 62, 63]);
-
 export const getAgentTier = (agentId: number): AgentTier => {
-  if (mainAgentIds.has(agentId)) return "main";
-  if (optionalAgentIds.has(agentId)) return "optional";
-  return "specialized";
+  return tierForAgent(agentId);
 };
 
 export const tierLabels: Record<AgentTier, string> = {

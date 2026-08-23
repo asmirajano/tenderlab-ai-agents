@@ -154,7 +154,7 @@ export function createSemanticSearchDocument(input: SearchDocumentInput): Semant
     { key: "output", label: "Result / Output", text: input.output ?? "", weight: FIELD_WEIGHTS.output },
     { key: "rationale", label: "Platform rationale", text: input.rationale ?? "", weight: FIELD_WEIGHTS.rationale },
     { key: "metadata", label: "Класс / слой / сторона", text: input.metadata ?? "", weight: FIELD_WEIGHTS.metadata },
-  ].filter((field) => field.text.trim());
+  ].filter((field): field is SemanticSearchField => Boolean(field.text.trim()));
   return { id: input.id, name: input.name, aliases, fields };
 }
 

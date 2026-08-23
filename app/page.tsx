@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-html-link-for-pages -- native navigation preserves independent Firebase pages */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
 import AgentNetworkView from "./agent-network-view";
 import AgentMatrixView from "./agent-matrix-view";
@@ -211,7 +211,7 @@ function AgentPlatformRationale({ agent, onOpenAgent }: { agent: Agent; onOpenAg
             {agent.platformSides.length > 1 && (
               <span className={`rationale-side rationale-${side}`}>{platformSideLabels[side]}</span>
             )}
-            <p><AgentReferenceText text={agent.platformRationale[side]} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>
+            <p><AgentReferenceText text={agent.platformRationale[side] ?? "Platform rationale is not yet structured."} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p>
           </article>
         ))}
       </div>
@@ -418,6 +418,9 @@ function AgentDetailDrawerView({
           <div><span>MY WORKING STATE</span><p>Личный статус не изменяет canonical Agent definition или Case Audit.</p></div>
           <AgentReviewControl agentId={agent.id} canonicalRegistryId={agent.registryId} />
         </section>
+        <a className="drawer-full-spec-link" href={`https://tender-ecosystem-atlas.web.app/agents/${agent.slug}`} target="_blank" rel="noreferrer">
+          <span>CANONICAL AGENT SPECIFICATION</span><strong>Open Full Specification ↗</strong><small>Version {agent.governance.specificationVersion} · shared canonical registry</small>
+        </a>
         <AgentCanonicalProfile agent={agent} onOpenAgent={onOpenReference} />
         <AgentPlatformRationale agent={agent} onOpenAgent={onOpenReference} />
         <AgentOperatingContract agent={agent} onOpenAgent={onOpenReference} />
@@ -527,10 +530,10 @@ export function AgentDetailDrawer({
     const followReference = (event: Event) => {
       const nextId = Number((event as CustomEvent<{ agentId: number }>).detail?.agentId);
       if (!agents.some((candidate) => candidate.id === nextId)) return;
-      setAgentPath((current) => [...current, nextId]);
+      setAgentPath((current) => current.at(-1) === nextId ? current : [...current, nextId]);
     };
-    window.addEventListener("tenderlab:open-agent-reference", followReference);
-    return () => window.removeEventListener("tenderlab:open-agent-reference", followReference);
+    window.addEventListener("tenderlab:navigate-agent-drawer", followReference);
+    return () => window.removeEventListener("tenderlab:navigate-agent-drawer", followReference);
   }, []);
 
   useEffect(() => {
@@ -734,10 +737,15 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
     const requestedMode = params.get("mode");
     const requestedLayer = params.get("layer");
     const requestedPlatform = params.get("side") as PlatformFilter | null;
+    const requestedAgentId = Number(params.get("agent"));
     const applyRequestedFilters = window.setTimeout(() => {
       if (requestedMode === "main" || requestedMode === "specialized" || requestedMode === "optional") setMode(requestedMode);
       if (requestedLayer && layers.some((layer) => layer.id === requestedLayer)) setActiveLayer(requestedLayer);
       if (requestedPlatform && platformFilterOptions.some((option) => option.id === requestedPlatform)) setPlatformFilter(requestedPlatform);
+      if (Number.isInteger(requestedAgentId)) {
+        const requestedAgent = agentById.get(requestedAgentId);
+        if (requestedAgent) openRootAgent(requestedAgent);
+      }
     }, 0);
     return () => window.clearTimeout(applyRequestedFilters);
   }, [page]);

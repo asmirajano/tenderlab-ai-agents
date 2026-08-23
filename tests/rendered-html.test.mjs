@@ -684,7 +684,7 @@ test("preserves the 13 naming-audit identities while exposing only the recommend
     [64, "Outcome Learning Agent", "Tender Outcome Learning Agent"],
   ];
 
-  assert.equal([...source.matchAll(/previousNames: \[/g)].length, 13, "only the approved rename set may receive historical aliases");
+  assert.equal([...source.matchAll(/previousNames: \["/g)].length, 13, "only the approved rename set may receive historical aliases");
   for (const [id, previousName, canonicalName] of renames) {
     assert.match(source, new RegExp(`\\{ id: ${id}, name: "${canonicalName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}", previousNames: \\["${previousName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\]`));
     assert.doesNotMatch(source, new RegExp(`\\{ id: ${id}, name: "${previousName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));

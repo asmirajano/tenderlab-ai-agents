@@ -5,30 +5,10 @@
  * stays in the Case graph and must never rewrite this registry.
  */
 
-export type AgentDefinitionStatus = "structured" | "needs-review";
+import type { AgentCapabilityProfile, AgentDefinitionStatus } from "../../catalog-schema/src/agent-specification";
 
-export type AgentOverlapFinding = {
-  agentIds: number[];
-  note: string;
-};
-
-export type AgentProfile = {
-  simply: string;
-  responsibilityScope: string;
-  activities: string[];
-  exclusions: string[];
-  typicalInputs: string[];
-  trigger: string;
-  skipCondition: string;
-  authority: string;
-  responsibilityBoundary: string;
-  keyDistinction: string;
-  workflowStage: string;
-  upstream: string[];
-  potentialOverlaps: AgentOverlapFinding[];
-  definitionStatus: AgentDefinitionStatus;
-  validationFinding?: string;
-};
+export type AgentProfile = AgentCapabilityProfile;
+export type { AgentDefinitionStatus, AgentOverlapFinding } from "../../catalog-schema/src/agent-specification";
 
 const profile = (value: Omit<AgentProfile, "definitionStatus"> & { definitionStatus?: AgentDefinitionStatus }): AgentProfile => ({
   ...value,
@@ -222,18 +202,18 @@ export const agentProfiles: Record<number, AgentProfile> = {
   }),
   13: profile({
     simply: "Забирает notice и исходные файлы из официальных источников, сохраняя ссылку и происхождение.",
-    responsibilityScope: "Source acquisition и normalization notices, attachments, metadata и fetch status across procurement sources.",
-    activities: ["Мониторит источники", "Скачивает оригиналы", "Создаёт source records и deduplication keys"],
-    exclusions: ["Не решает релевантность", "Не индексирует внутреннее содержание пакета", "Не классифицирует tender"],
+    responsibilityScope: "Source acquisition, normalization и техническая типизация входящих procurement publications, attachments, metadata и fetch status across procurement sources.",
+    activities: ["Мониторит источники", "Скачивает оригиналы", "Определяет source item type для ingestion и routing", "Создаёт source records, version links и deduplication keys"],
+    exclusions: ["Не решает релевантность", "Не индексирует внутреннее содержание пакета", "Не выполняет содержательную или бизнес-классификацию tender по сектору, категории, типу закупки, заказчику или процедуре"],
     typicalInputs: ["Procurement source endpoints", "Crawl/API schedules", "Source access rules"],
     trigger: "Источник публикует или изменяет notice/attachment.",
     skipCondition: "Source item уже получен в той же версии и hash не изменился.",
-    authority: "Может принять или отклонить fetch и duplicate; не может трактовать procurement meaning.",
-    responsibilityBoundary: "Заканчивается на надёжно полученном source package; Document Intake начинает corpus ingestion.",
-    keyDistinction: "Внешнее acquisition из источника, а не внутреннее document processing.",
+    authority: "Может принять или отклонить fetch/duplicate и присвоить технический source item type с confidence; не может трактовать procurement meaning или присваивать business taxonomy.",
+    responsibilityBoundary: "Технически типизирует source item (например notice, amendment, award, cancellation, plan или clarification) только для normalization, deduplication, version linking, storage и routing. Tender Classification Agent выполняет содержательную business-классификацию; Document Intake начинает corpus ingestion.",
+    keyDistinction: "Внешнее acquisition и техническая типизация source item, а не business classification или внутреннее document processing.",
     workflowStage: "Opportunity source acquisition",
     upstream: ["Official portals", "IFI feeds", "Buyer websites"],
-    potentialOverlaps: [{ agentIds: [21, 14], note: "21 индексирует полученный пакет; 14 ранжирует возможности, тогда как 13 только получает source objects." }],
+    potentialOverlaps: [{ agentIds: [15, 19, 21, 14], note: "13 получает и технически типизирует source item; 15 присваивает tender business taxonomy; 19 извлекает и связывает award meaning; 21 индексирует пакет; 14 ранжирует возможности." }],
   }),
   14: profile({
     simply: "Ищет среди доступных закупок те, которые потенциально подходят профилю компании.",

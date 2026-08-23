@@ -3,6 +3,27 @@ import { actorTypes, tenderSides } from "./actors";
 import { dataFamilies, dataSources, tenderDatasets } from "./datasets";
 import { glossaryTerms } from "./glossary";
 import { validateAgentDatasetRelationships } from "./agent-dataset-relations";
+import { agentRelationships } from "./agent-relationships";
+import { agentRevisions } from "./agent-revisions";
+import { agentSpecifications } from "./agents";
+
+export function validateAgentSpecifications() {
+  if (agentSpecifications.length !== 64) throw new Error(`Expected 64 Agent Specifications, got ${agentSpecifications.length}`);
+  if (new Set(agentSpecifications.map((agent) => agent.id)).size !== 64) throw new Error("Agent numeric IDs must be unique.");
+  if (new Set(agentSpecifications.map((agent) => agent.registryId)).size !== 64) throw new Error("Agent registry IDs must be unique.");
+  if (new Set(agentSpecifications.map((agent) => agent.slug)).size !== 64) throw new Error("Agent slugs must be unique.");
+  for (const agent of agentSpecifications) {
+    if (!agent.name || !agent.description || !agent.profile.simply || !agent.profile.responsibilityScope) throw new Error(`${agent.registryId} lost required migrated content.`);
+    if (!agent.output.primary || !agent.output.artifacts.length) throw new Error(`${agent.registryId} needs a concrete output contract.`);
+    if (!agent.governance.specificationVersion || !agent.governance.updatedAt) throw new Error(`${agent.registryId} needs governance metadata.`);
+    if (!agent.example) throw new Error(`${agent.registryId} lost its canonical demo example.`);
+  }
+  const knownIds = new Set(agentSpecifications.map((agent) => agent.registryId));
+  if (agentRelationships.some((relationship) => relationship.source.kind === "agent" && !knownIds.has(relationship.source.ref))) throw new Error("Agent relationship has an unknown source Agent.");
+  if (agentRelationships.some((relationship) => relationship.target.kind === "agent" && !knownIds.has(relationship.target.ref))) throw new Error("Agent relationship has an unknown target Agent.");
+  if (agentRevisions.some((revision) => !knownIds.has(revision.agentId))) throw new Error("Agent revision has an unknown Agent.");
+  return { specifications: agentSpecifications.length, relationships: agentRelationships.length, revisions: agentRevisions.length };
+}
 
 export function validateEcosystemCatalogues() {
   assertUniqueCatalogueRecords(tenderSides, "Tender sides");
@@ -30,6 +51,7 @@ export function validateEcosystemCatalogues() {
   }
 
   return {
+    agentSpecifications: validateAgentSpecifications(),
     sides: tenderSides.length,
     actorTypes: actorTypes.length,
     dataFamilies: dataFamilies.length,

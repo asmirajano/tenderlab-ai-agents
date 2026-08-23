@@ -43,7 +43,7 @@ function overlapRatio(left: Set<string>, right: Set<string>) {
   return shared / Math.min(left.size, right.size);
 }
 
-function sharedValues(left: Set<string>, right: Set<string>) {
+function sharedValues<T>(left: Set<T>, right: Set<T>) {
   return [...left].filter((item) => right.has(item));
 }
 

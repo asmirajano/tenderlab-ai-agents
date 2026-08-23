@@ -1,5 +1,5 @@
-import { case1, case1Chronology } from "./case-1-data";
-import { agents } from "../../packages/catalog-data/src/agents";
+import { case1, case1Chronology } from "./case-1-data.ts";
+import { agents } from "../../packages/catalog-data/src/agents.ts";
 import type {
   CaseProcessActivity,
   CaseProcessGraph,
@@ -11,7 +11,7 @@ import {
   case1AuditSummary,
   case1EventAgentExecutions,
   case1EventAudits,
-} from "./case-1-event-audits";
+} from "./case-1-event-audits.ts";
 
 export { case1AuditSummary, case1EventAgentExecutions, case1EventAudits };
 

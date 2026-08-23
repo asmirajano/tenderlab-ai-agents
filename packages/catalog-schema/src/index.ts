@@ -1,5 +1,7 @@
 export type CatalogueStatus = "draft" | "validated" | "deprecated";
 
+export * from "./agent-specification";
+
 export type LocalizedText = {
   en: string;
   ru?: string;

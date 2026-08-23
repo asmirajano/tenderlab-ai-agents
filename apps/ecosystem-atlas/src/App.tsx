@@ -19,11 +19,13 @@ import type {
   GlossaryScope,
   TenderDataset,
 } from "../../../packages/catalog-schema/src";
+import { AgentSpecificationsPage } from "./AgentSpecifications";
 
 const mainAppUrl = "https://tenderlab-ai-agents.web.app";
 
 const navItems = [
   { href: "/", label: "Overview" },
+  { href: "/agents", label: "Agent Specifications" },
   { href: "/actors", label: "Sides & Actors" },
   { href: "/data", label: "Data & Sources" },
   { href: "/glossary", label: "Glossary" },
@@ -41,7 +43,7 @@ function AtlasHeader({ path }: { path: string }) {
       <a className="atlas-brand" href="/" aria-label="Tender Ecosystem Atlas home"><ProductBrand atlas /></a>
       <nav className="atlas-nav" aria-label="Atlas navigation">
         {navItems.map((item) => (
-          <a aria-current={path === item.href ? "page" : undefined} href={item.href} key={item.href}>{item.label}</a>
+          <a aria-current={path === item.href || (item.href !== "/" && path.startsWith(`${item.href}/`)) ? "page" : undefined} href={item.href} key={item.href}>{item.label}</a>
         ))}
       </nav>
       <a className="open-tenderlab" href={mainAppUrl}>Open TenderLab.ai <span>↗</span></a>
@@ -377,6 +379,7 @@ export default function App() {
   const path = currentPath();
   let page: ReactNode;
   if (path === "/") page = <OverviewPage />;
+  else if (path === "/agents" || path.startsWith("/agents/")) page = <AgentSpecificationsPage requestedSlug={path.split("/")[2]} />;
   else if (path === "/actors") page = <ActorsPage />;
   else if (path === "/data") page = <DataPage />;
   else if (path === "/glossary") page = <GlossaryPage />;

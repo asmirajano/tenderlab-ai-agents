@@ -20,7 +20,7 @@ test("builds the independent Tender Ecosystem Atlas SPA", async () => {
     assetFiles.filter((file) => file.endsWith(".js")).map((file) => readFile(path.join(atlasRoot, "assets", file), "utf8")),
   );
   const bundle = javascript.join("\n");
-  for (const label of ["Sides & Actors", "Data & Sources", "Glossary", "Methodology", "Open TenderLab.ai"]) {
+  for (const label of ["Agent Specifications", "Sides & Actors", "Data & Sources", "Glossary", "Methodology", "Open TenderLab.ai"]) {
     assert.match(bundle, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(bundle, /Independent catalogues now/);
@@ -82,6 +82,35 @@ test("gives every canonical dataset a stable ID and three structured demo record
     assert.ok(item.demo.rows.every((row) => row.length === item.demo.columns.length), `${item.id} demo rows must match its columns`);
     assert.match([...item.demo.columns, ...item.demo.rows.flat()].join(" "), /[А-Яа-яЁё]/, `${item.id} needs Russian demo data`);
   }
+});
+
+test("projects all Agent surfaces from one typed, versioned canonical registry", async () => {
+  const [{ agents, agentSpecifications }, { agentRelationships }, { agentRevisions }] = await Promise.all([
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agents.ts")).href),
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-relationships.ts")).href),
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-revisions.ts")).href),
+  ]);
+  assert.strictEqual(agents, agentSpecifications, "the legacy agents export must be an alias, not a second registry");
+  assert.equal(agentSpecifications.length, 64);
+  assert.equal(new Set(agentSpecifications.map((agent) => agent.registryId)).size, 64);
+  assert.equal(new Set(agentSpecifications.map((agent) => agent.slug)).size, 64);
+  assert.ok(agentRelationships.length > 64, "typed Agent relationships should be available");
+  assert.equal(agentRevisions.filter((revision) => revision.toVersion === "1.0.0").length, 64);
+
+  const artifactDirectory = path.join(atlasRoot, "agent-specifications");
+  const files = await readdir(artifactDirectory);
+  assert.equal(files.filter((file) => file.endsWith(".md")).length, 64);
+  const artifact = JSON.parse(await readFile(path.join(artifactDirectory, "index.json"), "utf8"));
+  assert.equal(artifact.count, 64);
+  assert.match(artifact.maintenancePolicy, /GENERATED READ-ONLY/);
+  assert.equal(artifact.sourceOfTruth, "packages/catalog-data/src/agents.ts#agentSpecifications");
+
+  const reviewed = agentSpecifications.find((agent) => agent.id === 13);
+  const generated = artifact.specifications.find((agent) => agent.id === 13);
+  assert.equal(generated.name, reviewed.name);
+  assert.equal(generated.governance.specificationVersion, reviewed.governance.specificationVersion);
+  assert.deepEqual(generated.previousNames, reviewed.previousNames);
+  assert.match(await readFile(path.join(artifactDirectory, `${reviewed.slug}.md`), "utf8"), new RegExp(reviewed.name));
 });
 
 test("integrates the six approved Dataset Gap candidates without duplicating canonical identities", async () => {

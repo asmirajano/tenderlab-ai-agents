@@ -2160,6 +2160,11 @@ footer > span,
 .drawer-working-state > div span { color: #6557a4; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .09em; }
 .drawer-working-state p { color: #6f7c74; font-size: var(--type-label); line-height: 1.45; margin: 0; }
 .drawer-working-state .agent-review-control, .drawer-working-state .agent-review-login { flex: none; }
+.drawer-full-spec-link { align-items: center; background: linear-gradient(135deg, #eff1ff, #f8fbff); border: 1px solid #cfd5ff; border-radius: 14px; color: #25369c; display: grid; gap: 4px; grid-template-columns: minmax(0, 1fr) auto; margin: 0 0 18px; padding: 18px 20px; }
+.drawer-full-spec-link span { font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .1em; }
+.drawer-full-spec-link strong { font-size: var(--type-control); grid-column: 2; grid-row: 1 / span 2; }
+.drawer-full-spec-link small { color: #6e78a6; font-size: var(--type-label); }
+.drawer-full-spec-link:hover, .drawer-full-spec-link:focus-visible { border-color: #8b98ef; box-shadow: 0 10px 28px rgba(65, 78, 170, .12); }
 
 .network-agent-node .agent-review-badge { margin-left: auto; }
 .network-focus-card > .agent-review-control, .network-focus-card > .agent-review-login { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.25); color: white; margin-top: 15px; }
