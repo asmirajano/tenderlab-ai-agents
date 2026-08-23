@@ -11,6 +11,70 @@ export type ProcessActor = {
 export type ProcessActivityKind = "activity" | "decision" | "wait" | "external-event";
 export type ProcessExecutionState = "planned" | "running" | "waiting" | "blocked" | "completed" | "skipped" | "failed";
 
+export type EventAgentAuditDecision = "justified" | "conditional" | "misplaced" | "redundant" | "unsupported";
+
+export type EventAgentExecution = {
+  eventStep: number;
+  agentId: number;
+  role: string;
+  action: string;
+  input: string;
+  output: string;
+  handoff: string;
+  evidence: string[];
+  necessity: EventAgentAuditDecision;
+  condition?: string;
+  activation?: "triggered" | "standby";
+  necessityRationale: string;
+  absenceImpact: string;
+  overlapNote?: string;
+  proposedEventStep?: number;
+  provenance: "case-observed" | "canonical" | "expert-proposed";
+  validationStatus: "confirmed" | "working" | "needs-review";
+};
+
+export type CaseEventAudit = {
+  eventStep: number;
+  auditVersion: string;
+  status: "in-review" | "approved";
+  scopeBoundary: string;
+  missingAgentFinding: string;
+  missingAgentIds: number[];
+  addedAgentIds?: number[];
+  movedInAgentIds?: number[];
+  movedOutAgentIds?: number[];
+  removedAgentIds?: number[];
+  unresolvedFinding?: string;
+};
+
+export type CaseAgentAssignmentMove = {
+  agentId: number;
+  fromEventStep: number;
+  toEventStep: number;
+  reason: string;
+};
+
+export type CaseAgentAssignmentRemoval = {
+  agentId: number;
+  eventStep: number;
+  retainedEventStep?: number;
+  reason: string;
+};
+
+export type CaseAuditSummary = {
+  auditedEventCount: number;
+  eventAgentFindingCount: number;
+  retainedAssignmentCount: number;
+  conditionalAssignmentCount: number;
+  addedAgentIds: number[];
+  movedAssignments: CaseAgentAssignmentMove[];
+  removedAssignments: CaseAgentAssignmentRemoval[];
+  proposedMissingAgentIds: number[];
+  overlapFindings: string[];
+  unresolvedFindings: string[];
+  canonicalRegistryImplications: string[];
+};
+
 export type ProcessArtifact = {
   id: string;
   activityId: string;
@@ -91,7 +155,18 @@ export type CaseProcessGraph = {
   activities: CaseProcessActivity[];
   artifacts: ProcessArtifact[];
   relationships: ProcessRelationship[];
+  eventAudits: CaseEventAudit[];
+  agentExecutions: EventAgentExecution[];
+  auditSummary: CaseAuditSummary;
   orchestratorAgentIds: number[];
+};
+
+export const eventAgentAuditLabels: Record<EventAgentAuditDecision, string> = {
+  justified: "CRUCIAL / JUSTIFIED",
+  conditional: "CONDITIONAL",
+  misplaced: "MISPLACED",
+  redundant: "REDUNDANT",
+  unsupported: "UNSUPPORTED",
 };
 
 export const processRelationshipLabels: Record<ProcessRelationshipType, string> = {

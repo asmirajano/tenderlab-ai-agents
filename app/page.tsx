@@ -25,6 +25,7 @@ import {
   type ArchitectureView,
   type PlatformFilter,
 } from "../packages/catalog-data/src/agents";
+import type { EventAgentExecution } from "./process-model";
 
 type AgentCardProps = {
   agent: Agent;
@@ -168,6 +169,10 @@ export type AgentDetailContext = {
     narrative: string;
     result: string;
   };
+  eventExecution?: EventAgentExecution & {
+    necessityLabel: string;
+    eventResult: string;
+  };
 };
 
 export function AgentDetailDrawer({
@@ -182,11 +187,12 @@ export function AgentDetailDrawer({
   footer?: ReactNode;
 }) {
   const example = agentExamples[agent.id];
-  const contextExampleTitle = context?.event?.title ?? context?.caseName;
+  const hasEventExecution = Boolean(context?.eventExecution);
+  const contextExampleTitle = hasEventExecution ? example.item : context?.event?.title ?? context?.caseName;
   const contextExampleBody = context
-    ? context.event?.narrative ?? `${context.when} ${context.why}`
+    ? hasEventExecution ? example.result : context.event?.narrative ?? `${context.when} ${context.why}`
     : undefined;
-  const contextExampleResult = context?.event?.result ?? context?.output;
+  const contextExampleResult = hasEventExecution ? undefined : context?.event?.result ?? context?.output;
 
   return (
     <div className="drawer-shell" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -220,19 +226,49 @@ export function AgentDetailDrawer({
         {context && (
           <section className="drawer-case-context" aria-label={`${agent.name} context for ${context.caseLabel}`}>
             <div className="drawer-context-heading">
-              <div><span>CASE-SPECIFIC CONTEXT</span><b>DEMO · {context.caseLabel}</b></div>
-              <i className={`context-status context-status-${context.status}`}>{context.statusLabel}</i>
+              <div><span>{hasEventExecution ? "EVENT-SPECIFIC EXECUTION" : "CASE-SPECIFIC CONTEXT"}</span><b>DEMO · {context.caseLabel}</b></div>
+              <i className={`context-status ${hasEventExecution ? `context-audit-${context.eventExecution?.necessity}` : `context-status-${context.status}`}`}>{context.eventExecution?.necessityLabel ?? context.statusLabel}</i>
             </div>
             <p className="drawer-context-location">
               <span>{context.event ? `EVENT ${String(context.event.step).padStart(2, "0")}` : "WORKFLOW STAGE"}</span>
               <b>{context.event ? `${context.event.period} · ${context.event.phase}` : context.stage}</b>
             </p>
-            <div className="drawer-context-reason">
-              <p><small>КОГДА</small><b>{context.when}</b></p>
-              <p><small>ПОЧЕМУ</small><b>{context.why}</b></p>
-              {context.condition && <p className={`context-condition context-condition-${context.activation ?? "triggered"}`}><small>УСЛОВИЕ</small><b>{context.condition}</b></p>}
-            </div>
-            {context.status === "not-involved" ? (
+            {context.eventExecution ? (
+              <div className="drawer-event-execution">
+                <div className="drawer-execution-purpose">
+                  <p><small>ROLE IN THIS EVENT</small><b>{context.eventExecution.role}</b></p>
+                  <p><small>EXECUTION / ACTION</small><b>{context.eventExecution.action}</b></p>
+                </div>
+                <div className="drawer-context-flow" aria-label="Event-specific Agent input, output and handoff">
+                  <article><span>A · AGENT INPUT</span><p>{context.eventExecution.input}</p></article>
+                  <i>→</i>
+                  <article className="context-flow-output"><span>B · AGENT OUTPUT</span><p>{context.eventExecution.output}</p></article>
+                  <i>→</i>
+                  <article><span>C · HANDOFF</span><p>{context.eventExecution.handoff}</p></article>
+                </div>
+                <div className="drawer-execution-evidence">
+                  <span>CASE 1 EVIDENCE</span>
+                  <ul>{context.eventExecution.evidence.map((item) => <li key={item}>{item}</li>)}</ul>
+                </div>
+                <div className={`drawer-execution-necessity necessity-${context.eventExecution.necessity}`}>
+                  <div><span>NECESSITY / JUSTIFICATION</span><b>{context.eventExecution.necessityLabel}</b></div>
+                  <p>{context.eventExecution.necessityRationale}</p>
+                  {context.eventExecution.condition && <p><small>УСЛОВИЕ АКТИВАЦИИ</small>{context.eventExecution.condition}{context.eventExecution.activation ? ` · ${context.eventExecution.activation.toUpperCase()}` : ""}</p>}
+                  <p><small>ЕСЛИ УБРАТЬ ИЗ E{String(context.event?.step ?? 0).padStart(2, "0")}</small>{context.eventExecution.absenceImpact}</p>
+                  {context.eventExecution.overlapNote && <p><small>ГРАНИЦА / OVERLAP</small>{context.eventExecution.overlapNote}</p>}
+                  {context.eventExecution.proposedEventStep && <p><small>ИСПРАВЛЕННЫЙ МАРШРУТ</small>Event {String(context.eventExecution.proposedEventStep).padStart(2, "0")} — отражён в сквозном Case 1 audit.</p>}
+                  {context.eventExecution.validationStatus === "needs-review" && <p><small>VALIDATION STATUS</small>PROPOSED · требует экспертного подтверждения и не считается доказанным выполнением.</p>}
+                </div>
+                <div className="drawer-event-result-reference"><span>COMBINED EVENT RESULT</span><p>{context.eventExecution.eventResult}</p><small>Этот результат собирается из подтверждённых Agent outputs; он не является индивидуальным output данного Agent.</small></div>
+              </div>
+            ) : (
+              <>
+                <div className="drawer-context-reason">
+                  <p><small>КОГДА</small><b>{context.when}</b></p>
+                  <p><small>ПОЧЕМУ</small><b>{context.why}</b></p>
+                  {context.condition && <p className={`context-condition context-condition-${context.activation ?? "triggered"}`}><small>УСЛОВИЕ</small><b>{context.condition}</b></p>}
+                </div>
+                {context.status === "not-involved" ? (
               <div className="drawer-context-skip"><span>SKIP ОБОСНОВАН</span><p>{context.skipReason}</p></div>
             ) : (
               <div className="drawer-context-flow" aria-label="Case-specific input, output and handoff">
@@ -243,12 +279,14 @@ export function AgentDetailDrawer({
                 <article><span>C · NEXT / HANDOFF</span><p>{context.next}</p></article>
               </div>
             )}
+              </>
+            )}
           </section>
         )}
 
-        <section className={`sim-example ${context ? "sim-example-contextual" : ""}`} aria-label={context ? "Контекстный пример Case" : "Симулированный пример"}>
-          <div className="example-label"><span>{context ? "CASE-SPECIFIC EXAMPLE" : "REALISTIC EXAMPLE"}</span><b>{context ? `DEMO · ${context.caseLabel}` : "DEMO"}</b></div>
-          <div className="example-company"><i />{context?.company ?? example.company}</div>
+        <section className={`sim-example ${context && !hasEventExecution ? "sim-example-contextual" : ""}`} aria-label={hasEventExecution ? "Канонический пример агента" : context ? "Контекстный пример Case" : "Симулированный пример"}>
+          <div className="example-label"><span>{hasEventExecution ? "CANONICAL AGENT EXAMPLE" : context ? "CASE-SPECIFIC EXAMPLE" : "REALISTIC EXAMPLE"}</span><b>{hasEventExecution ? "DEMO" : context ? `DEMO · ${context.caseLabel}` : "DEMO"}</b></div>
+          <div className="example-company"><i />{hasEventExecution ? example.company : context?.company ?? example.company}</div>
           <h4>{contextExampleTitle ?? example.item}</h4>
           <p>{contextExampleBody ?? example.result}</p>
           {context && contextExampleResult && <p className="context-example-result"><span>{context.event ? "РЕЗУЛЬТАТ СОБЫТИЯ" : "РЕЗУЛЬТАТ АГЕНТА"}</span>{contextExampleResult}</p>}

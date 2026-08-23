@@ -25,6 +25,7 @@ import {
   type EngagementStatus,
 } from "./case-1-data";
 import { case1ProcessGraph } from "./case-1-graph";
+import { eventAgentAuditLabels, type EventAgentAuditDecision } from "../process-model";
 import {
   createSemanticSearchDocument,
   rankSemanticDocuments,
@@ -94,6 +95,21 @@ const semanticDocuments = agents.map((agent) => {
     ].join(" · "),
   });
 });
+
+function eventAgentEntries(eventStep: number, activeNames: string[], standbyNames: string[]) {
+  const auditedExecutions = case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === eventStep);
+  if (auditedExecutions.length) {
+    return auditedExecutions.map((execution) => ({
+      agent: agentById.get(execution.agentId),
+      isStandby: execution.activation === "standby",
+      necessity: execution.necessity as EventAgentAuditDecision,
+      validationStatus: execution.validationStatus,
+      condition: execution.condition,
+    }));
+  }
+  return [...activeNames.map((name) => ({ name, isStandby: false })), ...standbyNames.map((name) => ({ name, isStandby: true }))]
+    .map(({ name, isStandby }) => ({ agent: agentByName.get(name), isStandby, necessity: undefined, validationStatus: undefined, condition: undefined }));
+}
 
 function countByStatus(records: CaseAgentEngagement[]) {
   return {
@@ -181,6 +197,9 @@ export default function CaseSimulationPage() {
   const selectedChronologyEvent = selectedChronologyStep
     ? case1ProcessGraph.activities.find((event) => event.eventStep === selectedChronologyStep) ?? null
     : null;
+  const selectedEventExecution = selectedChronologyStep && selectedAgent
+    ? case1ProcessGraph.agentExecutions.find((execution) => execution.eventStep === selectedChronologyStep && execution.agentId === selectedAgent.id)
+    : undefined;
   const selectedDetailContext: AgentDetailContext | undefined = selectedEngagement && selectedStage ? {
     caseLabel: "CASE 1",
     caseName: case1.name,
@@ -203,6 +222,11 @@ export default function CaseSimulationPage() {
       title: selectedChronologyEvent.title,
       narrative: selectedChronologyEvent.narrative,
       result: selectedChronologyEvent.result,
+    } : undefined,
+    eventExecution: selectedEventExecution && selectedChronologyEvent ? {
+      ...selectedEventExecution,
+      necessityLabel: eventAgentAuditLabels[selectedEventExecution.necessity],
+      eventResult: selectedChronologyEvent.result,
     } : undefined,
   } : undefined;
 
@@ -323,7 +347,14 @@ export default function CaseSimulationPage() {
         <article className="metric-required"><span>ОБЯЗАТЕЛЬНЫЕ</span><strong>{metrics.required}</strong><small>реально выполняются</small></article>
         <article className="metric-conditional"><span>УСЛОВНЫЕ</span><strong>{metrics.conditional}</strong><small>{conditionalTriggered} сработали · {conditionalStandby} в резерве</small></article>
         <article className="metric-skipped"><span>НЕ УЧАСТВУЮТ</span><strong>{metrics["not-involved"]}</strong><small>есть объяснение skip</small></article>
-        <article className="metric-gap"><span>НЕПОКРЫТЫЕ ДЕЙСТВИЯ</span><strong>0<sup>предв.</sup></strong><small>подлежит экспертной проверке</small></article>
+        <article className="metric-gap">
+          <span>НЕПОКРЫТЫЕ ДЕЙСТВИЯ</span>
+          <strong>
+            {case1ProcessGraph.auditSummary.proposedMissingAgentIds.length}
+            <sup>предв.</sup>
+          </strong>
+          <small>partner integrity · требует review</small>
+        </article>
       </section>
 
       <section className="case-audit-breakdown">
@@ -409,21 +440,23 @@ export default function CaseSimulationPage() {
                 <div className="chronology-agents">
                   <span>AGENTS</span>
                   <div>
-                    {[...event.agentNames.map((name) => ({ name, isStandby: false })), ...event.standbyAgentNames.map((name) => ({ name, isStandby: true }))].map(({ name, isStandby }) => {
-                      const agent = agentByName.get(name);
+                    {eventAgentEntries(event.eventStep, event.agentNames, event.standbyAgentNames).map(({ agent, isStandby, necessity, validationStatus, condition }) => {
                       if (!agent) return null;
                       return (
                         <button
                           type="button"
-                          className="chronology-agent-button"
-                          key={`${name}-${isStandby ? "standby" : "active"}`}
+                          className={`chronology-agent-button ${necessity ? `agent-audit-${necessity}` : ""} ${validationStatus === "needs-review" ? "is-proposed" : ""}`}
+                          key={`${agent.name}-${isStandby ? "standby" : necessity ?? "active"}`}
                           aria-haspopup="dialog"
-                          aria-label={`Открыть карточку агента: ${String(agent.id).padStart(2, "0")} · ${agent.name}${isStandby ? " · резерв" : ""}`}
+                          aria-label={`Открыть карточку агента: ${String(agent.id).padStart(2, "0")} · ${agent.name}${isStandby ? " · резерв" : necessity ? ` · ${eventAgentAuditLabels[necessity]}` : ""}${validationStatus === "needs-review" ? " · требуется проверка" : ""}`}
+                          title={condition}
                           onClick={() => openAgent(agent.id, event.eventStep)}
                         >
                           <span>{String(agent.id).padStart(2, "0")} ·</span>
                           <b>{agent.name}</b>
                           {isStandby && <small>резерв</small>}
+                          {necessity && <small>{eventAgentAuditLabels[necessity]}</small>}
+                          {validationStatus === "needs-review" && <small>PROPOSED · REVIEW</small>}
                         </button>
                       );
                     })}
@@ -441,12 +474,42 @@ export default function CaseSimulationPage() {
       </section>
       </div>
 
-      <section className="case-audit-findings" aria-label="Предварительные архитектурные наблюдения">
-        <div className="section-heading"><div><p>ARCHITECTURE REVIEW</p><h2>Что Case 1 уже позволяет проверить</h2></div><span>Это наблюдения V1, а не окончательные выводы.</span></div>
-        <div className="finding-grid">
-          <article><span>01 · ПЕРЕСЕЧЕНИЕ</span><h3>Partner Discovery vs Local Representation</h3><p>Широкий Partner Discovery намеренно пропущен: для локального сервиса более точен Local Representation. Нужно подтвердить границу scopes.</p></article>
-          <article><span>02 · ОСОЗНАННЫЙ SKIP</span><h3>Supplier-side chain</h3><p>Supplier Intelligence, Discovery, Verification, RFQ и Quotation Normalization не запускаются: компания производит весь предмет одного лота сама.</p></article>
-          <article><span>03 · РЕЗЕРВ</span><h3>Document exception route</h3><p>OCR, Amendment и Ambiguity остаются conditional standby. Их нельзя считать выполненными без скана, addendum или реального противоречия.</p></article>
+      <section className="case-audit-findings case-audit-consolidated" aria-label="Консолидированный аудит Case 1">
+        <div className="section-heading"><div><p>CASE 1 · CONSOLIDATED EVENT AUDIT</p><h2>Итог аудита всех 20 Events</h2></div><span>Канонический registry 64 Agents не изменён; показаны только Case-specific assignments.</span></div>
+        <div className="case-audit-summary-metrics">
+          <article><strong>{case1ProcessGraph.auditSummary.auditedEventCount}<small>/20</small></strong><span>Events audited</span></article>
+          <article><strong>{case1ProcessGraph.auditSummary.eventAgentFindingCount}</strong><span>Event × Agent findings</span></article>
+          <article><strong>{case1ProcessGraph.auditSummary.retainedAssignmentCount}</strong><span>Retained assignments</span></article>
+          <article><strong>{case1ProcessGraph.auditSummary.conditionalAssignmentCount}</strong><span>Conditional records</span></article>
+          <article><strong>{case1ProcessGraph.auditSummary.movedAssignments.length}</strong><span>Moved</span></article>
+          <article><strong>{case1ProcessGraph.auditSummary.removedAssignments.length}</strong><span>Removed duplicate</span></article>
+          <article className="is-review"><strong>{case1ProcessGraph.auditSummary.proposedMissingAgentIds.length}</strong><span>Proposed / unresolved</span></article>
+        </div>
+        <div className="case-audit-summary-grid">
+          <article>
+            <span>MOVED BETWEEN EVENTS</span>
+            {case1ProcessGraph.auditSummary.movedAssignments.map((item) => <p key={`${item.agentId}-${item.fromEventStep}`}><b>{String(item.agentId).padStart(2, "0")} · {agentById.get(item.agentId)?.name}</b><small>E{String(item.fromEventStep).padStart(2, "0")} → E{String(item.toEventStep).padStart(2, "0")} · {item.reason}</small></p>)}
+          </article>
+          <article>
+            <span>REMOVED FROM EVENT</span>
+            {case1ProcessGraph.auditSummary.removedAssignments.map((item) => <p key={`${item.agentId}-${item.eventStep}`}><b>{String(item.agentId).padStart(2, "0")} · {agentById.get(item.agentId)?.name}</b><small>Удалён из E{String(item.eventStep).padStart(2, "0")} · сохранён в E{String(item.retainedEventStep ?? 0).padStart(2, "0")} · {item.reason}</small></p>)}
+          </article>
+          <article>
+            <span>ADDED TO EVENT ROUTES</span>
+            <p><b>{case1ProcessGraph.auditSummary.addedAgentIds.map((id) => `${String(id).padStart(2, "0")} · ${agentById.get(id)?.name}`).join(" · ")}</b><small>Добавлены там, где Event result требовал отдельного output: calendar, readiness, provenance, final eligibility, audit baseline или human gate.</small></p>
+          </article>
+          <article className="is-review">
+            <span>UNRESOLVED / PROPOSED</span>
+            {case1ProcessGraph.auditSummary.unresolvedFindings.map((finding) => <p key={finding}><b>REVIEW</b><small>{finding}</small></p>)}
+          </article>
+          <article className="is-wide">
+            <span>RESPONSIBILITY BOUNDARIES</span>
+            <ul>{case1ProcessGraph.auditSummary.overlapFindings.map((finding) => <li key={finding}>{finding}</li>)}</ul>
+          </article>
+          <article className="is-wide">
+            <span>IMPLICATIONS FOR CANONICAL 64</span>
+            <ul>{case1ProcessGraph.auditSummary.canonicalRegistryImplications.map((finding) => <li key={finding}>{finding}</li>)}</ul>
+          </article>
         </div>
       </section>
         </div>

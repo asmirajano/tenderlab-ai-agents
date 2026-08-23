@@ -1,4 +1,5 @@
 import { case1, case1Chronology } from "./case-1-data";
+import { agents } from "../../packages/catalog-data/src/agents";
 import type {
   CaseProcessActivity,
   CaseProcessGraph,
@@ -6,6 +7,13 @@ import type {
   ProcessActivityKind,
   ProcessRelationship,
 } from "../process-model";
+import {
+  case1AuditSummary,
+  case1EventAgentExecutions,
+  case1EventAudits,
+} from "./case-1-event-audits";
+
+export { case1AuditSummary, case1EventAgentExecutions, case1EventAudits };
 
 export const case1Actors: ProcessActor[] = [
   { id: "buyer", name: "Министерство образования и науки Грузии", shortName: "Buyer / Procuring Entity", kind: "buyer", description: "Публикует закупку, отвечает за оценку, clarification, award и приёмку." },
@@ -80,6 +88,7 @@ const dependencySpecs: Array<{
   { from: 12, to: 14, type: "joins-at", label: "Compliance 164/164", blocking: true, joinPolicy: "ALL" },
   { from: 13, to: 14, type: "joins-at", label: "Approved BOQ $3.61m", blocking: true, joinPolicy: "ALL" },
   { from: 14, to: 15, label: "Complete proposal draft", blocking: true },
+  { from: 15, to: 12, type: "rework", label: "Evidence / compliance findings", condition: "Если QA находит слабое доказательство или compliance gap", blocking: false },
   { from: 15, to: 14, type: "rework", label: "6 red-team findings", condition: "Если QA находит содержательный gap", blocking: false },
   { from: 15, to: 16, type: "approved-by", label: "Submission approval", blocking: true },
   { from: 16, to: 17, type: "waits-for", label: "Buyer clarification request", condition: "Только при официальном запросе", blocking: false },
@@ -91,14 +100,31 @@ const dependencySpecs: Array<{
 ];
 
 const standbySuffix = " — резерв";
+const canonicalAgentById = new Map(agents.map((agent) => [agent.id, agent]));
 
 const activities: CaseProcessActivity[] = case1Chronology.map((event) => {
   const spec = activitySpecs[event.step];
   if (!spec) throw new Error(`Missing process graph metadata for Case 1 event ${event.step}.`);
-  const agentNames = event.agents.filter((name) => !name.endsWith(standbySuffix));
-  const standbyAgentNames = event.agents
-    .filter((name) => name.endsWith(standbySuffix))
-    .map((name) => name.slice(0, -standbySuffix.length));
+  const auditedExecutions = case1EventAgentExecutions.filter((execution) => execution.eventStep === event.step);
+  const auditedActiveAgentNames = new Set(auditedExecutions
+    .filter((execution) => (
+      (execution.necessity === "justified" || execution.necessity === "conditional")
+      && execution.activation !== "standby"
+      && execution.validationStatus !== "needs-review"
+    ))
+    .map((execution) => canonicalAgentById.get(execution.agentId)?.name)
+    .filter((name): name is string => Boolean(name)));
+  const agentNames = auditedExecutions.length > 0
+    ? [...auditedActiveAgentNames]
+    : event.agents.filter((name) => !name.endsWith(standbySuffix));
+  const standbyAgentNames = auditedExecutions.length > 0
+    ? auditedExecutions
+      .filter((execution) => execution.necessity === "conditional" && execution.activation === "standby")
+      .map((execution) => canonicalAgentById.get(execution.agentId)?.name)
+      .filter((name): name is string => Boolean(name))
+    : event.agents
+      .filter((name) => name.endsWith(standbySuffix))
+      .map((name) => name.slice(0, -standbySuffix.length));
 
   return {
     id: `activity-${String(event.step).padStart(2, "0")}`,
@@ -155,6 +181,9 @@ export const case1ProcessGraph: CaseProcessGraph = {
   activities,
   artifacts,
   relationships,
+  eventAudits: case1EventAudits,
+  agentExecutions: case1EventAgentExecutions,
+  auditSummary: case1AuditSummary,
   orchestratorAgentIds: [1],
 };
 
@@ -168,4 +197,10 @@ if (relationships.some((relationship) => !activityIds.has(relationship.from) || 
 }
 if (activities.some((activity) => activity.kind === "wait" && !activity.trigger)) {
   throw new Error("Every Case 1 waiting activity needs an explicit trigger.");
+}
+if (case1EventAudits.some((audit) => !activities.some((activity) => activity.eventStep === audit.eventStep))) {
+  throw new Error("Every Case 1 Event Audit needs a canonical activity.");
+}
+if (case1EventAgentExecutions.some((execution) => !case1EventAudits.some((audit) => audit.eventStep === execution.eventStep))) {
+  throw new Error("Every Event-specific Agent Execution needs an audited Event.");
 }

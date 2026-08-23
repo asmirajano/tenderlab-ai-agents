@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { agents, layerById } from "../../packages/catalog-data/src/agents";
-import { processRelationshipLabels, type ProcessActorKind, type ProcessRelationship } from "../process-model";
+import { eventAgentAuditLabels, processRelationshipLabels, type ProcessActorKind, type ProcessRelationship } from "../process-model";
 import { case1ProcessGraph } from "./case-1-graph";
 
 type MapFocus = "all" | "critical" | "decisions";
@@ -49,7 +49,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   const [focus, setFocus] = useState<MapFocus>("all");
   const [actorFilter, setActorFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
-  const [selectedActivityId, setSelectedActivityId] = useState("activity-07");
+  const [selectedActivityId, setSelectedActivityId] = useState("activity-01");
   const [isFocusMode, setIsFocusMode] = useState(false);
   const mapScrollRef = useRef<HTMLDivElement>(null);
   const focusToggleRef = useRef<HTMLButtonElement>(null);
@@ -59,6 +59,13 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   const incoming = case1ProcessGraph.relationships.filter((relationship) => relationship.to === selected.id);
   const outgoing = case1ProcessGraph.relationships.filter((relationship) => relationship.from === selected.id);
   const selectedArtifact = case1ProcessGraph.artifacts.find((artifact) => artifact.activityId === selected.id)!;
+  const selectedEventAudit = case1ProcessGraph.eventAudits.find((audit) => audit.eventStep === selected.eventStep);
+  const selectedExecutions = case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === selected.eventStep);
+  const confirmedExecutions = selectedExecutions.filter((execution) => (
+    (execution.necessity === "justified" || execution.necessity === "conditional")
+    && execution.validationStatus !== "needs-review"
+  ));
+  const proposedExecutions = selectedExecutions.filter((execution) => execution.validationStatus === "needs-review");
   const activeAgentNames = useMemo(() => [...new Set(case1ProcessGraph.activities.flatMap((activity) => activity.agentNames))].sort(), []);
   const joinCount = useMemo(() => {
     const incomingCount = new Map<string, number>();
@@ -198,7 +205,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
                   <span className="node-topline"><b>E{String(activity.eventStep).padStart(2, "0")}</b><i>{activity.stateLabel}</i></span>
                   <small>{activity.period}</small>
                   <strong>{activity.title}</strong>
-                  <span className="node-agents">{activity.agentNames.length} agents{activity.standbyAgentNames.length ? ` · ${activity.standbyAgentNames.length} standby` : ""}</span>
+                  <span className="node-agents">{activity.agentNames.length} agents{activity.standbyAgentNames.length ? ` · ${activity.standbyAgentNames.length} standby` : ""}{case1ProcessGraph.eventAudits.some((audit) => audit.eventStep === activity.eventStep) ? ` · ${case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === activity.eventStep && (execution.necessity === "misplaced" || execution.necessity === "redundant" || execution.necessity === "unsupported" || execution.validationStatus === "needs-review")).length} audit finding` : ""}</span>
                   {activity.kind !== "activity" && <em>{activity.kind === "decision" ? "DECISION GATE" : activity.kind === "wait" ? "WAIT / TRIGGER" : "EXTERNAL EVENT"}</em>}
                 </button>
               );
@@ -215,10 +222,41 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
             <div><dt>TRIGGER</dt><dd>{selected.trigger}</dd></div>
             <div><dt>STATE</dt><dd>{selected.stateLabel}</dd></div>
           </dl>
-          <div className="inspector-agents"><span>AGENTS</span><div>{selected.agentNames.map((name) => { const agent = agentByName.get(name); return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)} key={name}><i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>{name}</button> : null; })}</div>{selected.standbyAgentNames.length > 0 && <p>STANDBY · {selected.standbyAgentNames.join(" · ")}</p>}</div>
+          <section className="inspector-event-description" aria-label="Event Description">
+            <span>EVENT DESCRIPTION</span>
+            <p>{selected.narrative}</p>
+            {selectedEventAudit && <small><b>SCOPE BOUNDARY</b>{selectedEventAudit.scopeBoundary}</small>}
+          </section>
+          <div className={`inspector-agents ${selectedEventAudit ? "is-audited" : ""}`}>
+            <span>{selectedEventAudit ? "AGENT EXECUTION AUDIT" : "AGENTS"}</span>
+            <div>
+              {selectedExecutions.length > 0 ? selectedExecutions.map((execution) => {
+                const agent = agents.find((candidate) => candidate.id === execution.agentId);
+                return agent ? (
+                  <button className={`agent-audit-${execution.necessity} ${execution.validationStatus === "needs-review" ? "is-proposed" : ""}`} type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)} key={agent.id} title={execution.condition}>
+                    <i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>
+                    <span>{agent.name}<small>{eventAgentAuditLabels[execution.necessity]}{execution.validationStatus === "needs-review" ? " · PROPOSED" : ""}</small></span>
+                  </button>
+                ) : null;
+              }) : selected.agentNames.map((name) => {
+                const agent = agentByName.get(name);
+                return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, selected.eventStep)} key={name}><i style={{ "--agent-color": layerById[agent.layer].color } as React.CSSProperties}>{String(agent.id).padStart(2, "0")}</i>{name}</button> : null;
+              })}
+            </div>
+            {selectedEventAudit && (
+              <div className="inspector-agent-audit-summary">
+                <p><b>{confirmedExecutions.length}</b><span>подтверждено</span></p>
+                <p><b>{selectedExecutions.filter((execution) => execution.necessity === "misplaced" || execution.necessity === "redundant").length}</b><span>moved / removed</span></p>
+                <p><b>{proposedExecutions.length}</b><span>proposed / review</span></p>
+                <p><b>{selectedEventAudit.missingAgentIds.length}</b><span>missing agents</span></p>
+                <small>{selectedEventAudit.missingAgentFinding}</small>
+              </div>
+            )}
+            {selected.standbyAgentNames.length > 0 && <p>STANDBY · {selected.standbyAgentNames.join(" · ")}</p>}
+          </div>
           <div className="inspector-io">
             <article><span>INPUT / DEPENDENCY</span>{incoming.length ? incoming.map((edge) => <p key={edge.id}><b>{edge.joinPolicy ? `${edge.joinPolicy} · ` : ""}{processRelationshipLabels[edge.type]}</b>{edge.label}</p>) : <p>Стартовый внешний Event</p>}</article>
-            <article className="inspector-output"><span>RESULT / OUTPUT</span><p>{selectedArtifact.summary}</p></article>
+            <article className="inspector-output"><span>COMBINED EVENT RESULT</span><p>{selectedArtifact.summary}</p>{selectedEventAudit && <small>Собрано из {confirmedExecutions.length} подтверждённых Agent outputs; это не output одного Agent.</small>}</article>
             <article><span>NEXT / HANDOFF</span>{outgoing.length ? outgoing.map((edge) => <p key={edge.id}><b>{processRelationshipLabels[edge.type]}</b>{edge.label}{edge.condition ? <small>{edge.condition}</small> : null}</p>) : <p>Terminal outcome</p>}</article>
           </div>
         </aside>

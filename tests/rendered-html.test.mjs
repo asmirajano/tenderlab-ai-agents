@@ -279,7 +279,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
 
   const moduleContentPosition = pageSource.indexOf('className="case-module-content"');
   const chronologyPosition = pageSource.indexOf('className="case-chronology"');
-  const findingsPosition = pageSource.indexOf('className="case-audit-findings"');
+  const findingsPosition = pageSource.indexOf('className="case-audit-findings');
   const matrixPosition = pageSource.indexOf('className="engagement-matrix-section"');
   assert.ok(moduleContentPosition < chronologyPosition, "chronology must remain inside the Case 1 module");
   assert.ok(chronologyPosition < findingsPosition, "Case 1 findings must follow its chronology");
@@ -310,7 +310,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   for (const name of chronologyNames) assert.ok(canonicalIds.has(name), `chronology agent must exist in canonical registry: ${name}`);
   assert.equal(canonicalIds.get("Tender Source Ingestion Agent"), 13);
   assert.match(pageSource, /const agentByName = new Map\(agents\.map/);
-  assert.match(pageSource, /className="chronology-agent-button"/);
+  assert.match(pageSource, /chronology-agent-button/);
   assert.match(pageSource, /String\(agent\.id\)\.padStart\(2, "0"\)/);
   assert.match(pageSource, /aria-haspopup="dialog"/);
   assert.match(pageSource, /onClick=\{\(\) => openAgent\(agent\.id, event\.eventStep\)\}/);
@@ -333,6 +333,50 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.ok([...dependencyRegistry.matchAll(/^ {2}\{ from: /gm)].length >= 25, "expected a non-linear dependency network");
   for (const relation of ["branches-to", "joins-at", "waits-for", "approved-by", "rework", "feedback"]) assert.match(dependencyRegistry, new RegExp(`type: "${relation}"`));
   assert.match(graphSource, /Every Case 1 waiting activity needs an explicit trigger/);
+});
+
+test("audits all 20 Case 1 Events through distinct Event and Agent execution evidence", async () => {
+  const [graphSource, auditSource, mapSource, pageSource, drawerSource, processModelSource, renderedCase] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-1-event-audits.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-orchestration-map.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "process-model.ts"), "utf8"),
+    readPublished("case-simulation.html"),
+  ]);
+
+  assert.match(auditSource, /eventStep: 1, agentId: 13/);
+  assert.match(auditSource, /eventStep: 1, agentId: 15,[\s\S]*?necessity: "misplaced"[\s\S]*?proposedEventStep: 2/);
+  assert.match(auditSource, /eventStep: 2, agentId: 15/);
+  assert.match(auditSource, /eventStep: 4, agentId: 9/);
+  assert.match(auditSource, /eventStep: 14, agentId: 55,[\s\S]*?necessity: "redundant"/);
+  assert.match(auditSource, /eventStep: 9, agentId: 38,[\s\S]*?provenance: "expert-proposed"[\s\S]*?validationStatus: "needs-review"/);
+  assert.deepEqual([...auditSource.matchAll(/^ {2}(\d+): \{ scopeBoundary:/gm)].map((match) => Number(match[1])), Array.from({ length: 20 }, (_, index) => index + 1));
+  assert.match(auditSource, /case1EventAudits\.length !== case1Chronology\.length/);
+  assert.match(auditSource, /Every conditional Event Agent assignment needs an explicit condition/);
+  assert.match(graphSource, /auditedActiveAgentNames/);
+  assert.match(graphSource, /from: 15, to: 12, type: "rework"/);
+  assert.match(graphSource, /auditSummary: case1AuditSummary/);
+  assert.match(processModelSource, /export type EventAgentExecution/);
+  assert.match(processModelSource, /export type CaseAuditSummary/);
+  assert.match(processModelSource, /CRUCIAL \/ JUSTIFIED/);
+  assert.match(mapSource, />EVENT DESCRIPTION</);
+  assert.match(mapSource, />COMBINED EVENT RESULT</);
+  assert.match(mapSource, /AGENT EXECUTION AUDIT/);
+  assert.match(pageSource, /eventAgentEntries/);
+  assert.match(drawerSource, /EVENT-SPECIFIC EXECUTION/);
+  assert.match(drawerSource, />A · AGENT INPUT</);
+  assert.match(drawerSource, />B · AGENT OUTPUT</);
+  assert.match(drawerSource, />CASE 1 EVIDENCE</);
+  assert.match(drawerSource, />NECESSITY \/ JUSTIFICATION</);
+  assert.match(drawerSource, /ЕСЛИ УБРАТЬ ИЗ E\{/);
+  assert.match(drawerSource, />УСЛОВИЕ АКТИВАЦИИ</);
+  assert.match(renderedCase, /2(?:<!-- -->)? agents(?:<!-- -->)? · 1 audit finding/);
+  assert.match(renderedCase, /Итог аудита всех 20 Events/);
+  assert.match(renderedCase, /E(?:<!-- -->)?01(?:<!-- -->)? → E(?:<!-- -->)?02/);
+  assert.match(renderedCase, /UNRESOLVED \/ PROPOSED/);
+  assert.match(renderedCase, /Стартовый внешний Event/);
 });
 
 test("defines one TenderLab-specific canonical glossary for the contextual panel", async () => {
