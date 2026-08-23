@@ -656,11 +656,9 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
   };
 
   const openReferencedAgent = (nextAgent: Agent) => {
-    setSelectedAgent((current) => {
-      if (!current || current.id === nextAgent.id) return current;
-      setSelectedAgentHistory((history) => [...history, current]);
-      return nextAgent;
-    });
+    if (!selectedAgent || selectedAgent.id === nextAgent.id) return;
+    setSelectedAgentHistory((history) => [...history, selectedAgent]);
+    setSelectedAgent(nextAgent);
   };
 
   const closeAgentProfile = () => {

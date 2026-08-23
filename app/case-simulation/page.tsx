@@ -239,12 +239,10 @@ export default function CaseSimulationPage() {
   };
 
   const openReferencedAgent = (nextAgent: Agent) => {
+    if (!selectedAgentId || selectedAgentId === nextAgent.id) return;
+    setSelectedAgentHistory((history) => [...history, selectedAgentId]);
     setSelectedChronologyStep(null);
-    setSelectedAgentId((current) => {
-      if (!current || current === nextAgent.id) return current;
-      setSelectedAgentHistory((history) => [...history, current]);
-      return nextAgent.id;
-    });
+    setSelectedAgentId(nextAgent.id);
   };
 
   const closeAgent = () => {

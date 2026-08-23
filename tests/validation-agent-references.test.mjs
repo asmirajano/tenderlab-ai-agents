@@ -26,5 +26,6 @@ test("Validation comparison reuses canonical clickable Agent references", async 
   assert.match(drawerSource, /setAgentPath\(\(current\) => \[\.\.\.current, nextAgent\.id\]\)/);
   assert.match(drawerSource, /onNavigateAgent\?: \(agent: Agent\) => void/);
   assert.match(drawerSource, /onNavigateAgent=\{openReferencedAgent\}/);
+  assert.match(drawerSource, /setSelectedAgentHistory\(\(history\) => \[\.\.\.history, selectedAgent\]\)/);
   assert.match(drawerSource, /drawer-agent-back/);
 });
