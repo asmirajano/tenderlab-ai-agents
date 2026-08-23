@@ -256,7 +256,11 @@ function DatasetDrawer({ dataset, onClose }: { dataset: TenderDataset; onClose: 
     <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
       <aside className="atlas-drawer dataset-drawer" role="dialog" aria-modal="true" aria-labelledby="dataset-drawer-title" style={{ "--item-color": family.color } as CSSProperties}>
         <button className="drawer-close" onClick={onClose} aria-label="Close">×</button>
-        <p className="drawer-code">{dataset.id} · {dataset.status}</p>
+        <div className="dataset-profile-id">
+          <span>DATASET ID</span>
+          <strong>{dataset.id.replace("dataset:", "")}</strong>
+          <small>{dataset.status}</small>
+        </div>
         <h2 id="dataset-drawer-title">{dataset.name.en}</h2><p className="drawer-ru">{dataset.name.ru}</p>
         <div className="drawer-badges"><span>{family.code} · {family.name.en}</span><span>{priorityLabels[dataset.priority]}</span><span>Difficulty {dataset.difficulty}</span></div>
         <section><span>WHAT IT CONTAINS</span><strong>{dataset.contains}</strong><p>{dataset.value}</p></section>
@@ -312,10 +316,10 @@ function DataPage() {
         {tab === "datasets" && <section className="family-strip">{dataFamilies.map((item) => <button className={familyId === item.id ? "active" : ""} onClick={() => setFamilyId(familyId === item.id ? "all" : item.id)} key={item.id} style={{ "--item-color": item.color } as CSSProperties}><span>{item.code}</span><strong>{item.name.en}</strong><small>{tenderDatasets.filter((dataset) => dataset.familyId === item.id).length}</small></button>)}</section>}
         {tab === "proprietary" && <section className="proprietary-intro"><span>STRATEGIC DATA ASSETS</span><h2>Данные, которые не существуют снаружи в готовом виде</h2><p>Они формируются из normalized history, identity resolution, verified private evidence и накопленных outcomes.</p></section>}
         <section className="dataset-table" aria-label="Dataset catalogue">
-          <header><span>DATASET</span><span>FAMILY</span><span>MODEL</span><span>PRIORITY</span><span>VALUE</span><span /></header>
+          <header><span>DATASET ID</span><span>DATASET</span><span>FAMILY</span><span>MODEL</span><span>PRIORITY</span><span>VALUE</span><span /></header>
           {filtered.map((item) => {
             const family = dataFamilies.find((candidate) => candidate.id === item.familyId)!;
-            return <button key={item.id} onClick={() => setSelected(item)} style={{ "--item-color": family.color } as CSSProperties}><span><small className="dataset-canonical-id">{item.id.replace("dataset:", "")}</small><b>{item.name.en}</b><small>{item.name.ru}</small></span><span><i>{family.code}</i>{family.name.en}</span><span>{item.origin}<small>{item.visibility.join(" · ")}</small></span><span><em className={`priority-${item.priority}`}>{priorityLabels[item.priority]}</em><small>Difficulty {item.difficulty}</small></span><span>{item.value}</span><span>→</span></button>;
+            return <button key={item.id} onClick={() => setSelected(item)} style={{ "--item-color": family.color } as CSSProperties}><span className="dataset-id-cell"><small>DATASET ID</small><strong>{item.id.replace("dataset:", "")}</strong></span><span className="dataset-name-cell"><b>{item.name.en}</b><small>{item.name.ru}</small></span><span><i>{family.code}</i>{family.name.en}</span><span>{item.origin}<small>{item.visibility.join(" · ")}</small></span><span><em className={`priority-${item.priority}`}>{priorityLabels[item.priority]}</em><small>Difficulty {item.difficulty}</small></span><span>{item.value}</span><span>→</span></button>;
           })}
         </section>
         {filtered.length === 0 && <div className="empty-state"><strong>Ничего не найдено</strong><button onClick={() => { setQuery(""); setFamilyId("all"); setPriority("all"); }}>Сбросить фильтры</button></div>}

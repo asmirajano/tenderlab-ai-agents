@@ -122,6 +122,10 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .atlas-drawer { background: #f9fbf9; box-shadow: -25px 0 70px rgba(13,30,23,.16); max-width: 780px; overflow-y: auto; padding: clamp(30px, 4vw, 62px); position: relative; width: min(780px, 100vw); }
 .drawer-close { align-items: center; background: white; border: 1px solid var(--tl-line); border-radius: 50%; cursor: pointer; display: flex; font-size: 23px; height: 43px; justify-content: center; position: absolute; right: 24px; top: 24px; width: 43px; }
 .drawer-code { color: var(--tl-atlas); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; font-weight: 750; letter-spacing: .08em; margin: 0; padding-right: 55px; text-transform: uppercase; }
+.dataset-profile-id { align-items: center; display: flex; flex-wrap: wrap; gap: 8px 12px; padding-right: 55px; }
+.dataset-profile-id > span { color: var(--tl-muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--tl-type-micro); font-weight: 800; letter-spacing: .09em; }
+.dataset-profile-id > strong { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--tl-type-body); font-weight: 850; letter-spacing: .045em; overflow-wrap: anywhere; }
+.dataset-profile-id > small { background: color-mix(in srgb, var(--item-color) 9%, white); border-radius: 5px; color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--tl-type-micro); font-weight: 800; padding: 5px 7px; text-transform: uppercase; }
 .atlas-drawer > h2 { font-size: clamp(40px, 4.2vw, 64px); font-weight: 580; letter-spacing: -.065em; line-height: .98; margin: 32px 0 8px; }
 .drawer-ru { color: var(--tl-muted); font-size: 18px; margin: 0; }
 .drawer-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 22px; }
@@ -156,16 +160,18 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .family-strip strong { font-size: 10px; line-height: 1.25; }
 .family-strip small { align-self: end; color: #87948c; font-size: 9px; }
 .dataset-table { background: white; border: 1px solid var(--tl-line); border-radius: 15px; overflow: hidden; }
-.dataset-table > header, .dataset-table > button { align-items: center; display: grid; gap: 20px; grid-template-columns: 1.25fr .9fr .65fr .85fr 1.4fr 26px; padding: 17px 20px; text-align: left; }
+.dataset-table > header, .dataset-table > button { align-items: center; display: grid; gap: 20px; grid-template-columns: 1.05fr 1.15fr .85fr .6fr .8fr 1.25fr 26px; padding: 17px 20px; text-align: left; }
 .dataset-table > header { background: #edf2ee; color: #79877f; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 8px; font-weight: 800; letter-spacing: .1em; }
 .dataset-table > button { background: white; border-top: 1px solid var(--tl-line); cursor: pointer; min-height: 90px; position: relative; }
 .dataset-table > button::before { background: var(--item-color); bottom: 18px; content: ""; left: 0; position: absolute; top: 18px; width: 3px; }
 .dataset-table > button:hover { background: color-mix(in srgb, var(--item-color) 3%, white); }
 .dataset-table > button > span { color: #5f6d65; font-size: 11px; line-height: 1.4; min-width: 0; }
-.dataset-table > button > span:first-child { display: grid; gap: 5px; }
+.dataset-table > button > span:first-child, .dataset-table .dataset-name-cell { display: grid; gap: 5px; }
 .dataset-table b { color: var(--tl-ink); font-size: 13px; }
 .dataset-table small { color: #89958d; display: block; font-size: 9px; margin-top: 4px; }
-.dataset-table .dataset-canonical-id { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 800; letter-spacing: .055em; margin: 0 0 2px; overflow-wrap: anywhere; }
+.dataset-table .dataset-id-cell { align-content: center; align-self: stretch; border-right: 1px solid var(--tl-line); padding-right: 14px; }
+.dataset-table .dataset-id-cell small { color: #839088; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--tl-type-micro); font-weight: 800; letter-spacing: .08em; margin: 0; }
+.dataset-table .dataset-id-cell strong { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--tl-type-meta); font-weight: 850; letter-spacing: .045em; overflow-wrap: anywhere; }
 .dataset-table i { color: var(--item-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 9px; font-style: normal; font-weight: 800; margin-right: 7px; }
 .dataset-table em { border-radius: 5px; display: inline-block; font-size: 8px; font-style: normal; font-weight: 800; padding: 5px 7px; }
 .priority-core { background: #e6f5ee; color: #08775e; }
@@ -251,8 +257,8 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   .side-taxonomy { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .actor-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .family-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .dataset-table > header, .dataset-table > button { grid-template-columns: 1.2fr .8fr .65fr .85fr 26px; }
-  .dataset-table > header span:nth-child(5), .dataset-table > button > span:nth-child(5) { display: none; }
+  .dataset-table > header, .dataset-table > button { grid-template-columns: 1.05fr 1.2fr .8fr .65fr .85fr 26px; }
+  .dataset-table > header span:nth-child(6), .dataset-table > button > span:nth-child(6) { display: none; }
   .atlas-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .method-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -280,6 +286,7 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   .dataset-table > header { display: none; }
   .dataset-table { background: transparent; border: 0; display: grid; gap: 12px; overflow: visible; }
   .dataset-table > button { border: 1px solid var(--tl-line); border-radius: 12px; grid-template-columns: 1fr 1fr; padding: 19px; }
+  .dataset-table .dataset-id-cell { border-right: 0; border-bottom: 1px solid var(--tl-line); grid-column: 1 / -1; padding: 0 0 13px; }
   .dataset-table > button > span:last-child { bottom: 15px; display: block; position: absolute; right: 17px; }
   .source-grid, .glossary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .data-architecture { grid-template-columns: 1fr; }
