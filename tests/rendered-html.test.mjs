@@ -520,6 +520,17 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(caseStyles, /\.inspector-agent-audit-row/);
 });
 
+test("renders a compact canonical Agent to Dataset handoff with specific deep links", async () => {
+  const pageSource = await readFile(path.join(projectRoot, "app", "page.tsx"), "utf8");
+  assert.match(pageSource, /DATA OUTPUTS \/ DATASETS/);
+  assert.match(pageSource, /dataset\.name\.en/);
+  assert.match(pageSource, /dataset\.id\.replace\("dataset:", ""\)/);
+  assert.match(pageSource, /className="dataset-profile-link"/);
+  assert.match(pageSource, />Open Dataset ↗<\/a>/);
+  assert.doesNotMatch(pageSource, /Canonical Deliverable → typed Dataset contribution/);
+  assert.doesNotMatch(pageSource, /<p>\{relation\.rationale\}<\/p>/);
+});
+
 test("provides a filter-aware 64-Agent Matrix as the fourth Catalog view", async () => {
   const [pageSource, matrixSource, comparisonSource, registrySource, globalStyles] = await Promise.all([
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),

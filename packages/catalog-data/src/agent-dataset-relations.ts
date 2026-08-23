@@ -151,12 +151,12 @@ export const agentDatasetGaps: AgentDatasetGap[] = Object.entries(gapNames).map(
 });
 
 export const datasetRelationshipLabels: Record<AgentDatasetRelationshipType, string> = {
-  "creates-record": "CREATES RECORD",
-  "updates-record": "UPDATES RECORD",
-  "enriches-record": "ENRICHES RECORD",
-  "validates-record": "VALIDATES RECORD",
+  "creates-record": "CREATES",
+  "updates-record": "UPDATES",
+  "enriches-record": "ENRICHES",
+  "validates-record": "VALIDATES",
   "appends-event": "APPENDS EVENT",
-  "materializes-asset": "MATERIALIZES ASSET",
+  "materializes-asset": "MATERIALIZES",
 };
 
 export const deliverableDispositionLabels: Record<AgentDeliverableDisposition, string> = {

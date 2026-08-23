@@ -39,7 +39,6 @@ import {
   datasetContributionsForAgent,
   datasetGapsForAgent,
   datasetRelationshipLabels,
-  deliverableDispositionLabels,
   deliverableForAgent,
   tenderDatasets,
   tenderEcosystemDatasetUrl,
@@ -242,14 +241,13 @@ function AgentDataOutputs({ agent }: { agent: Agent }) {
   return (
     <section className="drawer-data-outputs" aria-label={`${agent.name} data outputs and datasets`}>
       <div className="drawer-data-heading">
-        <div><span>DATA OUTPUTS / DATASETS</span><p>Canonical Deliverable → typed Dataset contribution</p></div>
-        <b>{deliverableDispositionLabels[deliverable.disposition]}</b>
+        <span>DATA OUTPUTS / DATASETS</span>
       </div>
       <article className="drawer-deliverable-record">
         <small>CANONICAL DELIVERABLE</small>
         <strong>{deliverable.name}</strong>
-        <p>{deliverable.rationale}</p>
       </article>
+      {(contributions.length > 0 || gaps.length > 0) && <span className="drawer-dataset-arrow" aria-hidden="true">↓</span>}
       {contributions.length > 0 && (
         <div className="drawer-dataset-relations">
           {contributions.map((relation) => {
@@ -258,12 +256,12 @@ function AgentDataOutputs({ agent }: { agent: Agent }) {
             if (!dataset) return null;
             return (
               <article key={relation.id}>
-                <div className="dataset-relation-topline"><span>{datasetRelationshipLabels[relation.relationshipType]}</span><b>{relation.status}</b></div>
+                <div className="dataset-relation-topline"><span>{datasetRelationshipLabels[relation.relationshipType]}</span></div>
+                <small className="dataset-field-label">DATASET</small>
                 <strong>{dataset.name.en}</strong>
-                <small>{dataset.id}</small>
-                <p>{relation.rationale}</p>
-                <div>{relation.provides.map((item) => <i key={item}>{item}</i>)}</div>
-                {href && <a href={href} target="_blank" rel="noreferrer">Open Dataset profile ↗</a>}
+                <code>{dataset.id.replace("dataset:", "")}</code>
+                <div className="dataset-provides"><small>PROVIDES</small>{relation.provides.map((item) => <i key={item}>{item}</i>)}</div>
+                {href && <a className="dataset-profile-link" href={href} target="_blank" rel="noreferrer">Open Dataset ↗</a>}
               </article>
             );
           })}
@@ -271,7 +269,7 @@ function AgentDataOutputs({ agent }: { agent: Agent }) {
       )}
       {gaps.map((gap) => (
         <article className="drawer-dataset-gap" key={gap.id}>
-          <div><span>POTENTIAL DATASET GAP</span><b>{gap.status}</b></div>
+          <div><span>POTENTIAL DATASET GAP</span></div>
           <strong>{gap.proposedName}</strong>
           <p>{gap.neededRecord}</p>
           <small>{gap.whyExistingDatasetsDoNotFit}</small>
