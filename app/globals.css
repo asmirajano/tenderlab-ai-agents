@@ -1918,13 +1918,13 @@ footer > span,
 .comparison-run:disabled { cursor: not-allowed; opacity: .42; }
 .comparison-bar > button:focus-visible { outline: 3px solid rgba(201,238,99,.45); outline-offset: 2px; }
 
-.comparison-modal-shell { align-items: center; background: rgba(8,23,17,.58); display: flex; inset: 0; justify-content: center; padding: 18px; position: fixed; z-index: 140; }
-.comparison-modal { background: #f7faf7; border: 1px solid #a9c1b4; border-radius: 18px; box-shadow: 0 30px 100px rgba(5,22,15,.35); display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; height: calc(100dvh - 36px); max-width: 1900px; overflow: hidden; width: min(98vw, 1900px); }
-.comparison-modal > header { align-items: center; background: white; border-bottom: 1px solid var(--line); display: grid; gap: 22px; grid-template-columns: minmax(300px,1fr) auto 48px; padding: 18px 22px; }
+.comparison-modal-shell { align-items: stretch; background: rgba(8,23,17,.58); display: flex; inset: 0; justify-content: stretch; padding: clamp(7px, .65vw, 12px); position: fixed; z-index: 140; }
+.comparison-modal { background: #f7faf7; border: 1px solid #a9c1b4; border-radius: 14px; box-shadow: 0 30px 100px rgba(5,22,15,.35); display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; height: 100%; isolation: isolate; max-height: none; max-width: none; min-height: 0; min-width: 0; overflow: hidden; width: 100%; }
+.comparison-modal > header { align-items: center; background: white; border-bottom: 1px solid var(--line); display: grid; gap: 16px; grid-template-columns: minmax(300px,1fr) auto 44px; padding: 12px 16px; position: relative; z-index: 10; }
 .comparison-modal > header > div:first-child > span { color: var(--green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .11em; }
-.comparison-modal > header h2 { font-size: clamp(30px, 3.2vw, 52px); letter-spacing: -.055em; line-height: .95; margin: 5px 0 6px; }
+.comparison-modal > header h2 { font-size: clamp(29px, 2.35vw, 44px); letter-spacing: -.055em; line-height: .95; margin: 4px 0 5px; }
 .comparison-modal > header p { color: var(--muted); font-size: var(--type-small); margin: 0; }
-.comparison-close { align-items: center; background: white; border: 1px solid var(--line-strong); border-radius: 50%; cursor: pointer; display: flex; font-size: 26px; height: 46px; justify-content: center; width: 46px; }
+.comparison-close { align-items: center; background: white; border: 1px solid var(--line-strong); border-radius: 50%; cursor: pointer; display: flex; font-size: 24px; height: 42px; justify-content: center; width: 42px; }
 .comparison-close:hover, .comparison-close:focus-visible { border-color: var(--green); color: var(--green); outline: 3px solid var(--green-soft); }
 .comparison-legend { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .comparison-legend span { border: 1px solid; border-radius: 6px; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; padding: 6px 8px; }
@@ -1933,9 +1933,9 @@ footer > span,
 .comparison-legend .signal-boundary { background: #fff0e6; border-color: #e5a46f; color: #a34c18; }
 .comparison-legend .signal-duplicate { background: #ffebeb; border-color: #e08d8d; color: #a52e2e; }
 
-.comparison-selection { align-items: start; background: #eef4ef; border-bottom: 1px solid var(--line); display: grid; gap: 12px; grid-template-columns: minmax(0,1fr) minmax(300px,.45fr); padding: 11px 22px; position: relative; }
+.comparison-selection { align-items: start; background: #eef4ef; border-bottom: 1px solid #c8d8ce; box-shadow: 0 7px 18px rgba(20,48,36,.06); display: grid; gap: 10px; grid-template-columns: minmax(0,1fr) minmax(300px,.38fr); padding: 8px 16px; position: relative; z-index: 9; }
 .comparison-selected-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.comparison-selected-chips button { align-items: center; background: white; border: 1px solid #cbd8d0; border-radius: 7px; cursor: pointer; display: inline-flex; font-size: var(--type-small); gap: 7px; min-height: 38px; padding: 6px 9px; }
+.comparison-selected-chips button { align-items: center; background: white; border: 1px solid #cbd8d0; border-radius: 7px; cursor: pointer; display: inline-flex; font-size: var(--type-small); gap: 6px; min-height: 32px; padding: 4px 8px; }
 .comparison-selected-chips button b { color: var(--green); font-family: var(--font-geist-mono), monospace; }
 .comparison-selected-chips button span { color: #9a4a4a; font-size: 18px; }
 .comparison-selection > label { background: white; border: 1px solid #c7d6cd; border-radius: 8px; display: grid; gap: 3px; padding: 6px 9px; }
@@ -1948,7 +1948,7 @@ footer > span,
 .comparison-add-results button span { font-size: var(--type-small); font-weight: 750; }
 .comparison-add-results button small { color: var(--muted); font-size: var(--type-micro); }
 
-.comparison-table-scroll { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.comparison-table-scroll { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable both-edges; }
 .comparison-table { border-collapse: separate; border-spacing: 0; min-width: max-content; table-layout: fixed; width: 100%; }
 .comparison-table th, .comparison-table td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 15px 16px; text-align: left; vertical-align: top; }
 .comparison-table thead th { background: var(--ink); color: white; height: 116px; position: sticky; top: 0; width: 330px; z-index: 5; }
@@ -2000,10 +2000,10 @@ footer > span,
 .signal-boundary { background: #fff0e6; border-color: #e5a46f; color: #963f12; }
 .signal-duplicate { background: #ffebeb; border-color: #e08d8d; color: #9c2828; }
 .comparison-caution { color: #7d8982; display: block; font-size: var(--type-micro); margin-top: 7px; }
-.comparison-modal > footer { align-items: center; background: white; border-top: 1px solid var(--line); display: flex; gap: 20px; justify-content: space-between; padding: 12px 22px; }
+.comparison-modal > footer { align-items: center; background: white; border-top: 1px solid var(--line); display: flex; gap: 16px; justify-content: space-between; padding: 8px 16px; position: relative; z-index: 10; }
 .comparison-modal > footer p { color: var(--muted); font-size: var(--type-micro); line-height: 1.5; margin: 0; max-width: 1150px; }
 .comparison-modal > footer p b { color: var(--green); }
-.comparison-modal > footer button { background: var(--ink); border: 0; border-radius: 8px; color: white; font-size: var(--type-control); font-weight: 800; min-height: 44px; padding: 9px 17px; white-space: nowrap; }
+.comparison-modal > footer button { background: var(--ink); border: 0; border-radius: 8px; color: white; font-size: var(--type-control); font-weight: 800; min-height: 38px; padding: 7px 14px; white-space: nowrap; }
 
 /* Full registry Matrix: a fourth view over the same validation model as Compare. */
 .agent-matrix-view { background: #f7faf7; border: 1px solid #b9cfc2; border-radius: 15px; display: grid; grid-template-rows: auto auto minmax(520px, 72vh) auto; margin-top: 22px; min-width: 0; overflow: hidden; }
