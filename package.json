@@ -8,11 +8,11 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "pnpm run build:tenderlab && pnpm run build:atlas",
+    "build": "npm run build:tenderlab && npm run build:atlas",
     "build:tenderlab": "vinext build && node scripts/export-firebase.mjs",
-    "build:atlas": "pnpm --filter @tenderlab/ecosystem-atlas build",
+    "build:atlas": "npm --prefix apps/ecosystem-atlas run build",
     "start": "vinext start",
-    "test": "pnpm run build && node --experimental-strip-types --test tests/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
