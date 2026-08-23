@@ -40,12 +40,14 @@ type TierFilter = "all" | AgentTier;
 const statusLabels: Record<EngagementStatus, string> = {
   required: "Обязателен",
   conditional: "Условно",
+  background: "Background",
   "not-involved": "Не участвует",
 };
 
 const statusShortLabels: Record<EngagementStatus, string> = {
   required: "CORE",
   conditional: "IF",
+  background: "BG",
   "not-involved": "SKIP",
 };
 
@@ -116,6 +118,7 @@ function countByStatus(records: CaseAgentEngagement[]) {
   return {
     required: records.filter((record) => record.status === "required").length,
     conditional: records.filter((record) => record.status === "conditional").length,
+    background: records.filter((record) => record.status === "background").length,
     "not-involved": records.filter((record) => record.status === "not-involved").length,
   };
 }
@@ -342,7 +345,7 @@ export default function CaseSimulationPage() {
             <small>DEMO · {case1.id}</small>
             <strong id="case-1-module-title">{case1.name}</strong>
           </span>
-          <span className="case-module-summary">{metrics.required} Core · {metrics.conditional} Conditional · {metrics["not-involved"]} Skip</span>
+          <span className="case-module-summary">{metrics.required} Core · {metrics.conditional} Conditional · {metrics.background} Background · {metrics["not-involved"]} Skip</span>
           <span className="case-module-action">{caseExpanded ? "Свернуть" : "Развернуть"}<i aria-hidden="true">{caseExpanded ? "−" : "+"}</i></span>
         </button>
 
@@ -366,6 +369,7 @@ export default function CaseSimulationPage() {
         <article className="metric-total"><span>ВСЕГО АГЕНТОВ</span><strong>64</strong><small>единый canonical registry</small></article>
         <article className="metric-required"><span>ОБЯЗАТЕЛЬНЫЕ</span><strong>{metrics.required}</strong><small>реально выполняются</small></article>
         <article className="metric-conditional"><span>УСЛОВНЫЕ</span><strong>{metrics.conditional}</strong><small>{conditionalTriggered} сработали · {conditionalStandby} в резерве</small></article>
+        <article className="metric-background"><span>BACKGROUND / PERSISTENT</span><strong>{metrics.background}</strong><small>не Event-step, а reusable pipeline</small></article>
         <article className="metric-skipped"><span>НЕ УЧАСТВУЮТ</span><strong>{metrics["not-involved"]}</strong><small>есть объяснение skip</small></article>
         <article className="metric-gap">
           <span>НЕПОКРЫТЫЕ ДЕЙСТВИЯ</span>
@@ -373,7 +377,7 @@ export default function CaseSimulationPage() {
             {case1ProcessGraph.auditSummary.proposedMissingAgentIds.length}
             <sup>предв.</sup>
           </strong>
-          <small>partner integrity · требует review</small>
+          <small>после dependency-aware redesign</small>
         </article>
       </section>
 
@@ -385,7 +389,7 @@ export default function CaseSimulationPage() {
               <article key={item.tier}>
                 <span className={`tier-dot tier-${item.tier}`} />
                 <b>{tierRuLabels[item.tier]} <small>{item.total}</small></b>
-                <p><i>{item.required} core</i><i>{item.conditional} if</i><i>{item["not-involved"]} skip</i></p>
+                <p><i>{item.required} core</i><i>{item.conditional} if</i><i>{item.background} bg</i><i>{item["not-involved"]} skip</i></p>
               </article>
             ))}
           </div>
@@ -495,9 +499,9 @@ export default function CaseSimulationPage() {
       </div>
 
       <section className="case-audit-findings case-audit-consolidated" aria-label="Консолидированный аудит Case 1">
-        <div className="section-heading"><div><p>CASE 1 · CONSOLIDATED EVENT AUDIT</p><h2>Итог аудита всех 20 Events</h2></div><span>Канонический registry 64 Agents не изменён; показаны только Case-specific assignments.</span></div>
+        <div className="section-heading"><div><p>CASE 1 · CONSOLIDATED EVENT AUDIT</p><h2>Dependency-aware redesign: 24 Events + background processes</h2></div><span>Канонический registry 64 Agents не изменён; Event execution отделён от persistent data production.</span></div>
         <div className="case-audit-summary-metrics">
-          <article><strong>{case1ProcessGraph.auditSummary.auditedEventCount}<small>/20</small></strong><span>Events audited</span></article>
+          <article><strong>{case1ProcessGraph.auditSummary.auditedEventCount}<small>/24</small></strong><span>Events modelled</span></article>
           <article><strong>{case1ProcessGraph.auditSummary.eventAgentFindingCount}</strong><span>Event × Agent findings</span></article>
           <article><strong>{case1ProcessGraph.auditSummary.retainedAssignmentCount}</strong><span>Retained assignments</span></article>
           <article><strong>{case1ProcessGraph.auditSummary.conditionalAssignmentCount}</strong><span>Conditional records</span></article>
@@ -520,7 +524,7 @@ export default function CaseSimulationPage() {
           </article>
           <article className="is-review">
             <span>UNRESOLVED / PROPOSED</span>
-            {case1ProcessGraph.auditSummary.unresolvedFindings.map((finding) => <p key={finding}><b>REVIEW</b><small>{finding}</small></p>)}
+            {case1ProcessGraph.auditSummary.unresolvedFindings.length ? case1ProcessGraph.auditSummary.unresolvedFindings.map((finding) => <p key={finding}><b>REVIEW</b><small>{finding}</small></p>) : <p><b>0 OPEN</b><small>E02 prerequisite and handoff gaps are represented explicitly.</small></p>}
           </article>
           <article className="is-wide">
             <span>RESPONSIBILITY BOUNDARIES</span>
@@ -596,7 +600,7 @@ export default function CaseSimulationPage() {
             )}
           </div>
           <div className="matrix-segment" aria-label="Фильтр статуса">
-            {(["all", "required", "conditional", "not-involved"] as StatusFilter[]).map((status) => (
+            {(["all", "required", "conditional", "background", "not-involved"] as StatusFilter[]).map((status) => (
               <button key={status} type="button" aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>
                 {status === "all" ? "Все" : statusLabels[status]}
               </button>
@@ -616,6 +620,7 @@ export default function CaseSimulationPage() {
         <div className="matrix-legend" aria-label="Легенда матрицы">
           <span className="legend-required"><i /> Обязателен</span>
           <span className="legend-conditional"><i /> Условно</span>
+          <span className="legend-background"><i /> Background / persistent</span>
           <span className="legend-skipped"><i /> Не участвует</span>
           <small>Conditional: сплошная метка — условие сработало; контурная — резерв.</small>
         </div>
@@ -711,7 +716,7 @@ function StageRows({
               <button className={`engagement-cell cell-${engagement.status} ${engagement.activation ? `cell-${engagement.activation}` : ""}`} type="button" onClick={() => onSelect(agent.id)} aria-label={`${agent.name}: ${statusLabels[engagement.status]}`}>
                 <span>{statusShortLabels[engagement.status]}</span>
                 <b>{statusLabels[engagement.status]}</b>
-                <small>{engagement.status === "conditional" ? (engagement.activation === "triggered" ? "условие сработало" : "резерв") : engagement.when}</small>
+                <small>{engagement.status === "conditional" ? (engagement.activation === "triggered" ? "условие сработало" : "резерв") : engagement.status === "background" ? "persistent pipeline" : engagement.when}</small>
               </button>
             </td>
             {futureCases.map((caseNumber) => <td className="future-case" key={caseNumber}><span>—</span></td>)}

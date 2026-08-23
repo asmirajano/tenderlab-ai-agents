@@ -9,14 +9,15 @@ import { case1ProcessGraph } from "./case-1-graph";
 type MapFocus = "all" | "critical" | "decisions";
 
 const laneOrder: ProcessActorKind[] = ["buyer", "client", "tenderlab", "consultant", "external"];
-const canvas = { width: 3550, header: 86, laneHeight: 206, nodeWidth: 200, nodeHeight: 150, xStart: 170, columnGap: 208 };
+const canvas = { width: 4620, header: 86, laneHeight: 206, nodeWidth: 200, nodeHeight: 150, xStart: 170, columnGap: 208 };
 const timeBands = [
   { start: 0, end: 2, label: "D0–1 · DISCOVERY" },
-  { start: 3, end: 5, label: "D1–6 · ANALYSIS" },
-  { start: 6, end: 8, label: "D6–18 · DECISION + DESIGN" },
-  { start: 9, end: 11, label: "D14–28 · PROPOSAL" },
-  { start: 12, end: 14, label: "D28–69 · EVALUATION + AWARD" },
-  { start: 15, end: 15, label: "D70–219 · DELIVERY" },
+  { start: 3, end: 5, label: "D1–6 · PROFILE + REQUIREMENTS" },
+  { start: 6, end: 8, label: "D6–15 · DECISION + DESIGN" },
+  { start: 9, end: 12, label: "D10–28 · COMPLIANCE + SUBMISSION" },
+  { start: 13, end: 16, label: "D35–69 · EVALUATION + CONTRACT" },
+  { start: 17, end: 19, label: "D70–219 · DELIVERY + CLOSE" },
+  { start: 20, end: 20, label: "LEARN" },
 ];
 
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
@@ -175,6 +176,26 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
         <div className="map-legend" aria-label="Легенда связей"><span><i className="edge-standard" /> Handoff</span><span><i className="edge-branch" /> Branch / Join</span><span><i className="edge-wait" /> Wait / External</span><span><i className="edge-loop" /> Rework / Feedback</span></div>
       </div>
 
+      <section className="background-process-rail" aria-label="Persistent and parallel Case processes">
+        <header><div><span>CASE-LEVEL / BACKGROUND</span><b>Процессы вне линейной Event sequence</b></div><small>E02 читает готовые records; PB01 работает параллельно до E08.</small></header>
+        <div>
+          {case1ProcessGraph.backgroundProcesses.map((process) => (
+            <article className={process.blocking ? "is-blocking" : ""} key={process.id}>
+              <span>{process.id} · {process.state}</span>
+              <h3>{process.name}</h3>
+              <p>{process.purpose}</p>
+              <div className="background-agent-list">
+                {process.agentIds.map((agentId) => {
+                  const agent = agents.find((candidate) => candidate.id === agentId);
+                  return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, process.consumerEventSteps[0] ?? 24)} key={agent.id}>{String(agent.id).padStart(2, "0")} · {agent.name}</button> : null;
+                })}
+              </div>
+              <footer><b>CONSUMED BY</b><span>{process.consumerEventSteps.map((step) => `E${String(step).padStart(2, "0")}`).join(" · ")}</span></footer>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <div className="orchestration-workspace">
         <div ref={mapScrollRef} className="orchestration-scroll" aria-label="Прокручиваемая карта Case 1">
           <div className="orchestration-canvas" style={{ width: canvas.width, height: canvas.header + laneOrder.length * canvas.laneHeight + 92 }}>
@@ -221,7 +242,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
                   <small>{activity.period}</small>
                   <strong>{activity.title}</strong>
                   <span className="node-agents">{activity.agentNames.length} agents{activity.standbyAgentNames.length ? ` · ${activity.standbyAgentNames.length} standby` : ""}{case1ProcessGraph.eventAudits.some((audit) => audit.eventStep === activity.eventStep) ? ` · ${case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === activity.eventStep && (execution.necessity === "misplaced" || execution.necessity === "redundant" || execution.necessity === "unsupported" || execution.validationStatus === "needs-review")).length} audit finding` : ""}</span>
-                  {activity.kind !== "activity" && <em>{activity.kind === "decision" ? "DECISION GATE" : activity.kind === "wait" ? "WAIT / TRIGGER" : "EXTERNAL EVENT"}</em>}
+                  {activity.kind !== "activity" && <em>{activity.kind === "decision" ? "DECISION GATE" : activity.kind === "wait" ? "WAIT / TRIGGER" : activity.kind === "background-update" ? "PERSISTENT UPDATE" : "EXTERNAL EVENT"}</em>}
                 </button>
               );
             })}
@@ -229,7 +250,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
         </div>
 
         <aside className="orchestration-inspector" aria-live="polite">
-          <header><span>SELECTED ACTIVITY</span><b>{selected.kind === "decision" ? "DECISION" : selected.kind === "wait" ? "WAIT" : selected.kind === "external-event" ? "EVENT" : "ACTIVITY"}</b></header>
+          <header><span>SELECTED ACTIVITY</span><b>{selected.kind === "decision" ? "DECISION" : selected.kind === "wait" ? "WAIT" : selected.kind === "external-event" ? "EVENT" : selected.kind === "background-update" ? "BACKGROUND" : "ACTIVITY"}</b></header>
           <div className="inspector-title"><i>E{String(selected.eventStep).padStart(2, "0")}</i><div><small>{selected.period} · {selected.phase}</small><h3>{selected.title}</h3></div></div>
           <dl>
             <div><dt>ИНИЦИАТОР</dt><dd>{selected.initiator}</dd></div>
@@ -295,7 +316,8 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
       </div>
 
       <div className="orchestration-audit" aria-label="Автоматические проверки графа">
-        <article><span>20</span><b>Activities</b><small>все имеют Actor и Output</small></article>
+        <article><span>{case1ProcessGraph.activities.length}</span><b>Case Events</b><small>все имеют Actor, Trigger и Output</small></article>
+        <article><span>{case1ProcessGraph.backgroundProcesses.length}</span><b>Background processes</b><small>persistent и parallel prerequisites</small></article>
         <article><span>{case1ProcessGraph.relationships.length}</span><b>Typed relations</b><small>handoff, branch, wait, rework</small></article>
         <article><span>{joinCount}</span><b>Fan-In points</b><small>обязательные результаты сходятся явно</small></article>
         <article><span>{case1ProcessGraph.activities.filter((activity) => activity.kind === "wait").length}</span><b>Managed waits</b><small>каждое ожидание имеет Trigger</small></article>

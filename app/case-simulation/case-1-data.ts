@@ -1,4 +1,4 @@
-export type EngagementStatus = "required" | "conditional" | "not-involved";
+export type EngagementStatus = "required" | "conditional" | "background" | "not-involved";
 export type ConditionalActivation = "triggered" | "standby";
 
 export type CaseStage = {
@@ -71,7 +71,7 @@ export const caseStages: CaseStage[] = [
   { id: "delivery", number: "11", title: "Исполнение и обучение", description: "Производство, поставка, монтаж, платежи и результат возвращаются в систему.", handoff: "Закрытый контракт и обновлённые модели" },
 ];
 
-export const case1Chronology: CaseChronologyEvent[] = [
+export const legacyCase1Chronology: CaseChronologyEvent[] = [
   {
     step: 1,
     period: "День 0 · публикация",
@@ -294,6 +294,10 @@ export const case1Chronology: CaseChronologyEvent[] = [
   },
 ];
 
+// Canonical Case 1 Event model. The legacy chronology above remains exported only as
+// review evidence; all active UI, graph and audits consume the redesigned model.
+export { case1Chronology } from "./case-1-orchestration.ts";
+
 export const case1Engagements: CaseAgentEngagement[] = [
   { agentId: 1, status: "required", stageId: "control", when: "От регистрации возможности до закрытия контракта", why: "Нужен единый условный маршрут вместо запуска всех 64 агентов.", input: "Карточка компании, тендер GE-MES-2026-017 и правила контроля.", output: "Маршрут из 12 этапов, статусы 64 агентов, точки повторов и согласований.", next: "Все активированные агенты и Human Approval Agent." },
   { agentId: 2, status: "required", stageId: "decision", when: "На решении BID, утверждении цены, подаче и принятии award conditions", why: "Критические коммерческие и договорные решения нельзя принимать без ответственного человека.", input: "Scorecard, риск-регистр, цена $3,61 млн и финальный пакет.", output: "Четыре протокола решения с ответственными, условиями и временем утверждения.", next: "TenderLab Orchestrator, Pricing & BOQ Agent, Document Assembly & Submission Agent и Award-to-Contract Agent." },
@@ -315,7 +319,7 @@ export const case1Engagements: CaseAgentEngagement[] = [
   { agentId: 16, status: "required", stageId: "discovery", when: "До включения тендера в shortlist", why: "Система должна отсечь неподходящие географии, категории и масштабы до дорогого анализа.", input: "Классификация тендера и фильтры компании.", output: "Pass: категория, бюджет, география и сроки находятся в допустимом диапазоне.", next: "Tender Discovery Agent и Tender Alert & Deadline Agent." },
   { agentId: 17, status: "required", stageId: "discovery", when: "С момента shortlist до подачи", why: "28-дневное окно требует контроля гарантии, вопросов, документов и загрузки.", input: "Notice, тендерный календарь и ответственные компании.", output: "Календарь из 6 контрольных дат с owners и предупреждениями.", next: "TenderLab Orchestrator, Document Intake и Submission." },
   { agentId: 18, status: "conditional", activation: "triggered", stageId: "discovery", when: "Перед коммерческим решением", why: "Высокая ценовая конкуренция требует рыночного ориентира, но не блокирует допуск.", condition: "Активирован: конкурентная цена названа ключевой сложностью кейса.", input: "Поток сопоставимых мебельных закупок в Грузии и соседних рынках.", output: "Market brief с ценовыми диапазонами, спросом и логистическими факторами.", next: "Commercial Attractiveness Agent и Proposal Strategy Agent." },
-  { agentId: 19, status: "conditional", activation: "triggered", stageId: "discovery", when: "При подготовке конкурентного benchmark", why: "История присуждений помогает оценить цену и тип победителей, если данные доступны.", condition: "Активирован: найдено шесть сопоставимых award notices.", input: "Notice и awards по школьной мебели за три года.", output: "Dataset шести присуждений с победителями, ценами и моделями локального исполнения.", next: "Buyer & Competitor Intelligence Agent и Bid / No-Bid Decision Agent." },
+  { agentId: 19, status: "background", stageId: "discovery", when: "Постоянный pipeline до Case и обновление после E23", why: "E02 не запускает Agent 19: он читает уже готовые award records P03; verified outcome текущего Case добавляется в pipeline только в E24.", input: "Official award notices, contract records и verified Case outcomes.", output: "Persistent tender→award→contract dataset с победителями, ценами и моделями исполнения.", next: "E02, PB01 Market/Competitor enrichment и будущие Case audits." },
   { agentId: 20, status: "conditional", activation: "triggered", stageId: "discovery", when: "До Bid / No-Bid и proposal strategy", why: "Нужно понимать закупочные предпочтения заказчика и вероятное конкурентное поле.", condition: "Активирован: ожидается высокая международная конкуренция.", input: "Buyer history, award dataset и открытые данные потенциальных участников.", output: "Досье заказчика и shortlist из пяти вероятных конкурентов с price bands.", next: "Match Score, Bid / No-Bid и Proposal Strategy." },
 
   { agentId: 21, status: "required", stageId: "documents", when: "После подтверждения релевантности", why: "Полный пакет должен быть получен, проиндексирован и зафиксирован по версиям.", input: "27 файлов из оригинальных URL.", output: "Версионированный корпус: условия, спецификации, BOQ, формы и чертежи.", next: "Tender Structure Agent, Requirement Parser Agent и Compliance Matrix Agent." },

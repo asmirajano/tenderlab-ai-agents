@@ -8,7 +8,7 @@ export type ProcessActor = {
   description: string;
 };
 
-export type ProcessActivityKind = "activity" | "decision" | "wait" | "external-event";
+export type ProcessActivityKind = "activity" | "decision" | "wait" | "external-event" | "background-update";
 export type ProcessExecutionState = "planned" | "running" | "waiting" | "blocked" | "completed" | "skipped" | "failed";
 
 export type EventAgentAuditDecision = "justified" | "conditional" | "misplaced" | "redundant" | "unsupported";
@@ -148,11 +148,26 @@ export type CaseProcessActivity = {
   critical: boolean;
 };
 
+export type CaseBackgroundProcess = {
+  id: string;
+  name: string;
+  ownerActorId: string;
+  agentIds: number[];
+  timing: string;
+  purpose: string;
+  inputs: string[];
+  outputs: string[];
+  consumerEventSteps: number[];
+  blocking: boolean;
+  state: "persistent" | "case-scoped";
+};
+
 export type CaseProcessGraph = {
   caseId: string;
   version: string;
   actors: ProcessActor[];
   activities: CaseProcessActivity[];
+  backgroundProcesses: CaseBackgroundProcess[];
   artifacts: ProcessArtifact[];
   relationships: ProcessRelationship[];
   eventAudits: CaseEventAudit[];

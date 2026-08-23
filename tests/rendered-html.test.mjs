@@ -83,7 +83,7 @@ test("exports the strategic presentation, validation tools, and compatibility ro
   assert.match(caseSimulation, /Map<\/b><small>оркестрация и зависимости/);
   assert.match(caseSimulation, /Хронология событий — Case 1/);
   assert.match(caseSimulation, /Заказчик публикует международную закупку/);
-  assert.match(caseSimulation, /Контракт исполняется и результат возвращается в систему/);
+  assert.match(caseSimulation, /Производство, поставка и монтаж исполняются шестью волнами/);
   assert.match(caseSimulation, /64 архитектурных роли/);
   assert.match(caseSimulation, /CASE 01 · ACTIVE/);
   assert.match(caseSimulation, /CASE (?:<!-- -->)?10/);
@@ -236,7 +236,7 @@ test("orders the agent detail drawer as one progressive profile", async () => {
 
 test("defines one complete Case 1 engagement decision for all 64 canonical agents", async () => {
   const source = await readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8");
-  const records = [...source.matchAll(/^ {2}\{ agentId: (\d+), status: "(required|conditional|not-involved)"[^\n]+$/gm)].map((match) => ({
+  const records = [...source.matchAll(/^ {2}\{ agentId: (\d+), status: "(required|conditional|background|not-involved)"[^\n]+$/gm)].map((match) => ({
     id: Number(match[1]),
     status: match[2],
     source: match[0],
@@ -245,7 +245,8 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
   assert.equal(records.length, 64, "expected one Case 1 decision per canonical agent");
   assert.deepEqual(records.map((record) => record.id).sort((a, b) => a - b), Array.from({ length: 64 }, (_, index) => index + 1));
   assert.equal(records.filter((record) => record.status === "required").length, 47);
-  assert.equal(records.filter((record) => record.status === "conditional").length, 9);
+  assert.equal(records.filter((record) => record.status === "conditional").length, 8);
+  assert.equal(records.filter((record) => record.status === "background").length, 1);
   assert.equal(records.filter((record) => record.status === "not-involved").length, 8);
 
   for (const record of records.filter((item) => item.status !== "not-involved")) {
@@ -258,7 +259,7 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
   for (const record of records.filter((item) => item.status === "not-involved")) {
     assert.match(record.source, /coveredBy: "[^"]+"/);
   }
-  assert.equal([...source.matchAll(/status: "conditional", activation: "triggered"/g)].length, 6);
+  assert.equal([...source.matchAll(/status: "conditional", activation: "triggered"/g)].length, 5);
   assert.equal([...source.matchAll(/status: "conditional", activation: "standby"/g)].length, 3);
   assert.match(source, /1 тендер · 1 лот/);
   assert.match(source, /budget: "\$3,85 млн"/);
@@ -268,9 +269,8 @@ test("defines one complete Case 1 engagement decision for all 64 canonical agent
 });
 
 test("packages Case 1 as a collapsible module with a complete review chronology", async () => {
-  const [pageSource, dataSource, graphSource, agentRegistrySource, agentCatalogSource] = await Promise.all([
+  const [pageSource, graphSource, agentRegistrySource, agentCatalogSource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
-    readFile(path.join(projectRoot, "app", "case-simulation", "case-1-data.ts"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts"), "utf8"),
     readFile(agentRegistryPath, "utf8"),
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
@@ -294,25 +294,23 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource.slice(matrixPosition - 120, matrixPosition), /<\/div>\r?\n {6}<\/section>\r?\n\s*<section /, "the Case 1 module must close before the global matrix opens");
   assert.equal([...pageSource.matchAll(/className="engagement-matrix-section"/g)].length, 1, "expected one global matrix source");
 
-  const chronology = dataSource.match(/export const case1Chronology:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
-  assert.ok(chronology, "expected the canonical Case 1 chronology registry");
-  const events = [...chronology.matchAll(/^ {4}step: (\d+),$/gm)].map((match) => Number(match[1]));
-  assert.deepEqual(events, Array.from({ length: 20 }, (_, index) => index + 1));
-  assert.equal([...chronology.matchAll(/^ {4}initiator: /gm)].length, 20);
-  assert.equal([...chronology.matchAll(/^ {4}agents: /gm)].length, 20);
-  assert.equal([...chronology.matchAll(/^ {4}result: /gm)].length, 20);
-  assert.equal([...chronology.matchAll(/^ {4}next: /gm)].length, 20);
-  assert.match(chronology, /Tender Readiness 84\/100/);
-  assert.match(chronology, /релевантностью 92%/);
-  assert.match(chronology, /Match 88%/);
-  assert.match(chronology, /вероятность победы 61%/);
-  assert.match(chronology, /164\/164/);
+  const orchestrationModule = await import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-orchestration.ts")).href);
+  const graphModule = await import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts")).href);
+  const chronology = orchestrationModule.case1Chronology;
+  assert.equal(chronology.length, 24, "expected 24 redesigned Case Events");
+  assert.deepEqual(chronology.map((event) => event.step), Array.from({ length: 24 }, (_, index) => index + 1));
+  for (const field of ["initiator", "agents", "result", "next"]) assert.ok(chronology.every((event) => field in event), `every Event needs ${field}`);
+  const chronologyText = JSON.stringify(chronology);
+  assert.match(chronologyText, /Tender Readiness 84\/100/);
+  assert.match(chronologyText, /92%/);
+  assert.match(chronologyText, /Match 88%/);
+  assert.match(chronologyText, /61%/);
+  assert.match(chronologyText, /164\/164/);
 
   const canonicalIds = new Map(
     [...agentRegistrySource.matchAll(/\{ id: (\d+), name: "([^"]+)"/g)].map((match) => [match[2], Number(match[1])]),
   );
-  const chronologyNames = [...chronology.matchAll(/agents: \[([^\]]+)\]/g)]
-    .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((item) => item[1].replace(/ — резерв$/, "")));
+  const chronologyNames = chronology.flatMap((event) => event.agents.map((name) => name.replace(/ — резерв$/, "")));
   assert.ok(chronologyNames.length > 50, "expected the chronology to reference canonical agents throughout the case");
   for (const name of chronologyNames) assert.ok(canonicalIds.has(name), `chronology agent must exist in canonical registry: ${name}`);
   assert.equal(canonicalIds.get("Tender Source Acquisition Agent"), 13);
@@ -331,18 +329,16 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.doesNotMatch(agentCatalogSource, />0[123] · (?:INPUT|RESULT \/ OUTPUT|NEXT \/ HANDOFF)</);
   assert.doesNotMatch(pageSource, /className="case-detail"/);
 
-  const actorRegistry = graphSource.match(/export const case1Actors:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
-  const activityRegistry = graphSource.match(/const activitySpecs:[^{]+\{([\s\S]*?)\n\};/)?.[1];
-  const dependencyRegistry = graphSource.match(/const dependencySpecs:[^=]+= \[([\s\S]*?)\n\];/)?.[1];
-  assert.ok(actorRegistry && activityRegistry && dependencyRegistry, "expected actors, activities, and typed relationships");
-  assert.equal([...actorRegistry.matchAll(/\{ id: "[^"]+"/g)].length, 5, "expected five canonical Actor lanes");
-  assert.deepEqual([...activityRegistry.matchAll(/^ {2}(\d+): /gm)].map((match) => Number(match[1])), Array.from({ length: 20 }, (_, index) => index + 1));
-  assert.ok([...dependencyRegistry.matchAll(/^ {2}\{ from: /gm)].length >= 25, "expected a non-linear dependency network");
-  for (const relation of ["branches-to", "joins-at", "waits-for", "approved-by", "rework", "feedback"]) assert.match(dependencyRegistry, new RegExp(`type: "${relation}"`));
-  assert.match(graphSource, /Every Case 1 waiting activity needs an explicit trigger/);
+  const graph = graphModule.case1ProcessGraph;
+  assert.equal(graph.actors.length, 5, "expected five canonical Actor lanes");
+  assert.equal(graph.activities.length, 24, "expected 24 Case Events");
+  assert.equal(graph.backgroundProcesses.length, 5, "expected explicit persistent/parallel processes");
+  assert.ok(graph.relationships.length >= 30, "expected a non-linear dependency network");
+  for (const relation of ["branches-to", "joins-at", "waits-for", "approved-by", "rework", "feedback"]) assert.ok(graph.relationships.some((item) => item.type === relation), `missing relation ${relation}`);
+  assert.match(graphSource, /Every wait\/gate Event needs an explicit trigger/);
 });
 
-test("audits all 20 Case 1 Events through distinct Event and Agent execution evidence", async () => {
+test("audits all 24 Case 1 Events with explicit persistent dependencies and Event execution evidence", async () => {
   const [graphSource, auditSource, mapSource, pageSource, drawerSource, processModelSource, renderedCase] = await Promise.all([
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-1-event-audits.ts"), "utf8"),
@@ -353,17 +349,26 @@ test("audits all 20 Case 1 Events through distinct Event and Agent execution evi
     readPublished("case-simulation.html"),
   ]);
 
-  assert.match(auditSource, /eventStep: 1, agentId: 13/);
-  assert.match(auditSource, /eventStep: 1, agentId: 15,[\s\S]*?necessity: "misplaced"[\s\S]*?proposedEventStep: 2/);
-  assert.match(auditSource, /eventStep: 2, agentId: 15/);
-  assert.match(auditSource, /eventStep: 4, agentId: 9/);
-  assert.match(auditSource, /eventStep: 14, agentId: 55,[\s\S]*?necessity: "redundant"/);
-  assert.match(auditSource, /eventStep: 9, agentId: 38,[\s\S]*?provenance: "expert-proposed"[\s\S]*?validationStatus: "needs-review"/);
-  assert.deepEqual([...auditSource.matchAll(/^ {2}(\d+): \{ scopeBoundary:/gm)].map((match) => Number(match[1])), Array.from({ length: 20 }, (_, index) => index + 1));
-  assert.match(auditSource, /case1EventAudits\.length !== case1Chronology\.length/);
+  const { case1ProcessGraph } = await import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts")).href);
+  const executionsFor = (step) => case1ProcessGraph.agentExecutions.filter((item) => item.eventStep === step).map((item) => item.agentId).sort((a, b) => a - b);
+  assert.equal(case1ProcessGraph.activities.length, 24);
+  assert.equal(case1ProcessGraph.eventAudits.length, 24);
+  assert.deepEqual(executionsFor(1), [4, 13]);
+  assert.deepEqual(executionsFor(2), [14, 15, 16]);
+  assert.equal(case1ProcessGraph.activities.find((item) => item.eventStep === 2).responsibleActorId, "tenderlab");
+  assert.deepEqual(case1ProcessGraph.activities.find((item) => item.eventStep === 2).actorIds, ["tenderlab"]);
+  assert.ok(!executionsFor(2).includes(19));
+  assert.ok(executionsFor(8).includes(18) && executionsFor(8).includes(20));
+  assert.ok(executionsFor(7).includes(25) && !executionsFor(6).includes(25));
+  assert.ok(executionsFor(21).includes(62) && !executionsFor(10).includes(62));
+  assert.ok(executionsFor(9).includes(38));
+  assert.equal(case1ProcessGraph.eventAudits.find((item) => item.eventStep === 1).status, "approved");
+  assert.equal(case1ProcessGraph.eventAudits.find((item) => item.eventStep === 2).status, "approved");
+  assert.ok(case1ProcessGraph.backgroundProcesses.some((process) => process.id === "P03" && process.agentIds.includes(19) && process.consumerEventSteps.includes(2)));
+  assert.ok(case1ProcessGraph.backgroundProcesses.some((process) => process.id === "PB01" && process.agentIds.includes(18) && process.agentIds.includes(20) && process.consumerEventSteps.includes(8)));
   assert.match(auditSource, /Every conditional Event Agent assignment needs an explicit condition/);
-  assert.match(graphSource, /auditedActiveAgentNames/);
-  assert.match(graphSource, /from: 15, to: 12, type: "rework"/);
+  assert.match(graphSource, /case1BackgroundProcesses/);
+  assert.match(graphSource, /backgroundProcesses: case1BackgroundProcesses/);
   assert.match(graphSource, /auditSummary: case1AuditSummary/);
   assert.match(processModelSource, /export type EventAgentExecution/);
   assert.match(processModelSource, /export type CaseAuditSummary/);
@@ -379,8 +384,8 @@ test("audits all 20 Case 1 Events through distinct Event and Agent execution evi
   assert.match(drawerSource, />NECESSITY \/ JUSTIFICATION</);
   assert.match(drawerSource, /ЕСЛИ УБРАТЬ ИЗ E\{/);
   assert.match(drawerSource, />УСЛОВИЕ АКТИВАЦИИ</);
-  assert.match(renderedCase, /2(?:<!-- -->)? agents(?:<!-- -->)? · 1 audit finding/);
-  assert.match(renderedCase, /Итог аудита всех 20 Events/);
+  assert.match(renderedCase, /CASE-LEVEL \/ BACKGROUND/);
+  assert.match(renderedCase, /Dependency-aware redesign: 24 Events \+ background processes/);
   assert.match(renderedCase, /E(?:<!-- -->)?01(?:<!-- -->)? → E(?:<!-- -->)?02/);
   assert.match(renderedCase, /UNRESOLVED \/ PROPOSED/);
   assert.match(renderedCase, /Стартовый внешний Event/);
