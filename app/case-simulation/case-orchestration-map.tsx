@@ -62,7 +62,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   const selected = case1ProcessGraph.activities.find((activity) => activity.id === selectedActivityId) ?? case1ProcessGraph.activities[0];
   const incoming = case1ProcessGraph.relationships.filter((relationship) => relationship.to === selected.id);
   const outgoing = case1ProcessGraph.relationships.filter((relationship) => relationship.from === selected.id);
-  const selectedArtifact = case1ProcessGraph.artifacts.find((artifact) => artifact.activityId === selected.id)!;
+  const selectedArtifact = case1ProcessGraph.artifacts.find((artifact) => artifact.producerRef === selected.id)!;
   const selectedEventAudit = case1ProcessGraph.eventAudits.find((audit) => audit.eventStep === selected.eventStep);
   const selectedExecutions = case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === selected.eventStep);
   const confirmedExecutions = selectedExecutions.filter((execution) => (
@@ -70,7 +70,14 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
     && execution.validationStatus !== "needs-review"
   ));
   const proposedExecutions = selectedExecutions.filter((execution) => execution.validationStatus === "needs-review");
-  const activeAgentNames = useMemo(() => [...new Set(case1ProcessGraph.activities.flatMap((activity) => activity.agentNames))].sort(), []);
+  const activeAgentNames = useMemo(() => [...new Set([
+    ...case1ProcessGraph.activities.flatMap((activity) => activity.agentNames),
+    ...case1ProcessGraph.processAgentExecutions.map((execution) => agents.find((agent) => agent.id === execution.agentId)?.name).filter((name): name is string => Boolean(name)),
+  ])].sort(), []);
+  const eventRelationships = useMemo(() => case1ProcessGraph.relationships.filter((relationship) => (
+    case1ProcessGraph.activities.some((activity) => activity.id === relationship.from)
+    && case1ProcessGraph.activities.some((activity) => activity.id === relationship.to)
+  )), []);
   const joinCount = useMemo(() => {
     const incomingCount = new Map<string, number>();
     case1ProcessGraph.relationships.filter((edge) => edge.blocking).forEach((edge) => incomingCount.set(edge.to, (incomingCount.get(edge.to) ?? 0) + 1));
@@ -86,8 +93,9 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   };
 
   const relationshipActive = (relationship: ProcessRelationship) => {
-    const source = case1ProcessGraph.activities.find((activity) => activity.id === relationship.from)!;
-    const target = case1ProcessGraph.activities.find((activity) => activity.id === relationship.to)!;
+    const source = case1ProcessGraph.activities.find((activity) => activity.id === relationship.from);
+    const target = case1ProcessGraph.activities.find((activity) => activity.id === relationship.to);
+    if (!source || !target) return true;
     return isActivityFocused(source) && isActivityFocused(target);
   };
 
@@ -179,18 +187,19 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
       <section className="background-process-rail" aria-label="Persistent and parallel Case processes">
         <header><div><span>CASE-LEVEL / BACKGROUND</span><b>Процессы вне линейной Event sequence</b></div><small>E02 читает готовые records; PB01 работает параллельно до E08.</small></header>
         <div>
-          {case1ProcessGraph.backgroundProcesses.map((process) => (
+          {case1ProcessGraph.processes.map((process) => (
             <article className={process.blocking ? "is-blocking" : ""} key={process.id}>
-              <span>{process.id} · {process.state}</span>
+              <span>{process.id} · {process.kind}</span>
               <h3>{process.name}</h3>
               <p>{process.purpose}</p>
               <div className="background-agent-list">
                 {process.agentIds.map((agentId) => {
                   const agent = agents.find((candidate) => candidate.id === agentId);
-                  return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, process.consumerEventSteps[0] ?? 24)} key={agent.id}>{String(agent.id).padStart(2, "0")} · {agent.name}</button> : null;
+                  const firstEvent = process.consumerRefs.find((ref) => ref.startsWith("activity-"));
+                  return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, firstEvent ? Number(firstEvent.replace("activity-", "")) : 24)} key={agent.id}>{String(agent.id).padStart(2, "0")} · {agent.name}</button> : null;
                 })}
               </div>
-              <footer><b>CONSUMED BY</b><span>{process.consumerEventSteps.map((step) => `E${String(step).padStart(2, "0")}`).join(" · ")}</span></footer>
+              <footer><b>OUTPUTS → CONSUMERS</b><span>{process.outputArtifactIds.map((id) => case1ProcessGraph.artifacts.find((artifact) => artifact.id === id)?.name).filter(Boolean).join(" · ")} → {process.consumerRefs.map((ref) => ref.startsWith("activity-") ? `E${ref.replace("activity-", "")}` : ref).join(" · ")}</span></footer>
             </article>
           ))}
         </div>
@@ -216,7 +225,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
               <defs>
                 <marker id="map-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" /></marker>
               </defs>
-              {case1ProcessGraph.relationships.map((relationship) => (
+              {eventRelationships.map((relationship) => (
                 <path
                   className={`map-edge edge-${relationship.type} ${relationshipActive(relationship) ? "is-active" : "is-muted"} ${incoming.some((edge) => edge.id === relationship.id) || outgoing.some((edge) => edge.id === relationship.id) ? "is-selected" : ""}`}
                   d={edgePath(relationship)}
@@ -317,7 +326,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
 
       <div className="orchestration-audit" aria-label="Автоматические проверки графа">
         <article><span>{case1ProcessGraph.activities.length}</span><b>Case Events</b><small>все имеют Actor, Trigger и Output</small></article>
-        <article><span>{case1ProcessGraph.backgroundProcesses.length}</span><b>Background processes</b><small>persistent и parallel prerequisites</small></article>
+        <article><span>{case1ProcessGraph.processes.length}</span><b>Case Processes</b><small>persistent, case-scoped и parallel</small></article>
         <article><span>{case1ProcessGraph.relationships.length}</span><b>Typed relations</b><small>handoff, branch, wait, rework</small></article>
         <article><span>{joinCount}</span><b>Fan-In points</b><small>обязательные результаты сходятся явно</small></article>
         <article><span>{case1ProcessGraph.activities.filter((activity) => activity.kind === "wait").length}</span><b>Managed waits</b><small>каждое ожидание имеет Trigger</small></article>

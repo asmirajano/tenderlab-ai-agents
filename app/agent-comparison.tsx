@@ -13,6 +13,7 @@ import {
 } from "../packages/catalog-data/src/agents";
 import { AgentReviewBadge } from "./agent-workspace";
 import { AgentReferenceButton, AgentReferenceList, AgentReferenceText } from "./agent-reference-text";
+import { AgentDatasetImpactCell, datasetImpactIdsForAgent } from "./agent-dataset-impact";
 
 export type ComparisonTone = "unique" | "overlap" | "boundary" | "duplicate";
 
@@ -174,6 +175,10 @@ export function buildAgentValidationRows(
   onOpenAgent?: (agent: Agent) => void,
 ): AgentValidationRow[] {
   const compact = density === "matrix";
+  const subjectAgents = [...analyses.keys()].map((id) => agents.find((agent) => agent.id === id)).filter((agent): agent is Agent => Boolean(agent));
+  const datasetUseCounts = new Map<string, number>();
+  if (!compact) for (const subject of subjectAgents) for (const datasetId of new Set(datasetImpactIdsForAgent(subject))) datasetUseCounts.set(datasetId, (datasetUseCounts.get(datasetId) ?? 0) + 1);
+  const sharedDatasetIds = new Set([...datasetUseCounts].filter(([, count]) => count > 1).map(([datasetId]) => datasetId));
   return [
     { id: "simply", label: "Simply / простыми словами", render: (agent) => <strong><AgentReferenceText text={agent.profile.simply} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong> },
     { id: "purpose", label: "Core purpose", render: (agent) => <AgentReferenceText text={agent.description} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },
@@ -182,6 +187,7 @@ export function buildAgentValidationRows(
     { id: "not-do", label: "What it explicitly should NOT do", render: (agent) => <ProfileList items={agent.profile.exclusions} agent={agent} onOpenAgent={onOpenAgent} /> },
     { id: "inputs", label: "Typical inputs", render: (agent) => <ProfileList items={agent.profile.typicalInputs} agent={agent} onOpenAgent={onOpenAgent} /> },
     { id: "outputs", label: "Typical outputs", render: (agent) => <div className="comparison-output"><strong><AgentReferenceText text={agent.output.primary} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong>{agent.output.artifacts.map((artifact) => <span key={artifact}><AgentReferenceText text={artifact} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></span>)}</div> },
+    { id: "dataset-impact", label: "Dataset impact", render: (agent) => <AgentDatasetImpactCell agent={agent} compact={compact} sharedDatasetIds={sharedDatasetIds} /> },
     { id: "trigger", label: "Trigger / activation", render: (agent) => <div className="comparison-trigger"><strong><AgentReferenceText text={agent.profile.trigger} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></strong><p><b>SKIP</b><AgentReferenceText text={agent.profile.skipCondition} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /></p></div> },
     { id: "authority", label: "Decisions / authority", render: (agent) => <AgentReferenceText text={agent.profile.authority} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },
     { id: "boundary", label: "Responsibility boundary", render: (agent) => <AgentReferenceText text={agent.profile.responsibilityBoundary} subjectAgentId={agent.id} onOpenAgent={onOpenAgent} /> },

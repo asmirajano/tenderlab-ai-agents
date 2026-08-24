@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import TopNavigation, { type PrimaryPage } from "./top-navigation";
 import AgentNetworkView from "./agent-network-view";
 import AgentMatrixView from "./agent-matrix-view";
+import AgentRelationshipsView from "./agent-relationships-view";
 import { AgentComparisonBar, AgentComparisonModal } from "./agent-comparison";
 import { AgentReferenceButton, AgentReferenceList, AgentReferenceText } from "./agent-reference-text";
 import {
@@ -40,10 +41,13 @@ import {
   datasetContributionsForAgent,
   datasetGapsForAgent,
   datasetRelationshipLabels,
+  datasetImpactOperationByRelationship,
+  datasetImpactsForAgent,
   deliverableForAgent,
   tenderDatasets,
   tenderEcosystemDatasetUrl,
 } from "../packages/catalog-data/src";
+import { AgentCardDatasetSummary } from "./agent-dataset-impact";
 import {
   createSemanticSearchDocument,
   rankSemanticDocuments,
@@ -52,6 +56,7 @@ import {
 } from "./case-simulation/semantic-search";
 
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+const catalogDatasetById = new Map(tenderDatasets.map((dataset) => [dataset.id, dataset]));
 const catalogSemanticDocuments = agents.map((agent) => {
   const layer = layerById[agent.layer];
   return createSemanticSearchDocument({
@@ -76,7 +81,12 @@ const catalogSemanticDocuments = agents.map((agent) => {
       agent.profile.skipCondition,
       ...agent.profile.upstream,
     ].join(" · "),
-    output: [agent.output.primary, ...agent.output.artifacts, agent.output.consumers].join(" · "),
+    output: [
+      agent.output.primary,
+      ...agent.output.artifacts,
+      agent.output.consumers,
+      ...datasetImpactsForAgent(agent.registryId).map((impact) => `${impact.operation} ${catalogDatasetById.get(impact.datasetId)?.name.en ?? impact.datasetId}`),
+    ].join(" · "),
     rationale: Object.values(agent.platformRationale).filter(Boolean).join(" · "),
     metadata: [
       tierLabels[getAgentTier(agent.id)],
@@ -151,6 +161,7 @@ function AgentCard({ agent, className = "", compareSelected = false, onSelect, o
           <span className={`platform-badge platform-${side}`} key={side}>{platformSideLabels[side]}</span>
         ))}
       </span>
+      <AgentCardDatasetSummary agent={agent} />
       <AgentReviewControl agentId={agent.id} canonicalRegistryId={agent.registryId} compact />
       {parentCount > 1 && <span className="shared-support">↔ Shared · {parentCount} Main</span>}
       <span className="card-layer">{layer.number} · {layer.name}</span>
@@ -258,7 +269,7 @@ function AgentDataOutputs({ agent }: { agent: Agent }) {
             if (!dataset) return null;
             return (
               <article key={relation.id}>
-                <div className="dataset-relation-topline"><span>{datasetRelationshipLabels[relation.relationshipType]}</span></div>
+                <div className="dataset-relation-topline"><span className={`dataset-operation operation-${datasetImpactOperationByRelationship[relation.relationshipType].toLowerCase()}`}>{datasetImpactOperationByRelationship[relation.relationshipType]}</span><small>{datasetRelationshipLabels[relation.relationshipType]}</small></div>
                 <small className="dataset-field-label">DATASET</small>
                 <strong>{dataset.name.en}</strong>
                 <code>{dataset.id.replace("dataset:", "")}</code>
@@ -939,6 +950,11 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
                 className={architectureView === "matrix" ? "active" : ""}
                 onClick={() => setArchitectureView("matrix")}
               >Matrix</button>
+              <button
+                aria-pressed={architectureView === "relationships"}
+                className={architectureView === "relationships" ? "active" : ""}
+                onClick={() => setArchitectureView("relationships")}
+              >Relationships</button>
             </div>
             <div className="mode-switch" role="group" aria-label="Agent set">
               <button aria-pressed={mode === "all"} className={mode === "all" ? "active" : ""} onClick={() => setMode("all")}>All</button>
@@ -1141,7 +1157,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             comparisonIds={comparisonIds}
             onToggleCompare={toggleComparisonAgent}
           />
-        ) : (
+        ) : architectureView === "matrix" ? (
           <AgentMatrixView
             visibleAgents={visibleAgents}
             query={query}
@@ -1158,6 +1174,15 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
             onOpenAgent={openRootAgent}
             onToggleCompare={toggleComparisonAgent}
             onCompare={() => setComparisonOpen(true)}
+          />
+        ) : (
+          <AgentRelationshipsView
+            allAgents={agents}
+            visibleAgents={visibleAgents}
+            layerMeta={layerById}
+            onOpenAgent={openRootAgent}
+            comparisonIds={comparisonIds}
+            onToggleCompare={toggleComparisonAgent}
           />
         ) : (
           <div className={`empty-state ${query.trim() ? `semantic-empty-state assessment-${searchAssessment.id}` : ""}`.trim()}>

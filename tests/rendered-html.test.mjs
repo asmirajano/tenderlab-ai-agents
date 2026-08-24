@@ -332,7 +332,7 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   const graph = graphModule.case1ProcessGraph;
   assert.equal(graph.actors.length, 5, "expected five canonical Actor lanes");
   assert.equal(graph.activities.length, 24, "expected 24 Case Events");
-  assert.equal(graph.backgroundProcesses.length, 5, "expected explicit persistent/parallel processes");
+  assert.equal(graph.processes.length, 5, "expected explicit first-class persistent/case-scoped/parallel Processes");
   assert.ok(graph.relationships.length >= 30, "expected a non-linear dependency network");
   for (const relation of ["branches-to", "joins-at", "waits-for", "approved-by", "rework", "feedback"]) assert.ok(graph.relationships.some((item) => item.type === relation), `missing relation ${relation}`);
   assert.match(graphSource, /Every wait\/gate Event needs an explicit trigger/);
@@ -364,11 +364,24 @@ test("audits all 24 Case 1 Events with explicit persistent dependencies and Even
   assert.ok(executionsFor(9).includes(38));
   assert.equal(case1ProcessGraph.eventAudits.find((item) => item.eventStep === 1).status, "approved");
   assert.equal(case1ProcessGraph.eventAudits.find((item) => item.eventStep === 2).status, "approved");
-  assert.ok(case1ProcessGraph.backgroundProcesses.some((process) => process.id === "P03" && process.agentIds.includes(19) && process.consumerEventSteps.includes(2)));
-  assert.ok(case1ProcessGraph.backgroundProcesses.some((process) => process.id === "PB01" && process.agentIds.includes(18) && process.agentIds.includes(20) && process.consumerEventSteps.includes(8)));
+  assert.ok(case1ProcessGraph.processes.some((process) => process.id === "P03" && process.agentIds.includes(19) && process.consumerRefs.includes("PB01")));
+  assert.ok(case1ProcessGraph.processes.some((process) => process.id === "PB01" && process.agentIds.includes(18) && process.agentIds.includes(20) && process.consumerRefs.includes("activity-08")));
+  assert.ok(case1ProcessGraph.processes.some((process) => process.kind === "persistent"));
+  assert.ok(case1ProcessGraph.processes.some((process) => process.kind === "case-scoped"));
+  assert.ok(case1ProcessGraph.processes.some((process) => process.kind === "parallel"));
+  assert.equal(case1ProcessGraph.processAgentExecutions.length, case1ProcessGraph.processes.reduce((sum, process) => sum + process.agentIds.length, 0));
+  for (const process of case1ProcessGraph.processes) {
+    for (const artifactId of process.outputArtifactIds) {
+      assert.ok(case1ProcessGraph.artifacts.some((artifact) => artifact.id === artifactId && artifact.producerKind === "process" && artifact.producerRef === process.id));
+    }
+  }
+  for (const [source, target] of [["P01", "activity-02"], ["activity-02", "PB01"], ["P03", "PB01"], ["PB01", "activity-08"], ["activity-24", "P03"]]) {
+    assert.ok(case1ProcessGraph.relationships.some((item) => item.from === source && item.to === target), `missing typed cross-node relation ${source} → ${target}`);
+  }
   assert.match(auditSource, /Every conditional Event Agent assignment needs an explicit condition/);
-  assert.match(graphSource, /case1BackgroundProcesses/);
-  assert.match(graphSource, /backgroundProcesses: case1BackgroundProcesses/);
+  assert.match(graphSource, /case1Processes/);
+  assert.match(graphSource, /processes: case1Processes/);
+  assert.match(graphSource, /processAgentExecutions/);
   assert.match(graphSource, /auditSummary: case1AuditSummary/);
   assert.match(processModelSource, /export type EventAgentExecution/);
   assert.match(processModelSource, /export type CaseAuditSummary/);
@@ -407,7 +420,7 @@ test("defines one TenderLab-specific canonical glossary for the contextual panel
     assert.ok(item.example.length > 35, `${item.term} needs a TenderLab example`);
     assert.ok(item.notToConfuseWith.length > 40, `${item.term} needs a specific comparison`);
   }
-  for (const term of ["Workflow", "Event", "Actor", "AI Agent", "Dependency", "Waiting State", "Decision Gate", "Critical Path", "Fan-Out / Fan-In", "Dependency Graph", "Swimlane", "Orchestration", "Handoff", "Input", "Output", "Parallel Execution"]) {
+  for (const term of ["Workflow", "Event", "Process", "Actor", "AI Agent", "Dependency", "Waiting State", "Decision Gate", "Critical Path", "Fan-Out / Fan-In", "Dependency Graph", "Swimlane", "Orchestration", "Handoff", "Input", "Output", "Parallel Execution"]) {
     assert.ok(tenderGlossaryTerms.some((item) => item.term === term), `missing required TenderLab term: ${term}`);
   }
   assert.ok(contextualGlossaryTermsByPath["/case-simulation"].includes("Critical Path"));
@@ -418,6 +431,7 @@ test("defines one TenderLab-specific canonical glossary for the contextual panel
   assert.match(uiSource, /Быстрые определения в контексте текущей страницы/);
   assert.doesNotMatch(uiSource, /Открыть полный Glossary/);
   assert.match(uiSource, /splitGlossaryReferences/);
+  assert.ok(!tenderGlossaryTerms.find((item) => item.term === "Workflow").aliases.includes("процесс"), "Workflow must not conflate a Process with the full route");
 });
 
 test("uses one typed relationship model for Case Audit and the Agent Catalog Network", async () => {
@@ -575,11 +589,62 @@ test("provides a filter-aware 64-Agent Matrix as the fourth Catalog view", async
   assert.match(matrixSource, /onToggleCompare/);
   assert.match(matrixSource, /Focus Mode/);
   assert.match(matrixSource, /Hidden \{hiddenIds\.size\}/);
-  assert.match(matrixSource, /18 canonical dimensions/);
+  assert.match(matrixSource, /19 canonical dimensions/);
+  assert.match(comparisonSource, /id: "dataset-impact", label: "Dataset impact"/);
+  assert.match(pageSource, /<AgentCardDatasetSummary agent=\{agent\}/);
   assert.match(matrixSource, /same enriched canonical 64-Agent registry/);
   assert.match(globalStyles, /\.agent-matrix-view\.is-focus/);
   assert.match(globalStyles, /\.agent-matrix-table thead th/);
   assert.match(globalStyles, /\.agent-matrix-table tbody th/);
+});
+
+test("provides a focused registry-backed Relationships view as the fifth Catalog view", async () => {
+  const [
+    pageSource,
+    viewSource,
+    relationshipSource,
+    registrySource,
+    schemaSource,
+    globalStyles,
+    { agents },
+    { agentRelationships },
+  ] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "agent-relationships-view.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "packages", "catalog-data", "src", "agent-relationships.ts"), "utf8"),
+    readFile(agentRegistryPath, "utf8"),
+    readFile(path.join(projectRoot, "packages", "catalog-schema", "src", "agent-specification.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "globals.css"), "utf8"),
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agents.ts")).href),
+    import(pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-relationships.ts")).href),
+  ]);
+
+  assert.match(registrySource, /type ArchitectureView = "flat" \| "hierarchy" \| "network" \| "matrix" \| "relationships"/);
+  assert.match(pageSource, />Relationships<\/button>/);
+  assert.match(pageSource, /<AgentRelationshipsView/);
+  assert.match(viewSource, /Agent family explorer/);
+  assert.match(viewSource, /UPSTREAM/);
+  assert.match(viewSource, /DOWNSTREAM/);
+  assert.match(viewSource, /PARENT \/ BROADER CAPABILITY/);
+  assert.match(viewSource, /SPECIALIZED \/ CHILD CAPABILITIES/);
+  assert.match(viewSource, /ALTERNATIVES \/ RESPONSIBILITY BOUNDARIES/);
+  assert.match(viewSource, /item === 1 \? "1-hop" : "2-hop"/);
+  assert.match(viewSource, /Ecosystem/);
+  assert.match(viewSource, /SELECT PROCESS/);
+  assert.match(viewSource, /case1ProcessGraph\.processAgentExecutions/);
+  assert.match(viewSource, /WHY THIS RELATIONSHIP EXISTS/);
+  assert.match(viewSource, /Mandatory\/conditional companion и parallel collaboration не заявляются/);
+  assert.match(schemaSource, /AgentRelationshipFamily = "capability" \| "dependency" \| "sequence" \| "boundary"/);
+  assert.match(schemaSource, /AgentRelationshipRequirement = "required" \| "contextual" \| "conditional" \| "review"/);
+  assert.match(relationshipSource, /evidence:/);
+  assert.match(globalStyles, /\.agent-relationships-view/);
+  assert.match(globalStyles, /\.relationships-focus-layout/);
+  assert.equal(agents.length, 64);
+  assert.ok(agentRelationships.length > 400, "expected a substantial canonical relationship registry");
+  assert.ok(agentRelationships.every((relationship) => relationship.family && relationship.requirement && relationship.rationale && relationship.evidence.length));
+  const resolvedAgentIds = new Set(agentRelationships.flatMap((relationship) => [relationship.source, relationship.target]).filter((endpoint) => endpoint.kind === "agent").map((endpoint) => endpoint.ref));
+  assert.ok(agents.every((agent) => resolvedAgentIds.has(agent.registryId)), "every Agent should have at least one evidenced functional relationship");
+  for (const family of ["capability", "dependency", "sequence", "boundary"]) assert.ok(agentRelationships.some((relationship) => relationship.family === family), `missing relationship family ${family}`);
 });
 
 test("ranks canonical agents by name, intent, synonyms, partial wording, and typos", async () => {

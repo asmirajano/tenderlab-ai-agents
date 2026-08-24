@@ -508,7 +508,7 @@ export const agentExamples: Record<number, AgentExample> = {
 export const layerById = Object.fromEntries(layers.map((layer) => [layer.id, layer])) as Record<string, Layer>;
 
 export type AgentTier = CanonicalAgentTier;
-export type ArchitectureView = "flat" | "hierarchy" | "network" | "matrix";
+export type ArchitectureView = "flat" | "hierarchy" | "network" | "matrix" | "relationships";
 
 export const getAgentTier = (agentId: number): AgentTier => {
   return tierForAgent(agentId);

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { ProductBrand } from "../../../packages/design-system/src/ProductBrand";
 import {
   actorTypes,
+  agents,
   authorityLabels,
   dataFamilies,
   dataSources,
@@ -13,6 +14,7 @@ import {
   tenderDatasets,
   tenderSides,
 } from "../../../packages/catalog-data/src";
+import { case1ProcessGraph } from "../../../app/case-simulation/case-1-graph";
 import type {
   ActorType,
   DatasetDemo,
@@ -26,6 +28,7 @@ const mainAppUrl = "https://tenderlab-ai-agents.web.app";
 const navItems = [
   { href: "/", label: "Overview" },
   { href: "/agents", label: "Agent Specifications" },
+  { href: "/orchestration", label: "Process Operations" },
   { href: "/actors", label: "Sides & Actors" },
   { href: "/data", label: "Data & Sources" },
   { href: "/glossary", label: "Glossary" },
@@ -87,6 +90,7 @@ function OverviewPage() {
     [String(tenderDatasets.length).padStart(2, "0"), "Datasets", `${proprietary} proprietary assets`],
     [String(dataSources.length).padStart(2, "0"), "Source Systems", "Representative providers"],
     [String(glossaryTerms.length).padStart(2, "0"), "Glossary Terms", "One canonical language"],
+    [String(case1ProcessGraph.processes.length).padStart(2, "0"), "Case Processes", "Admin model · not runtime"],
   ];
 
   return (
@@ -95,8 +99,8 @@ function OverviewPage() {
         kicker="TENDER ECOSYSTEM · REFERENCE SYSTEM"
         title="Map the environment."
         accent="Keep the operating system focused."
-        text="Tender Ecosystem Atlas описывает участников, данные и reference structures вокруг TenderLab.ai. Каталоги развиваются независимо, получают стабильные ID и остаются готовыми к будущим связям."
-        aside={<><StatusTag /><strong>Boundary</strong><p><b>Atlas</b> объясняет среду закупок.<br /><b>TenderLab.ai</b> объясняет и выполняет agent workflows.</p></>}
+        text="Tender Ecosystem Atlas — admin-facing reference and control surface: участники, данные, Agent specifications и orchestration governance вокруг TenderLab.ai. Каталоги развиваются независимо и связываются стабильными IDs."
+        aside={<><StatusTag /><strong>Boundary</strong><p><b>Atlas</b> объясняет и контролирует architecture.<br /><b>TenderLab.ai runtime</b> должен исполнять workflows.</p></>}
       />
 
       <section className="atlas-stats" aria-label="Catalogue metrics">
@@ -116,7 +120,7 @@ function OverviewPage() {
           <article className="boundary-atlas">
             <span>ECOSYSTEM / REFERENCE</span>
             <h3>Tender Ecosystem Atlas</h3>
-            <p>Sides, Actor Types, Datasets, Sources, terminology и methodology.</p>
+            <p>Sides, Actor Types, Datasets, Sources, Agent/Process specifications, readiness и methodology для admins.</p>
             <a href="/actors">Explore Atlas →</a>
           </article>
         </div>
@@ -135,6 +139,12 @@ function OverviewPage() {
           <p>Какие project, tender, company, contract, market и proprietary datasets существуют и на каких условиях доступны.</p>
           <footer><span>Dataset ≠ provider ≠ portal</span><i>→</i></footer>
         </a>
+        <a href="/orchestration" className="catalogue-entry process-entry">
+          <div><span>CONTROL SURFACE</span><b>{case1ProcessGraph.processes.length} CASE PROCESSES · {case1ProcessGraph.processAgentExecutions.length} AGENT EXECUTIONS</b></div>
+          <h2>Process Operations</h2>
+          <p>Какие Processes существуют, кто их выполняет, какие Artifacts они создают и чего ещё не хватает до production runtime.</p>
+          <footer><span>Definition → Instance → Execution → Artifact</span><i>→</i></footer>
+        </a>
       </section>
 
       <section className="deferred-banner">
@@ -144,6 +154,62 @@ function OverviewPage() {
       </section>
     </>
   );
+}
+
+const processKindLabels = { persistent: "Persistent", "case-scoped": "Case-scoped", parallel: "Parallel" } as const;
+const runtimeCapabilities = [
+  ["01", "Process Definition Registry", "MODELED", "Versioned reusable definition: kind, owner role, trigger, inputs, outputs, SLA and stop rule."],
+  ["02", "Process Instance / Run", "PARTIAL", "Case-scoped identity and current state exist in the model; durable runtime lifecycle does not."],
+  ["03", "Scheduler + Trigger Engine", "REQUIRED", "Starts persistent, scheduled, event-driven and parallel Processes without browser activity."],
+  ["04", "Persistent State Store", "REQUIRED", "Stores state, checkpoints, leases, timestamps, freshness, version and recovery position."],
+  ["05", "Dependency Resolver", "MODELED", "Typed Event ↔ Process edges exist; runtime blocking, fan-in and resume evaluation remain to implement."],
+  ["06", "Agent Execution Journal", "REQUIRED", "Records every attempt, input snapshot, model/tool version, status, retry and idempotency key."],
+  ["07", "Artifact Repository", "PARTIAL", "Artifact ownership and consumers are modeled; durable content, schema, ACL and retention are not."],
+  ["08", "Human Decision / Approval Service", "MODELED", "Gates exist in architecture; assignment, notification, expiry and signed decision records need runtime."],
+  ["09", "Observability + Recovery", "REQUIRED", "Admin health, latency, failures, retries, dead-letter queue, pause/resume and replay controls."],
+  ["10", "Security + Governance", "REQUIRED", "RBAC, secrets, data classification, audit retention and separation between admins, clients and backend."],
+] as const;
+
+function ProcessOperationsPage() {
+  const artifactById = new Map(case1ProcessGraph.artifacts.map((artifact) => [artifact.id, artifact]));
+  const actorById = new Map(case1ProcessGraph.actors.map((actor) => [actor.id, actor]));
+  const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+  return <>
+    <PageIntro kicker="ADMIN CONTROL PLANE · ORCHESTRATION" title="Processes are modeled." accent="Runtime is the next layer." text="Эта страница показывает admins канонические Process instances Case 1, их Agent executions, owned Artifacts и честный production-readiness gap. Atlas не изображает scheduler работающим, пока backend runtime отсутствует." aside={<><StatusTag /><strong>{case1ProcessGraph.processes.length} Process instances</strong><p>{case1ProcessGraph.processAgentExecutions.length} Agent executions · {case1ProcessGraph.artifacts.filter((item) => item.producerKind === "process").length} Process-owned Artifacts.</p></>} />
+
+    <section className="process-model-chain" aria-label="Canonical Process runtime model">
+      {[['01','Case','Business context + scope'],['02','Event / Process','Bounded occurrence or continuing work'],['03','Agent Execution','One capability run inside its owner node'],['04','Artifact','Versioned output owned by Event or Process'],['05','Next node','Typed dependency + handoff']].map(([number,title,note], index) => <article key={title}><span>{number}</span><strong>{title}</strong><small>{note}</small>{index < 4 && <i>→</i>}</article>)}
+    </section>
+
+    <section className="process-definition-note">
+      <div><span>PRODUCTION IDENTITY BOUNDARY</span><h2>Definition ≠ Instance ≠ Execution attempt</h2></div>
+      <p><b>Process Definition</b> — reusable, versioned algorithm. <b>Process Instance</b> — его работа внутри конкретного Case. <b>Agent Execution</b> — отдельный запуск Agent с input snapshot. <b>Artifact</b> — сохранённый результат этого запуска или Process.</p>
+    </section>
+
+    <div className="section-title"><p>CASE 1 · CURRENT ADMIN REGISTRY</p><h2>First-class Process instances</h2></div>
+    <section className="process-registry-grid">
+      {case1ProcessGraph.processes.map((process) => {
+        const owner = actorById.get(process.ownerActorId);
+        const processAgents = process.agentIds.map((id) => agentById.get(id)).filter(Boolean);
+        return <article key={process.id} className={`process-registry-card process-kind-${process.kind}`}>
+          <header><b>{process.id}</b><span>{processKindLabels[process.kind]}</span><i>{process.state}</i></header>
+          <h2>{process.name}</h2><p>{process.purpose}</p>
+          <dl><div><dt>OWNER ACTOR</dt><dd>{owner?.name ?? process.ownerActorId}</dd></div><div><dt>TRIGGER</dt><dd>{process.trigger}</dd></div><div><dt>TIMING</dt><dd>{process.timing}</dd></div></dl>
+          <section><span>AGENT EXECUTIONS</span><div>{processAgents.map((agent) => <a href={`/agents/${agent!.slug}`} key={agent!.id}>{String(agent!.id).padStart(2, "0")} · {agent!.name}</a>)}</div></section>
+          <section><span>OWNED ARTIFACTS</span><div>{process.outputArtifactIds.map((id) => <em key={id}>{artifactById.get(id)?.name ?? id}</em>)}</div></section>
+          <footer><span>CONSUMED BY</span><b>{process.consumerRefs.join(" · ")}</b></footer>
+        </article>;
+      })}
+    </section>
+
+    <div className="section-title"><p>PRODUCTIONIZATION · ADMIN CHECKLIST</p><h2>What makes Process operational?</h2></div>
+    <section className="runtime-readiness-table">
+      <header><span>CAPABILITY</span><span>CURRENT STATE</span><span>WHAT MUST EXIST</span></header>
+      {runtimeCapabilities.map(([number, capability, status, requirement]) => <article key={number}><b>{number} · {capability}</b><i className={`runtime-status runtime-status-${status.toLowerCase()}`}>{status}</i><p>{requirement}</p></article>)}
+    </section>
+
+    <section className="process-admin-boundary"><span>ADMIN FRONT ≠ EXECUTION BACKEND</span><strong>Tender Ecosystem controls definitions, evidence, readiness and exceptions.</strong><p>Production runtime исполняет schedule/trigger, сохраняет state and Artifacts, запускает Agents, применяет dependencies и возвращает telemetry в этот admin front.</p></section>
+  </>;
 }
 
 function ActorDrawer({ actor, onClose }: { actor: ActorType; onClose: () => void }) {
@@ -368,7 +434,7 @@ function GlossaryPage() {
 }
 
 function MethodologyPage() {
-  return <><PageIntro kicker="CATALOGUE GOVERNANCE" title="Independent first." accent="Connected only when mature." text="Atlas keeps each catalogue independently governed. Cross-catalogue links live in a separate typed relationship registry and never redefine Agent or Dataset identity." aside={<><StatusTag /><strong>Method V1.1</strong><p>Taxonomy → validation → canonical freeze → typed relationships.</p></>} /><section className="method-grid"><article><span>01 · BOUNDARY</span><h2>Separate catalogues</h2><p>Agents describe capabilities. Actors describe participants. Datasets describe information. Ни один каталог не должен определяться через другой.</p></article><article><span>02 · IDENTITY</span><h2>Stable canonical IDs</h2><p>Labels и slugs могут уточняться. ID остаётся стабильным и становится точкой cross-application ссылки.</p></article><article><span>03 · MATURITY</span><h2>Explicit status</h2><p><b>Draft</b> — исследуется. <b>Validated</b> — принят. <b>Deprecated</b> — сохранён для compatibility.</p></article><article><span>04 · EVIDENCE</span><h2>Source-aware records</h2><p>Definitions, data coverage и access claims должны сохранять provenance и effective date.</p></article></section><section className="id-model"><div><span>CANONICAL NAMESPACES</span><h2>IDs survive UI and route changes</h2></div><code>agent:TL-A001</code><code>side:TEA-S01</code><code>actor-type:TEA-AT-MANUFACTURER</code><code>dataset:TEA-DS-TENDER-NOTICES</code><code>source:TEA-SRC-TED</code><code>term:TEA-G-ENTITY-RESOLUTION</code></section><section className="deferred-banner"><span>CONTROLLED V1 · AGENT SIDE</span><strong>Agent → Deliverable → Dataset Relationship Registry</strong><p>Typed, versionable relations are stored separately from both catalogues. Dataset reverse-navigation remains intentionally deferred until the first relation set is validated.</p></section></>;
+  return <><PageIntro kicker="CATALOGUE GOVERNANCE" title="Independent first." accent="Connected only when mature." text="Atlas keeps each catalogue independently governed. Cross-catalogue links live in a separate typed relationship registry and never redefine Agent or Dataset identity." aside={<><StatusTag /><strong>Method V1.2</strong><p>Taxonomy → validation → canonical freeze → typed relationships → runtime evidence.</p></>} /><section className="method-grid"><article><span>01 · BOUNDARY</span><h2>Separate catalogues</h2><p>Agents describe capabilities. Actors describe participants. Datasets describe information. Ни один каталог не должен определяться через другой.</p></article><article><span>02 · IDENTITY</span><h2>Stable canonical IDs</h2><p>Labels и slugs могут уточняться. ID остаётся стабильным и становится точкой cross-application ссылки.</p></article><article><span>03 · MATURITY</span><h2>Explicit status</h2><p><b>Draft</b> — исследуется. <b>Validated</b> — принят. <b>Deprecated</b> — сохранён для compatibility.</p></article><article><span>04 · EVIDENCE</span><h2>Source-aware records</h2><p>Definitions, data coverage и access claims должны сохранять provenance и effective date.</p></article><article><span>05 · RUNTIME IDENTITY</span><h2>Definition is not execution</h2><p>Process Definition, Process Instance и Agent Execution получают разные identities. Admin UI управляет ими, но backend доказывает фактическое исполнение журналом и Artifacts.</p></article></section><section className="id-model"><div><span>CANONICAL NAMESPACES</span><h2>IDs survive UI and route changes</h2></div><code>agent:TL-A001</code><code>process-definition:TL-PD001</code><code>process-instance:CASE1-P01</code><code>agent-execution:CASE1-P01-A015-01</code><code>dataset:TEA-DS-TENDER-NOTICES</code><code>artifact:CASE1-ART-001</code></section><section className="deferred-banner"><span>CONTROLLED V1 · AGENT SIDE</span><strong>Agent → Deliverable → Dataset Relationship Registry</strong><p>Typed, versionable relations are stored separately from both catalogues. Dataset reverse-navigation remains intentionally deferred until the first relation set is validated.</p></section></>;
 }
 
 function NotFoundPage() {
@@ -380,6 +446,7 @@ export default function App() {
   let page: ReactNode;
   if (path === "/") page = <OverviewPage />;
   else if (path === "/agents" || path.startsWith("/agents/")) page = <AgentSpecificationsPage requestedSlug={path.split("/")[2]} />;
+  else if (path === "/orchestration") page = <ProcessOperationsPage />;
   else if (path === "/actors") page = <ActorsPage />;
   else if (path === "/data") page = <DataPage />;
   else if (path === "/glossary") page = <GlossaryPage />;

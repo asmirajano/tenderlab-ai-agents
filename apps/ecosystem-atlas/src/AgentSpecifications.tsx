@@ -10,6 +10,7 @@ import {
   projectAgentCaseEvidence,
   tenderDatasets,
   tierLabels,
+  datasetImpactOperationByRelationship,
 } from "../../../packages/catalog-data/src";
 import type { AgentRelationship, AgentSpecification } from "../../../packages/catalog-schema/src";
 import { case1ProcessGraph } from "../../../app/case-simulation/case-1-graph";
@@ -112,11 +113,11 @@ function FullSpecification({ agent }: { agent: AgentSpecification }) {
       </SpecificationBlock>
 
       <SpecificationBlock number="05" title="Data & Persistent Outputs" description={`${datasets.length} canonical Dataset relationships · ${gaps.length} open data gaps`} collapsible>
-        <section className="spec-section"><span>DATASET RELATIONSHIPS</span>{datasets.length ? <div className="spec-dataset-list">{datasets.map((item) => <article key={item.id}><div><b>{item.relationshipType}</b><small>{item.status}</small></div><strong>{datasetById.get(item.datasetId)?.name.en ?? item.datasetId}</strong><p>{item.provides.join(" · ")}</p></article>)}</div> : <p className="spec-empty">No canonical Dataset contribution is assigned.</p>}{gaps.map((gap) => <div className="spec-finding" key={gap.id}><b>POTENTIAL DATASET GAP</b><strong>{gap.proposedName}</strong><p>{gap.whyExistingDatasetsDoNotFit}</p></div>)}</section>
+        <section className="spec-section"><span>DATASET IMPACT</span>{datasets.length ? <div className="spec-dataset-list">{datasets.map((item) => <article key={item.id}><div><b>{datasetImpactOperationByRelationship[item.relationshipType]}</b><small>{item.relationshipType} · {item.status}</small></div><strong>{datasetById.get(item.datasetId)?.name.en ?? item.datasetId}</strong><p>{item.provides.join(" · ")}</p></article>)}</div> : <p className="spec-empty">No persistent canonical Dataset relationship is assigned to this deliverable.</p>}{gaps.map((gap) => <div className="spec-finding" key={gap.id}><b>POTENTIAL DATASET GAP</b><strong>{gap.proposedName}</strong><p>{gap.whyExistingDatasetsDoNotFit}</p></div>)}</section>
       </SpecificationBlock>
 
       <SpecificationBlock number="06" title="Validation & Evidence" description={`${evidence.length} Case/Event evidence records · architecture review state`} collapsible tone="review">
-        <section className="spec-section"><span>CASE / EVENT EVIDENCE</span>{evidence.length ? <div className="spec-evidence-list">{evidence.map((item) => <details key={item.id}><summary><b>E{String(item.eventStep).padStart(2, "0")}</b><span>{item.eventTitle}</span><i>{item.validationStatus}</i></summary><p><small>ROLE</small>{item.role}</p><p><small>INPUT</small>{item.input}</p><p><small>OUTPUT</small>{item.output}</p><p><small>HANDOFF</small>{item.handoff}</p></details>)}</div> : <p className="spec-empty">Agent is not currently evidenced in the approved Case 1 execution graph.</p>}</section>
+        <section className="spec-section"><span>CASE / EVENT / PROCESS EVIDENCE</span>{evidence.length ? <div className="spec-evidence-list">{evidence.map((item) => <details key={item.id}><summary><b>{item.nodeKind === "event" ? `E${String(item.eventStep).padStart(2, "0")}` : item.nodeRef}</b><span>{item.eventTitle}</span><i>{item.validationStatus}</i></summary><p><small>ROLE</small>{item.role}</p><p><small>INPUT</small>{item.input}</p><p><small>OUTPUT</small>{item.output}</p><p><small>HANDOFF</small>{item.handoff}</p></details>)}</div> : <p className="spec-empty">Agent is not currently evidenced in the approved Case 1 Event/Process graph.</p>}</section>
         <section className="spec-section"><span>ARCHITECTURE FINDINGS</span>{agent.profile.validationFinding ? <div className="spec-finding"><b>OPEN FINDING</b><p>{agent.profile.validationFinding}</p></div> : <p className="spec-confirmed">No Agent-level validation finding is currently recorded.</p>}</section>
       </SpecificationBlock>
 

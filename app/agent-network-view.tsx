@@ -68,6 +68,7 @@ export default function AgentNetworkView({
     }
 
     for (const edge of case1ProcessGraph.relationships) {
+      if (!case1ProcessGraph.activities.some((activity) => activity.id === edge.from) || !case1ProcessGraph.activities.some((activity) => activity.id === edge.to)) continue;
       if (observedActivityIds.has(edge.to)) {
         const sourceActivity = case1ProcessGraph.activities.find((activity) => activity.id === edge.from)!;
         for (const name of sourceActivity.agentNames) {
@@ -86,7 +87,10 @@ export default function AgentNetworkView({
 
     const orchestratorId = case1ProcessGraph.orchestratorAgentIds[0];
     if (focusAgent.id === orchestratorId) {
-      const engagedNames = new Set(case1ProcessGraph.activities.flatMap((activity) => activity.agentNames));
+      const engagedNames = new Set([
+        ...case1ProcessGraph.activities.flatMap((activity) => activity.agentNames),
+        ...case1ProcessGraph.processAgentExecutions.map((execution) => agents.find((agent) => agent.id === execution.agentId)?.name).filter((name): name is string => Boolean(name)),
+      ]);
       for (const name of engagedNames) {
         const agent = agentByName.get(name);
         if (agent && agent.id !== focusAgent.id && visibleIds.has(agent.id)) mergeRelation(relations, { agentId: agent.id, kinds: new Set(["orchestrates"]), direction: "downstream", labels: ["Case 1 bounded execution"], eventIds: case1ProcessGraph.activities.filter((activity) => activity.agentNames.includes(name)).map((activity) => `E${String(activity.eventStep).padStart(2, "0")}`) });

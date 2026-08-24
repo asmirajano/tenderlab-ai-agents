@@ -10,6 +10,24 @@ and a canonical glossary without merging their domain models:
 Agent ↔ Actor ↔ Dataset relationships are intentionally deferred until the
 independent catalogues have been validated.
 
+The canonical Case orchestration model is:
+
+`Case → Events + Processes → Agent executions → Outputs / Artifacts`
+
+- **Event** is a bounded occurrence or state change.
+- **Process** is continuing work with its own owner, trigger, inputs, Agent
+  participation and outputs; it may be persistent, Case-scoped or parallel.
+- Artifacts belong to their producing Event or Process and move through typed
+  Event↔Process relationships rather than existing as free-floating results.
+
+Production identity is deliberately separated into **Process Definition →
+Process Instance → Agent Execution → Artifact**. Tender Ecosystem Atlas exposes
+these definitions, Case instances, ownership, lineage and runtime-readiness to
+admins at `/orchestration`. It is an admin control/reference surface, not the
+execution backend. A production runtime still requires a scheduler/trigger
+engine, durable state/checkpoints, dependency resolution, an execution journal,
+artifact storage, approvals, observability/recovery and security governance.
+
 ## Routes
 
 ### TenderLab.ai
@@ -25,6 +43,7 @@ Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 ### Tender Ecosystem Atlas
 
 - \`/\` — catalogue overview and product boundary
+- \`/orchestration\` — admin Process registry, Agent executions, Artifacts and production-readiness gaps
 - \`/actors\` — Tender Sides and institutional Actor Types
 - \`/data\` — logical datasets, sources/providers, architecture and proprietary assets
 - \`/glossary\` — shared terminology with contextual scopes

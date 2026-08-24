@@ -21,6 +21,7 @@ export function validateAgentSpecifications() {
   const knownIds = new Set(agentSpecifications.map((agent) => agent.registryId));
   if (agentRelationships.some((relationship) => relationship.source.kind === "agent" && !knownIds.has(relationship.source.ref))) throw new Error("Agent relationship has an unknown source Agent.");
   if (agentRelationships.some((relationship) => relationship.target.kind === "agent" && !knownIds.has(relationship.target.ref))) throw new Error("Agent relationship has an unknown target Agent.");
+  if (agentRelationships.some((relationship) => !relationship.family || !relationship.requirement || !relationship.evidence.length)) throw new Error("Agent relationship lost canonical family, requirement, or evidence semantics.");
   if (agentRevisions.some((revision) => !knownIds.has(revision.agentId))) throw new Error("Agent revision has an unknown Agent.");
   return { specifications: agentSpecifications.length, relationships: agentRelationships.length, revisions: agentRevisions.length };
 }

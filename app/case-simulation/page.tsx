@@ -502,6 +502,7 @@ export default function CaseSimulationPage() {
         <div className="section-heading"><div><p>CASE 1 · CONSOLIDATED EVENT AUDIT</p><h2>Dependency-aware redesign: 24 Events + background processes</h2></div><span>Канонический registry 64 Agents не изменён; Event execution отделён от persistent data production.</span></div>
         <div className="case-audit-summary-metrics">
           <article><strong>{case1ProcessGraph.auditSummary.auditedEventCount}<small>/24</small></strong><span>Events modelled</span></article>
+          <article><strong>{case1ProcessGraph.processes.length}</strong><span>Processes modelled</span></article>
           <article><strong>{case1ProcessGraph.auditSummary.eventAgentFindingCount}</strong><span>Event × Agent findings</span></article>
           <article><strong>{case1ProcessGraph.auditSummary.retainedAssignmentCount}</strong><span>Retained assignments</span></article>
           <article><strong>{case1ProcessGraph.auditSummary.conditionalAssignmentCount}</strong><span>Conditional records</span></article>

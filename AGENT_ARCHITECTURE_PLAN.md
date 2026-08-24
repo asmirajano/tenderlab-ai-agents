@@ -55,6 +55,11 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 
 ## Case simulation audit
 
+- The canonical Case model is **Case → Events + Processes → Agent executions → Outputs / Artifacts**. Events are bounded occurrences; Processes are first-class continuing work and are explicitly typed as persistent, Case-scoped, or parallel.
+- Every Process has an owner Actor, Trigger, Inputs, participating canonical Agent IDs, state, owned Artifacts, and typed consumers. An Agent may participate in a Process without being assigned artificially to an Event.
+- Artifacts belong to the Event or Process that produced them. Process → Event, Event → Process, and Process → Process dependencies use the same typed relationship registry as Event → Event handoffs.
+- Production identity is split into Process Definition, Process Instance, Agent Execution attempt, and Artifact. Tender Ecosystem Atlas is the admin control/reference surface for definitions, instances, lineage, readiness and exceptions; scheduler, durable state, execution journal, artifact storage and recovery belong to a separate production runtime.
+
 - Case Audit is designed as **Agents as rows × Cases as columns** so the current Case 1 analysis can grow to ten cases without changing the matrix model.
 - Agent identity, tier, layer, platform side, purpose, and canonical output continue to come from the shared 64-agent registry. Case records store only case-specific engagement decisions and handoffs.
 - Case 1 is **«Международная поставка школьной мебели»**: one international Goods tender, one lot, Georgia as organizer country, a Turkish furniture manufacturer, and a DEMO budget of $3.85 million.

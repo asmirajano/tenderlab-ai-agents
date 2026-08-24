@@ -1,6 +1,8 @@
 import type {
   AgentDatasetContribution,
   AgentDatasetGap,
+  AgentDatasetImpact,
+  AgentDatasetImpactOperation,
   AgentDatasetRelationshipType,
   AgentDeliverable,
   AgentDeliverableDisposition,
@@ -181,6 +183,30 @@ export const datasetRelationshipLabels: Record<AgentDatasetRelationshipType, str
   "materializes-asset": "MATERIALIZES",
 };
 
+export const datasetImpactOperationByRelationship: Record<AgentDatasetRelationshipType, AgentDatasetImpactOperation> = {
+  "creates-record": "CREATE",
+  "updates-record": "UPDATE",
+  "enriches-record": "ENRICH",
+  "validates-record": "ENRICH",
+  "appends-event": "UPDATE",
+  "materializes-asset": "CREATE",
+};
+
+// Canonical view projection. Dataset identities and detailed lineage remain owned by
+// agentDatasetContributions; UI surfaces must not maintain their own Agent↔Dataset lists.
+export const agentDatasetImpacts: AgentDatasetImpact[] = agentDatasetContributions.map((relation) => ({
+  id: `impact:${relation.id}`,
+  agentId: relation.agentId,
+  deliverableId: relation.deliverableId,
+  datasetId: relation.datasetId,
+  operation: datasetImpactOperationByRelationship[relation.relationshipType],
+  relationshipId: relation.id,
+  fields: relation.targetFields,
+  rationale: relation.rationale,
+  status: relation.status,
+  ...(relation.validationFinding ? { validationFinding: relation.validationFinding } : {}),
+}));
+
 export const deliverableDispositionLabels: Record<AgentDeliverableDisposition, string> = {
   "dataset-record": "PERSISTENT DATA",
   "operational-state": "OPERATIONAL STATE",
@@ -195,6 +221,14 @@ export function deliverableForAgent(agentRegistryId: string) {
 
 export function datasetContributionsForAgent(agentRegistryId: string) {
   return agentDatasetContributions.filter((item) => item.agentId === agentRegistryId);
+}
+
+export function datasetImpactsForAgent(agentRegistryId: string) {
+  return agentDatasetImpacts.filter((item) => item.agentId === agentRegistryId);
+}
+
+export function agentsImpactingDataset(datasetId: string) {
+  return agentDatasetImpacts.filter((item) => item.datasetId === datasetId);
 }
 
 export function datasetGapsForAgent(agentRegistryId: string) {
@@ -228,6 +262,11 @@ export function validateAgentDatasetRelationships() {
   }
   for (const gap of agentDatasetGaps) {
     if (!agentIds.has(gap.agentId) || !deliverableIds.has(gap.deliverableId)) throw new Error(`Invalid gap ${gap.id}`);
+  }
+  if (agentDatasetImpacts.length !== agentDatasetContributions.length) throw new Error("Every Dataset contribution must project to one Dataset impact");
+  for (const impact of agentDatasetImpacts) {
+    if (!agentIds.has(impact.agentId) || !deliverableIds.has(impact.deliverableId) || !datasetIds.has(impact.datasetId)) throw new Error(`Invalid Dataset impact ${impact.id}`);
+    if (!impact.fields.length || !impact.rationale.trim()) throw new Error(`Incomplete Dataset impact ${impact.id}`);
   }
   const classifiedAgents = new Set(agentDeliverables.map((item) => item.agentId));
   const unclassified = agents.filter((agent) => !classifiedAgents.has(agent.registryId));

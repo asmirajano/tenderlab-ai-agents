@@ -69,6 +69,8 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .catalogue-entry::after { border-radius: 50%; content: ""; height: 240px; opacity: .16; position: absolute; right: -85px; top: -90px; width: 240px; }
 .actors-entry::after { background: var(--tl-atlas); }
 .data-entry::after { background: #23a47d; }
+.process-entry { grid-column: 1 / -1; min-height: 360px; }
+.process-entry::after { background: var(--tl-lime); }
 .catalogue-entry > div { display: flex; justify-content: space-between; position: relative; z-index: 1; }
 .catalogue-entry > div span, .catalogue-entry > div b { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 9px; letter-spacing: .1em; }
 .catalogue-entry > div span { color: var(--tl-green); }
@@ -238,6 +240,72 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .id-model h2 { font-size: 38px; }
 .id-model code { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.13); border-radius: 7px; color: #dbe4df; font-size: 10px; padding: 12px; }
 
+/* Admin-facing Process architecture and production-readiness workspace */
+.process-model-chain,
+.process-definition-note,
+.process-registry-grid,
+.runtime-readiness-table,
+.process-admin-boundary { margin-top: 72px; }
+.process-model-chain { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--tl-line); border-radius: 18px; background: rgba(255,255,255,.88); overflow: hidden; }
+.process-model-chain article { position: relative; display: grid; gap: 9px; min-height: 165px; padding: 24px; border-right: 1px solid var(--tl-line); }
+.process-model-chain article:last-child { border-right: 0; }
+.process-model-chain span,
+.process-definition-note span,
+.process-registry-card section > span,
+.process-registry-card footer span,
+.runtime-readiness-table header,
+.process-admin-boundary > span { color: var(--tl-green); font: 800 var(--tl-type-micro)/1.3 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .1em; }
+.process-model-chain strong { align-self: end; font-size: var(--tl-type-card-title); line-height: 1.15; }
+.process-model-chain small { color: var(--tl-muted); font-size: var(--tl-type-secondary); line-height: 1.45; }
+.process-model-chain i { position: absolute; right: -13px; top: calc(50% - 13px); z-index: 2; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--tl-lime); color: var(--tl-ink); font-style: normal; }
+
+.process-definition-note { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.5fr); gap: 34px; align-items: center; padding: 30px 34px; border: 1px solid #b9cac2; border-left: 5px solid var(--tl-atlas); border-radius: 16px; background: linear-gradient(110deg, var(--tl-atlas-soft), rgba(255,255,255,.92)); }
+.process-definition-note h2 { margin: 8px 0 0; font-size: clamp(1.65rem, 1.25rem + 1vw, 2.6rem); letter-spacing: -.045em; }
+.process-definition-note p { margin: 0; color: var(--tl-muted); font-size: var(--tl-type-body); line-height: 1.6; }
+.process-definition-note p b { color: var(--tl-ink); }
+
+.process-registry-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.process-registry-card { --process-color: var(--tl-atlas); overflow: hidden; border: 1px solid var(--tl-line); border-top: 4px solid var(--process-color); border-radius: 16px; background: rgba(255,255,255,.9); }
+.process-registry-card:last-child { grid-column: 1 / -1; }
+.process-kind-persistent { --process-color: #176f54; }
+.process-kind-case-scoped { --process-color: #727ee0; }
+.process-kind-parallel { --process-color: #d59522; }
+.process-registry-card > header { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--tl-line); background: color-mix(in srgb, var(--process-color) 7%, white); }
+.process-registry-card header b { color: var(--process-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.process-registry-card header span { justify-self: start; padding: 5px 8px; border: 1px solid color-mix(in srgb, var(--process-color) 35%, white); border-radius: 6px; color: var(--process-color); font: 800 var(--tl-type-micro)/1 ui-monospace, SFMono-Regular, Consolas, monospace; text-transform: uppercase; }
+.process-registry-card header i { color: var(--tl-muted); font: 700 var(--tl-type-micro)/1 ui-monospace, SFMono-Regular, Consolas, monospace; font-style: normal; text-transform: uppercase; }
+.process-registry-card > h2 { margin: 25px 24px 8px; font-size: clamp(1.55rem, 1.2rem + .8vw, 2.5rem); letter-spacing: -.045em; }
+.process-registry-card > p { margin: 0 24px 24px; color: var(--tl-muted); font-size: var(--tl-type-body); line-height: 1.55; }
+.process-registry-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; border-block: 1px solid var(--tl-line); }
+.process-registry-card dl div { padding: 17px 20px; border-right: 1px solid var(--tl-line); }
+.process-registry-card dl div:last-child { border-right: 0; }
+.process-registry-card dt { color: var(--process-color); font: 800 var(--tl-type-micro)/1.3 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; }
+.process-registry-card dd { margin: 8px 0 0; font-size: var(--tl-type-secondary); line-height: 1.45; }
+.process-registry-card section { padding: 18px 22px; border-bottom: 1px solid var(--tl-line); }
+.process-registry-card section > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.process-registry-card section a,
+.process-registry-card section em { padding: 8px 10px; border: 1px solid #cad7d1; border-radius: 7px; background: #f7faf8; font-size: var(--tl-type-meta); font-style: normal; line-height: 1.35; }
+.process-registry-card section a { color: var(--tl-green); }
+.process-registry-card section a:hover { border-color: var(--tl-green); background: #eaf5ef; }
+.process-registry-card footer { display: grid; grid-template-columns: auto 1fr; gap: 16px; padding: 18px 22px; }
+.process-registry-card footer b { font-size: var(--tl-type-secondary); line-height: 1.45; }
+
+.runtime-readiness-table { overflow: hidden; border: 1px solid var(--tl-line); border-radius: 16px; background: rgba(255,255,255,.92); }
+.runtime-readiness-table > header,
+.runtime-readiness-table > article { display: grid; grid-template-columns: minmax(240px, .7fr) 150px minmax(0, 1.5fr); gap: 22px; align-items: center; padding: 17px 22px; border-bottom: 1px solid var(--tl-line); }
+.runtime-readiness-table > article:last-child { border-bottom: 0; }
+.runtime-readiness-table > header { background: var(--tl-ink); color: white; }
+.runtime-readiness-table article b { font-size: var(--tl-type-secondary); }
+.runtime-readiness-table article p { margin: 0; color: var(--tl-muted); font-size: var(--tl-type-secondary); line-height: 1.5; }
+.runtime-status { justify-self: start; padding: 6px 9px; border-radius: 6px; font: 800 var(--tl-type-micro)/1 ui-monospace, SFMono-Regular, Consolas, monospace; font-style: normal; }
+.runtime-status-modeled { background: #e5e9ff; color: #4350ad; }
+.runtime-status-partial { background: #fff0cb; color: #875d0c; }
+.runtime-status-required { background: #ffe0dc; color: #a13d31; }
+.process-admin-boundary { display: grid; grid-template-columns: .75fr 1.1fr 1.5fr; gap: 24px; padding: 28px 32px; border-radius: 18px; background: var(--tl-ink); color: white; }
+.process-admin-boundary > span { color: var(--tl-lime); }
+.process-admin-boundary strong { font-size: var(--tl-type-card-title); }
+.process-admin-boundary p { margin: 0; color: #b9c6bf; font-size: var(--tl-type-secondary); line-height: 1.55; }
+
 .not-found { align-items: flex-start; display: flex; flex-direction: column; min-height: 60vh; justify-content: center; }
 .not-found > span { color: var(--tl-atlas); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; }
 .not-found h1 { font-size: clamp(48px, 7vw, 110px); letter-spacing: -.07em; margin: 25px 0 10px; }
@@ -271,6 +339,9 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   .dataset-table > header span:nth-child(7), .dataset-table > button > span:nth-child(7) { display: none; }
   .atlas-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .method-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .process-model-chain { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .process-model-chain article { border-bottom: 1px solid var(--tl-line); }
+  .process-model-chain i { display: none; }
 }
 
 @media (max-width: 900px) {
@@ -287,6 +358,15 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   .boundary-divider small { display: none; }
   .catalogue-entry-grid { grid-template-columns: 1fr; }
   .deferred-banner { grid-template-columns: 1fr; }
+  .process-definition-note,
+  .process-admin-boundary { grid-template-columns: 1fr; }
+  .process-registry-grid { grid-template-columns: 1fr; }
+  .process-registry-card:last-child { grid-column: auto; }
+  .process-registry-card dl { grid-template-columns: 1fr; }
+  .process-registry-card dl div { border-right: 0; border-bottom: 1px solid var(--tl-line); }
+  .runtime-readiness-table > header { display: none; }
+  .runtime-readiness-table > article { grid-template-columns: 1fr auto; }
+  .runtime-readiness-table article p { grid-column: 1 / -1; }
   .side-taxonomy { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .catalogue-controls { align-items: stretch; flex-wrap: wrap; position: static; }
   .catalogue-search { flex-basis: 100%; }
@@ -503,6 +583,9 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
   .source-grid article,
   .glossary-list article,
   .method-grid article { min-height: 0; padding: 22px; }
+  .process-model-chain { grid-template-columns: 1fr; }
+  .process-model-chain article { min-height: 0; }
+  .process-registry-card footer { grid-template-columns: 1fr; }
 }
 
 /* Canonical Agent Specification workspace */

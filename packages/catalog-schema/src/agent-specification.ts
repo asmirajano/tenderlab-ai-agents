@@ -77,6 +77,8 @@ export type AgentSpecification = {
 
 export type AgentRelationshipType = "supports" | "overlaps" | "upstream" | "handoff";
 export type AgentRelationshipStatus = "validated" | "working" | "needs-review";
+export type AgentRelationshipFamily = "capability" | "dependency" | "sequence" | "boundary";
+export type AgentRelationshipRequirement = "required" | "contextual" | "conditional" | "review";
 
 export type AgentRelationshipEndpoint = {
   kind: "agent" | "external" | "process";
@@ -87,13 +89,16 @@ export type AgentRelationshipEndpoint = {
 export type AgentRelationship = {
   id: string;
   type: AgentRelationshipType;
+  family: AgentRelationshipFamily;
   source: AgentRelationshipEndpoint;
   target: AgentRelationshipEndpoint;
+  requirement: AgentRelationshipRequirement;
   payload?: string;
   artifacts?: string[];
   condition?: string;
   humanApproval?: string;
   rationale: string;
+  evidence: string[];
   status: AgentRelationshipStatus;
 };
 
@@ -117,7 +122,9 @@ export type AgentCaseEvidenceReference = {
   agentId: string;
   caseId: string;
   caseVersion: string;
-  eventStep: number;
+  nodeKind: "event" | "process";
+  nodeRef: string;
+  eventStep?: number;
   eventTitle: string;
   role: string;
   input: string;

@@ -2,7 +2,7 @@ import { agents } from "../../packages/catalog-data/src/agents.ts";
 import type { CaseProcessActivity, CaseProcessGraph, ProcessActor, ProcessRelationship } from "../process-model.ts";
 import { case1 } from "./case-1-data.ts";
 import { case1AuditSummary, case1EventAgentExecutions, case1EventAudits } from "./case-1-event-audits.ts";
-import { case1BackgroundProcesses, case1EventBlueprints, case1RelationshipSpecs } from "./case-1-orchestration.ts";
+import { case1EventBlueprints, case1Processes, case1RelationshipSpecs } from "./case-1-orchestration.ts";
 
 export { case1AuditSummary, case1EventAgentExecutions, case1EventAudits };
 
@@ -53,13 +53,31 @@ const activities: CaseProcessActivity[] = case1EventBlueprints.map((event) => {
   };
 });
 
-const artifacts = activities.map((activity) => ({
+const eventArtifacts = activities.map((activity) => ({
   id: `artifact-${String(activity.eventStep).padStart(2, "0")}`,
-  activityId: activity.id,
+  producerRef: activity.id,
+  producerKind: "event" as const,
   name: `Output Event ${String(activity.eventStep).padStart(2, "0")}`,
   summary: activity.result,
+  persistence: activity.eventStep === 24 ? "persistent" as const : "case-state" as const,
   terminal: activity.eventStep === 24,
 }));
+
+const processArtifactSeeds = [
+  ["artifact-p01-taxonomy", "P01", "Versioned taxonomy"],
+  ["artifact-p01-filter-policy", "P01", "Filter policy"],
+  ["artifact-p01-thresholds", "P01", "Threshold / exclusion records"],
+  ["artifact-p02-provisional-profile", "P02", "Provisional company profile"],
+  ["artifact-p02-evidence-gaps", "P02", "Prospect confidence and evidence gaps"],
+  ["artifact-p03-tender-award-history", "P03", "Canonical tender / award history"],
+  ["artifact-p03-winner-values", "P03", "Linked winner / value records"],
+  ["artifact-p04-calendar", "P04", "Case calendar and alerts"],
+  ["artifact-p04-amendment-impact", "P04", "Versioned amendment impact records"],
+  ["artifact-pb01-market-brief", "PB01", "Market intelligence brief"],
+  ["artifact-pb01-buyer-dossier", "PB01", "Buyer / competitor dossier"],
+] as const;
+const processArtifacts = processArtifactSeeds.map(([id, producerRef, name]) => ({ id, producerRef, producerKind: "process" as const, name, summary: name, persistence: producerRef.startsWith("P0") && producerRef !== "P04" ? "persistent" as const : "case-state" as const }));
+const artifacts = [...eventArtifacts, ...processArtifacts];
 
 const relationships: ProcessRelationship[] = case1RelationshipSpecs.map((relationship, index) => ({
   id: `case-1-edge-${String(index + 1).padStart(2, "0")}`,
@@ -75,16 +93,35 @@ const relationships: ProcessRelationship[] = case1RelationshipSpecs.map((relatio
   validationStatus: relationship.from <= 2 && relationship.to <= 3 ? "confirmed" : "working",
 }));
 
+const processRelationships: ProcessRelationship[] = [
+  { id: "case-1-process-edge-01", from: "P01", to: "activity-02", type: "handoff", label: "Taxonomy + filter policy + thresholds", artifactId: "artifact-p01-filter-policy", blocking: true, provenance: "expert-proposed", validationStatus: "working" },
+  { id: "case-1-process-edge-02", from: "P02", to: "activity-02", type: "handoff", label: "Provisional company profile", artifactId: "artifact-p02-provisional-profile", blocking: true, provenance: "expert-proposed", validationStatus: "working" },
+  { id: "case-1-process-edge-03", from: "activity-01", to: "P04", type: "triggered-by", label: "Notice dates + source baseline", artifactId: "artifact-01", blocking: true, provenance: "case-observed", validationStatus: "confirmed" },
+  { id: "case-1-process-edge-04", from: "activity-02", to: "PB01", type: "branches-to", label: "Classified opportunity", artifactId: "artifact-02", blocking: true, provenance: "case-observed", validationStatus: "confirmed" },
+  { id: "case-1-process-edge-05", from: "P03", to: "PB01", type: "handoff", label: "Historical award records", artifactId: "artifact-p03-tender-award-history", blocking: false, provenance: "expert-proposed", validationStatus: "working" },
+  { id: "case-1-process-edge-06", from: "PB01", to: "activity-08", type: "joins-at", label: "Market brief + buyer/competitor dossier", artifactId: "artifact-pb01-market-brief", blocking: true, joinPolicy: "ALL", provenance: "case-observed", validationStatus: "confirmed" },
+  { id: "case-1-process-edge-07", from: "PB01", to: "activity-14", type: "handoff", label: "Competitive context", artifactId: "artifact-pb01-buyer-dossier", blocking: false, provenance: "expert-proposed", validationStatus: "working" },
+  { id: "case-1-process-edge-08", from: "P04", to: "activity-16", type: "handoff", label: "Submission calendar status", artifactId: "artifact-p04-calendar", blocking: true, provenance: "case-observed", validationStatus: "confirmed" },
+  { id: "case-1-process-edge-09", from: "activity-24", to: "P03", type: "feedback", label: "Verified outcome update", artifactId: "artifact-24", blocking: false, provenance: "case-observed", validationStatus: "confirmed" },
+];
+
+const processAgentExecutions = case1Processes.flatMap((process) => process.agentIds.map((agentId) => {
+  const agent = canonicalAgentById.get(agentId);
+  if (!agent) throw new Error(`Unknown Agent ${agentId} in Process ${process.id}.`);
+  return { processId: process.id, agentId, role: agent.description, input: process.inputs.map((item) => item.name).join(" · "), output: process.outputArtifactIds.map((id) => artifacts.find((artifact) => artifact.id === id)?.name).filter(Boolean).join(" · "), handoff: process.consumerRefs.join(" · "), validationStatus: "working" as const };
+}));
+
 export const case1ProcessGraph: CaseProcessGraph = {
   caseId: case1.id,
   version: "V3 · DEPENDENCY-AWARE ORCHESTRATION",
   actors: case1Actors,
   activities,
-  backgroundProcesses: case1BackgroundProcesses,
+  processes: case1Processes,
   artifacts,
-  relationships,
+  relationships: [...relationships, ...processRelationships],
   eventAudits: case1EventAudits,
   agentExecutions: case1EventAgentExecutions,
+  processAgentExecutions,
   auditSummary: case1AuditSummary,
   orchestratorAgentIds: [1],
 };
@@ -92,7 +129,11 @@ export const case1ProcessGraph: CaseProcessGraph = {
 const activityIds = new Set(activities.map((activity) => activity.id));
 if (activities.length !== 24 || activityIds.size !== 24) throw new Error("Case 1 process graph needs 24 unique Events.");
 if (activities.some((activity) => !case1Actors.some((actor) => actor.id === activity.responsibleActorId))) throw new Error("Every Case 1 Event needs a canonical responsible Actor.");
-if (relationships.some((relationship) => !activityIds.has(relationship.from) || !activityIds.has(relationship.to))) throw new Error("Every Case 1 relationship must reference known Events.");
+const processIds = new Set(case1Processes.map((process) => process.id));
+const nodeIds = new Set([...activityIds, ...processIds]);
+if ([...relationships, ...processRelationships].some((relationship) => !nodeIds.has(relationship.from) || !nodeIds.has(relationship.to))) throw new Error("Every Case 1 relationship must reference a known Event or Process.");
 if (activities.some((activity) => activity.kind === "wait" && !activity.trigger)) throw new Error("Every wait/gate Event needs an explicit trigger.");
 if (case1EventAudits.some((audit) => !activities.some((activity) => activity.eventStep === audit.eventStep))) throw new Error("Every Event Audit needs a canonical Event.");
-if (case1BackgroundProcesses.some((process) => !case1Actors.some((actor) => actor.id === process.ownerActorId))) throw new Error("Every background process needs a canonical owner Actor.");
+if (case1Processes.some((process) => !case1Actors.some((actor) => actor.id === process.ownerActorId))) throw new Error("Every Process needs a canonical owner Actor.");
+if (case1Processes.some((process) => process.outputArtifactIds.some((id) => !artifacts.some((artifact) => artifact.id === id && artifact.producerRef === process.id)))) throw new Error("Every Process output needs a Process-owned Artifact.");
+if (case1Processes.some((process) => !processAgentExecutions.some((execution) => execution.processId === process.id))) throw new Error("Every Process needs explicit Agent participation records.");

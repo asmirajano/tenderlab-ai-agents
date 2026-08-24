@@ -20,11 +20,14 @@ test("builds the independent Tender Ecosystem Atlas SPA", async () => {
     assetFiles.filter((file) => file.endsWith(".js")).map((file) => readFile(path.join(atlasRoot, "assets", file), "utf8")),
   );
   const bundle = javascript.join("\n");
-  for (const label of ["Agent Specifications", "Sides & Actors", "Data & Sources", "Glossary", "Methodology", "Open TenderLab.ai"]) {
+  for (const label of ["Agent Specifications", "Process Operations", "Sides & Actors", "Data & Sources", "Glossary", "Methodology", "Open TenderLab.ai"]) {
     assert.match(bundle, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(bundle, /Independent catalogues now/);
   assert.match(bundle, /Relationship Registry/);
+  assert.match(bundle, /Definition ≠ Instance ≠ Execution attempt/);
+  assert.match(bundle, /Scheduler \+ Trigger Engine/);
+  assert.match(bundle, /ADMIN FRONT ≠ EXECUTION BACKEND/);
   assert.match(bundle, /dataset=/, "Dataset catalogue should support stable deep links from TenderLab Agent profiles");
 });
 
@@ -42,7 +45,7 @@ test("keeps actors, datasets, sources, and glossary as independent canonical reg
   assert.equal([...datasets.matchAll(/^ {2}"?[A-Z][A-Z0-9-]*"?:\s*tableDemo\(/gm)].length, 102, "expected one structured demo for every dataset");
   assert.match(schema, /demo: DatasetDemo/);
   assert.equal([...datasets.matchAll(/^ {2}source\(/gm)].length, 17, "expected representative source/provider records");
-  assert.equal([...glossary.matchAll(/^ {2}term\(/gm)].length, 35, "expected a shared canonical glossary");
+  assert.equal([...glossary.matchAll(/^ {2}term\(/gm)].length, 41, "expected the shared canonical glossary including Event, Process Definition, Process Instance, Agent Execution, and Artifact");
 
   assert.match(schema, /type CatalogueStatus = "draft" \| "validated" \| "deprecated"/);
   assert.match(schema, /catalogueIdPattern/);
@@ -82,6 +85,24 @@ test("gives every canonical dataset a stable ID and three structured demo record
     assert.ok(item.demo.rows.every((row) => row.length === item.demo.columns.length), `${item.id} demo rows must match its columns`);
     assert.match([...item.demo.columns, ...item.demo.rows.flat()].join(" "), /[А-Яа-яЁё]/, `${item.id} needs Russian demo data`);
   }
+});
+
+test("expresses Process as an admin-governed element without pretending the Atlas is the runtime", async () => {
+  const [app, processModel, caseGraph] = await Promise.all([
+    readFile(path.join(projectRoot, "apps", "ecosystem-atlas", "src", "App.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "process-model.ts"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts"), "utf8"),
+  ]);
+  assert.match(app, /href: "\/orchestration"/);
+  assert.match(app, /case1ProcessGraph\.processes\.map/);
+  assert.match(app, /Process Definition Registry/);
+  assert.match(app, /Process Instance \/ Run/);
+  assert.match(app, /Agent Execution Journal/);
+  assert.match(app, /ADMIN FRONT ≠ EXECUTION BACKEND/);
+  assert.match(processModel, /kind: "persistent" \| "case-scoped" \| "parallel"/);
+  assert.match(processModel, /producerKind: "event" \| "process"/);
+  assert.match(caseGraph, /processAgentExecutions/);
+  assert.doesNotMatch(app, /const processes\s*=\s*\[/, "Atlas must project the canonical Case graph rather than duplicate Process data");
 });
 
 test("projects all Agent surfaces from one typed, versioned canonical registry", async () => {

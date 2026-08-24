@@ -108,7 +108,7 @@ export default function AgentMatrixView({
         <div>
           <span>AGENT ARCHITECTURE VALIDATION</span>
           <h3>64-Agent Matrix</h3>
-          <p>Columns = Agents · Rows = 18 canonical dimensions · boundaries and review findings stay visible across all 64 profiles.</p>
+          <p>Columns = Agents · Rows = 19 canonical dimensions · outputs, Dataset impact, boundaries and review findings stay visible across all 64 profiles.</p>
         </div>
         <div className="matrix-metrics" aria-label="Matrix coverage">
           <span><b>{displayedAgents.length}</b> visible</span>

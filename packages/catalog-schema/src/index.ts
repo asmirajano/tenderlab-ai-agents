@@ -91,6 +91,21 @@ export type AgentDatasetRelationshipType =
 
 export type AgentDatasetRelationStatus = "proposed" | "validated" | "deprecated";
 
+export type AgentDatasetImpactOperation = "READ" | "CREATE" | "UPDATE" | "ENRICH" | "LINK";
+
+export type AgentDatasetImpact = {
+  id: string;
+  agentId: string;
+  deliverableId: string;
+  datasetId: string;
+  operation: AgentDatasetImpactOperation;
+  relationshipId: string;
+  fields: string[];
+  rationale: string;
+  status: AgentDatasetRelationStatus;
+  validationFinding?: string;
+};
+
 export type AgentDeliverable = {
   id: string;
   agentId: string;

@@ -39,7 +39,7 @@ export const tenderGlossaryTerms: TenderGlossaryTerm[] = [
     example: "Workflow подготовки заявки разветвляет проверку компании и документов, затем объединяет результаты перед Bid / No-Bid.",
     notToConfuseWith: "Case — конкретное выполнение, а Workflow — правила, по которым могут выполняться многие Case.",
     category: "process",
-    aliases: ["рабочий процесс", "процесс"],
+    aliases: ["рабочий процесс"],
   },
   {
     term: "Event",
@@ -50,6 +50,16 @@ export const tenderGlossaryTerms: TenderGlossaryTerm[] = [
     notToConfuseWith: "Event фиксирует факт, Activity описывает выполняемую работу, а Trigger запускает эту работу.",
     category: "process",
     aliases: ["событие"],
+  },
+  {
+    term: "Process",
+    translation: "Продолжающийся процесс",
+    explanation: "Самостоятельная единица продолжающейся работы внутри или вокруг Case. Process имеет Actor-owner, Trigger, Inputs, участвующих Agents, состояние и собственные Outputs/Artifacts; он может быть persistent, case-scoped или parallel.",
+    simpleExplanation: "Работа, которая продолжается во времени и не должна искусственно помещаться в один Event.",
+    example: "Tender & Award Intelligence постоянно накапливает awards и contracts; Market & Competitor Enrichment работает параллельно E03–E07 и передаёт результат в E08.",
+    notToConfuseWith: "Event фиксирует ограниченное происшествие или изменение состояния; Process выполняет продолжающуюся работу; Workflow описывает повторяемую модель их организации.",
+    category: "process",
+    aliases: ["постоянный процесс", "фоновый процесс", "параллельный процесс"],
   },
   {
     term: "Activity",

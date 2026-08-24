@@ -77,9 +77,12 @@ export type CaseAuditSummary = {
 
 export type ProcessArtifact = {
   id: string;
-  activityId: string;
+  producerRef: string;
+  producerKind: "event" | "process";
   name: string;
   summary: string;
+  persistence: "transient" | "case-state" | "persistent";
+  version?: string;
   terminal?: boolean;
 };
 
@@ -153,13 +156,35 @@ export type CaseBackgroundProcess = {
   name: string;
   ownerActorId: string;
   agentIds: number[];
+  kind: "persistent" | "case-scoped" | "parallel";
   timing: string;
+  trigger: string;
   purpose: string;
-  inputs: string[];
-  outputs: string[];
-  consumerEventSteps: number[];
+  inputs: Array<{
+    name: string;
+    sourceKind: "external" | "actor" | "event" | "process" | "case-state";
+    sourceRef?: string;
+    availability: string;
+    blocking: boolean;
+  }>;
+  outputArtifactIds: string[];
+  consumerRefs: string[];
   blocking: boolean;
-  state: "persistent" | "case-scoped";
+  state: ProcessExecutionState;
+};
+
+/** A Process is a first-class Case node. This alias preserves older imports while
+ * callers migrate from the visual term "background process". */
+export type CaseProcess = CaseBackgroundProcess;
+
+export type ProcessAgentExecution = {
+  processId: string;
+  agentId: number;
+  role: string;
+  input: string;
+  output: string;
+  handoff: string;
+  validationStatus: "confirmed" | "working" | "needs-review";
 };
 
 export type CaseProcessGraph = {
@@ -167,11 +192,12 @@ export type CaseProcessGraph = {
   version: string;
   actors: ProcessActor[];
   activities: CaseProcessActivity[];
-  backgroundProcesses: CaseBackgroundProcess[];
+  processes: CaseProcess[];
   artifacts: ProcessArtifact[];
   relationships: ProcessRelationship[];
   eventAudits: CaseEventAudit[];
   agentExecutions: EventAgentExecution[];
+  processAgentExecutions: ProcessAgentExecution[];
   auditSummary: CaseAuditSummary;
   orchestratorAgentIds: number[];
 };

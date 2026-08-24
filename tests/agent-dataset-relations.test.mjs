@@ -20,6 +20,18 @@ test("classifies every Agent deliverable and validates typed Dataset contributio
   assert.equal(new Set(registry.agentDeliverables.map((item) => item.agentId)).size, 64);
   assert.ok(registry.agentDatasetContributions.every((item) => item.status === "proposed"));
   assert.ok(registry.agentDatasetContributions.every((item) => item.provenanceRequirement));
+  assert.equal(registry.agentDatasetImpacts.length, registry.agentDatasetContributions.length);
+  assert.deepEqual(new Set(registry.agentDatasetImpacts.map((item) => item.operation)), new Set(["CREATE", "UPDATE", "ENRICH"]));
+});
+
+test("projects Dataset impact without duplicating Dataset metadata", async () => {
+  const moduleUrl = pathToFileURL(path.join(projectRoot, "packages", "catalog-data", "src", "agent-dataset-relations.ts")).href;
+  const registry = await import(moduleUrl);
+  const sourceAgentImpacts = registry.datasetImpactsForAgent("agent:TL-A013");
+  assert.equal(sourceAgentImpacts.length, 3);
+  assert.deepEqual(sourceAgentImpacts.map((item) => item.operation), ["CREATE", "UPDATE", "ENRICH"]);
+  assert.ok(sourceAgentImpacts.every((item) => !Object.hasOwn(item, "datasetName") && !Object.hasOwn(item, "datasetSlug")));
+  assert.ok(registry.agentsImpactingDataset("dataset:TEA-DS-TENDER-NOTICES").some((item) => item.agentId === "agent:TL-A013"));
 });
 
 test("resolves company discovery to the canonical Company × Tender assessment Dataset", async () => {

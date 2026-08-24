@@ -1,6 +1,6 @@
 import { agents } from "../../packages/catalog-data/src/agents.ts";
 import type {
-  CaseBackgroundProcess,
+  CaseProcess,
   EventAgentAuditDecision,
   ProcessActivityKind,
   ProcessRelationship,
@@ -241,21 +241,42 @@ export const case1Chronology = case1EventBlueprints.map(({ agentIds, standbyAgen
   ],
 }));
 
-export const case1BackgroundProcesses: CaseBackgroundProcess[] = [
+export const case1Processes: CaseProcess[] = [
   {
-    id: "P01", name: "Platform Policy & Taxonomy", ownerActorId: "tenderlab", agentIds: [1, 15, 16], timing: "Постоянно; versioned configuration до появления Case", purpose: "Хранит procurement taxonomy, company/portfolio filter policy, thresholds и exclusions, которые E02 только читает.", inputs: ["Platform governance", "Portfolio strategy", "Accepted geography/category/risk rules"], outputs: ["Versioned taxonomy", "Filter policy", "Threshold/exclusion records"], consumerEventSteps: [2], blocking: true, state: "persistent",
+    id: "P01", name: "Platform Policy & Taxonomy", ownerActorId: "tenderlab", agentIds: [1, 15, 16], kind: "persistent", timing: "Постоянно; versioned configuration до появления Case", trigger: "Изменение platform governance, portfolio strategy или controlled rules", purpose: "Хранит procurement taxonomy, company/portfolio filter policy, thresholds и exclusions, которые E02 только читает.", inputs: [
+      { name: "Platform governance", sourceKind: "actor", sourceRef: "tenderlab", availability: "До Case; owner/approval требует governance evidence", blocking: true },
+      { name: "Portfolio strategy", sourceKind: "actor", sourceRef: "tenderlab", availability: "До Case", blocking: true },
+      { name: "Accepted geography/category/risk rules", sourceKind: "actor", sourceRef: "tenderlab", availability: "До Case", blocking: true },
+    ], outputArtifactIds: ["artifact-p01-taxonomy", "artifact-p01-filter-policy", "artifact-p01-thresholds"], consumerRefs: ["activity-02"], blocking: true, state: "running",
   },
   {
-    id: "P02", name: "Open-source Prospect Intelligence", ownerActorId: "tenderlab", agentIds: [6, 7, 8, 3, 5], timing: "До первого контакта с компанией; refresh по источникам", purpose: "Создаёт provisional company profile для discovery/ranking до того, как компания знает о Case.", inputs: ["Open company registries", "Public catalogues and references", "Source provenance"], outputs: ["Provisional company profile", "Confidence and evidence gaps"], consumerEventSteps: [2, 3, 4], blocking: true, state: "persistent",
+    id: "P02", name: "Open-source Prospect Intelligence", ownerActorId: "tenderlab", agentIds: [6, 7, 8, 3, 5], kind: "persistent", timing: "До первого контакта с компанией; refresh по источникам", trigger: "Новый prospect или существенное изменение открытых источников", purpose: "Создаёт provisional company profile для discovery/ranking до того, как компания знает о Case.", inputs: [
+      { name: "Open company registries", sourceKind: "external", availability: "До Case при доступности registry", blocking: true },
+      { name: "Public catalogues and references", sourceKind: "external", availability: "До Case; completeness может быть ограничена", blocking: true },
+      { name: "Source provenance", sourceKind: "process", sourceRef: "P03", availability: "При ingestion открытых records", blocking: true },
+    ], outputArtifactIds: ["artifact-p02-provisional-profile", "artifact-p02-evidence-gaps"], consumerRefs: ["activity-02", "activity-03", "activity-04"], blocking: true, state: "running",
   },
   {
-    id: "P03", name: "Tender & Award Intelligence Pipeline", ownerActorId: "tenderlab", agentIds: [13, 19, 5, 4], timing: "Постоянный ingestion/linkage; E02 читает готовые records", purpose: "Собирает и связывает notice, award и contract records; не запускает Agent 19 внутри E02.", inputs: ["Official procurement sources", "Award notices", "Contract records"], outputs: ["Canonical tender/award history", "Linked winner/value records"], consumerEventSteps: [2, 8, 24], blocking: false, state: "persistent",
+    id: "P03", name: "Tender & Award Intelligence Pipeline", ownerActorId: "tenderlab", agentIds: [13, 19, 5, 4], kind: "persistent", timing: "Постоянный ingestion/linkage; E02 читает готовые records", trigger: "Новая или изменённая procurement/award/contract publication", purpose: "Собирает и связывает notice, award и contract records; не запускает Agent 19 внутри E02.", inputs: [
+      { name: "Official procurement sources", sourceKind: "external", availability: "Постоянно по configured sources", blocking: false },
+      { name: "Award notices", sourceKind: "external", availability: "После публикации award", blocking: false },
+      { name: "Contract records", sourceKind: "external", availability: "После публикации/получения contract record", blocking: false },
+      { name: "Verified Case outcomes", sourceKind: "event", sourceRef: "activity-24", availability: "После закрытия Case", blocking: false },
+    ], outputArtifactIds: ["artifact-p03-tender-award-history", "artifact-p03-winner-values"], consumerRefs: ["activity-02", "PB01", "activity-08", "activity-24"], blocking: false, state: "running",
   },
   {
-    id: "P04", name: "Deadline & Amendment Monitoring", ownerActorId: "tenderlab", agentIds: [17, 29, 4], timing: "От E01 до E16; возобновляется при E17/E19", purpose: "Поддерживает deadlines, alerts, source changes и amendment impacts вне отдельных Event cards.", inputs: ["Notice dates", "Official portal updates", "Case owners"], outputs: ["Calendar and alerts", "Versioned amendment impact records"], consumerEventSteps: [3, 5, 11, 16, 17, 18, 19], blocking: false, state: "case-scoped",
+    id: "P04", name: "Deadline & Amendment Monitoring", ownerActorId: "tenderlab", agentIds: [17, 29, 4], kind: "case-scoped", timing: "От E01 до E16; возобновляется при E17/E19", trigger: "E01 source package или последующее официальное изменение", purpose: "Поддерживает deadlines, alerts, source changes и amendment impacts вне отдельных Event cards.", inputs: [
+      { name: "Notice dates", sourceKind: "event", sourceRef: "activity-01", availability: "После E01", blocking: true },
+      { name: "Official portal updates", sourceKind: "external", availability: "Асинхронно", blocking: false },
+      { name: "Case owners", sourceKind: "event", sourceRef: "activity-03", availability: "После E03; до этого alerts не персонализированы", blocking: false },
+    ], outputArtifactIds: ["artifact-p04-calendar", "artifact-p04-amendment-impact"], consumerRefs: ["activity-03", "activity-05", "activity-11", "activity-16", "activity-17", "activity-18", "activity-19"], blocking: false, state: "running",
   },
   {
-    id: "PB01", name: "Market & Competitor Enrichment", ownerActorId: "tenderlab", agentIds: [18, 20], timing: "Параллельно после E02 и до E08", purpose: "Обогащает market/competitor context, не блокирует company permission E03, но должно завершиться к BID gate.", inputs: ["E02 classified opportunity", "P03 award history", "Buyer/company open data"], outputs: ["Market brief", "Buyer/competitor dossier"], consumerEventSteps: [8, 14], blocking: true, state: "case-scoped",
+    id: "PB01", name: "Market & Competitor Enrichment", ownerActorId: "tenderlab", agentIds: [18, 20], kind: "parallel", timing: "Параллельно после E02 и до E08", trigger: "E02 opportunity прошла первичный triage", purpose: "Обогащает market/competitor context, не блокирует company permission E03, но должно завершиться к BID gate.", inputs: [
+      { name: "E02 classified opportunity", sourceKind: "event", sourceRef: "activity-02", availability: "После E02", blocking: true },
+      { name: "P03 award history", sourceKind: "process", sourceRef: "P03", availability: "Готовые persistent records", blocking: false },
+      { name: "Buyer/company open data", sourceKind: "external", availability: "Параллельно по доступным источникам", blocking: false },
+    ], outputArtifactIds: ["artifact-pb01-market-brief", "artifact-pb01-buyer-dossier"], consumerRefs: ["activity-08", "activity-14"], blocking: true, state: "running",
   },
 ];
 
@@ -325,6 +346,6 @@ for (const event of case1EventBlueprints) {
 if (case1EventBlueprints.length !== 24 || new Set(case1EventBlueprints.map((event) => event.step)).size !== 24) {
   throw new Error("Case 1 redesigned orchestration needs exactly 24 unique Events.");
 }
-if (case1BackgroundProcesses.some((process) => process.agentIds.some((id) => !agentById.has(id)))) {
+if (case1Processes.some((process) => process.agentIds.some((id) => !agentById.has(id)))) {
   throw new Error("Every Case 1 background process must reference canonical Agent IDs.");
 }
