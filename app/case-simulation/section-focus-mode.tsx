@@ -6,12 +6,10 @@ export function useSectionFocusMode(expanded: boolean, setExpanded: Dispatch<Set
   const [active, setActive] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!expanded) setActive(false);
-  }, [expanded]);
+  const isActive = active && expanded;
 
   useEffect(() => {
-    if (!active) return;
+    if (!isActive) return;
     const bodyOverflow = document.body.style.overflow;
     const rootOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
@@ -27,13 +25,13 @@ export function useSectionFocusMode(expanded: boolean, setExpanded: Dispatch<Set
       document.documentElement.style.overflow = rootOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [active]);
+  }, [isActive]);
 
   const toggle = () => {
     if (!active) setExpanded(true);
     setActive((current) => !current);
   };
-  return { active, buttonRef, toggle };
+  return { active: isActive, buttonRef, toggle };
 }
 
 export function SectionFocusButton({ active, buttonRef, onClick, dark = false }: { active: boolean; buttonRef: RefObject<HTMLButtonElement | null>; onClick: () => void; dark?: boolean }) {
