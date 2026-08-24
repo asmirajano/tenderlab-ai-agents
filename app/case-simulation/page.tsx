@@ -18,6 +18,7 @@ import {
 import TopNavigation from "../top-navigation";
 import CaseOrchestrationMap from "./case-orchestration-map";
 import Case2Module from "./case-2-module";
+import CaseComparison from "./case-comparison";
 import {
   case1,
   case1Engagements,
@@ -554,6 +555,8 @@ export default function CaseSimulationPage() {
         onOpenAgent={(agentId, eventStep) => openAgent(agentId, eventStep, 2)}
         onScrollToMatrix={() => matrixSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
       />
+
+      <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2)} />
 
       <section className="engagement-matrix-section" aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
         <div className="section-heading matrix-heading">
