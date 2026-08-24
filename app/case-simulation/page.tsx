@@ -20,6 +20,7 @@ import CaseOrchestrationMap from "./case-orchestration-map";
 import Case2Module from "./case-2-module";
 import Case3Module from "./case-3-module";
 import Case4Module from "./case-4-module";
+import Case5Module from "./case-5-module";
 import CaseComparison from "./case-comparison";
 import {
   case1,
@@ -35,6 +36,8 @@ import { case3, case3Engagements, case3Stages } from "./case-3-data";
 import { case3ProcessGraph } from "./case-3-graph";
 import { case4, case4Engagements, case4Stages } from "./case-4-data";
 import { case4ProcessGraph } from "./case-4-graph";
+import { case5, case5Engagements, case5Stages } from "./case-5-data";
+import { case5ProcessGraph } from "./case-5-graph";
 import { eventAgentAuditLabels, type EventAgentAuditDecision } from "../process-model";
 import {
   createSemanticSearchDocument,
@@ -73,11 +76,12 @@ const sideClasses: Record<PlatformSide, string> = {
   backend: "side-backend",
 };
 
-const futureCases = Array.from({ length: 6 }, (_, index) => index + 5);
+const futureCases = Array.from({ length: 5 }, (_, index) => index + 6);
 const engagementByAgentId = new Map(case1Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case2EngagementByAgentId = new Map(case2Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case3EngagementByAgentId = new Map(case3Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case4EngagementByAgentId = new Map(case4Engagements.map((engagement) => [engagement.agentId, engagement]));
+const case5EngagementByAgentId = new Map(case5Engagements.map((engagement) => [engagement.agentId, engagement]));
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
 const semanticDocuments = agents.map((agent) => {
@@ -157,7 +161,7 @@ export default function CaseSimulationPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [selectedAgentHistory, setSelectedAgentHistory] = useState<number[]>([]);
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
-  const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2 | 3 | 4>(1);
+  const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [caseExpanded, setCaseExpanded] = useState(false);
   const [matrixExpanded, setMatrixExpanded] = useState(true);
   const [caseView, setCaseView] = useState<"map" | "narrative">("map");
@@ -212,10 +216,10 @@ export default function CaseSimulationPage() {
   })).filter((group) => group.agents.length > 0), [filteredAgents]);
 
   const selectedAgent = selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) ?? null : null;
-  const selectedEngagementMap = selectedCaseNumber === 1 ? engagementByAgentId : selectedCaseNumber === 2 ? case2EngagementByAgentId : selectedCaseNumber === 3 ? case3EngagementByAgentId : case4EngagementByAgentId;
-  const selectedCaseStages = selectedCaseNumber === 1 ? caseStages : selectedCaseNumber === 2 ? case2Stages : selectedCaseNumber === 3 ? case3Stages : case4Stages;
-  const selectedGraph = selectedCaseNumber === 1 ? case1ProcessGraph : selectedCaseNumber === 2 ? case2ProcessGraph : selectedCaseNumber === 3 ? case3ProcessGraph : case4ProcessGraph;
-  const selectedCase = selectedCaseNumber === 1 ? case1 : selectedCaseNumber === 2 ? case2 : selectedCaseNumber === 3 ? case3 : case4;
+  const selectedEngagementMap = selectedCaseNumber === 1 ? engagementByAgentId : selectedCaseNumber === 2 ? case2EngagementByAgentId : selectedCaseNumber === 3 ? case3EngagementByAgentId : selectedCaseNumber === 4 ? case4EngagementByAgentId : case5EngagementByAgentId;
+  const selectedCaseStages = selectedCaseNumber === 1 ? caseStages : selectedCaseNumber === 2 ? case2Stages : selectedCaseNumber === 3 ? case3Stages : selectedCaseNumber === 4 ? case4Stages : case5Stages;
+  const selectedGraph = selectedCaseNumber === 1 ? case1ProcessGraph : selectedCaseNumber === 2 ? case2ProcessGraph : selectedCaseNumber === 3 ? case3ProcessGraph : selectedCaseNumber === 4 ? case4ProcessGraph : case5ProcessGraph;
+  const selectedCase = selectedCaseNumber === 1 ? case1 : selectedCaseNumber === 2 ? case2 : selectedCaseNumber === 3 ? case3 : selectedCaseNumber === 4 ? case4 : case5;
   const selectedEngagement = selectedAgent ? selectedEngagementMap.get(selectedAgent.id) ?? null : null;
   const selectedStage = selectedEngagement ? selectedCaseStages.find((stage) => stage.id === selectedEngagement.stageId) ?? null : null;
   const selectedChronologyEvent = selectedChronologyStep
@@ -254,7 +258,7 @@ export default function CaseSimulationPage() {
     } : undefined,
   } : undefined;
 
-  const openAgent = (agentId: number, chronologyStep: number | null = null, caseNumber: 1 | 2 | 3 | 4 = 1) => {
+  const openAgent = (agentId: number, chronologyStep: number | null = null, caseNumber: 1 | 2 | 3 | 4 | 5 = 1) => {
     setSelectedAgentHistory([]);
     setSelectedCaseNumber(caseNumber);
     setSelectedChronologyStep(chronologyStep);
@@ -580,12 +584,17 @@ export default function CaseSimulationPage() {
         onScrollToMatrix={revealMatrix}
       />
 
-      <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2 | 3 | 4)} />
+      <Case5Module
+        onOpenAgent={(agentId, eventStep) => openAgent(agentId, eventStep, 5)}
+        onScrollToMatrix={revealMatrix}
+      />
+
+      <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2 | 3 | 4 | 5)} />
 
       <section className={`engagement-matrix-section ${matrixExpanded ? "is-expanded" : "is-collapsed"}`} aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
-          <span>Cases 1–4 активны; нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
+          <span>Cases 1–5 активны; нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
           <button type="button" className="case-section-toggle" aria-expanded={matrixExpanded} aria-controls="engagement-matrix-content" onClick={() => setMatrixExpanded((current) => !current)}>
             <span>{matrixExpanded ? "Свернуть" : "Развернуть"}</span><i aria-hidden="true">{matrixExpanded ? "−" : "+"}</i>
           </button>
@@ -672,7 +681,7 @@ export default function CaseSimulationPage() {
           <small>Conditional: сплошная метка — условие сработало; контурная — резерв.</small>
         </div>
 
-        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Cases 1–4 и будущих кейсов">
+        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Cases 1–5 и будущих кейсов">
           <table className="engagement-matrix">
             <thead>
               <tr>
@@ -681,6 +690,7 @@ export default function CaseSimulationPage() {
                 <th className="case-two-column"><span>CASE 02 · ACTIVE</span><b>Consultant-led PPE activation</b><small>Кения · $2,10 млн ceiling</small></th>
                 <th className="case-three-column"><span>CASE 03 · ACTIVE</span><b>WTP consortium</b><small>Казахстан · $48,00 млн</small></th>
                 <th className="case-four-column"><span>CASE 04 · ACTIVE</span><b>Digital health QCBS</b><small>Руанда · $4,80 млн</small></th>
+                <th className="case-five-column"><span>CASE 05 · ACTIVE</span><b>Cold-chain framework</b><small>Кения · $12,40 млн ceiling</small></th>
                 {futureCases.map((caseNumber) => <th className="future-case" key={caseNumber}><span>CASE {String(caseNumber).padStart(2, "0")}</span><b>После аудита</b></th>)}
               </tr>
             </thead>
@@ -733,7 +743,7 @@ function StageRows({
 }: {
   stage: (typeof caseStages)[number];
   stageAgents: Agent[];
-  onSelect: (agentId: number, caseNumber: 1 | 2 | 3 | 4) => void;
+  onSelect: (agentId: number, caseNumber: 1 | 2 | 3 | 4 | 5) => void;
   semanticResults: Map<number, SemanticSearchResult>;
   highlightedAgentId: number | null;
   registerRow: (agentId: number, node: HTMLTableRowElement | null) => void;
@@ -748,6 +758,7 @@ function StageRows({
         const case2Engagement = case2EngagementByAgentId.get(agent.id)!;
         const case3Engagement = case3EngagementByAgentId.get(agent.id)!;
         const case4Engagement = case4EngagementByAgentId.get(agent.id)!;
+        const case5Engagement = case5EngagementByAgentId.get(agent.id)!;
         const tier = getAgentTier(agent.id);
         const semanticResult = semanticResults.get(agent.id);
         return (
@@ -792,6 +803,13 @@ function StageRows({
                 <span>{statusShortLabels[case4Engagement.status]}</span>
                 <b>{statusLabels[case4Engagement.status]}</b>
                 <small>{case4Engagement.status === "conditional" ? (case4Engagement.activation === "triggered" ? "условие сработало" : "резерв") : case4Engagement.status === "background" ? "Process execution" : case4Engagement.when}</small>
+              </button>
+            </td>
+            <td className="case-five-column">
+              <button className={`engagement-cell cell-${case5Engagement.status} ${case5Engagement.activation ? `cell-${case5Engagement.activation}` : ""}`} type="button" onClick={() => onSelect(agent.id, 5)} aria-label={`${agent.name}, Case 5: ${statusLabels[case5Engagement.status]}`}>
+                <span>{statusShortLabels[case5Engagement.status]}</span>
+                <b>{statusLabels[case5Engagement.status]}</b>
+                <small>{case5Engagement.status === "conditional" ? (case5Engagement.activation === "triggered" ? "условие сработало" : "резерв") : case5Engagement.status === "background" ? "Process execution" : case5Engagement.when}</small>
               </button>
             </td>
             {futureCases.map((caseNumber) => <td className="future-case" key={caseNumber}><span>—</span></td>)}

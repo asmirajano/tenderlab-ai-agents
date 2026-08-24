@@ -46,10 +46,10 @@ test("projects Case 4 into the Case module, comparison registry and Cases × Age
     readFile(path.join(projectRoot, "app", "case-simulation", "page.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-4-module.tsx"), "utf8"),
   ]);
-  assert.deepEqual(caseComparisonRegistry.map((item) => item.caseNumber), [1, 2, 3, 4]);
+  assert.deepEqual(caseComparisonRegistry.map((item) => item.caseNumber), [1, 2, 3, 4, 5]);
   assert.match(page, /<Case4Module/);
   assert.match(page, /case-four-column/);
-  assert.match(page, /Cases 1–4 активны/);
+  assert.match(page, /Cases 1–5 активны/);
   assert.match(moduleSource, /CaseOrchestrationMap/);
   assert.match(moduleSource, /Хронология событий — Case 4/);
   assert.match(moduleSource, /POTENTIAL GAPS \/ REVIEW/);

@@ -7,6 +7,8 @@ import { case3, case3Engagements } from "./case-3-data.ts";
 import { case3ProcessGraph } from "./case-3-graph.ts";
 import { case4, case4Engagements } from "./case-4-data.ts";
 import { case4ProcessGraph } from "./case-4-graph.ts";
+import { case5, case5Engagements } from "./case-5-data.ts";
+import { case5ProcessGraph } from "./case-5-graph.ts";
 
 export type ComparisonGroup = "starting" | "relationship" | "workflow" | "agents" | "data" | "outcome";
 export type ComparisonRelation = "same" | "similar" | "different-path" | "different" | "critical" | "only-one";
@@ -285,7 +287,56 @@ const case4Profile: CaseComparisonProfile = {
   },
 };
 
-export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile];
+const case5Profile: CaseComparisonProfile = {
+  caseNumber: 5,
+  id: case5.id,
+  name: case5.name,
+  shortName: "Cold-chain framework",
+  color: "#8c4f9f",
+  entryPath: ["RFP", "Known service provider", "Assessment mandate", "Carrier network", "Framework", "Call-off"],
+  entrySummary: "Known service provider builds a verified subcontractor network before bidding for a performance framework.",
+  relationshipSummary: "Single prime + six service subcontractors",
+  endpointSummary: "Framework award → authorised call-off → SLA acceptance → payment certificate.",
+  convergenceState: "verified-bidder+service-network+current-rfp",
+  convergenceEvent: "E12 · Final BID Gate",
+  engagements: case5Engagements,
+  eventCount: case5ProcessGraph.activities.length,
+  processCount: case5ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Провести service provider через performance-based framework и доказать архитектуру на первом accepted emergency call-off.", "framework-first-calloff", "service-lifecycle", ["performance-based framework", "first accepted emergency call-off"]),
+    monetization: value(case5.monetization, "fixed-three-milestones", "consulting-revenue", ["DEMO", "milestone-based advisory fee"]),
+    consultantIncome: value(case5.consultantIncome, "usd-145000-three-milestones", "simulated-income", ["DEMO", "$145 000"]),
+    trigger: value(case5.trigger, "open-rfp+framework-economics", "official-notice", ["международного RFP", "uncertain call-off volumes"]),
+    startingSituation: value(case5.startingCondition, "known-service-provider-network-gap", "candidate-available", ["не покрывает все 18 counties", "SLA baseline"]),
+    knownAtStart: value("Verified core company/GDP profile, Kenyan branch, regional references and public Buyer/award history.", "verified-core+history", "reusable-intelligence", ["Verified core company"]),
+    unknownAtStart: value("Current SLA/rate rules, six-carrier consent/capacity, downside volume economics, Buyer evaluation and actual first-call-off performance.", "sla+carriers+downside+performance", "verification-needed", ["six-carrier", "actual first-call-off"]),
+    companySelection: value("FrostLink is an existing regional service-provider candidate with verified cold-chain capability.", "existing-service-provider", "prospect-intelligence", ["existing regional service-provider"]),
+    relationship: value("Existing Client prime + six external carriers that become approved subcontractors only after consent, verification and company approval.", "client+six-subcontractors", "company-relationship", ["six external carriers", "approved subcontractors"]),
+    permission: value("E03 assessment mandate; E08 carrier consent/approval; E12 BID authority; E15 submission signature; E18 Buyer call-off authority.", "layered-client-carrier-buyer-authority", "consent", ["E08", "E18"]),
+    consultantMission: value(case5.consultantRole, "framework-network+sla-advisor", "consultant-support", ["service-network design", "не выбирает перевозчиков"]),
+    consultantStart: value("E03: after company assessment mandate, before any carrier RFQ/contact execution.", "post-assessment-mandate", "consultant-timing", ["E03", "before any carrier RFQ"]),
+    consultantDone: value("E20: first call-off accepted and payment-certified; recurring framework operations transfer downstream.", "first-calloff-handoff", "consultant-boundary", ["E20", "payment-certified"]),
+    companyMaturity: value("Experienced regional cold-chain operator with core certifications, but incomplete surge/subcontractor coverage for this national SLA.", "experienced-logistics-network-gap", "service-provider", ["incomplete surge/subcontractor coverage"]),
+    entrySequence: value("RFP → known service provider → mandate → RFP/company branches → carrier network/RFQ → BID.", "rpf-provider-network-rfq-bid", "entry-path", ["carrier network/RFQ"]),
+    parallelWork: value("RFP and bidder evidence; market intelligence; carrier assurance; then parallel technical/commercial proposal branches and live SLA Process.", "documents+company+network+dual-bid+sla", "parallel-intelligence", ["live SLA Process"]),
+    decisionGates: value("Assessment E03, carrier roster E08, BID E12, submission E15, Buyer drill/rank E16, framework E17, call-off E18 and acceptance E20.", "framework-eight-gates", "human-gates", ["call-off E18", "acceptance E20"]),
+    participationRoute: value("Single FrostLink prime + six disclosed service subcontractors; no JV and no goods supplier chain.", "prime+six-service-subcontractors", "participation-route", ["no JV", "service subcontractors"]),
+    bidPreparation: value("Included: service architecture, SLA evidence, carrier RFQ/rate book, technical/commercial proposal, QA and submission.", "included-service-best-value", "bid-preparation", ["carrier RFQ/rate book"]),
+    postAward: value("Included through framework mobilisation, Buyer-authorised first call-off, SLA execution, acceptance and payment certificate.", "included-first-calloff", "post-award", ["first call-off", "payment certificate"]),
+    agentScope: value("Agents are tested on service-vendor sourcing, uncertain framework economics, SLA operations, call-off authority, payment and learning.", "service-framework-agent-route", "agent-scope", ["call-off authority", "SLA operations"]),
+    humanOnlyWork: value("Carrier consent, BID/signature, Buyer score/award/call-off/acceptance and physical dispatch remain Actor decisions/actions.", "carrier+company+buyer-authority", "human-authority", ["Buyer score/award/call-off/acceptance"]),
+    companyEvidence: value("Verified prime dossier + 6 carrier dossiers + consent + hub/vehicle/telemetry capacity evidence and performance refresh.", "prime+six-carrier-evidence", "verified-evidence", ["6 carrier dossiers", "performance refresh"]),
+    tenderEvidence: value("Source-locked RFP, 148 requirements, 34 SLA metrics, Addendum 02, rate template and call-off/acceptance records.", "rfp+sla+calloff-evidence", "tender-evidence", ["34 SLA metrics", "call-off/acceptance records"]),
+    commercialModel: value("Framework ceiling with zero guaranteed volume: route rate card + low/base/high call-off scenarios + first actual service order.", "framework-service-rate-scenarios", "commercial-model", ["zero guaranteed volume", "first actual service order"]),
+    procedure: value(`${case5.procurementMethod}; ${case5.submissionWindow}; ${case5.deliveryWindow}.`, "open-performance-services-framework", "service-procurement", [case5.procurementMethod]),
+    endpoint: value(case5.endpoint, "accepted-calloff+payment+handoff", "case-endpoint", ["payment certificate", "operations team"]),
+    success: value("Compliant best-value bid, framework award, ready service network and accepted first call-off within SLA.", "award+accepted-calloff", "successful-participation", ["accepted first call-off"]),
+    kpi: value(case5.kpi, "framework-sla-kpis", "kpi", ["88/100", "98,7%", "0 critical excursions"]),
+    failure: value("No verified surge network, rate downside below floor, technical/drill failure, unauthorised call-off, SLA breach or rejected performance evidence.", "framework-service-failure", "failure", ["unauthorised call-off", "SLA breach"]),
+  },
+};
+
+export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile];
 
 export function compareValues(left: ComparisonValue, right: ComparisonValue, dimension: ComparisonDimension): ComparisonRelation {
   if (left.key === right.key) return "same";
