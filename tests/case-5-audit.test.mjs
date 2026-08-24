@@ -62,11 +62,11 @@ test("projects Case 5 into module, comparison, matrix and Agent Detail context",
     readFile(path.join(projectRoot, "app", "case-simulation", "case-5-module.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
   ]);
-  assert.deepEqual(caseComparisonRegistry.map((item) => item.caseNumber), [1, 2, 3, 4, 5]);
+  assert.deepEqual(caseComparisonRegistry.map((item) => item.caseNumber), [1, 2, 3, 4, 5, 6, 7]);
   assert.match(page, /<Case5Module/);
   assert.match(page, /case-five-column/);
   assert.match(page, /case5EngagementByAgentId/);
-  assert.match(page, /Cases 1–5 активны/);
+  assert.match(page, /Cases 1–\d+ активны/);
   assert.match(moduleSource, /CaseOrchestrationMap/);
   assert.match(moduleSource, /Хронология событий — Case 5/);
   assert.match(moduleSource, /POTENTIAL GAPS \/ REVIEW/);

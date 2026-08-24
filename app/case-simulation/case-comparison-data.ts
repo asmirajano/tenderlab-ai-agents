@@ -9,6 +9,10 @@ import { case4, case4Engagements } from "./case-4-data.ts";
 import { case4ProcessGraph } from "./case-4-graph.ts";
 import { case5, case5Engagements } from "./case-5-data.ts";
 import { case5ProcessGraph } from "./case-5-graph.ts";
+import { case6, case6Engagements } from "./case-6-data.ts";
+import { case6ProcessGraph } from "./case-6-graph.ts";
+import { case7, case7Engagements } from "./case-7-data.ts";
+import { case7ProcessGraph } from "./case-7-graph.ts";
 
 export type ComparisonGroup = "starting" | "relationship" | "workflow" | "agents" | "data" | "outcome";
 export type ComparisonRelation = "same" | "similar" | "different-path" | "different" | "critical" | "only-one";
@@ -336,7 +340,105 @@ const case5Profile: CaseComparisonProfile = {
   },
 };
 
-export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile];
+const case6Profile: CaseComparisonProfile = {
+  caseNumber: 6,
+  id: case6.id,
+  name: case6.name,
+  shortName: "Reverse auction remedy",
+  color: "#d96f32",
+  entryPath: ["Notice", "Trader assessment", "OEM route", "Reverse auction", "Complaint", "Re-evaluation", "Contract"],
+  entrySummary: "Commodity trader enters a human-controlled e-auction, finishes second and wins only after an upheld administrative complaint.",
+  relationshipSummary: "Single-prime trader + 2 OEM + local importer",
+  endpointSummary: "Rank 2 → complaint upheld → re-evaluation → final award → signed contract.",
+  convergenceState: "verified-trader+supply-route+auction-rules+review-standing",
+  convergenceEvent: "E11 · BID + auction authority gate",
+  engagements: case6Engagements,
+  eventCount: case6ProcessGraph.activities.length,
+  processCount: case6ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Проверить reverse-auction и formal-remedy route: второй bidder получает contract только после upheld complaint и re-evaluation.", "reverse-auction-remedy", "award-remedy-lifecycle", ["upheld complaint", "re-evaluation"]),
+    monetization: value(case6.monetization, "hybrid-bid-complaint-success", "consulting-revenue", ["DEMO", "hybrid", "1% award success fee"]),
+    consultantIncome: value(case6.consultantIncome, "usd-150600-hybrid", "simulated-income", ["DEMO", "$150 600", "1% × $10,56 млн"]),
+    trigger: value(case6.trigger, "official-reverse-auction-notice", "official-notice", ["reverse-auction notice"]),
+    startingSituation: value(case6.startingCondition, "trader-with-tender-specific-route-gaps", "candidate-available", ["tender-specific manufacturer authorizations", "auction floor"]),
+    knownAtStart: value("Public trader profile, fertilizer categories, reusable OEM candidates and historic Buyer/award records.", "public-trader+supplier+history", "reusable-intelligence", ["Public trader profile"]),
+    unknownAtStart: value("Current Portuguese rules, supplier authorizations, local importer status, landed cost, competitor bids and any review ground.", "rules+supply+price+remedy", "verification-needed", ["competitor bids", "review ground"]),
+    companySelection: value("AtlasAgri is ranked from public prospect intelligence as a plausible trader, then explicitly authorises private assessment.", "public-prospect-to-mandate", "prospect-intelligence", ["public prospect intelligence"]),
+    relationship: value("Client trader remains prime; two OEM and one importer are verified supply entities, not JV members.", "client+oem+importer", "company-relationship", ["not JV members"]),
+    permission: value("E03 assessment; E06 supplier roster; E11 BID/floor; E14 submission; E15 each live bid; E17 complaint; E22 contract signature.", "layered-auction-remedy-authority", "consent", ["E15 each live bid", "E17 complaint"]),
+    consultantMission: value(case6.consultantRole, "auction-evidence+remedy-advisor", "consultant-support", ["не делает live bids", "не подаёт жалобу"]),
+    consultantStart: value("E03 after preliminary opportunity review and explicit AtlasAgri assessment mandate.", "post-assessment-mandate", "consultant-timing", ["E03"]),
+    consultantDone: value("E22 signed contract and mobilization handoff; delivery/payment remain downstream.", "signed-contract-handoff", "consultant-boundary", ["E22", "delivery/payment remain downstream"]),
+    companyMaturity: value("Experienced international trader with market access but tender-specific OEM/importer/e-auction control gaps.", "experienced-trader-route-gap", "commodity-trader", ["e-auction control gaps"]),
+    entrySequence: value("Notice → relevance → mandate → multilingual rules/company branches → suppliers/RFQ → BID → auction → remedy.", "notice-trader-auction-remedy", "entry-path", ["auction → remedy"]),
+    parallelWork: value("Tender corpus, company qualification, supplier assurance and market intelligence run in parallel; remedy Process starts only on material award anomaly.", "corpus+company+supply+market+conditional-remedy", "parallel-intelligence", ["remedy Process"]),
+    decisionGates: value("Assessment E03, supplier roster E06, BID/floor E11, submission E14, each live bid E15, complaint E17, Buyer re-evaluation E20, award/contract E21–22.", "auction-remedy-eight-gates", "human-gates", ["each live bid E15", "complaint E17"]),
+    participationRoute: value("Single-prime commodity trader + 2 OEM + 1 local importer; no JV.", "prime+two-oem+importer", "participation-route", ["no JV"]),
+    bidPreparation: value("Included: multilingual model, supplier RFQ, landed-cost/auction floor, technical/commercial proposal, QA and submission.", "included-auction-bid", "bid-preparation", ["auction floor"]),
+    postAward: value("Includes provisional award, standstill, complaint, re-evaluation, final award and contract; physical delivery is excluded.", "included-remedy-to-contract", "post-award", ["complaint", "physical delivery is excluded"]),
+    agentScope: value("Agents are tested on trader/supplier route, deep market/competitor intelligence, live-auction limits and a formal remedy loop.", "trader-auction-remedy-agent-route", "agent-scope", ["formal remedy loop"]),
+    humanOnlyWork: value("Live price actions, complaint authority/filing, disqualification, remedy, award and signatures remain Actor decisions/actions.", "auction-complaint-buyer-human-authority", "human-authority", ["Live price actions", "complaint authority"]),
+    companyEvidence: value("Verified trader dossier + 2 OEM + importer + manufacturer authorizations + product registration + performance security.", "trader+oem+importer-evidence", "verified-evidence", ["2 OEM", "product registration"]),
+    tenderEvidence: value("Portuguese source corpus, 173 requirements, Addendum 02, clarification, auction log, provisional award, complaint/review and final award records.", "tender+auction+remedy-evidence", "tender-evidence", ["auction log", "complaint/review"]),
+    commercialModel: value("Initial $470/t bid, human-approved $440/t floor, delivered landed-cost/downside scenarios and immutable auction log.", "landed-cost+reverse-auction-floor", "commercial-model", ["$440/t floor", "immutable auction log"]),
+    procedure: value(`${case6.procurementMethod}; ${case6.submissionWindow}; ${case6.deliveryWindow}.`, "pregao-reverse-auction-review", "goods-procurement", [case6.procurementMethod]),
+    endpoint: value(case6.endpoint, "signed-contract+mobilization", "case-endpoint", ["$10,56 млн", "mobilization handoff"]),
+    success: value("Qualified bid, controlled auction, upheld material complaint, compliant rank 1 after re-evaluation and signed contract.", "rank2+upheld+rank1+contract", "successful-participation", ["upheld material complaint"]),
+    kpi: value(case6.kpi, "auction-remedy-kpis", "kpi", ["auction rank 2", "complaint upheld", "$10,56 млн"]),
+    failure: value("Unverified supply route, bid below floor, unauthorised bid/filing, missed standstill, unsupported allegation or failed re-evaluation.", "auction-remedy-failure", "failure", ["unauthorised bid/filing", "missed standstill"]),
+  },
+};
+
+const case7Profile: CaseComparisonProfile = {
+  caseNumber: 7,
+  id: case7.id,
+  name: case7.name,
+  shortName: "Buyer recovery RFQ",
+  color: "#7864c8",
+  entryPath: ["Supplier default", "Remedy + continuity", "Limited RFQ", "Evaluation", "Replacement award", "Delivery", "Acceptance"],
+  entrySummary: "A public Buyer recovers from an incumbent default through two parallel authority tracks: contract remedy and competitive replacement sourcing.",
+  relationshipSummary: "Buyer procurement client + incumbent + five invitees + independent inspectors",
+  endpointSummary: "Partial termination + replacement contract + accepted delivery + open security claim handoff.",
+  convergenceState: "verified-default+authorised-procedure+qualified-suppliers+current-rfq",
+  convergenceEvent: "E11 · Buyer-side offer evaluation",
+  engagements: case7Engagements,
+  eventCount: case7ProcessGraph.activities.length,
+  processCount: case7ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Проверить Buyer-side procurement recovery после supplier default: legal remedy, emergency competition, evaluation, replacement delivery and acceptance.", "buyer-emergency-recovery", "procurement-recovery-lifecycle", ["Buyer-side", "supplier default"]),
+    monetization: value(case7.monetization, "fixed-recovery-milestones-no-success", "consulting-revenue", ["DEMO", "fixed milestone", "success fee запрещён"]),
+    consultantIncome: value(case7.consultantIncome, "usd-210000-four-milestones", "simulated-income", ["DEMO", "$210 000"]),
+    trigger: value(case7.trigger, "material-lab-failure+failed-cure", "contract-default", ["material test failure", "48 часов"]),
+    startingSituation: value(case7.startingCondition, "signed-defaulted-contract+continuity-gap", "buyer-recovery-need", ["performance security активна", "поставка не принята"]),
+    knownAtStart: value("Signed original contract, approved shelter standard, lab result, active security, unmet demand and five-day contingency stock.", "contract+spec+failure+continuity", "reusable-intelligence", ["active security", "five-day contingency stock"]),
+    unknownAtStart: value("Legal remedy, procedure justification, supplier capacity, comparable offers, evaluation outcome, replacement delivery and actual claim recovery.", "remedy+market+award+delivery+claim", "verification-needed", ["actual claim recovery"]),
+    companySelection: value("No participant company is preselected; Buyer authorises criteria and Supplier Discovery builds a five-invitee roster.", "buyer-selects-roster-from-market", "supplier-sourcing", ["No participant company is preselected"]),
+    relationship: value("DSWD is the procurement client; incumbent, invitees, replacement supplier, laboratory and bank remain separate external Actors.", "buyer+incumbent+invitees+inspectors", "company-relationship", ["separate external Actors"]),
+    permission: value("E02 analysis mandate; E05 remedy/procedure; E07 invitees; E08 issue; E12 award recommendation; E13 termination; E14 contract; E17 acceptance; E18 payment.", "layered-buyer-authority", "consent", ["E13 termination", "E17 acceptance"]),
+    consultantMission: value(case7.consultantRole, "independent-buyer-recovery-assurance", "consultant-support", ["не расторгает контракт", "не присуждает"]),
+    consultantStart: value("E02 immediately after material default evidence and explicit Buyer recovery mandate.", "post-default-mandate", "consultant-timing", ["E02"]),
+    consultantDone: value("E19 after accepted delivery, paid replacement invoice and explicit open-claim handoff to Buyer legal team.", "accepted-delivery+open-claim-handoff", "consultant-boundary", ["open-claim handoff"]),
+    companyMaturity: value("Not a bidder maturity Case: the procurement client is a government emergency-response Buyer with established authority but recovery-capability gaps.", "government-buyer-recovery-gap", "buyer-client", ["Not a bidder maturity Case"]),
+    entrySequence: value("Lab failure → recovery hold → parallel remedy/continuity → procedure gate → supplier RFQ/evaluation → two award/remedy tracks → delivery/acceptance.", "default-parallel-recovery-rfq", "entry-path", ["parallel remedy/continuity"]),
+    parallelWork: value("Legal remedy and continuity package branch at E02; original claim and replacement award branch at E12; market, RFQ control and delivery assurance remain Processes.", "remedy+continuity+claim+replacement", "parallel-intelligence", ["original claim and replacement award"]),
+    decisionGates: value("Recovery authority E02; remedy/procedure E05; invitees E07; evaluation E11–12; termination E13; contract E14; acceptance E17; payment/claim E18.", "buyer-eight-authority-gates", "human-gates", ["termination E13", "acceptance E17"]),
+    participationRoute: value("Buyer-side limited RFQ to five verified suppliers; one replacement prime, no JV, partner route or negotiation.", "buyer-five-invitees-one-supplier", "participation-route", ["no JV", "no negotiation"]),
+    bidPreparation: value("Supplier bids are external and untouched; TenderLab structures Buyer RFQ, normalizes offers and supports traceable evaluation evidence only.", "external-bids+buyer-evaluation-support", "bid-preparation", ["external and untouched"]),
+    postAward: value("Includes original-contract termination/claim, replacement contract, delivery, independent inspection, Buyer acceptance and payment.", "dual-contract-recovery-through-acceptance", "post-award", ["termination/claim", "Buyer acceptance"]),
+    agentScope: value("Tests sourcing Agents in Buyer context while deliberately excluding bidder profile, Bid/No-Bid, proposal, submission, clarification-response and negotiation Agents.", "buyer-sourcing-agent-route", "agent-scope", ["deliberately excluding bidder"]),
+    humanOnlyWork: value("Procedure justification, legal opinion, termination, invitee approval, scoring, award, contract signature, inspection facts, acceptance and payment remain Actor actions.", "buyer-legal-evaluator-acceptance-authority", "human-authority", ["scoring", "acceptance"]),
+    companyEvidence: value("Five external supplier due-diligence dossiers, qualifications, beneficial ownership, capacity, certificates and verified performance history.", "five-supplier-due-diligence", "verified-evidence", ["Five external supplier"]),
+    tenderEvidence: value("Original contract/lab dossier, 86 requirements, limited-RFQ justification, Corrigendum 01, four offers, evaluation, notices, inspection and acceptance records.", "default+rfq+evaluation+acceptance-evidence", "tender-evidence", ["Corrigendum 01", "inspection and acceptance"]),
+    commercialModel: value("$6,80m ceiling; four normalized quotations; landed-cost comparison; $6,42m replacement award; separate $0,78m security claim without automatic netting.", "replacement-cost+separate-claim", "commercial-model", ["$6,42m", "$0,78m"]),
+    procedure: value(`${case7.procurementMethod}; ${case7.submissionWindow}; ${case7.deliveryWindow}.`, "accelerated-limited-rfq-recovery", "goods-procurement", [case7.procurementMethod]),
+    endpoint: value(case7.endpoint, "accepted-replacement+open-claim-handoff", "case-endpoint", ["12 000 kits", "claim зарегистрирован"]),
+    success: value("Documented lawful remedy, competitive replacement award, compliant delivery/acceptance and no authority breach; claim may remain open with explicit owner.", "lawful-recovery+accepted-delivery", "successful-procurement", ["no authority breach", "claim may remain open"]),
+    kpi: value(case7.kpi, "buyer-recovery-kpis", "kpi", ["5 приглашений / 4", "13 дней", "100%"]),
+    failure: value("Unsupported termination, unjustified direct award, unequal information, untraceable evaluation, late/non-compliant replacement, Agent-made authority decision or hidden open claim.", "buyer-recovery-failure", "failure", ["unequal information", "Agent-made authority"]),
+  },
+};
+
+export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile, case6Profile, case7Profile];
 
 export function compareValues(left: ComparisonValue, right: ComparisonValue, dimension: ComparisonDimension): ComparisonRelation {
   if (left.key === right.key) return "same";

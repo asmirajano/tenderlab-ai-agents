@@ -248,10 +248,10 @@ export default function CaseOrchestrationMap({
               ))}
             </div>
             {laneOrder.map((lane, laneIndex) => {
-              const actor = graph.actors.find((candidate) => candidate.kind === lane)!;
+              const actor = graph.actors.find((candidate) => candidate.kind === lane);
               return (
-                <div className={`actor-lane lane-${lane}`} key={lane} style={{ top: canvas.header + laneIndex * canvas.laneHeight, height: canvas.laneHeight }}>
-                  <div className="actor-lane-label"><span>{String(laneIndex + 1).padStart(2, "0")}</span><strong>{actor.shortName}</strong><small>{actor.description}</small></div>
+                <div className={`actor-lane lane-${lane} ${actor ? "" : "is-inactive"}`} key={lane} style={{ top: canvas.header + laneIndex * canvas.laneHeight, height: canvas.laneHeight }}>
+                  <div className="actor-lane-label"><span>{String(laneIndex + 1).padStart(2, "0")}</span><strong>{actor?.shortName ?? "Not active in this Case"}</strong><small>{actor?.description ?? "No Actor of this type participates in the approved Case model."}</small></div>
                 </div>
               );
             })}

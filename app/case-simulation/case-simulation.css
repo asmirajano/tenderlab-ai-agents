@@ -376,12 +376,16 @@
 .engagement-matrix .case-two-column,
 .engagement-matrix .case-three-column,
 .engagement-matrix .case-four-column,
-.engagement-matrix .case-five-column { width: 205px; }
+.engagement-matrix .case-five-column,
+.engagement-matrix .case-six-column,
+.engagement-matrix .case-seven-column,
 .engagement-matrix thead .case-one-column { background: #dff0e6; }
 .engagement-matrix thead .case-two-column { background: #e8ecff; }
 .engagement-matrix thead .case-three-column { background: #fff1d8; }
 .engagement-matrix thead .case-four-column { background: #dff2f3; }
 .engagement-matrix thead .case-five-column { background: #f2e6f5; }
+.engagement-matrix thead .case-six-column { background: #f9e7da; }
+.engagement-matrix thead .case-seven-column { background: #ece8fb; }
 .engagement-matrix .future-case { color: #98a29c; text-align: center; width: 96px; }
 .engagement-matrix tbody .future-case { background: #f7f8f7; }
 .matrix-stage-row th { background: var(--ink); color: white; height: 38px; padding: 0 12px; position: relative; text-align: left; z-index: 4; }
@@ -403,11 +407,15 @@
 .engagement-matrix tbody td.case-two-column,
 .engagement-matrix tbody td.case-three-column,
 .engagement-matrix tbody td.case-four-column,
-.engagement-matrix tbody td.case-five-column { background: #fbfdfb; padding: 7px; }
+.engagement-matrix tbody td.case-five-column,
+.engagement-matrix tbody td.case-six-column,
+.engagement-matrix tbody td.case-seven-column,
 .engagement-matrix tbody td.case-two-column { background: #fcfcff; }
 .engagement-matrix tbody td.case-three-column { background: #fffdf8; }
 .engagement-matrix tbody td.case-four-column { background: #f9fdfd; }
 .engagement-matrix tbody td.case-five-column { background: #fdf9fe; }
+.engagement-matrix tbody td.case-six-column { background: #fffaf6; }
+.engagement-matrix tbody td.case-seven-column { background: #fbfaff; }
 .engagement-cell { align-items: center; background: white; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; display: grid; grid-template-columns: auto 1fr; min-height: 60px; padding: 9px 10px; text-align: left; width: 100%; }
 .engagement-cell > span { align-items: center; border-radius: 50%; display: flex; font-family: var(--font-geist-mono), monospace; font-size: 6px; height: 26px; justify-content: center; margin-right: 8px; width: 26px; }
 .engagement-cell > b { font-size: 10px; }
@@ -426,12 +434,14 @@
 .cell-not-involved > span { background: #aeb7b1; color: white; }
 .cell-not-involved > b { color: #748078; }
 .engagement-cell:hover, .engagement-cell:focus-visible { box-shadow: 0 0 0 2px rgba(23, 107, 81, .18); outline: none; transform: translateY(-1px); }
-.semantic-target .agent-matrix-card, .semantic-target td.case-one-column, .semantic-target td.case-two-column, .semantic-target td.case-three-column, .semantic-target td.case-four-column, .semantic-target td.case-five-column { animation: semantic-target-pulse 1.7s ease-out; box-shadow: inset 0 0 0 3px var(--signal); }
+.semantic-target .agent-matrix-card, .semantic-target td.case-one-column, .semantic-target td.case-two-column, .semantic-target td.case-three-column, .semantic-target td.case-four-column, .semantic-target td.case-five-column, .semantic-target td.case-six-column, .semantic-target td.case-seven-column { animation: semantic-target-pulse 1.7s ease-out; box-shadow: inset 0 0 0 3px var(--signal); }
 
 .case-two-module { --signal: #b8ff49; }
 .case-three-module { --signal: #ffc85a; }
 .case-four-module { --signal: #55ced2; }
 .case-five-module { --signal: #c480d1; }
+.case-six-module { --signal: #d96f32; }
+.case-seven-module { --signal: #7864c8; }
 .human-event-badge { align-items: center; background: #fff6e2; border: 1px solid #e4c783; border-radius: 7px; color: #7f5900; display: inline-flex; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 720; letter-spacing: .05em; min-height: 34px; padding: 7px 10px; }
 @keyframes semantic-target-pulse { 0%, 45% { background: #efffc9; } 100% { background: white; } }
 
@@ -543,7 +553,7 @@
   .stage-select { width: 100%; }
   .stage-select select { flex: 1; max-width: none; }
   .engagement-matrix .agent-column { width: 230px; }
-  .engagement-matrix .case-one-column, .engagement-matrix .case-two-column, .engagement-matrix .case-three-column, .engagement-matrix .case-four-column, .engagement-matrix .case-five-column { width: 160px; }
+  .engagement-matrix .case-one-column, .engagement-matrix .case-two-column, .engagement-matrix .case-three-column, .engagement-matrix .case-four-column, .engagement-matrix .case-five-column, .engagement-matrix .case-six-column, .engagement-matrix .case-seven-column { width: 160px; }
   .agent-matrix-card { gap: 6px; grid-template-columns: 22px 32px minmax(0, 1fr); }
   .case-platform-badges.is-compact { display: none; }
   .matrix-agent-mark { height: 31px; width: 31px; }
@@ -555,7 +565,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .semantic-target .agent-matrix-card, .semantic-target td.case-one-column, .semantic-target td.case-two-column, .semantic-target td.case-three-column, .semantic-target td.case-four-column, .semantic-target td.case-five-column { animation: none; }
+  .semantic-target .agent-matrix-card, .semantic-target td.case-one-column, .semantic-target td.case-two-column, .semantic-target td.case-three-column, .semantic-target td.case-four-column, .semantic-target td.case-five-column, .semantic-target td.case-six-column, .semantic-target td.case-seven-column { animation: none; }
 }
 
 /* Case Audit readability upgrade. */
@@ -636,7 +646,7 @@
 .engagement-matrix { min-width: 1750px; }
 .engagement-matrix thead th { height: 102px; padding: 16px 14px; }
 .engagement-matrix .agent-column { width: 370px; }
-.engagement-matrix .case-one-column, .engagement-matrix .case-two-column, .engagement-matrix .case-three-column, .engagement-matrix .case-four-column, .engagement-matrix .case-five-column { width: 235px; }
+.engagement-matrix .case-one-column, .engagement-matrix .case-two-column, .engagement-matrix .case-three-column, .engagement-matrix .case-four-column, .engagement-matrix .case-five-column, .engagement-matrix .case-six-column, .engagement-matrix .case-seven-column { width: 235px; }
 .engagement-matrix .future-case { width: 118px; }
 .matrix-stage-row th { height: 48px; }
 .agent-matrix-card { grid-template-columns: 32px 42px minmax(0, 1fr) auto; min-height: 94px; padding: 12px 13px; }
@@ -674,7 +684,7 @@
   .case-audit-metrics article { min-height: 118px; }
   .stage-card { flex-basis: 270px; min-height: 280px; }
   .engagement-matrix .agent-column { width: 260px; }
-  .engagement-matrix .case-one-column, .engagement-matrix .case-two-column, .engagement-matrix .case-three-column, .engagement-matrix .case-four-column, .engagement-matrix .case-five-column { width: 190px; }
+  .engagement-matrix .case-one-column, .engagement-matrix .case-two-column, .engagement-matrix .case-three-column, .engagement-matrix .case-four-column, .engagement-matrix .case-five-column, .engagement-matrix .case-six-column, .engagement-matrix .case-seven-column { width: 190px; }
   .agent-matrix-card { grid-template-columns: 26px 36px minmax(0, 1fr); }
   .matrix-agent-copy b { font-size: 11.5px; }
   .engagement-cell > small { max-width: 120px; }
