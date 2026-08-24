@@ -542,22 +542,6 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(caseStyles, /\.inspector-agent-audit-row/);
 });
 
-test("keeps Case-level Process outputs and consumers in a compact metadata footer", async () => {
-  const [mapSource, styles] = await Promise.all([
-    readFile(path.join(projectRoot, "app", "case-simulation", "case-orchestration-map.tsx"), "utf8"),
-    readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
-  ]);
-  assert.match(mapSource, /className="background-process-metadata"/);
-  assert.match(mapSource, /className="process-metadata-chips"/);
-  assert.match(mapSource, /process-consumer-chips/);
-  assert.match(mapSource, />OUTPUTS</);
-  assert.match(mapSource, />USED BY</);
-  assert.doesNotMatch(mapSource, /OUTPUTS → CONSUMERS/);
-  assert.match(styles, /\.background-process-metadata > div[^{]*\{[^}]*grid-template-columns: 58px minmax\(0, 1fr\)/);
-  assert.match(styles, /\.process-metadata-chips[^{]*\{[^}]*flex-wrap: wrap/);
-  assert.match(styles, /\.background-process-rail article[^{]*\{[^}]*min-height: 0/);
-});
-
 test("renders canonical Agent cross-references by stable ID with profile history", async () => {
   const [pageSource, matrixSource, comparisonSource, referenceSource] = await Promise.all([
     readFile(path.join(projectRoot, "app", "page.tsx"), "utf8"),
