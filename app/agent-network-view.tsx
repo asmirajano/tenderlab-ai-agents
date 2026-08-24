@@ -89,7 +89,7 @@ export default function AgentNetworkView({
     if (focusAgent.id === orchestratorId) {
       const engagedNames = new Set([
         ...case1ProcessGraph.activities.flatMap((activity) => activity.agentNames),
-        ...case1ProcessGraph.processAgentExecutions.map((execution) => agents.find((agent) => agent.id === execution.agentId)?.name).filter((name): name is string => Boolean(name)),
+        ...case1ProcessGraph.processAgentExecutions.map((execution) => agentById.get(execution.agentId)?.name).filter((name): name is string => Boolean(name)),
       ]);
       for (const name of engagedNames) {
         const agent = agentByName.get(name);
@@ -105,7 +105,7 @@ export default function AgentNetworkView({
       downstream: filtered.filter((relation) => relation.direction === "downstream").sort((a, b) => a.agentId - b.agentId),
       activities: observedActivities,
     };
-  }, [agentByName, focusAgent, networkFilter, supportMap, visibleIds]);
+  }, [agentById, agentByName, focusAgent, networkFilter, supportMap, visibleIds]);
 
   if (!focusAgent) return null;
 
