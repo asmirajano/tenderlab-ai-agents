@@ -593,6 +593,7 @@ test("keeps Case-level Process outputs and consumers in a compact metadata foote
   assert.match(mapSource, />OUTPUTS</);
   assert.match(mapSource, />USED BY</);
   assert.doesNotMatch(mapSource, /OUTPUTS → CONSUMERS/);
+  assert.match(styles, /\.background-process-metadata[^{]*\{[^}]*background: transparent[^}]*grid-template-columns: minmax\(0, 1fr\)[^}]*min-height: 0[^}]*padding: 7px 0 0/);
   assert.match(styles, /\.background-process-metadata > div[^{]*\{[^}]*grid-template-columns: 58px minmax\(0, 1fr\)/);
   assert.match(styles, /\.process-metadata-chips[^{]*\{[^}]*flex-wrap: wrap/);
   assert.match(styles, /\.background-process-rail article[^{]*\{[^}]*min-height: 0/);

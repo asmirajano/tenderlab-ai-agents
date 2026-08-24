@@ -630,7 +630,7 @@
 .background-agent-list { align-content: start; display: flex; flex-wrap: wrap; gap: 4px; }
 .background-agent-list button { background: #f9fbfa; border: 1px solid #ccd7d0; border-radius: 5px; color: var(--green); cursor: pointer; font-size: var(--type-micro); padding: 4px 5px; text-align: left; }
 .background-agent-list button:hover, .background-agent-list button:focus-visible { border-color: var(--green); outline: 2px solid var(--green-soft); }
-.background-process-metadata { border-top: 1px solid #ddd7e9; display: grid; gap: 5px; margin-top: 9px; padding-top: 7px; }
+.background-process-metadata { align-items: stretch; background: transparent; border-top: 1px solid #ddd7e9; display: grid; gap: 5px; grid-template-columns: minmax(0, 1fr); min-height: 0; margin-top: 9px; padding: 7px 0 0; width: 100%; }
 .background-process-metadata > div { align-items: start; display: grid; gap: 7px; grid-template-columns: 58px minmax(0, 1fr); }
 .background-process-metadata b { color: #6a5b9a; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); line-height: 1.7; text-align: left; }
 .process-metadata-chips { display: flex; flex-wrap: wrap; gap: 3px 4px; min-width: 0; }
