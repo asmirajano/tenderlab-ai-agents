@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { agents, layerById } from "../../packages/catalog-data/src/agents";
 import { AgentComparisonBar, AgentComparisonModal } from "../agent-comparison";
-import { eventAgentAuditLabels, processRelationshipLabels, type ProcessActorKind, type ProcessRelationship } from "../process-model";
-import { case1ProcessGraph } from "./case-1-graph";
+import { eventAgentAuditLabels, processRelationshipLabels, type CaseProcessGraph, type ProcessActorKind, type ProcessRelationship } from "../process-model";
 
 type MapFocus = "all" | "critical" | "decisions";
 
 const laneOrder: ProcessActorKind[] = ["buyer", "client", "tenderlab", "consultant", "external"];
-const canvas = { width: 4620, header: 86, laneHeight: 206, nodeWidth: 200, nodeHeight: 150, xStart: 170, columnGap: 208 };
-const timeBands = [
+const baseCanvas = { header: 86, laneHeight: 206, nodeWidth: 200, nodeHeight: 150, xStart: 170, columnGap: 208 };
+export type OrchestrationTimeBand = { start: number; end: number; label: string };
+const defaultTimeBands: OrchestrationTimeBand[] = [
   { start: 0, end: 2, label: "D0–1 · DISCOVERY" },
   { start: 3, end: 5, label: "D1–6 · PROFILE + REQUIREMENTS" },
   { start: 6, end: 8, label: "D6–15 · DECISION + DESIGN" },
@@ -22,8 +22,8 @@ const timeBands = [
 
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
 
-function positionFor(activityId: string) {
-  const activity = case1ProcessGraph.activities.find((item) => item.id === activityId)!;
+function positionFor(activityId: string, graph: CaseProcessGraph, canvas: typeof baseCanvas & { width: number }) {
+  const activity = graph.activities.find((item) => item.id === activityId)!;
   const laneIndex = laneOrder.indexOf(activity.layout.lane);
   return {
     x: canvas.xStart + activity.layout.column * canvas.columnGap,
@@ -31,9 +31,9 @@ function positionFor(activityId: string) {
   };
 }
 
-function edgePath(relationship: ProcessRelationship) {
-  const source = positionFor(relationship.from);
-  const target = positionFor(relationship.to);
+function edgePath(relationship: ProcessRelationship, graph: CaseProcessGraph, canvas: typeof baseCanvas & { width: number }) {
+  const source = positionFor(relationship.from, graph, canvas);
+  const target = positionFor(relationship.to, graph, canvas);
   const sourceX = source.x + canvas.nodeWidth;
   const sourceY = source.y + canvas.nodeHeight / 2;
   const targetX = target.x;
@@ -47,11 +47,22 @@ function edgePath(relationship: ProcessRelationship) {
   return `M ${sourceX} ${sourceY} C ${sourceX + bend} ${sourceY}, ${targetX - bend} ${targetY}, ${targetX} ${targetY}`;
 }
 
-export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (agentId: number, eventStep: number) => void }) {
+export default function CaseOrchestrationMap({
+  graph,
+  caseNumber,
+  timeBands = defaultTimeBands,
+  processNote,
+  onOpenAgent,
+}: {
+  graph: CaseProcessGraph;
+  caseNumber: number;
+  timeBands?: OrchestrationTimeBand[];
+  processNote?: string;
+  onOpenAgent: (agentId: number, eventStep: number) => void;
+}) {
   const [focus, setFocus] = useState<MapFocus>("all");
   const [actorFilter, setActorFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
-  const [selectedActivityId, setSelectedActivityId] = useState("activity-01");
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [comparisonIds, setComparisonIds] = useState<number[]>([]);
   const [comparisonOpen, setComparisonOpen] = useState(false);
@@ -59,30 +70,34 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   const focusToggleRef = useRef<HTMLButtonElement>(null);
   const scrollPositionRef = useRef({ left: 0, top: 0 });
 
-  const selected = case1ProcessGraph.activities.find((activity) => activity.id === selectedActivityId) ?? case1ProcessGraph.activities[0];
-  const incoming = case1ProcessGraph.relationships.filter((relationship) => relationship.to === selected.id);
-  const outgoing = case1ProcessGraph.relationships.filter((relationship) => relationship.from === selected.id);
-  const selectedArtifact = case1ProcessGraph.artifacts.find((artifact) => artifact.producerRef === selected.id)!;
-  const selectedEventAudit = case1ProcessGraph.eventAudits.find((audit) => audit.eventStep === selected.eventStep);
-  const selectedExecutions = case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === selected.eventStep);
+  const firstActivityId = graph.activities[0]?.id ?? "";
+  const [selectedActivityId, setSelectedActivityId] = useState(firstActivityId);
+  const maxColumn = Math.max(0, ...graph.activities.map((activity) => activity.layout.column));
+  const canvas = useMemo(() => ({ ...baseCanvas, width: Math.max(1840, baseCanvas.xStart + (maxColumn + 1) * baseCanvas.columnGap + 120) }), [maxColumn]);
+  const selected = graph.activities.find((activity) => activity.id === selectedActivityId) ?? graph.activities[0];
+  const incoming = graph.relationships.filter((relationship) => relationship.to === selected.id);
+  const outgoing = graph.relationships.filter((relationship) => relationship.from === selected.id);
+  const selectedArtifact = graph.artifacts.find((artifact) => artifact.producerRef === selected.id)!;
+  const selectedEventAudit = graph.eventAudits.find((audit) => audit.eventStep === selected.eventStep);
+  const selectedExecutions = graph.agentExecutions.filter((execution) => execution.eventStep === selected.eventStep);
   const confirmedExecutions = selectedExecutions.filter((execution) => (
     (execution.necessity === "justified" || execution.necessity === "conditional")
     && execution.validationStatus !== "needs-review"
   ));
   const proposedExecutions = selectedExecutions.filter((execution) => execution.validationStatus === "needs-review");
   const activeAgentNames = useMemo(() => [...new Set([
-    ...case1ProcessGraph.activities.flatMap((activity) => activity.agentNames),
-    ...case1ProcessGraph.processAgentExecutions.map((execution) => agents.find((agent) => agent.id === execution.agentId)?.name).filter((name): name is string => Boolean(name)),
-  ])].sort(), []);
-  const eventRelationships = useMemo(() => case1ProcessGraph.relationships.filter((relationship) => (
-    case1ProcessGraph.activities.some((activity) => activity.id === relationship.from)
-    && case1ProcessGraph.activities.some((activity) => activity.id === relationship.to)
-  )), []);
+    ...graph.activities.flatMap((activity) => activity.agentNames),
+    ...graph.processAgentExecutions.map((execution) => agents.find((agent) => agent.id === execution.agentId)?.name).filter((name): name is string => Boolean(name)),
+  ])].sort(), [graph]);
+  const eventRelationships = useMemo(() => graph.relationships.filter((relationship) => (
+    graph.activities.some((activity) => activity.id === relationship.from)
+    && graph.activities.some((activity) => activity.id === relationship.to)
+  )), [graph]);
   const joinCount = useMemo(() => {
     const incomingCount = new Map<string, number>();
-    case1ProcessGraph.relationships.filter((edge) => edge.blocking).forEach((edge) => incomingCount.set(edge.to, (incomingCount.get(edge.to) ?? 0) + 1));
+    graph.relationships.filter((edge) => edge.blocking).forEach((edge) => incomingCount.set(edge.to, (incomingCount.get(edge.to) ?? 0) + 1));
     return [...incomingCount.values()].filter((count) => count > 1).length;
-  }, []);
+  }, [graph]);
 
   const isActivityFocused = (activity: typeof selected) => {
     if (actorFilter !== "all" && !activity.actorIds.includes(actorFilter)) return false;
@@ -93,8 +108,8 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   };
 
   const relationshipActive = (relationship: ProcessRelationship) => {
-    const source = case1ProcessGraph.activities.find((activity) => activity.id === relationship.from);
-    const target = case1ProcessGraph.activities.find((activity) => activity.id === relationship.to);
+    const source = graph.activities.find((activity) => activity.id === relationship.from);
+    const target = graph.activities.find((activity) => activity.id === relationship.to);
     if (!source || !target) return true;
     return isActivityFocused(source) && isActivityFocused(target);
   };
@@ -150,9 +165,9 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
   }, [isFocusMode]);
 
   return (
-    <section className={`orchestration-map-section ${isFocusMode ? "is-focus-mode" : ""}`} aria-labelledby="orchestration-map-title" data-focus-mode={isFocusMode ? "active" : "inactive"}>
+    <section className={`orchestration-map-section ${isFocusMode ? "is-focus-mode" : ""}`} aria-labelledby={`orchestration-map-title-${caseNumber}`} data-focus-mode={isFocusMode ? "active" : "inactive"}>
       <div className="section-heading orchestration-heading">
-        <div><p>CASE 1 · ORCHESTRATION MAP</p><h2 id="orchestration-map-title">События, ответственность и зависимости</h2></div>
+        <div><p>{`CASE ${caseNumber} · ORCHESTRATION MAP`}</p><h2 id={`orchestration-map-title-${caseNumber}`}>События, ответственность и зависимости</h2></div>
         <div className="orchestration-heading-actions">
           <span>Время нелинейно: ветви могут работать параллельно, ожидать Actor или сходиться по ALL-правилу.</span>
           <button
@@ -179,15 +194,15 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
             </button>
           ))}
         </div>
-        <label><span>ACTOR</span><select value={actorFilter} onChange={(event) => setActorFilter(event.target.value)}><option value="all">Все участники</option>{case1ProcessGraph.actors.map((actor) => <option value={actor.id} key={actor.id}>{actor.shortName}</option>)}</select></label>
+        <label><span>ACTOR</span><select value={actorFilter} onChange={(event) => setActorFilter(event.target.value)}><option value="all">Все участники</option>{graph.actors.map((actor) => <option value={actor.id} key={actor.id}>{actor.shortName}</option>)}</select></label>
         <label><span>AGENT</span><select value={agentFilter} onChange={(event) => setAgentFilter(event.target.value)}><option value="all">Все агенты</option>{activeAgentNames.map((name) => <option value={name} key={name}>{agentByName.get(name)?.id.toString().padStart(2, "0")} · {name}</option>)}</select></label>
         <div className="map-legend" aria-label="Легенда связей"><span><i className="edge-standard" /> Handoff</span><span><i className="edge-branch" /> Branch / Join</span><span><i className="edge-wait" /> Wait / External</span><span><i className="edge-loop" /> Rework / Feedback</span></div>
       </div>
 
       <section className="background-process-rail" aria-label="Persistent and parallel Case processes">
-        <header><div><span>CASE-LEVEL / BACKGROUND</span><b>Процессы вне линейной Event sequence</b></div><small>E02 читает готовые records; PB01 работает параллельно до E08.</small></header>
+        <header><div><span>CASE-LEVEL / BACKGROUND</span><b>Процессы вне линейной Event sequence</b></div><small>{processNote ?? "Event читает готовые records; parallel work joins only at explicit gates."}</small></header>
         <div>
-          {case1ProcessGraph.processes.map((process) => (
+          {graph.processes.map((process) => (
             <article className={process.blocking ? "is-blocking" : ""} key={process.id}>
               <span>{process.id} · {process.kind}</span>
               <h3>{process.name}</h3>
@@ -195,18 +210,37 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
               <div className="background-agent-list">
                 {process.agentIds.map((agentId) => {
                   const agent = agents.find((candidate) => candidate.id === agentId);
-                  const firstEvent = process.consumerRefs.find((ref) => ref.startsWith("activity-"));
-                  return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, firstEvent ? Number(firstEvent.replace("activity-", "")) : 24)} key={agent.id}>{String(agent.id).padStart(2, "0")} · {agent.name}</button> : null;
+                  const firstEvent = process.consumerRefs.map((ref) => graph.activities.find((activity) => activity.id === ref)).find(Boolean);
+                  return agent ? <button type="button" onClick={() => onOpenAgent(agent.id, firstEvent?.eventStep ?? graph.activities.at(-1)?.eventStep ?? 1)} key={agent.id}>{String(agent.id).padStart(2, "0")} · {agent.name}</button> : null;
                 })}
               </div>
-              <footer><b>OUTPUTS → CONSUMERS</b><span>{process.outputArtifactIds.map((id) => case1ProcessGraph.artifacts.find((artifact) => artifact.id === id)?.name).filter(Boolean).join(" · ")} → {process.consumerRefs.map((ref) => ref.startsWith("activity-") ? `E${ref.replace("activity-", "")}` : ref).join(" · ")}</span></footer>
+              <footer className="background-process-metadata">
+                <div>
+                  <b>OUTPUTS</b>
+                  <span className="process-metadata-chips">
+                    {process.outputArtifactIds.map((id) => {
+                      const artifact = graph.artifacts.find((candidate) => candidate.id === id);
+                      return artifact ? <i key={id}>{artifact.name}</i> : null;
+                    })}
+                  </span>
+                </div>
+                <div>
+                  <b>USED BY</b>
+                  <span className="process-metadata-chips process-consumer-chips">
+                    {process.consumerRefs.map((ref) => {
+                      const activity = graph.activities.find((candidate) => candidate.id === ref || candidate.id.endsWith(ref));
+                      return <i key={ref}>{activity ? `E${String(activity.eventStep).padStart(2, "0")}` : ref}</i>;
+                    })}
+                  </span>
+                </div>
+              </footer>
             </article>
           ))}
         </div>
       </section>
 
       <div className="orchestration-workspace">
-        <div ref={mapScrollRef} className="orchestration-scroll" aria-label="Прокручиваемая карта Case 1">
+        <div ref={mapScrollRef} className="orchestration-scroll" aria-label={`Прокручиваемая карта Case ${caseNumber}`}>
           <div className="orchestration-canvas" style={{ width: canvas.width, height: canvas.header + laneOrder.length * canvas.laneHeight + 92 }}>
             <div className="map-time-axis" aria-hidden="true">
               {timeBands.map((band) => (
@@ -214,7 +248,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
               ))}
             </div>
             {laneOrder.map((lane, laneIndex) => {
-              const actor = case1ProcessGraph.actors.find((candidate) => candidate.kind === lane)!;
+              const actor = graph.actors.find((candidate) => candidate.kind === lane)!;
               return (
                 <div className={`actor-lane lane-${lane}`} key={lane} style={{ top: canvas.header + laneIndex * canvas.laneHeight, height: canvas.laneHeight }}>
                   <div className="actor-lane-label"><span>{String(laneIndex + 1).padStart(2, "0")}</span><strong>{actor.shortName}</strong><small>{actor.description}</small></div>
@@ -223,19 +257,19 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
             })}
             <svg className="orchestration-edges" viewBox={`0 0 ${canvas.width} ${canvas.header + laneOrder.length * canvas.laneHeight + 92}`} aria-hidden="true">
               <defs>
-                <marker id="map-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" /></marker>
+                <marker id={`map-arrow-${caseNumber}`} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" /></marker>
               </defs>
               {eventRelationships.map((relationship) => (
                 <path
                   className={`map-edge edge-${relationship.type} ${relationshipActive(relationship) ? "is-active" : "is-muted"} ${incoming.some((edge) => edge.id === relationship.id) || outgoing.some((edge) => edge.id === relationship.id) ? "is-selected" : ""}`}
-                  d={edgePath(relationship)}
-                  markerEnd="url(#map-arrow)"
+                  d={edgePath(relationship, graph, canvas)}
+                  markerEnd={`url(#map-arrow-${caseNumber})`}
                   key={relationship.id}
                 />
               ))}
             </svg>
-            {case1ProcessGraph.activities.map((activity) => {
-              const position = positionFor(activity.id);
+            {graph.activities.map((activity) => {
+              const position = positionFor(activity.id, graph, canvas);
               const focused = isActivityFocused(activity);
               const selectedNode = selected.id === activity.id;
               return (
@@ -250,7 +284,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
                   <span className="node-topline"><b>E{String(activity.eventStep).padStart(2, "0")}</b><i>{activity.stateLabel}</i></span>
                   <small>{activity.period}</small>
                   <strong>{activity.title}</strong>
-                  <span className="node-agents">{activity.agentNames.length} agents{activity.standbyAgentNames.length ? ` · ${activity.standbyAgentNames.length} standby` : ""}{case1ProcessGraph.eventAudits.some((audit) => audit.eventStep === activity.eventStep) ? ` · ${case1ProcessGraph.agentExecutions.filter((execution) => execution.eventStep === activity.eventStep && (execution.necessity === "misplaced" || execution.necessity === "redundant" || execution.necessity === "unsupported" || execution.validationStatus === "needs-review")).length} audit finding` : ""}</span>
+                  <span className="node-agents">{activity.agentNames.length} agents{activity.standbyAgentNames.length ? ` · ${activity.standbyAgentNames.length} standby` : ""}{graph.eventAudits.some((audit) => audit.eventStep === activity.eventStep) ? ` · ${graph.agentExecutions.filter((execution) => execution.eventStep === activity.eventStep && (execution.necessity === "misplaced" || execution.necessity === "redundant" || execution.necessity === "unsupported" || execution.validationStatus === "needs-review")).length} audit finding` : ""}</span>
                   {activity.kind !== "activity" && <em>{activity.kind === "decision" ? "DECISION GATE" : activity.kind === "wait" ? "WAIT / TRIGGER" : activity.kind === "background-update" ? "PERSISTENT UPDATE" : "EXTERNAL EVENT"}</em>}
                 </button>
               );
@@ -263,7 +297,7 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
           <div className="inspector-title"><i>E{String(selected.eventStep).padStart(2, "0")}</i><div><small>{selected.period} · {selected.phase}</small><h3>{selected.title}</h3></div></div>
           <dl>
             <div><dt>ИНИЦИАТОР</dt><dd>{selected.initiator}</dd></div>
-            <div><dt>RESPONSIBLE ACTOR</dt><dd>{case1ProcessGraph.actors.find((actor) => actor.id === selected.responsibleActorId)?.shortName}</dd></div>
+            <div><dt>RESPONSIBLE ACTOR</dt><dd>{graph.actors.find((actor) => actor.id === selected.responsibleActorId)?.shortName}</dd></div>
             <div><dt>TRIGGER</dt><dd>{selected.trigger}</dd></div>
             <div><dt>STATE</dt><dd>{selected.stateLabel}</dd></div>
           </dl>
@@ -319,17 +353,18 @@ export default function CaseOrchestrationMap({ onOpenAgent }: { onOpenAgent: (ag
           <div className="inspector-io">
             <article><span>INPUT / DEPENDENCY</span>{incoming.length ? incoming.map((edge) => <p key={edge.id}><b>{edge.joinPolicy ? `${edge.joinPolicy} · ` : ""}{processRelationshipLabels[edge.type]}</b>{edge.label}</p>) : <p>Стартовый внешний Event</p>}</article>
             <article className="inspector-output"><span>COMBINED EVENT RESULT</span><p>{selectedArtifact.summary}</p>{selectedEventAudit && <small>Собрано из {confirmedExecutions.length} подтверждённых Agent outputs; это не output одного Agent.</small>}</article>
+            {selectedExecutions.some((execution) => execution.datasetImpact?.length) && <article><span>DATASET IMPACT</span>{selectedExecutions.flatMap((execution) => execution.datasetImpact ?? []).filter((value, index, all) => all.indexOf(value) === index).map((impact) => <p key={impact}>{impact}</p>)}</article>}
             <article><span>NEXT / HANDOFF</span>{outgoing.length ? outgoing.map((edge) => <p key={edge.id}><b>{processRelationshipLabels[edge.type]}</b>{edge.label}{edge.condition ? <small>{edge.condition}</small> : null}</p>) : <p>Terminal outcome</p>}</article>
           </div>
         </aside>
       </div>
 
       <div className="orchestration-audit" aria-label="Автоматические проверки графа">
-        <article><span>{case1ProcessGraph.activities.length}</span><b>Case Events</b><small>все имеют Actor, Trigger и Output</small></article>
-        <article><span>{case1ProcessGraph.processes.length}</span><b>Case Processes</b><small>persistent, case-scoped и parallel</small></article>
-        <article><span>{case1ProcessGraph.relationships.length}</span><b>Typed relations</b><small>handoff, branch, wait, rework</small></article>
+        <article><span>{graph.activities.length}</span><b>Case Events</b><small>все имеют Actor, Trigger и Output</small></article>
+        <article><span>{graph.processes.length}</span><b>Case Processes</b><small>persistent, case-scoped и parallel</small></article>
+        <article><span>{graph.relationships.length}</span><b>Typed relations</b><small>handoff, branch, wait, rework</small></article>
         <article><span>{joinCount}</span><b>Fan-In points</b><small>обязательные результаты сходятся явно</small></article>
-        <article><span>{case1ProcessGraph.activities.filter((activity) => activity.kind === "wait").length}</span><b>Managed waits</b><small>каждое ожидание имеет Trigger</small></article>
+        <article><span>{graph.activities.filter((activity) => activity.kind === "wait").length}</span><b>Managed waits</b><small>каждое ожидание имеет Trigger</small></article>
         <article className="audit-ok"><span>0</span><b>Orphan outputs</b><small>terminal outcome отмечен отдельно</small></article>
       </div>
       <AgentComparisonBar selectedIds={comparisonIds} onClear={() => setComparisonIds([])} onCompare={() => setComparisonOpen(true)} />

@@ -17,6 +17,7 @@ import {
 } from "../../packages/catalog-data/src/agents";
 import TopNavigation from "../top-navigation";
 import CaseOrchestrationMap from "./case-orchestration-map";
+import Case2Module from "./case-2-module";
 import {
   case1,
   case1Engagements,
@@ -25,6 +26,8 @@ import {
   type EngagementStatus,
 } from "./case-1-data";
 import { case1ProcessGraph } from "./case-1-graph";
+import { case2, case2Engagements, case2Stages } from "./case-2-data";
+import { case2ProcessGraph } from "./case-2-graph";
 import { eventAgentAuditLabels, type EventAgentAuditDecision } from "../process-model";
 import {
   createSemanticSearchDocument,
@@ -63,8 +66,9 @@ const sideClasses: Record<PlatformSide, string> = {
   backend: "side-backend",
 };
 
-const futureCases = Array.from({ length: 9 }, (_, index) => index + 2);
+const futureCases = Array.from({ length: 8 }, (_, index) => index + 3);
 const engagementByAgentId = new Map(case1Engagements.map((engagement) => [engagement.agentId, engagement]));
+const case2EngagementByAgentId = new Map(case2Engagements.map((engagement) => [engagement.agentId, engagement]));
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
 const semanticDocuments = agents.map((agent) => {
@@ -144,7 +148,8 @@ export default function CaseSimulationPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [selectedAgentHistory, setSelectedAgentHistory] = useState<number[]>([]);
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
-  const [caseExpanded, setCaseExpanded] = useState(true);
+  const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2>(1);
+  const [caseExpanded, setCaseExpanded] = useState(false);
   const [caseView, setCaseView] = useState<"map" | "narrative">("map");
   const matrixScrollRef = useRef<HTMLDivElement | null>(null);
   const matrixSectionRef = useRef<HTMLElement | null>(null);
@@ -197,18 +202,22 @@ export default function CaseSimulationPage() {
   })).filter((group) => group.agents.length > 0), [filteredAgents]);
 
   const selectedAgent = selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) ?? null : null;
-  const selectedEngagement = selectedAgent ? engagementByAgentId.get(selectedAgent.id) ?? null : null;
-  const selectedStage = selectedEngagement ? caseStages.find((stage) => stage.id === selectedEngagement.stageId) ?? null : null;
+  const selectedEngagementMap = selectedCaseNumber === 1 ? engagementByAgentId : case2EngagementByAgentId;
+  const selectedCaseStages = selectedCaseNumber === 1 ? caseStages : case2Stages;
+  const selectedGraph = selectedCaseNumber === 1 ? case1ProcessGraph : case2ProcessGraph;
+  const selectedCase = selectedCaseNumber === 1 ? case1 : case2;
+  const selectedEngagement = selectedAgent ? selectedEngagementMap.get(selectedAgent.id) ?? null : null;
+  const selectedStage = selectedEngagement ? selectedCaseStages.find((stage) => stage.id === selectedEngagement.stageId) ?? null : null;
   const selectedChronologyEvent = selectedChronologyStep
-    ? case1ProcessGraph.activities.find((event) => event.eventStep === selectedChronologyStep) ?? null
+    ? selectedGraph.activities.find((event) => event.eventStep === selectedChronologyStep) ?? null
     : null;
   const selectedEventExecution = selectedChronologyStep && selectedAgent
-    ? case1ProcessGraph.agentExecutions.find((execution) => execution.eventStep === selectedChronologyStep && execution.agentId === selectedAgent.id)
+    ? selectedGraph.agentExecutions.find((execution) => execution.eventStep === selectedChronologyStep && execution.agentId === selectedAgent.id)
     : undefined;
   const selectedDetailContext: AgentDetailContext | undefined = selectedEngagement && selectedStage ? {
-    caseLabel: "CASE 1",
-    caseName: case1.name,
-    company: case1.company,
+    caseLabel: `CASE ${selectedCaseNumber}`,
+    caseName: selectedCase.name,
+    company: selectedCase.company,
     stage: `${selectedStage.number} · ${selectedStage.title}`,
     status: selectedEngagement.status,
     statusLabel: statusLabels[selectedEngagement.status],
@@ -235,8 +244,9 @@ export default function CaseSimulationPage() {
     } : undefined,
   } : undefined;
 
-  const openAgent = (agentId: number, chronologyStep: number | null = null) => {
+  const openAgent = (agentId: number, chronologyStep: number | null = null, caseNumber: 1 | 2 = 1) => {
     setSelectedAgentHistory([]);
+    setSelectedCaseNumber(caseNumber);
     setSelectedChronologyStep(chronologyStep);
     setSelectedAgentId(agentId);
   };
@@ -323,7 +333,7 @@ export default function CaseSimulationPage() {
         <div>
           <p className="case-eyebrow"><span /> АУДИТ АРХИТЕКТУРЫ · CASE SIMULATION</p>
           <h1>Case Simulation<br /><em>Agent Engagement</em></h1>
-          <p>Практическая проверка участия 64 агентов в одном полном маршруте — от обнаружения закупки до исполнения контракта.</p>
+          <p>Практическая проверка 64 агентов на независимых маршрутах — от первого trigger до явно определённой границы каждого Case.</p>
         </div>
         <div className="case-audit-version">
           <span>МЕТОДИКА</span>
@@ -416,7 +426,7 @@ export default function CaseSimulationPage() {
         </div>
       </nav>
 
-      <div className="case-view-panel" hidden={caseView !== "map"}><CaseOrchestrationMap onOpenAgent={openAgent} /></div>
+      <div className="case-view-panel" hidden={caseView !== "map"}><CaseOrchestrationMap graph={case1ProcessGraph} caseNumber={1} processNote="E02 читает готовые records; PB01 работает параллельно до E08." onOpenAgent={openAgent} /></div>
 
       <div className="case-view-panel" hidden={caseView !== "narrative"}>
 
@@ -540,10 +550,15 @@ export default function CaseSimulationPage() {
         </div>
       </section>
 
+      <Case2Module
+        onOpenAgent={(agentId, eventStep) => openAgent(agentId, eventStep, 2)}
+        onScrollToMatrix={() => matrixSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+      />
+
       <section className="engagement-matrix-section" aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
-          <span>Нажмите статус Case 1, чтобы увидеть input, output и handoff.</span>
+          <span>Case 1 и Case 2 активны; нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
         </div>
 
         <div className="matrix-toolbar" aria-label="Фильтры матрицы">
@@ -626,12 +641,13 @@ export default function CaseSimulationPage() {
           <small>Conditional: сплошная метка — условие сработало; контурная — резерв.</small>
         </div>
 
-        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Case 1 и будущих кейсов">
+        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Case 1, Case 2 и будущих кейсов">
           <table className="engagement-matrix">
             <thead>
               <tr>
                 <th className="agent-column"><span>AGENTS</span><b>64 архитектурных роли</b></th>
                 <th className="case-one-column"><span>CASE 01 · ACTIVE</span><b>Школьная мебель</b><small>Грузия · $3,85 млн</small></th>
+                <th className="case-two-column"><span>CASE 02 · ACTIVE</span><b>Consultant-led PPE activation</b><small>Кения · $2,10 млн ceiling</small></th>
                 {futureCases.map((caseNumber) => <th className="future-case" key={caseNumber}><span>CASE {String(caseNumber).padStart(2, "0")}</span><b>После аудита</b></th>)}
               </tr>
             </thead>
@@ -640,7 +656,7 @@ export default function CaseSimulationPage() {
                 <StageRows
                   stage={stage}
                   stageAgents={stageAgents}
-                  onSelect={(agentId) => openAgent(agentId)}
+                  onSelect={(agentId, caseNumber) => openAgent(agentId, null, caseNumber)}
                   semanticResults={semanticResultById}
                   highlightedAgentId={highlightedAgentId}
                   registerRow={(agentId, node) => { if (node) rowRefs.current.set(agentId, node); else rowRefs.current.delete(agentId); }}
@@ -663,7 +679,7 @@ export default function CaseSimulationPage() {
           footer={(
             <footer className="drawer-case-footer">
               <button type="button" onClick={() => openAdjacentAgent(-1)} disabled={filteredAgents[0]?.id === selectedAgent.id}>← Предыдущий</button>
-              <span>CASE 01 · V1</span>
+              <span>CASE {String(selectedCaseNumber).padStart(2, "0")} · {selectedCaseNumber === 1 ? "APPROVED" : "AUDITED V1"}</span>
               <button type="button" onClick={() => openAdjacentAgent(1)} disabled={filteredAgents.at(-1)?.id === selectedAgent.id}>Следующий →</button>
             </footer>
           )}
@@ -683,7 +699,7 @@ function StageRows({
 }: {
   stage: (typeof caseStages)[number];
   stageAgents: Agent[];
-  onSelect: (agentId: number) => void;
+  onSelect: (agentId: number, caseNumber: 1 | 2) => void;
   semanticResults: Map<number, SemanticSearchResult>;
   highlightedAgentId: number | null;
   registerRow: (agentId: number, node: HTMLTableRowElement | null) => void;
@@ -695,6 +711,7 @@ function StageRows({
       </tr>
       {stageAgents.map((agent) => {
         const engagement = engagementByAgentId.get(agent.id)!;
+        const case2Engagement = case2EngagementByAgentId.get(agent.id)!;
         const tier = getAgentTier(agent.id);
         const semanticResult = semanticResults.get(agent.id);
         return (
@@ -714,10 +731,17 @@ function StageRows({
               <PlatformBadges agent={agent} compact />
             </th>
             <td className="case-one-column">
-              <button className={`engagement-cell cell-${engagement.status} ${engagement.activation ? `cell-${engagement.activation}` : ""}`} type="button" onClick={() => onSelect(agent.id)} aria-label={`${agent.name}: ${statusLabels[engagement.status]}`}>
+              <button className={`engagement-cell cell-${engagement.status} ${engagement.activation ? `cell-${engagement.activation}` : ""}`} type="button" onClick={() => onSelect(agent.id, 1)} aria-label={`${agent.name}, Case 1: ${statusLabels[engagement.status]}`}>
                 <span>{statusShortLabels[engagement.status]}</span>
                 <b>{statusLabels[engagement.status]}</b>
                 <small>{engagement.status === "conditional" ? (engagement.activation === "triggered" ? "условие сработало" : "резерв") : engagement.status === "background" ? "persistent pipeline" : engagement.when}</small>
+              </button>
+            </td>
+            <td className="case-two-column">
+              <button className={`engagement-cell cell-${case2Engagement.status} ${case2Engagement.activation ? `cell-${case2Engagement.activation}` : ""}`} type="button" onClick={() => onSelect(agent.id, 2)} aria-label={`${agent.name}, Case 2: ${statusLabels[case2Engagement.status]}`}>
+                <span>{statusShortLabels[case2Engagement.status]}</span>
+                <b>{statusLabels[case2Engagement.status]}</b>
+                <small>{case2Engagement.status === "conditional" ? (case2Engagement.activation === "triggered" ? "условие сработало" : "резерв") : case2Engagement.status === "background" ? "Process execution" : case2Engagement.when}</small>
               </button>
             </td>
             {futureCases.map((caseNumber) => <td className="future-case" key={caseNumber}><span>—</span></td>)}

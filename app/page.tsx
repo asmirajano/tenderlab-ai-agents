@@ -350,7 +350,7 @@ export type AgentDetailContext = {
   caseName: string;
   company: string;
   stage: string;
-  status: "required" | "conditional" | "not-involved";
+  status: "required" | "conditional" | "background" | "not-involved";
   statusLabel: string;
   when: string;
   why: string;
@@ -475,16 +475,22 @@ function AgentDetailDrawerView({
                   <article><span>C · HANDOFF</span><p>{context.eventExecution.handoff}</p></article>
                 </div>
                 <div className="drawer-execution-evidence">
-                  <span>CASE 1 EVIDENCE</span>
+                  <span>{context.caseLabel} EVIDENCE</span>
                   <ul>{context.eventExecution.evidence.map((item) => <li key={item}>{item}</li>)}</ul>
                 </div>
+                {context.eventExecution.datasetImpact?.length ? (
+                  <div className="drawer-execution-evidence">
+                    <span>DATASET IMPACT</span>
+                    <ul>{context.eventExecution.datasetImpact.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </div>
+                ) : null}
                 <div className={`drawer-execution-necessity necessity-${context.eventExecution.necessity}`}>
                   <div><span>NECESSITY / JUSTIFICATION</span><b>{context.eventExecution.necessityLabel}</b></div>
                   <p>{context.eventExecution.necessityRationale}</p>
                   {context.eventExecution.condition && <p><small>УСЛОВИЕ АКТИВАЦИИ</small>{context.eventExecution.condition}{context.eventExecution.activation ? ` · ${context.eventExecution.activation.toUpperCase()}` : ""}</p>}
                   <p><small>ЕСЛИ УБРАТЬ ИЗ E{String(context.event?.step ?? 0).padStart(2, "0")}</small>{context.eventExecution.absenceImpact}</p>
                   {context.eventExecution.overlapNote && <p><small>ГРАНИЦА / OVERLAP</small>{context.eventExecution.overlapNote}</p>}
-                  {context.eventExecution.proposedEventStep && <p><small>ИСПРАВЛЕННЫЙ МАРШРУТ</small>Event {String(context.eventExecution.proposedEventStep).padStart(2, "0")} — отражён в сквозном Case 1 audit.</p>}
+                  {context.eventExecution.proposedEventStep && <p><small>ИСПРАВЛЕННЫЙ МАРШРУТ</small>Event {String(context.eventExecution.proposedEventStep).padStart(2, "0")} — отражён в сквозном {context.caseLabel} audit.</p>}
                   {context.eventExecution.validationStatus === "needs-review" && <p><small>VALIDATION STATUS</small>PROPOSED · требует экспертного подтверждения и не считается доказанным выполнением.</p>}
                 </div>
                 <div className="drawer-event-result-reference"><span>COMBINED EVENT RESULT</span><p>{context.eventExecution.eventResult}</p><small>Этот результат собирается из подтверждённых Agent outputs; он не является индивидуальным output данного Agent.</small></div>

@@ -101,6 +101,45 @@ test("exports the strategic presentation, validation tools, and compatibility ro
   }
 });
 
+test("models Case 2 as a dependency-complete consultant-led activation route", async () => {
+  const [{ case2Engagements }, { case2ProcessGraph }, { case1ProcessGraph }, rendered] = await Promise.all([
+    import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-2-data.ts")).href),
+    import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-2-graph.ts")).href),
+    import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts")).href),
+    readPublished("case-simulation.html"),
+  ]);
+
+  assert.equal(case2Engagements.length, 64);
+  assert.equal(new Set(case2Engagements.map((item) => item.agentId)).size, 64);
+  assert.equal(case2Engagements.filter((item) => item.status === "required").length, 22);
+  assert.equal(case2Engagements.filter((item) => item.status === "background").length, 8);
+  assert.equal(case2Engagements.filter((item) => item.status === "conditional").length, 4);
+  assert.equal(case2Engagements.filter((item) => item.status === "not-involved").length, 30);
+  assert.equal(case2ProcessGraph.activities.length, 12);
+  assert.equal(case2ProcessGraph.processes.length, 7);
+  assert.equal(case2ProcessGraph.activities.find((item) => item.eventStep === 4).agentNames.length, 0, "human outreach must not be disguised as Agent execution");
+  assert.equal(case2ProcessGraph.activities.find((item) => item.eventStep === 5).agentNames.length, 0, "prospect response belongs to the company Actor");
+  assert.deepEqual(case2ProcessGraph.agentExecutions.filter((item) => item.eventStep === 2).map((item) => item.agentId), [15, 16, 14]);
+  assert.ok(case2ProcessGraph.processes.some((item) => item.id === "P05" && item.ownerActorId === "consultant"));
+  assert.ok(case2ProcessGraph.processes.some((item) => item.id === "PB02" && item.kind === "parallel"));
+  assert.ok(case2ProcessGraph.processes.find((item) => item.id === "P01").outputArtifactIds.includes("artifact-p01-rights-policy"));
+  assert.ok(case2ProcessGraph.relationships.some((item) => item.from === "P01" && item.to === "P02" && item.artifactId === "artifact-p01-rights-policy"));
+  assert.ok(case2ProcessGraph.relationships.some((item) => item.from === "P01" && item.to === "P05" && item.artifactId === "artifact-p01-rights-policy"));
+  assert.ok(case2ProcessGraph.processes.every((process) => process.consumerRefs.every((ref) => case2ProcessGraph.activities.some((activity) => activity.id === ref) || case2ProcessGraph.processes.some((candidate) => candidate.id === ref))));
+  assert.ok(case2ProcessGraph.agentExecutions.every((item) => item.input && item.output && item.handoff && item.datasetImpact?.length));
+  assert.ok(case2ProcessGraph.processAgentExecutions.every((item) => item.input && item.output && item.handoff && item.datasetImpact?.length));
+  assert.ok(case2ProcessGraph.activities.every((item) => item.trigger && item.result && item.responsibleActorId));
+  assert.equal(case2ProcessGraph.auditSummary.proposedMissingAgentIds.length, 0);
+  assert.equal(case1ProcessGraph.activities.length, 24, "approved Case 1 Events must remain frozen");
+  assert.equal(case1ProcessGraph.processes.length, 5, "approved Case 1 Processes must remain frozen");
+
+  assert.match(rendered, /Активация возможности консультантом/);
+  assert.match(rendered, /KE-UN-PPE-2026-042/);
+  assert.match(rendered, /CASE 02 · ACTIVE/);
+  assert.match(rendered, /12 Events \+ 7 Processes \+ controlled Client handoff/);
+  assert.match(rendered, /HUMAN \/ EXTERNAL ACTION/);
+});
+
 test("includes every browser asset referenced by the exported pages", async () => {
   const pages = await Promise.all([
     readPublished("index.html"),
@@ -281,17 +320,18 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   assert.match(pageSource, /hidden=\{!caseExpanded\}/);
   assert.match(pageSource, /case1ProcessGraph\.activities\.map/);
   assert.match(pageSource, /useState<"map" \| "narrative">\("map"\)/);
-  assert.match(pageSource, /<CaseOrchestrationMap onOpenAgent=\{openAgent\}/);
+  assert.match(pageSource, /<CaseOrchestrationMap graph=\{case1ProcessGraph\} caseNumber=\{1\}/);
   assert.match(pageSource, /matrixSectionRef\.current\?\.scrollIntoView/);
 
   const moduleContentPosition = pageSource.indexOf('className="case-module-content"');
   const chronologyPosition = pageSource.indexOf('className="case-chronology"');
   const findingsPosition = pageSource.indexOf('className="case-audit-findings');
+  const case2Position = pageSource.indexOf('<Case2Module');
   const matrixPosition = pageSource.indexOf('className="engagement-matrix-section"');
   assert.ok(moduleContentPosition < chronologyPosition, "chronology must remain inside the Case 1 module");
   assert.ok(chronologyPosition < findingsPosition, "Case 1 findings must follow its chronology");
-  assert.ok(findingsPosition < matrixPosition, "the global matrix must follow the complete Case 1 module");
-  assert.match(pageSource.slice(matrixPosition - 120, matrixPosition), /<\/div>\r?\n {6}<\/section>\r?\n\s*<section /, "the Case 1 module must close before the global matrix opens");
+  assert.ok(findingsPosition < case2Position, "Case 1 must close before Case 2 begins");
+  assert.ok(case2Position < matrixPosition, "the global matrix must remain outside both Case modules");
   assert.equal([...pageSource.matchAll(/className="engagement-matrix-section"/g)].length, 1, "expected one global matrix source");
 
   const orchestrationModule = await import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-orchestration.ts")).href);
@@ -393,7 +433,7 @@ test("audits all 24 Case 1 Events with explicit persistent dependencies and Even
   assert.match(drawerSource, /EVENT-SPECIFIC EXECUTION/);
   assert.match(drawerSource, />A · AGENT INPUT</);
   assert.match(drawerSource, />B · AGENT OUTPUT</);
-  assert.match(drawerSource, />CASE 1 EVIDENCE</);
+  assert.match(drawerSource, /\{context\.caseLabel\} EVIDENCE/);
   assert.match(drawerSource, />NECESSITY \/ JUSTIFICATION</);
   assert.match(drawerSource, /ЕСЛИ УБРАТЬ ИЗ E\{/);
   assert.match(drawerSource, />УСЛОВИЕ АКТИВАЦИИ</);
@@ -540,6 +580,22 @@ test("provides a registry-backed cross-view Agent Comparison workspace", async (
   assert.match(globalStyles, /position: sticky/);
   assert.match(caseStyles, /\.event-agent-compare\[aria-pressed="true"\]/);
   assert.match(caseStyles, /\.inspector-agent-audit-row/);
+});
+
+test("keeps Case-level Process outputs and consumers in a compact metadata footer", async () => {
+  const [mapSource, styles] = await Promise.all([
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-orchestration-map.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
+  ]);
+  assert.match(mapSource, /className="background-process-metadata"/);
+  assert.match(mapSource, /className="process-metadata-chips"/);
+  assert.match(mapSource, /process-consumer-chips/);
+  assert.match(mapSource, />OUTPUTS</);
+  assert.match(mapSource, />USED BY</);
+  assert.doesNotMatch(mapSource, /OUTPUTS → CONSUMERS/);
+  assert.match(styles, /\.background-process-metadata > div[^{]*\{[^}]*grid-template-columns: 58px minmax\(0, 1fr\)/);
+  assert.match(styles, /\.process-metadata-chips[^{]*\{[^}]*flex-wrap: wrap/);
+  assert.match(styles, /\.background-process-rail article[^{]*\{[^}]*min-height: 0/);
 });
 
 test("renders canonical Agent cross-references by stable ID with profile history", async () => {

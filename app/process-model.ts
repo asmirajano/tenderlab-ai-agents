@@ -21,6 +21,8 @@ export type EventAgentExecution = {
   input: string;
   output: string;
   handoff: string;
+  /** Canonical Dataset mutations or explicit non-Dataset disposition for this execution. */
+  datasetImpact?: string[];
   evidence: string[];
   necessity: EventAgentAuditDecision;
   condition?: string;
@@ -184,6 +186,8 @@ export type ProcessAgentExecution = {
   input: string;
   output: string;
   handoff: string;
+  /** Canonical Dataset mutations or explicit non-Dataset disposition for this Process participation. */
+  datasetImpact?: string[];
   validationStatus: "confirmed" | "working" | "needs-review";
 };
 
