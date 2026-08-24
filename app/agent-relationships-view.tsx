@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -195,7 +196,9 @@ export default function AgentRelationshipsView({ allAgents, visibleAgents, layer
   onToggleCompare: (agentId: number) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const focusToggleRef = useRef<HTMLButtonElement>(null);
   const dragRef = useRef<{ pointerId: number; x: number; y: number; camera: Camera } | null>(null);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
   const [hoverAgentId, setHoverAgentId] = useState<number | null>(null);
   const [selectedRelationshipId, setSelectedRelationshipId] = useState<string | null>(null);
@@ -270,14 +273,54 @@ export default function AgentRelationshipsView({ allAgents, visibleAgents, layer
     if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
-  const hasFocus = Boolean(selectedAgentIds.length || selectedProcess || selectedRelationship);
+  const hasSelection = Boolean(selectedAgentIds.length || selectedProcess || selectedRelationship);
   const unresolvedRelationshipCount = agentRelationships.filter((relationship) => relationship.source.kind !== "agent" || relationship.target.kind !== "agent").length;
 
+  useEffect(() => {
+    if (!isFocusMode) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsFocusMode(false);
+      window.requestAnimationFrame(() => focusToggleRef.current?.focus());
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isFocusMode]);
+
   return (
-    <section className="agent-relationships-view relationships-ecosystem" aria-label="Full Agent functional relationship map">
+    <section
+      className={`agent-relationships-view relationships-ecosystem ${isFocusMode ? "is-focus-mode" : ""}`.trim()}
+      aria-label="Full Agent functional relationship map"
+      aria-modal={isFocusMode || undefined}
+      data-focus-mode={isFocusMode ? "active" : "inactive"}
+      role={isFocusMode ? "dialog" : undefined}
+    >
       <header className="relationships-map-header">
         <div><span>FUNCTIONAL ECOSYSTEM · 64 AGENTS</span><h3>Agent Relationships Map</h3><p>Полная архитектура видна одновременно. Положение каждого Agent вычислено из canonical layer, tier, centrality и relationship records; Process contours показывают case-scoped teams без превращения Processes в Agents.</p></div>
-        <dl><div><dt>VISIBLE</dt><dd>{visibleAgents.length}<small> / {allAgents.length}</small></dd></div><div><dt>RELATIONS</dt><dd>{groups.length}</dd></div><div><dt>PROCESSES</dt><dd>{processRegions.length}</dd></div></dl>
+        <div className="relationships-map-header-actions">
+          <dl><div><dt>VISIBLE</dt><dd>{visibleAgents.length}<small> / {allAgents.length}</small></dd></div><div><dt>RELATIONS</dt><dd>{groups.length}</dd></div><div><dt>PROCESSES</dt><dd>{processRegions.length}</dd></div></dl>
+          <button
+            ref={focusToggleRef}
+            type="button"
+            className="relationships-focus-mode-toggle"
+            aria-label={isFocusMode ? "Выйти из Focus Mode" : "Открыть Relationships в Focus Mode"}
+            aria-pressed={isFocusMode}
+            onClick={() => setIsFocusMode((current) => !current)}
+            title={isFocusMode ? "Свернуть карту (Esc)" : "Развернуть карту на весь экран"}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d={isFocusMode ? "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" : "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"} /></svg>
+            <b>{isFocusMode ? "Exit Focus" : "Focus Mode"}</b>
+            {isFocusMode ? <small>Esc</small> : null}
+          </button>
+        </div>
       </header>
 
       <div className="relationships-map-legend" aria-label="Relationship map legend">
@@ -286,7 +329,7 @@ export default function AgentRelationshipsView({ allAgents, visibleAgents, layer
       </div>
 
       <div className="relationships-map-shell">
-        <div className="relationships-map-controls" aria-label="Map zoom controls"><button type="button" onClick={() => changeZoom(1.18)} aria-label="Zoom in">+</button><button type="button" onClick={() => changeZoom(0.84)} aria-label="Zoom out">−</button><button type="button" onClick={() => setCamera({ x: 0, y: 0, scale: 1 })}>FIT</button>{hasFocus && <button type="button" onClick={resetFocus}>RESET FOCUS</button>}</div>
+        <div className="relationships-map-controls" aria-label="Map zoom controls"><button type="button" onClick={() => changeZoom(1.18)} aria-label="Zoom in">+</button><button type="button" onClick={() => changeZoom(0.84)} aria-label="Zoom out">−</button><button type="button" onClick={() => setCamera({ x: 0, y: 0, scale: 1 })}>FIT</button>{hasSelection && <button type="button" onClick={resetFocus}>RESET FOCUS</button>}</div>
         {(hoveredAgent || primaryAgent || selectedProcess) && <aside className="relationships-map-hover-card">
           {selectedProcess ? <><span>{selectedProcess.id} · {selectedProcess.kind.toUpperCase()} PROCESS</span><strong>{selectedProcess.name}</strong><p>{selectedProcess.purpose}</p><small>{selectedProcess.agentIds.length} Agents · {selectedProcess.timing}</small></> : (hoveredAgent ?? primaryAgent) ? <><span>AGENT {String((hoveredAgent ?? primaryAgent)!.id).padStart(2, "0")} · {tierLabels[getAgentTier((hoveredAgent ?? primaryAgent)!.id)]}</span><strong>{(hoveredAgent ?? primaryAgent)!.name}</strong><p>{(hoveredAgent ?? primaryAgent)!.profile.simply}</p><small>{(hoveredAgent ?? primaryAgent)!.output.primary}</small></> : null}
         </aside>}
@@ -302,7 +345,7 @@ export default function AgentRelationshipsView({ allAgents, visibleAgents, layer
             })}
             <g className="relationships-process-regions">{processRegions.map(({ process, x, y, width, height }, index) => {
               const active = selectedProcessId === process.id;
-              const muted = hasFocus && !active && !process.agentIds.some((id) => directIds.has(id));
+              const muted = hasSelection && !active && !process.agentIds.some((id) => directIds.has(id));
               return <g className={`${active ? "is-active" : ""} ${muted ? "is-muted" : ""}`.trim()} key={process.id} onClick={(event) => { event.stopPropagation(); setSelectedAgentIds([]); setSelectedRelationshipId(null); setSelectedProcessId(active ? null : process.id); }} role="button" tabIndex={0} aria-label={`${process.id}: ${process.name}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedProcessId(active ? null : process.id); }}><rect className="process-region-outline" x={x} y={y} width={width} height={height} rx="30" style={{ "--process-index": index } as CSSProperties} /><text className="process-region-label" x={x + 18} y={y + 24 + index * 17}>{process.id} · {process.kind.toUpperCase()} · {process.name}</text></g>;
             })}</g>
             <g className="relationships-map-edges">{groups.map((group) => {
@@ -311,7 +354,7 @@ export default function AgentRelationshipsView({ allAgents, visibleAgents, layer
               const direct = selectedAgentIds.some((id) => group.source.id === id || group.target.id === id);
               const onPath = pathSelection.edgeIds.has(group.id);
               const active = group.id === selectedRelationshipId || direct || onPath;
-              const muted = hasFocus && !active && !directIds.has(group.source.id) && !directIds.has(group.target.id);
+              const muted = hasSelection && !active && !directIds.has(group.source.id) && !directIds.has(group.target.id);
               const path = graphPath(source, target);
               return <g className={`relationship-map-edge family-${group.family} req-${group.requirement} ${active ? "is-active" : ""} ${muted ? "is-muted" : ""}`.trim()} key={group.id}><path className="relationship-edge-line" d={path} markerEnd={group.family === "boundary" ? undefined : `url(#relationship-arrow-${group.family})`} /><path className="relationship-edge-hit" d={path} onClick={(event) => { event.stopPropagation(); setSelectedRelationshipId(group.id); setSelectedProcessId(null); setSelectedAgentIds([group.source.id, group.target.id]); }}><title>{group.source.name} → {group.target.name}\n{familyMeta[group.family].label}\n{group.rationale}</title></path></g>;
             })}</g>
@@ -319,7 +362,7 @@ export default function AgentRelationshipsView({ allAgents, visibleAgents, layer
               const { agent } = node;
               const selected = selectedAgentIds.includes(agent.id);
               const related = directIds.has(agent.id);
-              const muted = hasFocus && !selected && !related;
+              const muted = hasSelection && !selected && !related;
               const tier = getAgentTier(agent.id);
               const lines = compactName(agent.name);
               return <g className={`relationship-map-node tier-${tier} ${selected ? "is-selected" : ""} ${related ? "is-related" : ""} ${muted ? "is-muted" : ""}`.trim()} transform={`translate(${node.x} ${node.y})`} style={{ "--node-layer": layerMeta[agent.layer].color } as CSSProperties} key={agent.id} role="button" tabIndex={0} aria-label={`Agent ${agent.id}: ${agent.name}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); selectAgent(agent.id); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") selectAgent(agent.id); }} onMouseEnter={() => setHoverAgentId(agent.id)} onMouseLeave={() => setHoverAgentId(null)}><title>Agent {String(agent.id).padStart(2, "0")} · {agent.name}\n{agent.profile.simply}\n{node.degree} canonical connections</title><rect x={-node.width / 2} y={-node.height / 2} width={node.width} height={node.height} rx="13" /><circle cx={-node.width / 2 + 25} cy="0" r="15" /><text className="node-id" x={-node.width / 2 + 25} y="4" textAnchor="middle">{String(agent.id).padStart(2, "0")}</text><text className="node-name" x={-node.width / 2 + 51} y={lines.length === 1 ? 4 : -4}>{lines.map((line, index) => <tspan x={-node.width / 2 + 51} dy={index ? 15 : 0} key={line}>{line}</tspan>)}</text><text className="node-degree" x={node.width / 2 - 10} y={-node.height / 2 + 13} textAnchor="end">{node.degree}</text></g>;

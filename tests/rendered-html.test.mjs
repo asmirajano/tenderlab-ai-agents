@@ -631,6 +631,10 @@ test("provides a full-canvas registry-backed Relationships map as the fifth Cata
   assert.match(viewSource, /relationships-process-regions/);
   assert.match(viewSource, /selectedAgentIds\.length === 2/);
   assert.match(viewSource, /RESET FOCUS/);
+  assert.match(viewSource, /Focus Mode/);
+  assert.match(viewSource, /data-focus-mode=\{isFocusMode \? "active" : "inactive"\}/);
+  assert.match(viewSource, /document\.documentElement\.style\.overflow = "hidden"/);
+  assert.match(viewSource, /event\.key !== "Escape"/);
   assert.match(viewSource, /case1ProcessGraph\.processes/);
   assert.match(viewSource, /CANONICAL MODEL/);
   assert.doesNotMatch(viewSource, /Agent family explorer|1-hop|2-hop|SELECT PROCESS/);
@@ -641,6 +645,8 @@ test("provides a full-canvas registry-backed Relationships map as the fifth Cata
   assert.match(globalStyles, /\.relationships-map-canvas/);
   assert.match(globalStyles, /\.relationship-map-node\.is-muted/);
   assert.match(globalStyles, /\.relationship-map-edge\.is-active/);
+  assert.match(globalStyles, /\.relationships-ecosystem\.is-focus-mode/);
+  assert.match(globalStyles, /\.relationships-focus-mode-toggle/);
   assert.equal(agents.length, 64);
   assert.ok(agentRelationships.length > 400, "expected a substantial canonical relationship registry");
   assert.ok(agentRelationships.every((relationship) => relationship.family && relationship.requirement && relationship.rationale && relationship.evidence.length));
