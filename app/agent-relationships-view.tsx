@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import type {
   AgentRelationship,
   AgentRelationshipFamily,
@@ -134,10 +134,6 @@ export default function AgentRelationshipsView({
   const relationshipGroups = useMemo(() => groupResolvedRelationships(allAgents), [allAgents]);
   const focusAgent = visibleIds.has(focusAgentId) ? agentById.get(focusAgentId) : visibleAgents[0];
 
-  useEffect(() => {
-    if (focusAgent && focusAgent.id !== focusAgentId) setFocusAgentId(focusAgent.id);
-  }, [focusAgent, focusAgentId]);
-
   const directGroups = useMemo(() => {
     if (!focusAgent || relationshipFilter === "process") return [];
     return relationshipGroups.filter((group) => (
@@ -147,13 +143,9 @@ export default function AgentRelationshipsView({
     ));
   }, [focusAgent, relationshipFilter, relationshipGroups, visibleIds]);
 
-  useEffect(() => {
-    if (!directGroups.length) {
-      setSelectedRelationshipId(null);
-      return;
-    }
-    if (!selectedRelationshipId || !directGroups.some((group) => group.id === selectedRelationshipId)) setSelectedRelationshipId(directGroups[0].id);
-  }, [directGroups, selectedRelationshipId]);
+  const effectiveSelectedRelationshipId = directGroups.some((group) => group.id === selectedRelationshipId)
+    ? selectedRelationshipId
+    : (directGroups[0]?.id ?? null);
 
   const groupedByRole = useMemo(() => {
     const sections = { upstream: [] as RelationshipGroup[], downstream: [] as RelationshipGroup[], broader: [] as RelationshipGroup[], specialized: [] as RelationshipGroup[], boundary: [] as RelationshipGroup[] };
@@ -191,7 +183,7 @@ export default function AgentRelationshipsView({
       .sort((left, right) => left.hops - right.hops || left.agent.id - right.agent.id);
   }, [agentById, focusAgent, relationshipFilter, relationshipGroups, scope, visibleIds]);
 
-  const selectedRelationship = directGroups.find((group) => group.id === selectedRelationshipId) ?? null;
+  const selectedRelationship = directGroups.find((group) => group.id === effectiveSelectedRelationshipId) ?? null;
   const focusDatasetIds = new Set(datasetImpactIdsForAgent(focusAgent));
   const datasetPeers = allAgents.filter((agent) => agent.id !== focusAgent.id && datasetImpactIdsForAgent(agent).some((datasetId) => focusDatasetIds.has(datasetId)));
   const processMemberships = focusAgent ? case1ProcessGraph.processes.filter((process) => process.agentIds.includes(focusAgent.id)) : [];
@@ -208,7 +200,7 @@ export default function AgentRelationshipsView({
 
   const renderRelationshipCard = (group: RelationshipGroup) => {
     const relatedAgent = otherAgent(group, focusAgent.id);
-    const selected = group.id === selectedRelationshipId;
+    const selected = group.id === effectiveSelectedRelationshipId;
     return (
       <article className={`relationship-family-card family-${group.family} ${selected ? "is-selected" : ""}`.trim()} key={group.id} style={{ "--relation-layer": layerMeta[relatedAgent.layer].color } as CSSProperties}>
         <button type="button" className="relationship-explain" aria-pressed={selected} onClick={() => setSelectedRelationshipId(group.id)}>
