@@ -62,7 +62,7 @@ test("exports the strategic presentation, validation tools, and compatibility ro
   assert.match(agentsPage, />Backend(?:<!-- -->)? <b>14<\/b>/);
   assert.match(agentsPage, />Shared(?:<!-- -->)? <b>39<\/b>/);
   assert.match(agentsPage, /aria-current="page"[^>]+href="\/agents"/);
-  assert.match(agentsPage, /aria-pressed="true"[^>]*>Hierarchy<\/button>/);
+  assert.match(agentsPage, /aria-pressed="true"[^>]*>Flat<\/button>/);
   assert.match(agentsPage, />Compare<\/span>/);
   assert.match(agentsPage, /aria-label="Open TenderLab Orchestrator profile"/);
   assert.doesNotMatch(agentsPage, /Context activates the right agents/);

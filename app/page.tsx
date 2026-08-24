@@ -590,7 +590,7 @@ export function TenderLabPage({ page }: { page: Exclude<PrimaryPage, "validation
   const [mode, setMode] = useState<"all" | AgentTier>("all");
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
   const [reviewFilter, setReviewFilter] = useState<AgentReviewFilter>("all");
-  const [architectureView, setArchitectureView] = useState<ArchitectureView>("hierarchy");
+  const [architectureView, setArchitectureView] = useState<ArchitectureView>("flat");
   const [collapsedMainAgents, setCollapsedMainAgents] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
