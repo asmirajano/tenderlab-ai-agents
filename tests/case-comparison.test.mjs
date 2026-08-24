@@ -14,7 +14,7 @@ test("builds Case Comparison from a scalable normalized Case registry", async ()
     readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
   ]);
 
-  assert.equal(caseComparisonRegistry.length, 2);
+  assert.equal(caseComparisonRegistry.length, 4);
   assert.ok(comparisonDimensions.length >= 24);
   assert.deepEqual(comparisonDimensions.slice(0, 3).map((item) => item.id), ["purpose", "monetization", "consultantIncome"]);
   for (const profile of caseComparisonRegistry) {
@@ -27,16 +27,18 @@ test("builds Case Comparison from a scalable normalized Case registry", async ()
   assert.equal(compareValues(caseComparisonRegistry[0].attributes.trigger, caseComparisonRegistry[1].attributes.trigger, trigger), "same");
   assert.match(caseComparisonRegistry[0].attributes.consultantIncome.text, /DEMO · \$90 250/);
   assert.match(caseComparisonRegistry[1].attributes.consultantIncome.text, /DEMO · \$15 000/);
+  assert.match(caseComparisonRegistry[2].attributes.consultantIncome.text, /DEMO · \$240 000/);
+  assert.match(caseComparisonRegistry[3].attributes.consultantIncome.text, /DEMO · \$85 000/);
   assert.match(component, /caseComparisonRegistry\.map/);
   assert.match(component, /AgentLinks/);
   assert.match(component, /compareValues/);
-  assert.match(page, /<CaseComparison/);
-  assert.ok(page.indexOf("<CaseComparison") < page.indexOf('engagement-matrix-section'));
-  assert.match(component, /aria-expanded=\{expanded\}/);
   assert.match(component, /aria-controls="case-comparison-content"/);
-  assert.match(page, /aria-expanded=\{matrixExpanded\}/);
+  assert.match(component, /aria-expanded=\{expanded\}/);
+  assert.match(page, /<CaseComparison/);
   assert.match(page, /aria-controls="engagement-matrix-content"/);
+  assert.match(page, /aria-expanded=\{matrixExpanded\}/);
   assert.match(page, /onScrollToMatrix=\{revealMatrix\}/);
+  assert.ok(page.indexOf("<CaseComparison") < page.indexOf("engagement-matrix-section"));
   assert.match(css, /\.case-comparison-table thead th \{[^}]*position: sticky/);
   assert.match(css, /\.case-comparison-table tbody > tr:not\(\.case-comparison-group\) > th \{[^}]*position: sticky/);
 });

@@ -95,7 +95,9 @@ export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId:
           <i aria-hidden="true">↔</i>
           <label><span>CASE B</span><select value={right.caseNumber} onChange={(event) => selectCase("right", Number(event.target.value))}>{caseComparisonRegistry.map((item) => <option value={item.caseNumber} key={item.caseNumber}>Case {item.caseNumber} · {item.shortName}</option>)}</select></label>
         </div>
-        <button className="case-section-toggle is-dark" type="button" aria-expanded={expanded} aria-controls="case-comparison-content" onClick={() => setExpanded((current) => !current)}><span>{expanded ? "Свернуть" : "Развернуть"}</span><b aria-hidden="true">{expanded ? "−" : "+"}</b></button>
+        <button type="button" className="case-section-toggle is-dark" aria-expanded={expanded} aria-controls="case-comparison-content" onClick={() => setExpanded((current) => !current)}>
+          <span>{expanded ? "Свернуть" : "Развернуть"}</span><i aria-hidden="true">{expanded ? "−" : "+"}</i>
+        </button>
       </div>
     </header>
 
@@ -104,7 +106,7 @@ export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId:
       <article className="case-glance-path" style={{ "--case-accent": left.color } as React.CSSProperties}><header><span>CASE {left.caseNumber}</span><b>{left.name}</b></header><div>{left.entryPath.map((step, index) => <Fragment key={step}><strong>{step}</strong>{index < left.entryPath.length - 1 && <i>→</i>}</Fragment>)}</div><p>{left.entrySummary}</p></article>
       <div className="case-glance-difference"><span>⚠ FUNDAMENTAL DIFFERENCE</span><strong>{left.attributes.relationship.key === right.attributes.relationship.key ? "Одинаковая relationship model" : `${left.relationshipSummary} ↔ ${right.relationshipSummary}`}</strong><p>{left.attributes.endpoint.key === right.attributes.endpoint.key ? "Общая Case boundary" : "Разные endpoints определяют разный downstream scope."}</p></div>
       <article className="case-glance-path" style={{ "--case-accent": right.color } as React.CSSProperties}><header><span>CASE {right.caseNumber}</span><b>{right.name}</b></header><div>{right.entryPath.map((step, index) => <Fragment key={step}><strong>{step}</strong>{index < right.entryPath.length - 1 && <i>→</i>}</Fragment>)}</div><p>{right.entrySummary}</p></article>
-      <div className="case-convergence"><span>⇄ CONVERGENCE</span><p>Общее состояние: <b>Verified Company + structured Tender facts</b></p><small>Case {left.caseNumber}: {left.convergenceEvent} · Case {right.caseNumber}: {right.convergenceEvent}</small></div>
+      <div className="case-convergence"><span>⇄ CONVERGENCE</span><p>{left.convergenceState === right.convergenceState ? <>Общее состояние: <b>{left.convergenceState}</b></> : <>Сопоставимые verified states: <b>{left.convergenceState} ↔ {right.convergenceState}</b></>}</p><small>Case {left.caseNumber}: {left.convergenceEvent} · Case {right.caseNumber}: {right.convergenceEvent}</small></div>
     </div>
 
     <div className="case-comparison-counts" aria-label="Итоги сравнения">{(Object.keys(relationMeta) as ComparisonRelation[]).map((relation) => counts[relation] ? <span className={`relation-${relation}`} key={relation}><b>{relationMeta[relation].icon} {relationMeta[relation].label}</b><i>{counts[relation]}</i></span> : null)}</div>

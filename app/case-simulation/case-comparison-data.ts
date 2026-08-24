@@ -3,6 +3,10 @@ import { case1, case1Engagements } from "./case-1-data.ts";
 import { case1ProcessGraph } from "./case-1-graph.ts";
 import { case2, case2Engagements } from "./case-2-data.ts";
 import { case2ProcessGraph } from "./case-2-graph.ts";
+import { case3, case3Engagements } from "./case-3-data.ts";
+import { case3ProcessGraph } from "./case-3-graph.ts";
+import { case4, case4Engagements } from "./case-4-data.ts";
+import { case4ProcessGraph } from "./case-4-graph.ts";
 
 export type ComparisonGroup = "starting" | "relationship" | "workflow" | "agents" | "data" | "outcome";
 export type ComparisonRelation = "same" | "similar" | "different-path" | "different" | "critical" | "only-one";
@@ -183,7 +187,105 @@ const case2Profile: CaseComparisonProfile = {
   },
 };
 
-export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile];
+const case3Profile: CaseComparisonProfile = {
+  caseNumber: 3,
+  id: case3.id,
+  name: case3.name,
+  shortName: "WTP consortium",
+  color: "#a46a08",
+  entryPath: ["Tender", "Known lead", "Permission", "Consortium formation", "Two-stage bid"],
+  entrySummary: "Один verified lead превращается в доказательно сформированный трёхсторонний bidder.",
+  relationshipSummary: "Multi-company consortium formation",
+  endpointSummary: "Award → signed contract → controlled mobilisation handoff.",
+  convergenceState: "verified-consortium+tender-facts",
+  convergenceEvent: "E10 · Binding Consortium Gate",
+  engagements: case3Engagements,
+  eventCount: case3ProcessGraph.activities.length,
+  processCount: case3ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Сформировать квалифицированный консорциум и провести его через две стадии Works tender до contract/mobilisation handoff.", "consortium-two-stage-award", "tender-lifecycle", ["консорциум", "две стадии", "mobilisation handoff"]),
+    monetization: value(case3.monetization, "milestone-fixed-advisory", "consulting-revenue", ["DEMO", "milestone-based fixed advisory fee"]),
+    consultantIncome: value(case3.consultantIncome, "usd-240000-three-milestones", "simulated-income", ["DEMO", "$240 000", "$60 000", "$80 000", "$100 000"]),
+    trigger: value(case3.trigger, "official-tender+client-route-request", "official-notice", ["Официальная публикация", "решение AquaNova"]),
+    startingSituation: value(case3.startingCondition, "known-incomplete-lead", "candidate-available", ["не имеет полного", "местной строительной лицензии"]),
+    knownAtStart: value("Platform policy, provisional AquaNova profile, ADB/Buyer history и official source package.", "platform+lead+history", "reusable-intelligence", ["provisional AquaNova profile"]),
+    unknownAtStart: value("Verified lead eligibility, partner consent, member evidence, combined qualification, workshare, solution, BOQ и final price.", "consortium+qualification+price", "verification-needed", ["partner consent", "combined qualification"]),
+    companySelection: value("AquaNova — известный инженерный lead; два недостающих members выбираются после evidence-based discovery.", "known-lead+discovered-members", "prospect-intelligence", ["известный инженерный lead", "discovery"]),
+    relationship: value("Один Client lead + два external candidates, которые становятся JV members только после consent, verification и signed agreement.", "lead-to-multiparty-consortium", "company-relationship", ["JV members", "signed agreement"]),
+    permission: value("E03 открывает feasibility; E08 даёт member data-room consent; E10 создаёт binding three-party authority.", "layered-three-party-permission", "consent", ["E03", "E08", "E10"]),
+    consultantMission: value(case3.consultantRole, "consortium-architect+bid-advisor", "consultant-support", ["проектирует и проверяет маршрут", "не выбирает партнёров"]),
+    consultantStart: value("E03: после explicit mandate известного lead, до partner discovery.", "post-lead-mandate", "consultant-timing", ["E03", "до partner discovery"]),
+    consultantDone: value("E22: contract signed, mobilisation baseline передан, 3/3 milestones закрыты.", "mobilisation-handoff-complete", "consultant-boundary", ["E22", "3/3 milestones"]),
+    companyMaturity: value("Опытный engineering lead + verified OEM + local Works contractor; combined bidder создаётся внутри Case.", "multi-company-works-consortium", "manufacturer", ["combined bidder"]),
+    entrySequence: value("Tender → known incomplete lead → permission → member discovery/consent → JV gate → two-stage bid.", "lead-consortium-two-stage", "entry-path", ["member discovery/consent", "JV gate"]),
+    parallelWork: value("Tender/market models; partner due diligence; specialist RFQ; затем parallel final technical + commercial branches.", "tender+partners+supply+dual-final", "parallel-intelligence", ["parallel final technical + commercial"]),
+    decisionGates: value("Lead mandate E03, Conditional BID E06, JV agreement E10, Stage 1 E13, final bid E18, negotiation E20, contract E21.", "multiparty-seven-gates", "human-gates", ["JV agreement E10", "final bid E18"]),
+    participationRoute: value("AquaNova 42% lead + Anatolia 33% OEM + SteppeBuild 25% local contractor.", "three-member-jv", "participation-route", ["42%", "33%", "25%"]),
+    bidPreparation: value("Входит полностью: Stage 1 technical submission, dialogue, revised Stage 2 technical/commercial bid.", "included-two-stage", "bid-preparation", ["Stage 1", "Stage 2"]),
+    postAward: value("Входит до signed contract и mobilisation handoff; 30-month execution completion не симулируется.", "included-to-mobilisation", "post-award", ["mobilisation handoff", "не симулируется"]),
+    agentScope: value("Agents покрывают multi-party formation, two-stage rework, complex Works pricing, award and mobilisation setup.", "consortium-full-bid-route", "agent-scope", ["multi-party formation", "two-stage rework"]),
+    humanOnlyWork: value("Partner consent E08, three-party approvals и Buyer evaluation/award остаются Actor decisions.", "consent+member+buyer-authority", "human-authority", ["Partner consent E08", "Actor decisions"]),
+    companyEvidence: value("Три separate verified dossiers + member-specific reliance + combined qualification/workshare ledger.", "three-member-evidence", "verified-evidence", ["three", "combined qualification"]),
+    tenderEvidence: value("Multilingual source-locked corpus, two-stage qualification/evaluation model and change impacts.", "two-stage-source-model", "tender-evidence", ["two-stage", "change impacts"]),
+    commercialModel: value("One EPC lot: member workshare costs + specialist RFQs + 30-month cash flow → final $46.80m bid.", "epc-workshare-price", "commercial-model", ["workshare costs", "$46.80m"]),
+    procedure: value(`${case3.procurementMethod}; ${case3.submissionWindow}; ${case3.deliveryWindow}.`, "adb-two-stage-works", "two-stage-procurement", [case3.procurementMethod]),
+    endpoint: value(case3.endpoint, "contract+mobilisation-handoff", "case-endpoint", ["award", "mobilization baseline"]),
+    success: value("Three verified members, both stages accepted, compliant final bid, award and signed contract.", "consortium-award+contract", "successful-participation", ["both stages", "signed contract"]),
+    kpi: value(case3.kpi, "consortium-two-stage-kpis", "kpi", ["qualification 100%", "$46,80 млн", "3/3"]),
+    failure: value("No compliant member, failed JV approval, Stage 1 rejection, unresolved Stage 2 deviation, unauthorised price or no award.", "consortium-route-failure", "failure", ["failed JV approval", "Stage 1 rejection"]),
+  },
+};
+
+const case4Profile: CaseComparisonProfile = {
+  caseNumber: 4,
+  id: case4.id,
+  name: case4.name,
+  shortName: "Digital health QCBS",
+  color: "#147b86",
+  entryPath: ["REOI", "EOI", "Shortlist", "RFP", "Two envelopes", "QCBS contract"],
+  entrySummary: "Известная consulting firm проходит отдельные REOI и RFP gates до quality-based contract.",
+  relationshipSummary: "Known consultant + local specialist subcontractor",
+  endpointSummary: "QCBS rank 1 → negotiated time-based contract → inception handoff.",
+  convergenceState: "verified-firm+experts+current-rfp",
+  convergenceEvent: "E10 · Final BID Gate",
+  engagements: case4Engagements,
+  eventCount: case4ProcessGraph.activities.length,
+  processCount: case4ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Провести consulting firm через REOI, shortlist, QCBS proposal и negotiation до signed time-based contract.", "qcbs-consulting-contract", "consulting-lifecycle", ["REOI", "shortlist", "QCBS"]),
+    monetization: value(case4.monetization, "fixed-four-milestones", "consulting-revenue", ["DEMO", "fixed advisory fee"]),
+    consultantIncome: value(case4.consultantIncome, "usd-85000-four-milestones", "simulated-income", ["DEMO", "$85 000"]),
+    trigger: value(case4.trigger, "world-bank-reoi+client-check", "official-notice", ["World Bank REOI"]),
+    startingSituation: value(case4.startingCondition, "known-consultant-local-gap", "candidate-available", ["не имеет проекта в Руанде", "local specialist"]),
+    knownAtStart: value("Verified firm profile, international assignments, digital-health capability и public Buyer/award history.", "verified-firm+history", "reusable-intelligence", ["Verified firm profile"]),
+    unknownAtStart: value("Shortlist decision, current RFP, 11 expert availability, local privacy fit, QCBS score и negotiated terms.", "shortlist+experts+qcbs", "verification-needed", ["11 expert availability", "QCBS score"]),
+    companySelection: value("NorthStar — existing Client with relevant consulting capability; она не обнаруживается как cold prospect.", "existing-specialist-client", "prospect-intelligence", ["existing Client"]),
+    relationship: value("Existing Client firm + один проверяемый local specialist subcontractor; Buyer сохраняет independent authority.", "client+specialist-subcontractor", "company-relationship", ["local specialist subcontractor"]),
+    permission: value("E03 разрешает EOI; E10 — full RFP proposal; E13 — final two-envelope submission.", "layered-eoi-rfp-submission", "consent", ["E03", "E10", "E13"]),
+    consultantMission: value(case4.consultantRole, "qcbs-evidence+proposal-advisor", "consultant-support", ["QCBS gates", "не подтверждает CV"]),
+    consultantStart: value("До EOI: после REOI review и отдельного company approval E03.", "pre-eoi-advisory", "consultant-timing", ["E03"]),
+    consultantDone: value("E15: contract и inception baseline переданы 36-month delivery team.", "contract-inception-handoff", "consultant-boundary", ["E15", "inception baseline"]),
+    companyMaturity: value("Опытная boutique consulting firm с international digital-health references, но без Rwanda delivery baseline.", "experienced-consulting-boutique", "consulting-firm", ["consulting firm", "без Rwanda"]),
+    entrySequence: value("REOI → REOI decision → EOI → Buyer shortlist → RFP → final BID gate.", "reoi-eoi-shortlist-rfp", "entry-path", ["EOI", "Buyer shortlist"]),
+    parallelWork: value("Expert/conflict monitoring; technical and financial envelopes remain parallel and information-separated.", "experts+separate-envelopes", "parallel-intelligence", ["information-separated"]),
+    decisionGates: value("REOI E03, Buyer shortlist E06, final BID E10, submission E13, technical threshold E14, negotiation E15.", "qcbs-six-gates", "human-gates", ["technical threshold E14"]),
+    participationRoute: value("Prime consultant + scoped local privacy specialist subcontractor; no JV and no supplier chain.", "prime+specialist-subcontractor", "participation-route", ["no JV", "no supplier chain"]),
+    bidPreparation: value("Входит: EOI, technical methodology/CVs, separate financial envelope, QA и submission.", "eoi+two-envelope-included", "bid-preparation", ["separate financial envelope"]),
+    postAward: value("Входит до signed contract и inception handoff; 36-month service delivery остаётся downstream.", "included-to-inception", "post-award", ["inception handoff"]),
+    agentScope: value("Agents проверяются на Consultants/QCBS, key-expert evidence, privacy/conflict и time-based price.", "qcbs-agent-route", "agent-scope", ["key-expert evidence", "time-based price"]),
+    humanOnlyWork: value("Buyer shortlist, technical score, financial opening, ranking и award остаются Buyer decisions.", "buyer-qcbs-authority", "human-authority", ["Buyer decisions"]),
+    companyEvidence: value("Verified firm assignments + 11 individual CV/availability records + local specialist evidence.", "firm+experts+local-evidence", "verified-evidence", ["11 individual CV"]),
+    tenderEvidence: value("REOI baseline заменяется authoritative RFP corpus, Addendum 01 и QCBS scorecard.", "reoi-to-rfp-versioned", "tender-evidence", ["Addendum 01", "QCBS scorecard"]),
+    commercialModel: value("Time-based expert-month remuneration + reimbursables; price is sealed from technical evaluators.", "time-based-separated-price", "commercial-model", ["expert-month", "sealed"]),
+    procedure: value(`${case4.procurementMethod}; ${case4.submissionWindow}; ${case4.deliveryWindow}.`, "world-bank-qcbs-consultants", "consulting-procurement", [case4.procurementMethod]),
+    endpoint: value(case4.endpoint, "signed-consultancy-contract+inception", "case-endpoint", ["time-based consultancy contract", "inception"]),
+    success: value("Shortlisted, technical threshold passed, combined rank 1 and negotiated contract signed.", "shortlist+threshold+rank1+contract", "successful-participation", ["rank 1", "contract signed"]),
+    kpi: value(case4.kpi, "qcbs-consulting-kpis", "kpi", ["86/100", "$4,62 млн", "11/11"]),
+    failure: value("Not shortlisted, unavailable expert, conflict, technical score <75, envelope breach or failed negotiation.", "qcbs-route-failure", "failure", ["score <75", "envelope breach"]),
+  },
+};
+
+export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile];
 
 export function compareValues(left: ComparisonValue, right: ComparisonValue, dimension: ComparisonDimension): ComparisonRelation {
   if (left.key === right.key) return "same";
