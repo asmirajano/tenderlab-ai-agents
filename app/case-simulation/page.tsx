@@ -151,10 +151,16 @@ export default function CaseSimulationPage() {
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
   const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2>(1);
   const [caseExpanded, setCaseExpanded] = useState(false);
+  const [matrixExpanded, setMatrixExpanded] = useState(true);
   const [caseView, setCaseView] = useState<"map" | "narrative">("map");
   const matrixScrollRef = useRef<HTMLDivElement | null>(null);
   const matrixSectionRef = useRef<HTMLElement | null>(null);
   const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
+
+  const revealMatrix = () => {
+    setMatrixExpanded(true);
+    window.requestAnimationFrame(() => matrixSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const metrics = useMemo(() => countByStatus(case1Engagements), []);
   const conditionalTriggered = case1Engagements.filter((record) => record.status === "conditional" && record.activation === "triggered").length;
@@ -553,17 +559,19 @@ export default function CaseSimulationPage() {
 
       <Case2Module
         onOpenAgent={(agentId, eventStep) => openAgent(agentId, eventStep, 2)}
-        onScrollToMatrix={() => matrixSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        onScrollToMatrix={revealMatrix}
       />
 
       <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2)} />
 
-      <section className="engagement-matrix-section" aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
+      <section className={`engagement-matrix-section ${matrixExpanded ? "is-expanded" : "is-collapsed"}`} aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
           <span>Case 1 и Case 2 активны; нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
+          <button className="case-section-toggle is-dark" type="button" aria-expanded={matrixExpanded} aria-controls="engagement-matrix-content" onClick={() => setMatrixExpanded((current) => !current)}><span>{matrixExpanded ? "Свернуть" : "Развернуть"}</span><b aria-hidden="true">{matrixExpanded ? "−" : "+"}</b></button>
         </div>
 
+        <div id="engagement-matrix-content" hidden={!matrixExpanded}>
         <div className="matrix-toolbar" aria-label="Фильтры матрицы">
           <div className="semantic-search">
             <label className="matrix-search">
@@ -668,6 +676,7 @@ export default function CaseSimulationPage() {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </section>
 

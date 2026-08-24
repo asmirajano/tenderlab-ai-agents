@@ -327,12 +327,12 @@ test("packages Case 1 as a collapsible module with a complete review chronology"
   const chronologyPosition = pageSource.indexOf('className="case-chronology"');
   const findingsPosition = pageSource.indexOf('className="case-audit-findings');
   const case2Position = pageSource.indexOf('<Case2Module');
-  const matrixPosition = pageSource.indexOf('className="engagement-matrix-section"');
+  const matrixPosition = pageSource.indexOf('engagement-matrix-section');
   assert.ok(moduleContentPosition < chronologyPosition, "chronology must remain inside the Case 1 module");
   assert.ok(chronologyPosition < findingsPosition, "Case 1 findings must follow its chronology");
   assert.ok(findingsPosition < case2Position, "Case 1 must close before Case 2 begins");
   assert.ok(case2Position < matrixPosition, "the global matrix must remain outside both Case modules");
-  assert.equal([...pageSource.matchAll(/className="engagement-matrix-section"/g)].length, 1, "expected one global matrix source");
+  assert.equal([...pageSource.matchAll(/engagement-matrix-section/g)].length, 1, "expected one global matrix source");
 
   const orchestrationModule = await import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-orchestration.ts")).href);
   const graphModule = await import(pathToFileURL(path.join(projectRoot, "app", "case-simulation", "case-1-graph.ts")).href);

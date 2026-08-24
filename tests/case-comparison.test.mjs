@@ -31,7 +31,12 @@ test("builds Case Comparison from a scalable normalized Case registry", async ()
   assert.match(component, /AgentLinks/);
   assert.match(component, /compareValues/);
   assert.match(page, /<CaseComparison/);
-  assert.ok(page.indexOf("<CaseComparison") < page.indexOf('className="engagement-matrix-section"'));
+  assert.ok(page.indexOf("<CaseComparison") < page.indexOf('engagement-matrix-section'));
+  assert.match(component, /aria-expanded=\{expanded\}/);
+  assert.match(component, /aria-controls="case-comparison-content"/);
+  assert.match(page, /aria-expanded=\{matrixExpanded\}/);
+  assert.match(page, /aria-controls="engagement-matrix-content"/);
+  assert.match(page, /onScrollToMatrix=\{revealMatrix\}/);
   assert.match(css, /\.case-comparison-table thead th \{[^}]*position: sticky/);
   assert.match(css, /\.case-comparison-table tbody > tr:not\(\.case-comparison-group\) > th \{[^}]*position: sticky/);
 });

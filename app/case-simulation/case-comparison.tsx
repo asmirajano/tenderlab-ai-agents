@@ -43,6 +43,7 @@ function involvedIds(profile: CaseComparisonProfile) {
 }
 
 export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId: number, caseNumber: number) => void }) {
+  const [expanded, setExpanded] = useState(true);
   const [leftId, setLeftId] = useState(caseComparisonRegistry[0]?.caseNumber ?? 1);
   const [rightId, setRightId] = useState(caseComparisonRegistry[1]?.caseNumber ?? caseComparisonRegistry[0]?.caseNumber ?? 1);
   const left = caseComparisonRegistry.find((item) => item.caseNumber === leftId) ?? caseComparisonRegistry[0];
@@ -85,16 +86,20 @@ export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId:
     }
   };
 
-  return <section className="case-comparison-section" aria-labelledby="case-comparison-title">
+  return <section className={`case-comparison-section ${expanded ? "is-expanded" : "is-collapsed"}`} aria-labelledby="case-comparison-title">
     <header className="case-comparison-heading">
       <div><span>STRATEGIC CASE COMPARISON</span><h2 id="case-comparison-title">Сравнить бизнес-маршруты</h2><p>Сначала условия и работа. Затем Events, Processes и Agent participation.</p></div>
-      <div className="case-pair-selector" aria-label="Выберите Cases для сравнения">
-        <label><span>CASE A</span><select value={left.caseNumber} onChange={(event) => selectCase("left", Number(event.target.value))}>{caseComparisonRegistry.map((item) => <option value={item.caseNumber} key={item.caseNumber}>Case {item.caseNumber} · {item.shortName}</option>)}</select></label>
-        <i aria-hidden="true">↔</i>
-        <label><span>CASE B</span><select value={right.caseNumber} onChange={(event) => selectCase("right", Number(event.target.value))}>{caseComparisonRegistry.map((item) => <option value={item.caseNumber} key={item.caseNumber}>Case {item.caseNumber} · {item.shortName}</option>)}</select></label>
+      <div className="case-comparison-controls">
+        <div className="case-pair-selector" aria-label="Выберите Cases для сравнения">
+          <label><span>CASE A</span><select value={left.caseNumber} onChange={(event) => selectCase("left", Number(event.target.value))}>{caseComparisonRegistry.map((item) => <option value={item.caseNumber} key={item.caseNumber}>Case {item.caseNumber} · {item.shortName}</option>)}</select></label>
+          <i aria-hidden="true">↔</i>
+          <label><span>CASE B</span><select value={right.caseNumber} onChange={(event) => selectCase("right", Number(event.target.value))}>{caseComparisonRegistry.map((item) => <option value={item.caseNumber} key={item.caseNumber}>Case {item.caseNumber} · {item.shortName}</option>)}</select></label>
+        </div>
+        <button className="case-section-toggle is-dark" type="button" aria-expanded={expanded} aria-controls="case-comparison-content" onClick={() => setExpanded((current) => !current)}><span>{expanded ? "Свернуть" : "Развернуть"}</span><b aria-hidden="true">{expanded ? "−" : "+"}</b></button>
       </div>
     </header>
 
+    <div id="case-comparison-content" hidden={!expanded}>
     <div className="case-comparison-glance">
       <article className="case-glance-path" style={{ "--case-accent": left.color } as React.CSSProperties}><header><span>CASE {left.caseNumber}</span><b>{left.name}</b></header><div>{left.entryPath.map((step, index) => <Fragment key={step}><strong>{step}</strong>{index < left.entryPath.length - 1 && <i>→</i>}</Fragment>)}</div><p>{left.entrySummary}</p></article>
       <div className="case-glance-difference"><span>⚠ FUNDAMENTAL DIFFERENCE</span><strong>{left.attributes.relationship.key === right.attributes.relationship.key ? "Одинаковая relationship model" : `${left.relationshipSummary} ↔ ${right.relationshipSummary}`}</strong><p>{left.attributes.endpoint.key === right.attributes.endpoint.key ? "Общая Case boundary" : "Разные endpoints определяют разный downstream scope."}</p></div>
@@ -121,5 +126,6 @@ export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId:
       </div>
       <div className="case-orchestration-impact"><article><span>CASE {left.caseNumber}</span><b>{left.eventCount} Events · {left.processCount} Processes</b><p>{left.entrySummary} {left.endpointSummary}</p></article><i aria-hidden="true">≠</i><article><span>CASE {right.caseNumber}</span><b>{right.eventCount} Events · {right.processCount} Processes</b><p>{right.entrySummary} {right.endpointSummary}</p></article></div>
     </section>
+    </div>
   </section>;
 }
