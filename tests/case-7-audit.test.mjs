@@ -73,7 +73,7 @@ test("Case 7 module exposes business contract, map, narrative and audit findings
     readFile(path.join(projectRoot, "app", "case-simulation", "case-7-module.tsx"), "utf8"),
     readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
   ]);
-  assert.deepEqual(caseComparisonRegistry.map((item) => item.caseNumber), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(caseComparisonRegistry.slice(0, 8).map((item) => item.caseNumber), [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.match(page, /<Case7Module/);
   assert.match(page, /case-seven-column/);
   assert.match(page, /case7EngagementByAgentId/);

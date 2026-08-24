@@ -13,6 +13,10 @@ import { case6, case6Engagements } from "./case-6-data.ts";
 import { case6ProcessGraph } from "./case-6-graph.ts";
 import { case7, case7Engagements } from "./case-7-data.ts";
 import { case7ProcessGraph } from "./case-7-graph.ts";
+import { case8, case8Engagements } from "./case-8-data.ts";
+import { case8ProcessGraph } from "./case-8-graph.ts";
+import { case9, case9Engagements } from "./case-9-data.ts";
+import { case9ProcessGraph } from "./case-9-graph.ts";
 
 export type ComparisonGroup = "starting" | "relationship" | "workflow" | "agents" | "data" | "outcome";
 export type ComparisonRelation = "same" | "similar" | "different-path" | "different" | "critical" | "only-one";
@@ -438,7 +442,105 @@ const case7Profile: CaseComparisonProfile = {
   },
 };
 
-export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile, case6Profile, case7Profile];
+const case8Profile: CaseComparisonProfile = {
+  caseNumber: 8,
+  id: case8.id,
+  name: case8.name,
+  shortName: "E-bus PPP dialogue",
+  color: "#2a78a6",
+  entryPath: ["PPP RFQ/PQ", "Sponsor assessment", "Consortium", "Shortlist", "Competitive dialogue", "BAFO", "Preferred bidder", "Financial close"],
+  entrySummary: "A sponsor cannot bid alone: four members pass PQ, develop bankability through dialogue and reach financial close only after concession signing and external approvals.",
+  relationshipSummary: "Lead sponsor + 3 consortium members + Project Company + OEMs + lenders",
+  endpointSummary: "Signed concession → satisfied CPs → committed debt/equity → Authority NTP.",
+  convergenceState: "verified-sponsor+consortium-consent+current-rfp+bankability-conditions",
+  convergenceEvent: "E16 · BAFO authority gate",
+  engagements: case8Engagements,
+  eventCount: case8ProcessGraph.activities.length,
+  processCount: case8ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Проверить долгосрочную PPP/DBFOM route: PQ, consortium, dialogue, BAFO, concession signing и financial close.", "ppp-dialogue-financial-close", "ppp-lifecycle", ["financial close", "competitive dialogue"]),
+    monetization: value(case8.monetization, "fixed-gated-ppp-milestones", "consulting-revenue", ["DEMO", "fixed + gated milestone", "никаких процентов"]),
+    consultantIncome: value(case8.consultantIncome, "usd-580000-four-milestones", "simulated-income", ["DEMO", "$580 000"]),
+    trigger: value(case8.trigger, "official-ppp-rfq-pq", "official-notice", ["RFQ/PQ"]),
+    startingSituation: value(case8.startingCondition, "sponsor-with-consortium+bankability-gaps", "candidate-available", ["нет перуанского operating partner", "committed debt"]),
+    knownAtStart: value("Verified sponsor identity/references, preliminary lender interest, reusable partner/market intelligence and published PQ facts.", "sponsor+preliminary-lenders+market", "reusable-intelligence", ["preliminary lender interest"]),
+    unknownAtStart: value("Member consent, aggregate PQ, final risk allocation, supplier costs, permits, BAFO terms, lender approvals and financial-close outcome.", "consortium+risk+finance+permits", "verification-needed", ["financial-close outcome"]),
+    companySelection: value("VoltAxis is a known sponsor candidate; participation remains impossible until a consented and verified consortium exists.", "known-sponsor-needs-consortium", "prospect-intelligence", ["participation remains impossible"]),
+    relationship: value("Client evolves from lead sponsor to authorised consortium and then Project Company; members, OEMs and lenders remain separate governed Actors.", "sponsor-to-consortium-to-spv", "company-relationship", ["Project Company"]),
+    permission: value("E03 assessment; E07 member consent; E08 PQQ; E16 BAFO; E19 submission; E21 signing; E22 external debt/equity and NTP approvals.", "layered-ppp-authority", "consent", ["member consent", "external debt/equity"]),
+    consultantMission: value(case8.consultantRole, "governed-ppp-bid-advisory", "consultant-support", ["не принимает lender credit decisions"]),
+    consultantStart: value("E03 after preliminary relevance and explicit sponsor assessment mandate.", "post-assessment-mandate", "consultant-timing", ["E03"]),
+    consultantDone: value("E22 after financial close, CP evidence, Authority NTP and explicit handoff to Project Company execution.", "financial-close+ntp-handoff", "consultant-boundary", ["E22", "execution handoff"]),
+    companyMaturity: value("Experienced international infrastructure sponsor with PPP references but no tender-specific local consortium or committed finance.", "experienced-ppp-sponsor-gaps", "infrastructure-sponsor", ["no tender-specific local consortium"]),
+    entrySequence: value("RFQ/PQ → assessment → consortium/PQQ → shortlist/RFP → dialogue → BAFO → preferred bidder → concession → financial close.", "pq-consortium-dialogue-close", "entry-path", ["dialogue", "financial close"]),
+    parallelWork: value("PQ/company branches converge into consortium; technical, bankability and safeguards branches converge at dialogue; technical/financial BAFO rejoin before submission.", "pq+three-dialogue-branches+two-bafo-branches", "parallel-intelligence", ["bankability and safeguards"]),
+    decisionGates: value("Assessment E03, member consent E07, PQQ E08, dialogue positions E14, BAFO E16, submission E19, signing E21, external financial close/NTP E22.", "ppp-eight-authority-gates", "human-gates", ["external financial close/NTP"]),
+    participationRoute: value("Four-member consortium with equity 40/25/20/15, future SPV, verified OEM/vendors and external lenders; no solo route.", "four-member-consortium+spv+lenders", "participation-route", ["no solo route"]),
+    bidPreparation: value("Includes PQQ, dialogue workstreams, supplier RFQs, technical/financial BAFO, red team, submission, clarification and negotiation.", "included-pq-dialogue-bafo", "bid-preparation", ["dialogue workstreams"]),
+    postAward: value("Includes preferred-bidder negotiation, concession signing, conditions precedent and financial close; construction and O&M are excluded.", "included-through-financial-close", "post-award", ["construction and O&M are excluded"]),
+    agentScope: value("Tests consortium optimisation, competitive dialogue, long-term PPP economics, safeguards/permits and financial-close boundary.", "ppp-consortium-bankability-agent-route", "agent-scope", ["financial-close boundary"]),
+    humanOnlyWork: value("Member/equity consent, official dialogue, permits, lender credit, award, signatures, CP satisfaction and NTP remain Actor decisions/actions.", "member-lender-authority", "human-authority", ["lender credit", "NTP"]),
+    companyEvidence: value("Verified sponsor + 3 members, signed MOU/shareholder baseline, roles, equity, references, licences and committed-equity evidence.", "sponsor+three-members+governance", "verified-evidence", ["signed MOU", "committed-equity evidence"]),
+    tenderEvidence: value("Bilingual PQ/RFP corpus, 214 requirements, dialogue minutes, Revised RFP 02, BAFO receipt, preferred-bidder notice, concession and CP register.", "pq+dialogue+bafo+contract-evidence", "tender-evidence", ["Revised RFP 02", "CP register"]),
+    commercialModel: value("$218m CAPEX, 15-year availability-payment NPV ceiling $327m, BAFO $319.4m, debt/equity sensitivities and performance deductions.", "ppp-availability-payment-bankability", "commercial-model", ["$319.4m", "performance deductions"]),
+    procedure: value(`${case8.procurementMethod}; ${case8.submissionWindow}; ${case8.deliveryWindow}.`, "rfq-pq-dialogue-bafo-concession", "ppp-procurement", [case8.procurementMethod]),
+    endpoint: value(case8.endpoint, "financial-close+authority-ntp", "case-endpoint", ["financial close", "Notice to Proceed"]),
+    success: value("PQ pass, consented consortium, compliant BAFO, preferred bidder, signed concession, committed funding and zero authority breaches.", "pq+preferred+signed+funded", "successful-participation", ["committed funding"]),
+    kpi: value(case8.kpi, "ppp-dialogue-close-kpis", "kpi", ["4-member consortium", "$162 млн committed debt", "Day 330"]),
+    failure: value("Unconsented member, failed aggregate PQ, non-bankable risk, unsupported permit claim, unauthorised concession, false lender commitment or no financial close.", "ppp-authority+bankability-failure", "failure", ["false lender commitment", "no financial close"]),
+  },
+};
+
+const case9Profile: CaseComparisonProfile = {
+  caseNumber: 9,
+  id: case9.id,
+  name: case9.name,
+  shortName: "FIDIC claim + DAB",
+  color: "#b44b45",
+  entryPath: ["Effective contract", "Unforeseen condition", "Notice", "Evidence", "Detailed claim", "Engineer", "DAB", "Variation", "Payment"],
+  entrySummary: "Case starts on day 214 of an effective works contract, not at opportunity discovery or bid preparation.",
+  relationshipSummary: "Contractor client + Employer + Engineer + DAB + external specialists",
+  endpointSummary: "DAB/final decision → Variation Order → revised baseline → certified payment.",
+  convergenceState: "timely-notice+causation+delay+quantum+human-authority",
+  convergenceEvent: "E09 · Contractor claim authority gate",
+  engagements: case9Engagements,
+  eventCount: case9ProcessGraph.activities.length,
+  processCount: case9ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Проверить post-award contract-claim route: notice, contemporaneous evidence, entitlement, delay, quantum, Engineer determination, DAB, Variation и payment.", "post-award-fidic-claim", "contract-administration", ["post-award", "DAB", "Variation"]),
+    monetization: value(case9.monetization, "hybrid-claim-assurance+certified-success", "consulting-revenue", ["DEMO", "hybrid", "certified Variation"]),
+    consultantIncome: value(case9.consultantIncome, "usd-145000-fixed+1.25pct-certified", "simulated-income", ["DEMO", "$145 000", "1,25% × $6,40 млн"]),
+    trigger: value(case9.trigger, "unforeseen-site-condition+engineer-instruction", "contract-event", ["unforeseen condition", "Engineer instruction"]),
+    startingSituation: value(case9.startingCondition, "effective-contract-31pct-complete", "post-award-contract", ["31% works", "baseline programme"]),
+    knownAtStart: value("Effective FIDIC contract, accepted programme, BOQ, design baseline, authority matrix, payment records and 214 days of site records.", "contract+programme+boq+records", "reusable-intelligence", ["accepted programme", "214 days"]),
+    unknownAtStart: value("Actual condition, causation, compensability, critical-path effect, reasonable mitigation, recoverable quantum and external determinations.", "condition+entitlement+delay+quantum", "verification-needed", ["critical-path effect", "recoverable quantum"]),
+    companySelection: value("No company selection: IberAtlas is already the signed Contractor and TenderLab works under a claim-assurance mandate.", "existing-contractor-client", "contract-relationship", ["already the signed Contractor"]),
+    relationship: value("Existing Contractor client; Employer, Engineer, DAB and specialists remain independent governed Actors with separate authority.", "contractor+external-authority-chain", "company-relationship", ["separate authority"]),
+    permission: value("E02 claim mandate; E09 claim approval; E10 signature/submission; E14 referral decision; E17 Variation signature; each belongs to authorised humans.", "layered-claim-authority", "consent", ["authorised humans"]),
+    consultantMission: value(case9.consultantRole, "claim-evidence+control-support", "consultant-support", ["не определяет entitlement", "не выдаёт decisions"]),
+    consultantStart: value("E02, immediately after the site condition and instruction, with prior contract/project state read from persistent records.", "post-condition-claim-mandate", "consultant-timing", ["E02"]),
+    consultantDone: value("E19 after effective Variation, revised baseline, certification/payment evidence and project-controls handoff.", "variation+payment+handoff", "consultant-boundary", ["E19", "payment"]),
+    companyMaturity: value("Experienced international works Contractor already executing a $94.80m contract; the gap is claim governance, not tender readiness.", "experienced-contractor-claim-gap", "works-contractor", ["claim governance"]),
+    entrySequence: value("Condition → safe stop → Case governance → notice → parallel evidence/delay/quantum → claim → Engineer → DAB → Variation → payment.", "condition-parallel-claim-dab-payment", "entry-path", ["parallel evidence/delay/quantum"]),
+    parallelWork: value("Notice/continuing records, contract baseline, site evidence, mitigation/delay and quantum run in parallel and join at detailed claim; dispute and execution states follow authority gates.", "notice+baseline+delay+quantum-join", "parallel-intelligence", ["join at detailed claim"]),
+    decisionGates: value("Claim mandate E02, Contractor claim E09, submission E10, Engineer determination E13, referral E14, DAB E16, Variation E17 and payment E19.", "post-award-eight-authority-gates", "human-gates", ["Engineer determination", "DAB"]),
+    participationRoute: value("No bidder/JV/partner route: a signed Contractor advances a contractual claim against the existing Employer-administered contract.", "existing-contractor-no-bid-route", "participation-route", ["No bidder/JV/partner route"]),
+    bidPreparation: value("Excluded: discovery, Match, Bid/No-Bid, proposal, pricing and submission Agents do not re-enter an effective contract claim.", "excluded-pre-award", "bid-preparation", ["Excluded"]),
+    postAward: value("Entire Case is post-award: contract baseline, change, claim, determination, dispute, Variation, certification and payment.", "post-award-only", "post-award", ["Entire Case"]),
+    agentScope: value("A deliberately narrow set supports governance, evidence, change, claim risk/cost, hearing preparation, contract administration, execution state and learning.", "narrow-post-award-agent-route", "agent-scope", ["deliberately narrow"]),
+    humanOnlyWork: value("Safety decisions, notices, legal opinion, programme expert conclusion, claim/referral signature, Engineer determination, DAB decision, Variation and payment remain Actor actions.", "contractor-engineer-dab-authority", "human-authority", ["Engineer determination", "DAB decision"]),
+    companyEvidence: value("Signed Contractor identity and authority, contract performance state, personnel, programme ownership and contemporaneous project records.", "contractor+project-state", "verified-evidence", ["contemporaneous project records"]),
+    tenderEvidence: value("Effective FIDIC contract, BOQ, accepted programme, drawings, instruction, daily records, lab/survey evidence, notices, claim, determination, DAB and Variation records.", "contract+claim+decision-evidence", "tender-evidence", ["DAB", "Variation"]),
+    commercialModel: value("Original $94.80m contract; requested $8.70m/112d; Engineer $4.90m/63d; accepted DAB/final $6.40m/84d, certified separately from bid price.", "claim-quantum-determination-delta", "commercial-model", ["$8.70m", "$6.40m", "84d"]),
+    procedure: value(`${case9.procurementMethod}; ${case9.submissionWindow}; ${case9.deliveryWindow}.`, "fidic-claim-engineer-dab", "post-award-procedure", ["FIDIC", "DAB"]),
+    endpoint: value(case9.endpoint, "variation+revised-baseline+paid-milestone", "case-endpoint", ["$6,40 млн", "84 дня", "paid"]),
+    success: value("Timely notice, source-linked causation, controlled delay/quantum, valid human authority, accepted determination and effective paid Variation without stopping unaffected works.", "timely-proven-authorised-paid", "successful-contract-administration", ["effective paid Variation"]),
+    kpi: value(case9.kpi, "fidic-claim-kpis", "kpi", ["day 3 / 28", "day 71 / 84", "$6,40m +84d"]),
+    failure: value("Late/unsigned notice, broken custody, unsupported entitlement, non-critical delay claim, double-counted cost, Agent-made authority decision, missed referral or unimplemented decision.", "claim-procedure+evidence+authority-failure", "failure", ["Agent-made authority", "double-counted cost"]),
+  },
+};
+
+export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile, case6Profile, case7Profile, case8Profile, case9Profile];
 
 export function compareValues(left: ComparisonValue, right: ComparisonValue, dimension: ComparisonDimension): ComparisonRelation {
   if (left.key === right.key) return "same";
