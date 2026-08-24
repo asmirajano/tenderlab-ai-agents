@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { agents, getAgentTier, platformSideLabels, tierLabels, type AgentTier, type PlatformSide } from "../../packages/catalog-data/src/agents";
 import { eventAgentAuditLabels } from "../process-model";
 import CaseOrchestrationMap, { type OrchestrationTimeBand } from "./case-orchestration-map";
+import { useCaseExpansion } from "./case-expansion";
 import { case1Engagements } from "./case-1-data";
 import { case2Engagements } from "./case-2-data";
 import type { CaseAgentEngagement, EngagementStatus } from "./case-1-data";
@@ -43,7 +44,7 @@ function names(ids: number[], limit = 12) {
 }
 
 export default function Case3Module({ onOpenAgent, onScrollToMatrix }: { onOpenAgent: (agentId: number, eventStep: number | null) => void; onScrollToMatrix: () => void }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useCaseExpansion("case-3", true);
   const [view, setView] = useState<"map" | "narrative">("map");
   const metrics = useMemo(() => countByStatus(case3Engagements), []);
   const conditionalTriggered = case3Engagements.filter((item) => item.status === "conditional" && item.activation === "triggered").length;

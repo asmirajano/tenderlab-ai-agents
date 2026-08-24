@@ -25,7 +25,10 @@ import Case6Module from "./case-6-module";
 import Case7Module from "./case-7-module";
 import Case8Module from "./case-8-module";
 import Case9Module from "./case-9-module";
+import Case10Module from "./case-10-module";
 import CaseComparison from "./case-comparison";
+import CaseProgramConclusion from "./case-program-conclusion";
+import { CaseExpansionProvider, useAllCaseExpansion, useCaseExpansion } from "./case-expansion";
 import {
   case1,
   case1Engagements,
@@ -50,6 +53,8 @@ import { case8, case8Engagements, case8Stages } from "./case-8-data";
 import { case8ProcessGraph } from "./case-8-graph";
 import { case9, case9Engagements, case9Stages } from "./case-9-data";
 import { case9ProcessGraph } from "./case-9-graph";
+import { case10, case10Engagements, case10Stages } from "./case-10-data";
+import { case10ProcessGraph } from "./case-10-graph";
 import { eventAgentAuditLabels, type EventAgentAuditDecision } from "../process-model";
 import {
   createSemanticSearchDocument,
@@ -88,7 +93,6 @@ const sideClasses: Record<PlatformSide, string> = {
   backend: "side-backend",
 };
 
-const futureCases = [10];
 const engagementByAgentId = new Map(case1Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case2EngagementByAgentId = new Map(case2Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case3EngagementByAgentId = new Map(case3Engagements.map((engagement) => [engagement.agentId, engagement]));
@@ -98,6 +102,7 @@ const case6EngagementByAgentId = new Map(case6Engagements.map((engagement) => [e
 const case7EngagementByAgentId = new Map(case7Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case8EngagementByAgentId = new Map(case8Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case9EngagementByAgentId = new Map(case9Engagements.map((engagement) => [engagement.agentId, engagement]));
+const case10EngagementByAgentId = new Map(case10Engagements.map((engagement) => [engagement.agentId, engagement]));
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
 const semanticDocuments = agents.map((agent) => {
@@ -167,6 +172,14 @@ function PlatformBadges({ agent, compact = false }: { agent: Agent; compact?: bo
 }
 
 export default function CaseSimulationPage() {
+  return (
+    <CaseExpansionProvider>
+      <CaseSimulationContent />
+    </CaseExpansionProvider>
+  );
+}
+
+function CaseSimulationContent() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [tierFilter, setTierFilter] = useState<TierFilter>("all");
   const [stageFilter, setStageFilter] = useState("all");
@@ -177,8 +190,9 @@ export default function CaseSimulationPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [selectedAgentHistory, setSelectedAgentHistory] = useState<number[]>([]);
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
-  const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9>(1);
-  const [caseExpanded, setCaseExpanded] = useState(false);
+  const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10>(1);
+  const [caseExpanded, setCaseExpanded] = useCaseExpansion("case-1", false);
+  const { allExpanded: allCasesExpanded, caseCount, caseIds, setAllCasesExpanded } = useAllCaseExpansion();
   const [matrixExpanded, setMatrixExpanded] = useState(true);
   const [caseView, setCaseView] = useState<"map" | "narrative">("map");
   const matrixScrollRef = useRef<HTMLDivElement | null>(null);
@@ -232,10 +246,10 @@ export default function CaseSimulationPage() {
   })).filter((group) => group.agents.length > 0), [filteredAgents]);
 
   const selectedAgent = selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) ?? null : null;
-  const selectedEngagementMap = selectedCaseNumber === 1 ? engagementByAgentId : selectedCaseNumber === 2 ? case2EngagementByAgentId : selectedCaseNumber === 3 ? case3EngagementByAgentId : selectedCaseNumber === 4 ? case4EngagementByAgentId : selectedCaseNumber === 5 ? case5EngagementByAgentId : selectedCaseNumber === 6 ? case6EngagementByAgentId : selectedCaseNumber === 7 ? case7EngagementByAgentId : selectedCaseNumber === 8 ? case8EngagementByAgentId : case9EngagementByAgentId;
-  const selectedCaseStages = selectedCaseNumber === 1 ? caseStages : selectedCaseNumber === 2 ? case2Stages : selectedCaseNumber === 3 ? case3Stages : selectedCaseNumber === 4 ? case4Stages : selectedCaseNumber === 5 ? case5Stages : selectedCaseNumber === 6 ? case6Stages : selectedCaseNumber === 7 ? case7Stages : selectedCaseNumber === 8 ? case8Stages : case9Stages;
-  const selectedGraph = selectedCaseNumber === 1 ? case1ProcessGraph : selectedCaseNumber === 2 ? case2ProcessGraph : selectedCaseNumber === 3 ? case3ProcessGraph : selectedCaseNumber === 4 ? case4ProcessGraph : selectedCaseNumber === 5 ? case5ProcessGraph : selectedCaseNumber === 6 ? case6ProcessGraph : selectedCaseNumber === 7 ? case7ProcessGraph : selectedCaseNumber === 8 ? case8ProcessGraph : case9ProcessGraph;
-  const selectedCase = selectedCaseNumber === 1 ? case1 : selectedCaseNumber === 2 ? case2 : selectedCaseNumber === 3 ? case3 : selectedCaseNumber === 4 ? case4 : selectedCaseNumber === 5 ? case5 : selectedCaseNumber === 6 ? case6 : selectedCaseNumber === 7 ? case7 : selectedCaseNumber === 8 ? case8 : case9;
+  const selectedEngagementMap = selectedCaseNumber === 1 ? engagementByAgentId : selectedCaseNumber === 2 ? case2EngagementByAgentId : selectedCaseNumber === 3 ? case3EngagementByAgentId : selectedCaseNumber === 4 ? case4EngagementByAgentId : selectedCaseNumber === 5 ? case5EngagementByAgentId : selectedCaseNumber === 6 ? case6EngagementByAgentId : selectedCaseNumber === 7 ? case7EngagementByAgentId : selectedCaseNumber === 8 ? case8EngagementByAgentId : selectedCaseNumber === 9 ? case9EngagementByAgentId : case10EngagementByAgentId;
+  const selectedCaseStages = selectedCaseNumber === 1 ? caseStages : selectedCaseNumber === 2 ? case2Stages : selectedCaseNumber === 3 ? case3Stages : selectedCaseNumber === 4 ? case4Stages : selectedCaseNumber === 5 ? case5Stages : selectedCaseNumber === 6 ? case6Stages : selectedCaseNumber === 7 ? case7Stages : selectedCaseNumber === 8 ? case8Stages : selectedCaseNumber === 9 ? case9Stages : case10Stages;
+  const selectedGraph = selectedCaseNumber === 1 ? case1ProcessGraph : selectedCaseNumber === 2 ? case2ProcessGraph : selectedCaseNumber === 3 ? case3ProcessGraph : selectedCaseNumber === 4 ? case4ProcessGraph : selectedCaseNumber === 5 ? case5ProcessGraph : selectedCaseNumber === 6 ? case6ProcessGraph : selectedCaseNumber === 7 ? case7ProcessGraph : selectedCaseNumber === 8 ? case8ProcessGraph : selectedCaseNumber === 9 ? case9ProcessGraph : case10ProcessGraph;
+  const selectedCase = selectedCaseNumber === 1 ? case1 : selectedCaseNumber === 2 ? case2 : selectedCaseNumber === 3 ? case3 : selectedCaseNumber === 4 ? case4 : selectedCaseNumber === 5 ? case5 : selectedCaseNumber === 6 ? case6 : selectedCaseNumber === 7 ? case7 : selectedCaseNumber === 8 ? case8 : selectedCaseNumber === 9 ? case9 : case10;
   const selectedEngagement = selectedAgent ? selectedEngagementMap.get(selectedAgent.id) ?? null : null;
   const selectedStage = selectedEngagement ? selectedCaseStages.find((stage) => stage.id === selectedEngagement.stageId) ?? null : null;
   const selectedChronologyEvent = selectedChronologyStep
@@ -274,7 +288,7 @@ export default function CaseSimulationPage() {
     } : undefined,
   } : undefined;
 
-  const openAgent = (agentId: number, chronologyStep: number | null = null, caseNumber: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 = 1) => {
+  const openAgent = (agentId: number, chronologyStep: number | null = null, caseNumber: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 = 1) => {
     setSelectedAgentHistory([]);
     setSelectedCaseNumber(caseNumber);
     setSelectedChronologyStep(chronologyStep);
@@ -317,6 +331,12 @@ export default function CaseSimulationPage() {
       if (current) closeAgent();
       return !current;
     });
+  };
+
+  const toggleAllCases = () => {
+    const nextExpanded = !allCasesExpanded;
+    if (!nextExpanded) closeAgent();
+    setAllCasesExpanded(nextExpanded);
   };
 
   const revealMatrix = () => {
@@ -376,6 +396,21 @@ export default function CaseSimulationPage() {
           <small>Следующий кейс добавляется только после проверки текущего.</small>
         </div>
       </section>
+
+      <div className="case-list-controls" aria-label="Управление отображением Cases">
+        <span>CASES{caseCount > 0 ? ` · ${caseCount}` : ""}</span>
+        <button
+          type="button"
+          className="case-expand-all-button"
+          aria-expanded={allCasesExpanded}
+          aria-controls={caseIds.map((caseId) => `${caseId}-content`).join(" ") || undefined}
+          disabled={caseCount === 0}
+          onClick={toggleAllCases}
+        >
+          <span>{allCasesExpanded ? "Свернуть все" : "Развернуть все"}</span>
+          <i aria-hidden="true">{allCasesExpanded ? "−" : "+"}</i>
+        </button>
+      </div>
 
       <section className={`case-module ${caseExpanded ? "is-expanded" : "is-collapsed"}`} aria-labelledby="case-1-module-title">
         <button
@@ -625,12 +660,19 @@ export default function CaseSimulationPage() {
         onScrollToMatrix={revealMatrix}
       />
 
-      <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9)} />
+      <Case10Module
+        onOpenAgent={(agentId, eventStep) => openAgent(agentId, eventStep, 10)}
+        onScrollToMatrix={revealMatrix}
+      />
+
+      <CaseProgramConclusion onOpenAgent={(agentId) => openAgent(agentId, null, 10)} />
+
+      <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10)} />
 
       <section className={`engagement-matrix-section ${matrixExpanded ? "is-expanded" : "is-collapsed"}`} aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
-          <span>Cases 1–9 активны; нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
+          <span>Cases 1–10 активны; 10-Case validation programme завершён. Нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
           <button type="button" className="case-section-toggle" aria-expanded={matrixExpanded} aria-controls="engagement-matrix-content" onClick={() => setMatrixExpanded((current) => !current)}>
             <span>{matrixExpanded ? "Свернуть" : "Развернуть"}</span><i aria-hidden="true">{matrixExpanded ? "−" : "+"}</i>
           </button>
@@ -717,7 +759,7 @@ export default function CaseSimulationPage() {
           <small>Conditional: сплошная метка — условие сработало; контурная — резерв.</small>
         </div>
 
-        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Cases 1–9 и будущих кейсов">
+        <div className="matrix-scroll" ref={matrixScrollRef} aria-label="Прокручиваемая матрица Cases 1–10">
           <table className="engagement-matrix">
             <thead>
               <tr>
@@ -731,7 +773,7 @@ export default function CaseSimulationPage() {
                 <th className="case-seven-column"><span>CASE 07 · ACTIVE</span><b>Buyer recovery RFQ</b><small>Филиппины · $6,80 млн ceiling</small></th>
                 <th className="case-eight-column"><span>CASE 08 · ACTIVE</span><b>E-bus PPP dialogue</b><small>Перу · $218 млн CAPEX</small></th>
                 <th className="case-nine-column"><span>CASE 09 · ACTIVE</span><b>FIDIC claim + DAB</b><small>Марокко · $94,80 млн contract</small></th>
-                {futureCases.map((caseNumber) => <th className="future-case" key={caseNumber}><span>CASE {String(caseNumber).padStart(2, "0")}</span><b>После аудита</b></th>)}
+                <th className="case-ten-column"><span>CASE 10 · FINAL</span><b>Cyber integrity No-Bid</b><small>Молдова · €42,0 млн ceiling</small></th>
               </tr>
             </thead>
             <tbody>
@@ -783,7 +825,7 @@ function StageRows({
 }: {
   stage: (typeof caseStages)[number];
   stageAgents: Agent[];
-  onSelect: (agentId: number, caseNumber: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) => void;
+  onSelect: (agentId: number, caseNumber: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10) => void;
   semanticResults: Map<number, SemanticSearchResult>;
   highlightedAgentId: number | null;
   registerRow: (agentId: number, node: HTMLTableRowElement | null) => void;
@@ -803,6 +845,7 @@ function StageRows({
         const case7Engagement = case7EngagementByAgentId.get(agent.id)!;
         const case8Engagement = case8EngagementByAgentId.get(agent.id)!;
         const case9Engagement = case9EngagementByAgentId.get(agent.id)!;
+        const case10Engagement = case10EngagementByAgentId.get(agent.id)!;
         const tier = getAgentTier(agent.id);
         const semanticResult = semanticResults.get(agent.id);
         return (
@@ -884,7 +927,13 @@ function StageRows({
                 <small>{case9Engagement.status === "conditional" ? (case9Engagement.activation === "triggered" ? "условие сработало" : "резерв") : case9Engagement.status === "background" ? "Process execution" : case9Engagement.when}</small>
               </button>
             </td>
-            {futureCases.map((caseNumber) => <td className="future-case" key={caseNumber}><span>—</span></td>)}
+            <td className="case-ten-column">
+              <button className={`engagement-cell cell-${case10Engagement.status} ${case10Engagement.activation ? `cell-${case10Engagement.activation}` : ""}`} type="button" onClick={() => onSelect(agent.id, 10)} aria-label={`${agent.name}, Case 10: ${statusLabels[case10Engagement.status]}`}>
+                <span>{statusShortLabels[case10Engagement.status]}</span>
+                <b>{statusLabels[case10Engagement.status]}</b>
+                <small>{case10Engagement.status === "conditional" ? (case10Engagement.activation === "triggered" ? "условие сработало" : "резерв") : case10Engagement.status === "background" ? "Process execution" : case10Engagement.when}</small>
+              </button>
+            </td>
           </tr>
         );
       })}

@@ -17,6 +17,8 @@ import { case8, case8Engagements } from "./case-8-data.ts";
 import { case8ProcessGraph } from "./case-8-graph.ts";
 import { case9, case9Engagements } from "./case-9-data.ts";
 import { case9ProcessGraph } from "./case-9-graph.ts";
+import { case10, case10Engagements } from "./case-10-data.ts";
+import { case10ProcessGraph } from "./case-10-graph.ts";
 
 export type ComparisonGroup = "starting" | "relationship" | "workflow" | "agents" | "data" | "outcome";
 export type ComparisonRelation = "same" | "similar" | "different-path" | "different" | "critical" | "only-one";
@@ -540,7 +542,56 @@ const case9Profile: CaseComparisonProfile = {
   },
 };
 
-export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile, case6Profile, case7Profile, case8Profile, case9Profile];
+const case10Profile: CaseComparisonProfile = {
+  caseNumber: 10,
+  id: case10.id,
+  name: case10.name,
+  shortName: "Cyber No-Bid",
+  color: "#5b4ca3",
+  entryPath: ["PIN/RFI", "Award intelligence", "Restricted invitation", "Partner diligence", "Integrity gate", "No-Bid", "Cancellation"],
+  entrySummary: "A high-fit opportunity ends in a governed No-Bid before proposal production.",
+  relationshipSummary: "Prospective bidder + consented partner evidence + external integrity authority",
+  endpointSummary: "Board No-Bid → stopped bid branch → official cancellation → reissue watch.",
+  convergenceState: "verified-company+tender+partner-evidence+clarification+fit+integrity",
+  convergenceEvent: "E16 · Human No-Bid gate",
+  engagements: case10Engagements,
+  eventCount: case10ProcessGraph.activities.length,
+  processCount: case10ProcessGraph.processes.length,
+  attributes: {
+    purpose: value("Validate a high-fit security-sensitive opportunity that correctly terminates at a governed integrity No-Bid and later cancellation.", "integrity-no-bid+cancellation", "controlled-termination", ["No-Bid", "cancellation"]),
+    monetization: value(case10.monetization, "fixed-risk-assurance-no-success", "consulting-revenue", ["fixed risk-assurance", "no success fee"]),
+    consultantIncome: value(case10.consultantIncome, "eur-165000-risk-assurance", "simulated-income", ["DEMO", "€165 000"]),
+    trigger: value(case10.trigger, "pin+rfi+restricted-invitation+award-corpus", "procurement-signal", ["PIN/RFI", "award/cancellation corpus"]),
+    startingSituation: value(case10.startingCondition, "no-local-operator+scan-awards", "candidate-available", ["no cleared operator", "scan PDFs"]),
+    knownAtStart: value("Public procurement plan, restricted-route intent, SentinelGrid public profile and fragmented prior-award records.", "plan+profile+fragmented-awards", "reusable-intelligence", ["fragmented prior-award"]),
+    unknownAtStart: value("Verified readiness, full tender controls, local-operator capability/ownership, Buyer clarification and Board risk appetite.", "readiness+tender+partner+authority", "verification-needed", ["ownership", "risk appetite"]),
+    companySelection: value("SentinelGrid is an invited, technically relevant candidate rather than a cold outreach prospect.", "restricted-invited-candidate", "prospect-intelligence", ["invited"]),
+    relationship: value("Existing Client assessment mandate; local candidate grants separate limited diligence consent.", "client+partner-consent", "company-relationship", ["separate limited diligence consent"]),
+    permission: value("E05 assessment only, E09 outreach approval, E10 partner consent, E13 clarification authority and E16 Board No-Bid.", "layered-assessment+partner+clarification+nobid", "consent", ["E10", "E16"]),
+    consultantMission: value(case10.consultantRole, "risk-evidence+controlled-stop", "consultant-support", ["не принимает Board decision"]),
+    consultantStart: value("Before invitation, on public procurement/award intelligence; private work starts only after E05.", "public-intelligence-then-private-mandate", "consultant-timing", ["after E05"]),
+    consultantDone: value("E19 after frozen no-submission state, official cancellation, privacy-safe learning and assigned reissue watch.", "nobid+cancellation+watch", "consultant-boundary", ["E19"]),
+    companyMaturity: value("Experienced Nordic cyber integrator with strong delivery capability but no local cleared operator.", "experienced-cyber-integrator-local-gap", "technology-provider", ["no local cleared operator"]),
+    entrySequence: value("PIN/RFI → award intelligence → invitation → mandate → parallel company/tender → partner consent/diligence → clarification → No-Bid → cancellation.", "signal-awards-diligence-nobid-cancel", "entry-path", ["partner consent/diligence", "No-Bid"]),
+    parallelWork: value("Source/award intelligence, company readiness and tender modelling run in parallel; fit/economics remain separate from partner/integrity evidence.", "awards+company+tender+integrity", "parallel-intelligence", ["remain separate"]),
+    decisionGates: value("Assessment E05, outreach E09, consent E10, clarification E13 and Board No-Bid E16; cancellation E18 is external.", "five-gates+external-cancel", "human-gates", ["Board No-Bid", "external"]),
+    participationRoute: value("Prime bidder with mandatory local operating subcontractor; post-deadline JV/substitution route is unavailable.", "prime+locked-local-subcontractor", "participation-route", ["locked local"]),
+    bidPreparation: value("Explicitly stopped before compliance, pricing, proposal, QA or submission Agents execute.", "stopped-before-bid-production", "bid-preparation", ["stopped"]),
+    postAward: value("Absent by design: no submission, evaluation, award, contract, execution or payment.", "excluded-after-nobid", "post-award", ["Absent"], true),
+    agentScope: value("Public/award intelligence, company/tender modelling, partner diligence, fit/risk and governed stop; downstream Agents remain skipped.", "intelligence+diligence+stop", "agent-scope", ["downstream Agents remain skipped"]),
+    humanOnlyWork: value("Outreach, consent, legal conclusions, allegations/investigation, clarification signature, Board decision, cancellation and retention authority remain human/external.", "integrity+authority-human-only", "human-authority", ["investigation", "Board decision"]),
+    companyEvidence: value("Verified cyber references, credentials, staffing, clearance baseline and Board risk authority.", "verified-cyber-company", "verified-evidence", ["clearance baseline"]),
+    tenderEvidence: value("Bilingual PIN/RFI/invitation, 137 requirements, 24 forms, clarification response, award corpus and official cancellation.", "bilingual-tender+award+cancel", "tender-evidence", ["official cancellation"]),
+    commercialModel: value("€42m five-year managed-service ceiling and feasible TCO; commercial 74/100 remains separate from integrity risk 91/100.", "managed-service-tco+separate-risk", "commercial-model", ["74/100", "91/100"]),
+    procedure: value(`${case10.procurementMethod}; ${case10.submissionWindow}; ${case10.deliveryWindow}.`, "restricted-cyber-local-operator", "restricted-procurement", ["Restricted", "local security operator"]),
+    endpoint: value(case10.endpoint, "board-nobid+cancel+reissue-watch", "case-endpoint", ["No-Bid", "cancellation"]),
+    success: value("Evidence-backed Board stop before unauthorised submission, protected partner data and verified external cancellation/reissue state.", "valid-stop+protected-data+verified-cancel", "controlled-termination", ["Board stop", "protected partner data"]),
+    kpi: value(case10.kpi, "cyber-nobid-kpis", "kpi", ["integrity risk 91/100", "No-Bid Day 27", "cancellation Day 63"]),
+    failure: value("Unconsented partner data, unsupported accusation, score-driven Bid authority, leaked diligence, proposal work after No-Bid or treating cancellation as retroactive proof.", "rights+integrity+authority-failure", "failure", ["unsupported accusation", "after No-Bid"]),
+  },
+};
+
+export const caseComparisonRegistry: CaseComparisonProfile[] = [case1Profile, case2Profile, case3Profile, case4Profile, case5Profile, case6Profile, case7Profile, case8Profile, case9Profile, case10Profile];
 
 export function compareValues(left: ComparisonValue, right: ComparisonValue, dimension: ComparisonDimension): ComparisonRelation {
   if (left.key === right.key) return "same";

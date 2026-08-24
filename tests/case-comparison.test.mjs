@@ -14,7 +14,7 @@ test("builds Case Comparison from a scalable normalized Case registry", async ()
     readFile(path.join(projectRoot, "app", "case-simulation", "case-simulation.css"), "utf8"),
   ]);
 
-  assert.ok(caseComparisonRegistry.length >= 8);
+  assert.equal(caseComparisonRegistry.length, 10);
   assert.ok(comparisonDimensions.length >= 24);
   assert.deepEqual(comparisonDimensions.slice(0, 3).map((item) => item.id), ["purpose", "monetization", "consultantIncome"]);
   for (const profile of caseComparisonRegistry) {
@@ -33,6 +33,8 @@ test("builds Case Comparison from a scalable normalized Case registry", async ()
   assert.match(caseComparisonRegistry[5].attributes.consultantIncome.text, /DEMO · \$150 600/);
   assert.match(caseComparisonRegistry[6].attributes.consultantIncome.text, /DEMO · \$210 000/);
   assert.match(caseComparisonRegistry[7].attributes.consultantIncome.text, /DEMO · \$580 000/);
+  assert.match(caseComparisonRegistry[8].attributes.consultantIncome.text, /DEMO · \$145 000/);
+  assert.match(caseComparisonRegistry[9].attributes.consultantIncome.text, /DEMO · €165 000/);
   assert.match(component, /caseComparisonRegistry\.map/);
   assert.match(component, /AgentLinks/);
   assert.match(component, /compareValues/);
