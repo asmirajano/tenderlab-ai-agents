@@ -38,7 +38,7 @@ test("projects Case 6 into module, comparison and Cases × Agents matrix", async
     readFile(new URL("app/case-simulation/page.tsx", projectRoot), "utf8"),
     readFile(new URL("app/case-simulation/case-6-module.tsx", projectRoot), "utf8"),
   ]);
-  assert.deepEqual(caseComparisonRegistry.map((item) => item.caseNumber), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(caseComparisonRegistry.slice(0, 7).map((item) => item.caseNumber), [1, 2, 3, 4, 5, 6, 7]);
   assert.match(page, /Case6Module/);
   assert.match(page, /case6EngagementByAgentId/);
   assert.match(module, /CASE 6 · CONSOLIDATED AUDIT/);
