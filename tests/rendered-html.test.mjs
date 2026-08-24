@@ -600,7 +600,7 @@ test("provides a filter-aware 64-Agent Matrix as the fourth Catalog view", async
   assert.match(globalStyles, /\.agent-matrix-table tbody th/);
 });
 
-test("provides a focused registry-backed Relationships view as the fifth Catalog view", async () => {
+test("provides a full-canvas registry-backed Relationships map as the fifth Catalog view", async () => {
   const [
     pageSource,
     viewSource,
@@ -624,23 +624,23 @@ test("provides a focused registry-backed Relationships view as the fifth Catalog
   assert.match(registrySource, /type ArchitectureView = "flat" \| "hierarchy" \| "network" \| "matrix" \| "relationships"/);
   assert.match(pageSource, />Relationships<\/button>/);
   assert.match(pageSource, /<AgentRelationshipsView/);
-  assert.match(viewSource, /Agent family explorer/);
-  assert.match(viewSource, /UPSTREAM/);
-  assert.match(viewSource, /DOWNSTREAM/);
-  assert.match(viewSource, /PARENT \/ BROADER CAPABILITY/);
-  assert.match(viewSource, /SPECIALIZED \/ CHILD CAPABILITIES/);
-  assert.match(viewSource, /ALTERNATIVES \/ RESPONSIBILITY BOUNDARIES/);
-  assert.match(viewSource, /item === 1 \? "1-hop" : "2-hop"/);
-  assert.match(viewSource, /Ecosystem/);
-  assert.match(viewSource, /SELECT PROCESS/);
-  assert.match(viewSource, /case1ProcessGraph\.processAgentExecutions/);
-  assert.match(viewSource, /WHY THIS RELATIONSHIP EXISTS/);
-  assert.match(viewSource, /Mandatory\/conditional companion и parallel collaboration не заявляются/);
+  assert.match(viewSource, /Agent Relationships Map/);
+  assert.match(viewSource, /computeGraphNodes/);
+  assert.match(viewSource, /shortestPath/);
+  assert.match(viewSource, /relationships-map-canvas/);
+  assert.match(viewSource, /relationships-process-regions/);
+  assert.match(viewSource, /selectedAgentIds\.length === 2/);
+  assert.match(viewSource, /RESET FOCUS/);
+  assert.match(viewSource, /case1ProcessGraph\.processes/);
+  assert.match(viewSource, /CANONICAL MODEL/);
+  assert.doesNotMatch(viewSource, /Agent family explorer|1-hop|2-hop|SELECT PROCESS/);
   assert.match(schemaSource, /AgentRelationshipFamily = "capability" \| "dependency" \| "sequence" \| "boundary"/);
   assert.match(schemaSource, /AgentRelationshipRequirement = "required" \| "contextual" \| "conditional" \| "review"/);
   assert.match(relationshipSource, /evidence:/);
   assert.match(globalStyles, /\.agent-relationships-view/);
-  assert.match(globalStyles, /\.relationships-focus-layout/);
+  assert.match(globalStyles, /\.relationships-map-canvas/);
+  assert.match(globalStyles, /\.relationship-map-node\.is-muted/);
+  assert.match(globalStyles, /\.relationship-map-edge\.is-active/);
   assert.equal(agents.length, 64);
   assert.ok(agentRelationships.length > 400, "expected a substantial canonical relationship registry");
   assert.ok(agentRelationships.every((relationship) => relationship.family && relationship.requirement && relationship.rationale && relationship.evidence.length));

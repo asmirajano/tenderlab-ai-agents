@@ -1,24 +1,22 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+} from "react";
 import type {
   AgentRelationship,
   AgentRelationshipFamily,
   AgentRelationshipRequirement,
 } from "../packages/catalog-schema/src/agent-specification";
-import {
-  agentRelationships,
-  getAgentTier,
-  tierLabels,
-  type Agent,
-} from "../packages/catalog-data/src";
+import { agentRelationships, getAgentTier, tierLabels, type Agent } from "../packages/catalog-data/src";
 import { case1ProcessGraph } from "./case-simulation/case-1-graph";
-import { AgentDatasetImpactCell, datasetImpactIdsForAgent } from "./agent-dataset-impact";
 
 type LayerMeta = Record<string, { name: string; color: string; mark: string }>;
-type RelationshipFilter = "all" | AgentRelationshipFamily | "process";
-type RelationshipScope = 1 | 2 | "ecosystem";
-type ExplorerMode = "agent" | "process";
 
 type RelationshipGroup = {
   id: string;
@@ -33,11 +31,29 @@ type RelationshipGroup = {
   status: AgentRelationship["status"];
 };
 
-const relationshipFamilyMeta: Record<AgentRelationshipFamily, { label: string; short: string; description: string }> = {
-  capability: { label: "CAPABILITY / SUPPORT", short: "Capability", description: "Более широкая и специализированная функциональная ответственность." },
-  dependency: { label: "REQUIRED INPUT", short: "Dependency", description: "Один Agent зависит от upstream capability другого Agent." },
-  sequence: { label: "OUTPUT HANDOFF", short: "Sequential", description: "Конкретный результат передаётся следующему потребителю." },
-  boundary: { label: "BOUNDARY / ALTERNATIVE", short: "Boundary", description: "Похожие роли требуют явного разделения ответственности, а не автоматического слияния." },
+type GraphNode = {
+  agent: Agent;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  degree: number;
+};
+
+type Camera = { x: number; y: number; scale: number };
+
+const GRAPH_WIDTH = 2440;
+const GRAPH_HEIGHT = 1320;
+const NODE_WIDTH = 214;
+const NODE_HEIGHT = 64;
+const MIN_SCALE = 0.68;
+const MAX_SCALE = 2.7;
+
+const familyMeta: Record<AgentRelationshipFamily, { label: string; short: string; color: string; description: string }> = {
+  capability: { label: "PARENT / SPECIALIZED", short: "Parent / Child", color: "#826fe5", description: "Более узкая capability поддерживает более широкую bounded responsibility." },
+  dependency: { label: "PRODUCER → CONSUMER", short: "Dependency", color: "#2a9bd8", description: "Consumer требует upstream input или capability другого Agent." },
+  sequence: { label: "SEQUENTIAL / RELAY", short: "Sequential", color: "#149873", description: "Producer передаёт конкретный output следующему Agent." },
+  boundary: { label: "BOUNDARY / OVERLAP", short: "Boundary", color: "#e69b27", description: "Роли похожи, но имеют различающиеся границы ответственности." },
 };
 
 const requirementLabels: Record<AgentRelationshipRequirement, string> = {
@@ -61,60 +77,116 @@ function strongestStatus(relationships: AgentRelationship[]): AgentRelationship[
 function groupResolvedRelationships(allAgents: Agent[]) {
   const agentByRegistryId = new Map(allAgents.map((agent) => [agent.registryId, agent]));
   const grouped = new Map<string, AgentRelationship[]>();
-
   for (const relationship of agentRelationships) {
     if (relationship.source.kind !== "agent" || relationship.target.kind !== "agent") continue;
     const source = agentByRegistryId.get(relationship.source.ref);
     const target = agentByRegistryId.get(relationship.target.ref);
     if (!source || !target || source.id === target.id) continue;
-    const pair = relationship.family === "boundary"
-      ? [source.registryId, target.registryId].sort().join("--")
-      : `${source.registryId}--${target.registryId}`;
+    const pair = relationship.family === "boundary" ? [source.registryId, target.registryId].sort().join("--") : `${source.registryId}--${target.registryId}`;
     const key = `${relationship.family}:${pair}`;
     grouped.set(key, [...(grouped.get(key) ?? []), relationship]);
   }
-
   return [...grouped.entries()].map(([id, relationships]): RelationshipGroup => {
     const first = relationships[0];
-    const source = agentByRegistryId.get(first.source.ref)!;
-    const target = agentByRegistryId.get(first.target.ref)!;
     return {
       id,
       family: first.family,
-      source,
-      target,
+      source: agentByRegistryId.get(first.source.ref)!,
+      target: agentByRegistryId.get(first.target.ref)!,
       relationships,
       requirement: strongestRequirement(relationships),
-      rationale: relationships.map((relationship) => relationship.rationale).filter((value, index, values) => values.indexOf(value) === index).join(" "),
-      evidence: relationships.flatMap((relationship) => relationship.evidence).filter((value, index, values) => values.indexOf(value) === index),
-      payloads: relationships.flatMap((relationship) => [relationship.payload, ...(relationship.artifacts ?? [])]).filter((value): value is string => Boolean(value)).filter((value, index, values) => values.indexOf(value) === index),
+      rationale: relationships.map((item) => item.rationale).filter((value, index, values) => values.indexOf(value) === index).join(" "),
+      evidence: relationships.flatMap((item) => item.evidence).filter((value, index, values) => values.indexOf(value) === index),
+      payloads: relationships.flatMap((item) => [item.payload, ...(item.artifacts ?? [])]).filter((value): value is string => Boolean(value)).filter((value, index, values) => values.indexOf(value) === index),
       status: strongestStatus(relationships),
     };
   });
 }
 
-function relationshipRole(group: RelationshipGroup, focusAgentId: number) {
-  if (group.family === "capability") return group.source.id === focusAgentId ? "broader" : "specialized";
-  if (group.family === "boundary") return "boundary";
-  return group.source.id === focusAgentId ? "downstream" : "upstream";
+function alternatingSlot(index: number) {
+  if (index === 0) return 0;
+  const distance = Math.ceil(index / 2);
+  return index % 2 ? -distance : distance;
 }
 
-function otherAgent(group: RelationshipGroup, focusAgentId: number) {
-  return group.source.id === focusAgentId ? group.target : group.source;
+function computeGraphNodes(visibleAgents: Agent[], groups: RelationshipGroup[], layerMeta: LayerMeta): GraphNode[] {
+  const visibleIds = new Set(visibleAgents.map((agent) => agent.id));
+  const degree = new Map<number, number>();
+  for (const group of groups) {
+    if (!visibleIds.has(group.source.id) || !visibleIds.has(group.target.id)) continue;
+    degree.set(group.source.id, (degree.get(group.source.id) ?? 0) + 1);
+    degree.set(group.target.id, (degree.get(group.target.id) ?? 0) + 1);
+  }
+  const layerKeys = Object.keys(layerMeta).filter((layer) => visibleAgents.some((agent) => agent.layer === layer));
+  const xStep = layerKeys.length > 1 ? (GRAPH_WIDTH - 280) / (layerKeys.length - 1) : 0;
+  const nodes: GraphNode[] = [];
+  layerKeys.forEach((layer, layerIndex) => {
+    const layerAgents = visibleAgents.filter((agent) => agent.layer === layer).sort((left, right) => {
+      const tierRank = { main: 0, specialized: 1, optional: 2 };
+      return tierRank[getAgentTier(left.id)] - tierRank[getAgentTier(right.id)] || (degree.get(right.id) ?? 0) - (degree.get(left.id) ?? 0) || left.id - right.id;
+    });
+    const spacing = Math.min(106, 1090 / Math.max(1, layerAgents.length - 1));
+    layerAgents.forEach((agent, index) => {
+      const tier = getAgentTier(agent.id);
+      nodes.push({ agent, x: 140 + layerIndex * xStep, y: GRAPH_HEIGHT / 2 + alternatingSlot(index) * spacing, width: tier === "main" ? NODE_WIDTH + 16 : NODE_WIDTH, height: tier === "main" ? NODE_HEIGHT + 6 : NODE_HEIGHT, degree: degree.get(agent.id) ?? 0 });
+    });
+  });
+  return nodes;
 }
 
-function familyFilterMatches(group: RelationshipGroup, filter: RelationshipFilter) {
-  return filter === "all" || filter === group.family;
+function graphPath(source: GraphNode, target: GraphNode) {
+  if (source.agent.layer === target.agent.layer) {
+    const direction = source.y < target.y ? 1 : -1;
+    const bendX = source.x + direction * (source.width * 0.72 + 32);
+    return `M ${source.x} ${source.y} C ${bendX} ${source.y}, ${bendX} ${target.y}, ${target.x} ${target.y}`;
+  }
+  const sourceRight = target.x > source.x;
+  const sx = source.x + (sourceRight ? source.width / 2 : -source.width / 2);
+  const tx = target.x + (sourceRight ? -target.width / 2 : target.width / 2);
+  const midX = (sx + tx) / 2;
+  return `M ${sx} ${source.y} C ${midX} ${source.y}, ${midX} ${target.y}, ${tx} ${target.y}`;
 }
 
-export default function AgentRelationshipsView({
-  allAgents,
-  visibleAgents,
-  layerMeta,
-  onOpenAgent,
-  comparisonIds,
-  onToggleCompare,
-}: {
+function compactName(name: string) {
+  const words = name.replace(/ Agent$/, "").split(" ");
+  if (words.length <= 3) return [words.join(" ")];
+  const split = Math.ceil(words.length / 2);
+  return [words.slice(0, split).join(" "), words.slice(split).join(" ")];
+}
+
+function shortestPath(start: number, end: number, groups: RelationshipGroup[]) {
+  const adjacency = new Map<number, { id: number; edgeId: string }[]>();
+  for (const group of groups) {
+    adjacency.set(group.source.id, [...(adjacency.get(group.source.id) ?? []), { id: group.target.id, edgeId: group.id }]);
+    adjacency.set(group.target.id, [...(adjacency.get(group.target.id) ?? []), { id: group.source.id, edgeId: group.id }]);
+  }
+  const queue = [start];
+  const previous = new Map<number, { id: number; edgeId: string }>();
+  const visited = new Set([start]);
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (current === end) break;
+    for (const neighbor of adjacency.get(current) ?? []) {
+      if (visited.has(neighbor.id)) continue;
+      visited.add(neighbor.id);
+      previous.set(neighbor.id, { id: current, edgeId: neighbor.edgeId });
+      queue.push(neighbor.id);
+    }
+  }
+  if (!visited.has(end)) return { nodeIds: new Set<number>(), edgeIds: new Set<string>() };
+  const nodeIds = new Set<number>([end]);
+  const edgeIds = new Set<string>();
+  let cursor = end;
+  while (cursor !== start) {
+    const step = previous.get(cursor)!;
+    nodeIds.add(step.id);
+    edgeIds.add(step.edgeId);
+    cursor = step.id;
+  }
+  return { nodeIds, edgeIds };
+}
+
+export default function AgentRelationshipsView({ allAgents, visibleAgents, layerMeta, onOpenAgent, comparisonIds, onToggleCompare }: {
   allAgents: Agent[];
   visibleAgents: Agent[];
   layerMeta: LayerMeta;
@@ -122,222 +194,145 @@ export default function AgentRelationshipsView({
   comparisonIds: number[];
   onToggleCompare: (agentId: number) => void;
 }) {
-  const [explorerMode, setExplorerMode] = useState<ExplorerMode>("agent");
-  const [focusAgentId, setFocusAgentId] = useState(visibleAgents[0]?.id ?? 1);
-  const [focusProcessId, setFocusProcessId] = useState(case1ProcessGraph.processes[0]?.id ?? "");
-  const [relationshipFilter, setRelationshipFilter] = useState<RelationshipFilter>("all");
-  const [scope, setScope] = useState<RelationshipScope>(1);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const dragRef = useRef<{ pointerId: number; x: number; y: number; camera: Camera } | null>(null);
+  const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
+  const [hoverAgentId, setHoverAgentId] = useState<number | null>(null);
   const [selectedRelationshipId, setSelectedRelationshipId] = useState<string | null>(null);
+  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, scale: 1 });
 
-  const agentById = useMemo(() => new Map(allAgents.map((agent) => [agent.id, agent])), [allAgents]);
+  const allGroups = useMemo(() => groupResolvedRelationships(allAgents), [allAgents]);
   const visibleIds = useMemo(() => new Set(visibleAgents.map((agent) => agent.id)), [visibleAgents]);
-  const relationshipGroups = useMemo(() => groupResolvedRelationships(allAgents), [allAgents]);
-  const focusAgent = visibleIds.has(focusAgentId) ? agentById.get(focusAgentId) : visibleAgents[0];
-
-  const directGroups = useMemo(() => {
-    if (!focusAgent || relationshipFilter === "process") return [];
-    return relationshipGroups.filter((group) => (
-      (group.source.id === focusAgent.id || group.target.id === focusAgent.id)
-      && visibleIds.has(otherAgent(group, focusAgent.id).id)
-      && familyFilterMatches(group, relationshipFilter)
-    ));
-  }, [focusAgent, relationshipFilter, relationshipGroups, visibleIds]);
-
-  const effectiveSelectedRelationshipId = directGroups.some((group) => group.id === selectedRelationshipId)
-    ? selectedRelationshipId
-    : (directGroups[0]?.id ?? null);
-
-  const groupedByRole = useMemo(() => {
-    const sections = { upstream: [] as RelationshipGroup[], downstream: [] as RelationshipGroup[], broader: [] as RelationshipGroup[], specialized: [] as RelationshipGroup[], boundary: [] as RelationshipGroup[] };
-    if (!focusAgent) return sections;
-    for (const group of directGroups) sections[relationshipRole(group, focusAgent.id)].push(group);
-    for (const groups of Object.values(sections)) groups.sort((left, right) => otherAgent(left, focusAgent.id).id - otherAgent(right, focusAgent.id).id);
-    return sections;
-  }, [directGroups, focusAgent]);
-
-  const broaderContext = useMemo(() => {
-    if (!focusAgent || scope === 1 || relationshipFilter === "process") return [];
-    const allowed = relationshipGroups.filter((group) => familyFilterMatches(group, relationshipFilter));
-    const adjacency = new Map<number, Set<number>>();
-    for (const group of allowed) {
-      if (!visibleIds.has(group.source.id) || !visibleIds.has(group.target.id)) continue;
-      adjacency.set(group.source.id, new Set([...(adjacency.get(group.source.id) ?? []), group.target.id]));
-      adjacency.set(group.target.id, new Set([...(adjacency.get(group.target.id) ?? []), group.source.id]));
+  const groups = useMemo(() => allGroups.filter((group) => visibleIds.has(group.source.id) && visibleIds.has(group.target.id)), [allGroups, visibleIds]);
+  const nodes = useMemo(() => computeGraphNodes(visibleAgents, groups, layerMeta), [groups, layerMeta, visibleAgents]);
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.agent.id, node])), [nodes]);
+  const agentById = useMemo(() => new Map(allAgents.map((agent) => [agent.id, agent])), [allAgents]);
+  const selectedRelationship = groups.find((group) => group.id === selectedRelationshipId) ?? null;
+  const selectedProcess = case1ProcessGraph.processes.find((process) => process.id === selectedProcessId) ?? null;
+  const hoveredAgent = hoverAgentId ? agentById.get(hoverAgentId) : null;
+  const primaryAgent = selectedAgentIds[0] ? agentById.get(selectedAgentIds[0]) : null;
+  const secondaryAgent = selectedAgentIds[1] ? agentById.get(selectedAgentIds[1]) : null;
+  const pathSelection = useMemo(() => selectedAgentIds.length === 2 ? shortestPath(selectedAgentIds[0], selectedAgentIds[1], groups) : { nodeIds: new Set<number>(), edgeIds: new Set<string>() }, [groups, selectedAgentIds]);
+  const directIds = useMemo(() => {
+    const ids = new Set(selectedAgentIds);
+    if (selectedProcess) selectedProcess.agentIds.forEach((id) => ids.add(id));
+    for (const group of groups) {
+      if (selectedAgentIds.includes(group.source.id)) ids.add(group.target.id);
+      if (selectedAgentIds.includes(group.target.id)) ids.add(group.source.id);
     }
-    const distance = new Map<number, number>([[focusAgent.id, 0]]);
-    const queue = [focusAgent.id];
-    while (queue.length) {
-      const current = queue.shift()!;
-      const currentDistance = distance.get(current)!;
-      if (scope === 2 && currentDistance >= 2) continue;
-      for (const neighbor of adjacency.get(current) ?? []) {
-        if (distance.has(neighbor)) continue;
-        distance.set(neighbor, currentDistance + 1);
-        queue.push(neighbor);
-      }
-    }
-    return [...distance.entries()]
-      .filter(([agentId, hops]) => agentId !== focusAgent.id && hops > 1)
-      .map(([agentId, hops]) => ({ agent: agentById.get(agentId)!, hops }))
-      .filter(({ agent }) => Boolean(agent))
-      .sort((left, right) => left.hops - right.hops || left.agent.id - right.agent.id);
-  }, [agentById, focusAgent, relationshipFilter, relationshipGroups, scope, visibleIds]);
+    pathSelection.nodeIds.forEach((id) => ids.add(id));
+    return ids;
+  }, [groups, pathSelection.nodeIds, selectedAgentIds, selectedProcess]);
+  const directlyRelatedGroups = useMemo(() => primaryAgent ? groups.filter((group) => group.source.id === primaryAgent.id || group.target.id === primaryAgent.id) : [], [groups, primaryAgent]);
+  const processRegions = useMemo(() => case1ProcessGraph.processes.map((process) => {
+    const members = process.agentIds.map((id) => nodeById.get(id)).filter((node): node is GraphNode => Boolean(node));
+    if (!members.length) return null;
+    const minX = Math.max(18, Math.min(...members.map((node) => node.x - node.width / 2)) - 34);
+    const maxX = Math.min(GRAPH_WIDTH - 18, Math.max(...members.map((node) => node.x + node.width / 2)) + 34);
+    const minY = Math.max(42, Math.min(...members.map((node) => node.y - node.height / 2)) - 38);
+    const maxY = Math.min(GRAPH_HEIGHT - 20, Math.max(...members.map((node) => node.y + node.height / 2)) + 38);
+    return { process, x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  }).filter((region): region is NonNullable<typeof region> => Boolean(region)), [nodeById]);
 
-  const selectedRelationship = directGroups.find((group) => group.id === effectiveSelectedRelationshipId) ?? null;
-  const focusDatasetIds = new Set(datasetImpactIdsForAgent(focusAgent));
-  const datasetPeers = allAgents.filter((agent) => agent.id !== focusAgent.id && datasetImpactIdsForAgent(agent).some((datasetId) => focusDatasetIds.has(datasetId)));
-  const processMemberships = focusAgent ? case1ProcessGraph.processes.filter((process) => process.agentIds.includes(focusAgent.id)) : [];
-  const selectedProcess = case1ProcessGraph.processes.find((process) => process.id === focusProcessId) ?? case1ProcessGraph.processes[0];
-  const selectedProcessExecutions = selectedProcess
-    ? case1ProcessGraph.processAgentExecutions.filter((execution) => execution.processId === selectedProcess.id && visibleIds.has(execution.agentId))
-    : [];
+  const resetFocus = () => { setSelectedAgentIds([]); setSelectedRelationshipId(null); setSelectedProcessId(null); };
+  const selectAgent = (agentId: number) => {
+    setSelectedRelationshipId(null);
+    setSelectedProcessId(null);
+    setSelectedAgentIds((current) => {
+      if (current.length === 0) return [agentId];
+      if (current.length === 1) return current[0] === agentId ? [] : [current[0], agentId];
+      if (current.includes(agentId)) return current.filter((id) => id !== agentId);
+      return [agentId];
+    });
+  };
+  const changeZoom = (factor: number) => {
+    setCamera((current) => {
+      const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, current.scale * factor));
+      const ratio = scale / current.scale;
+      return { scale, x: GRAPH_WIDTH / 2 - (GRAPH_WIDTH / 2 - current.x) * ratio, y: GRAPH_HEIGHT / 2 - (GRAPH_HEIGHT / 2 - current.y) * ratio };
+    });
+  };
+  const onWheel = (event: ReactWheelEvent<SVGSVGElement>) => { event.preventDefault(); changeZoom(event.deltaY < 0 ? 1.12 : 0.89); };
+  const onPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (event.button !== 0) return;
+    dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const onPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const drag = dragRef.current;
+    const svg = svgRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !svg) return;
+    const rect = svg.getBoundingClientRect();
+    setCamera({ ...drag.camera, x: drag.camera.x + (event.clientX - drag.x) * (GRAPH_WIDTH / rect.width), y: drag.camera.y + (event.clientY - drag.y) * (GRAPH_HEIGHT / rect.height) });
+  };
+  const onPointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+  const hasFocus = Boolean(selectedAgentIds.length || selectedProcess || selectedRelationship);
   const unresolvedRelationshipCount = agentRelationships.filter((relationship) => relationship.source.kind !== "agent" || relationship.target.kind !== "agent").length;
-  const boundaryPairCount = relationshipGroups.filter((group) => group.family === "boundary").length;
-  const touchedAgentIds = new Set(relationshipGroups.flatMap((group) => [group.source.id, group.target.id]));
-  const isolatedAgents = allAgents.filter((agent) => !touchedAgentIds.has(agent.id));
-
-  if (!focusAgent) return null;
-
-  const renderRelationshipCard = (group: RelationshipGroup) => {
-    const relatedAgent = otherAgent(group, focusAgent.id);
-    const selected = group.id === effectiveSelectedRelationshipId;
-    return (
-      <article className={`relationship-family-card family-${group.family} ${selected ? "is-selected" : ""}`.trim()} key={group.id} style={{ "--relation-layer": layerMeta[relatedAgent.layer].color } as CSSProperties}>
-        <button type="button" className="relationship-explain" aria-pressed={selected} onClick={() => setSelectedRelationshipId(group.id)}>
-          <span><i>{String(relatedAgent.id).padStart(2, "0")}</i>{relationshipFamilyMeta[group.family].label}</span>
-          <strong>{relatedAgent.name}</strong>
-          <p>{group.rationale}</p>
-          <small><b>{requirementLabels[group.requirement]}</b><em>{group.status.replace("-", " ")}</em></small>
-        </button>
-        <button type="button" className="relationship-refocus" onClick={() => { setFocusAgentId(relatedAgent.id); setExplorerMode("agent"); }}>Focus Agent →</button>
-      </article>
-    );
-  };
-
-  const renderRoleSection = (id: keyof typeof groupedByRole, title: string, explanation: string) => {
-    const groups = groupedByRole[id];
-    return (
-      <section className={`relationship-role-section role-${id}`}>
-        <header><div><span>{title}</span><p>{explanation}</p></div><b>{groups.length}</b></header>
-        <div>{groups.length ? groups.map(renderRelationshipCard) : <p className="relationship-empty">В текущем каноническом фильтре связь этого типа не подтверждена.</p>}</div>
-      </section>
-    );
-  };
 
   return (
-    <section className="agent-relationships-view" aria-label="Agent functional relationships explorer">
-      <header className="relationships-toolbar">
-        <div className="relationships-intro">
-          <span>FUNCTIONAL RELATIONSHIPS</span>
-          <h3>Agent family explorer</h3>
-          <p>Фокус показывает ближайшую функциональную семью одного Agent: кто даёт input, кто использует output, кто шире или уже по scope и где проходят спорные границы.</p>
-        </div>
-        <div className="relationships-mode-switch" role="group" aria-label="Explore Agents or Processes">
-          <button type="button" aria-pressed={explorerMode === "agent"} onClick={() => setExplorerMode("agent")}>Agent family</button>
-          <button type="button" aria-pressed={explorerMode === "process"} onClick={() => { setExplorerMode("process"); setRelationshipFilter("process"); }}>Process team</button>
-        </div>
-        {explorerMode === "agent" ? (
-          <label className="relationships-focus-select"><span>SELECT AGENT</span><select value={focusAgent.id} onChange={(event) => setFocusAgentId(Number(event.target.value))}>{visibleAgents.map((agent) => <option value={agent.id} key={agent.id}>{String(agent.id).padStart(2, "0")} · {agent.name}</option>)}</select></label>
-        ) : (
-          <label className="relationships-focus-select"><span>SELECT PROCESS</span><select value={selectedProcess?.id} onChange={(event) => setFocusProcessId(event.target.value)}>{case1ProcessGraph.processes.map((process) => <option value={process.id} key={process.id}>{process.id} · {process.name}</option>)}</select></label>
-        )}
+    <section className="agent-relationships-view relationships-ecosystem" aria-label="Full Agent functional relationship map">
+      <header className="relationships-map-header">
+        <div><span>FUNCTIONAL ECOSYSTEM · 64 AGENTS</span><h3>Agent Relationships Map</h3><p>Полная архитектура видна одновременно. Положение каждого Agent вычислено из canonical layer, tier, centrality и relationship records; Process contours показывают case-scoped teams без превращения Processes в Agents.</p></div>
+        <dl><div><dt>VISIBLE</dt><dd>{visibleAgents.length}<small> / {allAgents.length}</small></dd></div><div><dt>RELATIONS</dt><dd>{groups.length}</dd></div><div><dt>PROCESSES</dt><dd>{processRegions.length}</dd></div></dl>
       </header>
 
-      <div className="relationships-controls">
-        <div className="relationship-filter" role="group" aria-label="Filter by functional relationship family">
-          {(["all", "dependency", "capability", "sequence", "boundary", "process"] as RelationshipFilter[]).map((filter) => (
-            <button type="button" aria-pressed={relationshipFilter === filter} onClick={() => { setRelationshipFilter(filter); if (filter === "process") setExplorerMode("process"); else setExplorerMode("agent"); }} key={filter}>
-              {filter === "all" ? "All" : filter === "dependency" ? "Dependency" : filter === "capability" ? "Parent / Child" : filter === "sequence" ? "Sequential" : filter === "boundary" ? "Boundary" : "Process"}
-            </button>
-          ))}
-        </div>
-        <div className="relationship-scope" role="group" aria-label="Relationship expansion depth">
-          <span>EXPAND</span>
-          {([1, 2, "ecosystem"] as RelationshipScope[]).map((item) => <button type="button" aria-pressed={scope === item} onClick={() => setScope(item)} key={item}>{item === "ecosystem" ? "Ecosystem" : item === 1 ? "1-hop" : "2-hop"}</button>)}
-        </div>
+      <div className="relationships-map-legend" aria-label="Relationship map legend">
+        {(Object.keys(familyMeta) as AgentRelationshipFamily[]).map((family) => <span className={`legend-${family}`} key={family}><i />{familyMeta[family].short}</span>)}
+        <span className="legend-process"><i />Shared Process / parallel context</span><span className="legend-required"><i />Required connector</span><small>Клик Agent: family · второй клик: shortest path · клик связи: evidence · пустое поле: reset</small>
       </div>
 
-      {explorerMode === "agent" ? (
-        <>
-          <div className="relationships-focus-layout">
-            <div className="relationships-left-stack">
-              {renderRoleSection("upstream", "UPSTREAM", "Кто предоставляет capability или данные до работы selected Agent?")}
-              {renderRoleSection("broader", "PARENT / BROADER CAPABILITY", "Какая более широкая ответственность использует selected Agent как специализированную часть?")}
-            </div>
+      <div className="relationships-map-shell">
+        <div className="relationships-map-controls" aria-label="Map zoom controls"><button type="button" onClick={() => changeZoom(1.18)} aria-label="Zoom in">+</button><button type="button" onClick={() => changeZoom(0.84)} aria-label="Zoom out">−</button><button type="button" onClick={() => setCamera({ x: 0, y: 0, scale: 1 })}>FIT</button>{hasFocus && <button type="button" onClick={resetFocus}>RESET FOCUS</button>}</div>
+        {(hoveredAgent || primaryAgent || selectedProcess) && <aside className="relationships-map-hover-card">
+          {selectedProcess ? <><span>{selectedProcess.id} · {selectedProcess.kind.toUpperCase()} PROCESS</span><strong>{selectedProcess.name}</strong><p>{selectedProcess.purpose}</p><small>{selectedProcess.agentIds.length} Agents · {selectedProcess.timing}</small></> : (hoveredAgent ?? primaryAgent) ? <><span>AGENT {String((hoveredAgent ?? primaryAgent)!.id).padStart(2, "0")} · {tierLabels[getAgentTier((hoveredAgent ?? primaryAgent)!.id)]}</span><strong>{(hoveredAgent ?? primaryAgent)!.name}</strong><p>{(hoveredAgent ?? primaryAgent)!.profile.simply}</p><small>{(hoveredAgent ?? primaryAgent)!.output.primary}</small></> : null}
+        </aside>}
 
-            <article className="relationships-selected-agent" style={{ "--relation-layer": layerMeta[focusAgent.layer].color } as CSSProperties}>
-              <div><span>SELECTED AGENT</span><b>{String(focusAgent.id).padStart(2, "0")} · {layerMeta[focusAgent.layer].name}</b></div>
-              <i>{layerMeta[focusAgent.layer].mark}</i>
-              <h4>{focusAgent.name}</h4>
-              <p>{focusAgent.profile.simply}</p>
-              <section><span>UNIQUE RESPONSIBILITY</span><strong>{focusAgent.profile.keyDistinction}</strong></section>
-              <section><span>CANONICAL OUTPUT</span><strong>{focusAgent.output.primary}</strong><small>{focusAgent.output.consumers}</small></section>
-              <section className="relationships-dataset-impact"><span>DATASET IMPACT</span><AgentDatasetImpactCell agent={focusAgent} compact /></section>
-              <div className="relationships-selected-actions">
-                <button type="button" onClick={() => onOpenAgent(focusAgent)}>Open profile ↗</button>
-                <button type="button" aria-pressed={comparisonIds.includes(focusAgent.id)} onClick={() => onToggleCompare(focusAgent.id)}>{comparisonIds.includes(focusAgent.id) ? "✓ Selected" : "+ Compare"}</button>
-              </div>
-            </article>
+        <svg ref={svgRef} className="relationships-map-canvas" viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`} role="img" aria-label={`Functional relationship map with ${visibleAgents.length} Agents`} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClick={(event) => { if (event.target === event.currentTarget) resetFocus(); }}>
+          <defs>{(Object.keys(familyMeta) as AgentRelationshipFamily[]).map((family) => <marker id={`relationship-arrow-${family}`} key={family} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill={familyMeta[family].color} /></marker>)}</defs>
+          <g className="relationships-map-world" transform={`translate(${camera.x} ${camera.y}) scale(${camera.scale})`}>
+            {Object.entries(layerMeta).map(([layer, meta], index) => {
+              const layerNodes = nodes.filter((node) => node.agent.layer === layer);
+              if (!layerNodes.length) return null;
+              const x = layerNodes[0].x;
+              return <g className="relationships-layer-guide" key={layer}><line x1={x} y1="40" x2={x} y2={GRAPH_HEIGHT - 30} stroke={meta.color} /><text x={x} y="31" textAnchor="middle">{String(index + 1).padStart(2, "0")} · {meta.name.toUpperCase()}</text></g>;
+            })}
+            <g className="relationships-process-regions">{processRegions.map(({ process, x, y, width, height }, index) => {
+              const active = selectedProcessId === process.id;
+              const muted = hasFocus && !active && !process.agentIds.some((id) => directIds.has(id));
+              return <g className={`${active ? "is-active" : ""} ${muted ? "is-muted" : ""}`.trim()} key={process.id} onClick={(event) => { event.stopPropagation(); setSelectedAgentIds([]); setSelectedRelationshipId(null); setSelectedProcessId(active ? null : process.id); }} role="button" tabIndex={0} aria-label={`${process.id}: ${process.name}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedProcessId(active ? null : process.id); }}><rect className="process-region-outline" x={x} y={y} width={width} height={height} rx="30" style={{ "--process-index": index } as CSSProperties} /><text className="process-region-label" x={x + 18} y={y + 24 + index * 17}>{process.id} · {process.kind.toUpperCase()} · {process.name}</text></g>;
+            })}</g>
+            <g className="relationships-map-edges">{groups.map((group) => {
+              const source = nodeById.get(group.source.id)!;
+              const target = nodeById.get(group.target.id)!;
+              const direct = selectedAgentIds.some((id) => group.source.id === id || group.target.id === id);
+              const onPath = pathSelection.edgeIds.has(group.id);
+              const active = group.id === selectedRelationshipId || direct || onPath;
+              const muted = hasFocus && !active && !directIds.has(group.source.id) && !directIds.has(group.target.id);
+              const path = graphPath(source, target);
+              return <g className={`relationship-map-edge family-${group.family} req-${group.requirement} ${active ? "is-active" : ""} ${muted ? "is-muted" : ""}`.trim()} key={group.id}><path className="relationship-edge-line" d={path} markerEnd={group.family === "boundary" ? undefined : `url(#relationship-arrow-${group.family})`} /><path className="relationship-edge-hit" d={path} onClick={(event) => { event.stopPropagation(); setSelectedRelationshipId(group.id); setSelectedProcessId(null); setSelectedAgentIds([group.source.id, group.target.id]); }}><title>{group.source.name} → {group.target.name}\n{familyMeta[group.family].label}\n{group.rationale}</title></path></g>;
+            })}</g>
+            <g className="relationships-map-nodes">{nodes.map((node) => {
+              const { agent } = node;
+              const selected = selectedAgentIds.includes(agent.id);
+              const related = directIds.has(agent.id);
+              const muted = hasFocus && !selected && !related;
+              const tier = getAgentTier(agent.id);
+              const lines = compactName(agent.name);
+              return <g className={`relationship-map-node tier-${tier} ${selected ? "is-selected" : ""} ${related ? "is-related" : ""} ${muted ? "is-muted" : ""}`.trim()} transform={`translate(${node.x} ${node.y})`} style={{ "--node-layer": layerMeta[agent.layer].color } as CSSProperties} key={agent.id} role="button" tabIndex={0} aria-label={`Agent ${agent.id}: ${agent.name}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); selectAgent(agent.id); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") selectAgent(agent.id); }} onMouseEnter={() => setHoverAgentId(agent.id)} onMouseLeave={() => setHoverAgentId(null)}><title>Agent {String(agent.id).padStart(2, "0")} · {agent.name}\n{agent.profile.simply}\n{node.degree} canonical connections</title><rect x={-node.width / 2} y={-node.height / 2} width={node.width} height={node.height} rx="13" /><circle cx={-node.width / 2 + 25} cy="0" r="15" /><text className="node-id" x={-node.width / 2 + 25} y="4" textAnchor="middle">{String(agent.id).padStart(2, "0")}</text><text className="node-name" x={-node.width / 2 + 51} y={lines.length === 1 ? 4 : -4}>{lines.map((line, index) => <tspan x={-node.width / 2 + 51} dy={index ? 15 : 0} key={line}>{line}</tspan>)}</text><text className="node-degree" x={node.width / 2 - 10} y={-node.height / 2 + 13} textAnchor="end">{node.degree}</text></g>;
+            })}</g>
+          </g>
+        </svg>
+      </div>
 
-            <div className="relationships-right-stack">
-              {renderRoleSection("downstream", "DOWNSTREAM", "Кто использует результат selected Agent или продолжает relay?")}
-              {renderRoleSection("specialized", "SPECIALIZED / CHILD CAPABILITIES", "Какие более узкие capabilities поддерживают selected Agent?")}
-            </div>
-          </div>
+      {(primaryAgent || selectedRelationship || selectedProcess) && <aside className="relationships-map-inspector">
+        {selectedRelationship ? <><div className={`relationship-inspector-type family-${selectedRelationship.family}`}><span>{familyMeta[selectedRelationship.family].label}</span><b>{requirementLabels[selectedRelationship.requirement]} · {selectedRelationship.status.toUpperCase()}</b></div><section><span>RELATIONSHIP</span><h4>{selectedRelationship.source.name} <i>→</i> {selectedRelationship.target.name}</h4><p>{familyMeta[selectedRelationship.family].description}</p></section><section><span>WHY / EVIDENCE</span><p>{selectedRelationship.rationale}</p><small>{selectedRelationship.evidence.slice(0, 3).join(" · ")}</small></section><section><span>PAYLOAD / HANDOFF</span><p>{selectedRelationship.payloads.join(" · ") || "Capability or boundary relationship; отдельный payload не заявлен."}</p></section></> : selectedProcess ? <><div className="relationship-inspector-type family-process"><span>PROCESS → AGENTS</span><b>{selectedProcess.kind.toUpperCase()}</b></div><section><span>{selectedProcess.id}</span><h4>{selectedProcess.name}</h4><p>{selectedProcess.purpose}</p></section><section><span>TRIGGER / TIMING</span><p>{selectedProcess.trigger}</p><small>{selectedProcess.timing}</small></section><section><span>FUNCTIONAL TEAM</span><p>{selectedProcess.agentIds.map((id) => `${String(id).padStart(2, "0")} · ${agentById.get(id)?.name}`).join(" · ")}</p></section></> : primaryAgent ? <><div className="relationship-inspector-type family-agent"><span>SELECTED AGENT</span><b>{directlyRelatedGroups.length} DIRECT RELATIONS</b></div><section><span>AGENT {String(primaryAgent.id).padStart(2, "0")} · {layerMeta[primaryAgent.layer].name}</span><h4>{primaryAgent.name}</h4><p>{primaryAgent.profile.keyDistinction}</p></section><section><span>OUTPUT / DOWNSTREAM</span><p>{primaryAgent.output.primary}</p><small>{primaryAgent.output.consumers}</small></section><section className="relationship-inspector-actions"><span>{secondaryAgent ? `PATH TO AGENT ${String(secondaryAgent.id).padStart(2, "0")} · ${pathSelection.edgeIds.size} HOPS` : "SELECT ANOTHER AGENT TO TRACE A PATH"}</span><button type="button" onClick={() => onOpenAgent(primaryAgent)}>Open profile ↗</button><button type="button" aria-pressed={comparisonIds.includes(primaryAgent.id)} onClick={() => onToggleCompare(primaryAgent.id)}>{comparisonIds.includes(primaryAgent.id) ? "✓ Compare selected" : "+ Compare"}</button></section></> : null}
+      </aside>}
 
-          <div className="relationships-lower-grid">
-            {renderRoleSection("boundary", "ALTERNATIVES / RESPONSIBILITY BOUNDARIES", "Похожие Agents, которые нельзя считать взаимозаменяемыми без проверки границы.")}
-            <section className="relationship-process-memberships">
-              <header><div><span>PROCESSES</span><p>Case-scoped evidence: где этот Agent реально участвует как часть Process team.</p></div><b>{processMemberships.length}</b></header>
-              <div>{processMemberships.length ? processMemberships.map((process) => <button type="button" onClick={() => { setFocusProcessId(process.id); setExplorerMode("process"); setRelationshipFilter("process"); }} key={process.id}><span>{process.id} · {process.kind}</span><strong>{process.name}</strong><small>{process.timing}</small></button>) : <p className="relationship-empty">В Process registry Case 1 участие не зафиксировано. Это не означает, что Agent не используется в Events или других Cases.</p>}</div>
-            </section>
-          </div>
-
-          <section className="relationship-dataset-peers">
-            <header><div><span>SHARED DATASET RESPONSIBILITY</span><p>Другие Agents, которые создают, обновляют или обогащают те же canonical Datasets. Совпадение — сигнал для проверки ownership, не автоматический overlap.</p></div><b>{datasetPeers.length}</b></header>
-            <div>{datasetPeers.length ? datasetPeers.map((agent) => <button type="button" onClick={() => setFocusAgentId(agent.id)} key={agent.id}><span>{String(agent.id).padStart(2, "0")}</span><strong>{agent.name}</strong><small>{datasetImpactIdsForAgent(agent).filter((datasetId) => focusDatasetIds.has(datasetId)).length} shared</small></button>) : <p className="relationship-empty">Других Agents с тем же declared Dataset impact не найдено.</p>}</div>
-          </section>
-
-          {selectedRelationship && (
-            <aside className={`relationship-detail-panel family-${selectedRelationship.family}`}>
-              <header><div><span>WHY THIS RELATIONSHIP EXISTS</span><h4>{selectedRelationship.source.name} <i>→</i> {selectedRelationship.target.name}</h4></div><b>{relationshipFamilyMeta[selectedRelationship.family].label}</b></header>
-              <div className="relationship-detail-grid">
-                <section><span>RELATIONSHIP</span><strong>{relationshipFamilyMeta[selectedRelationship.family].description}</strong><small>{requirementLabels[selectedRelationship.requirement]} · {selectedRelationship.status.toUpperCase()}</small></section>
-                <section><span>REASON</span><p>{selectedRelationship.rationale}</p></section>
-                <section><span>PAYLOAD / ARTIFACT</span>{selectedRelationship.payloads.length ? <ul>{selectedRelationship.payloads.map((payload) => <li key={payload}>{payload}</li>)}</ul> : <p>Capability or boundary relationship; отдельный payload не заявлен.</p>}</section>
-                <section><span>EVIDENCE</span><ul>{selectedRelationship.evidence.slice(0, 5).map((evidence) => <li key={evidence}>{evidence}</li>)}</ul></section>
-              </div>
-            </aside>
-          )}
-
-          {scope !== 1 && (
-            <section className="relationship-broader-context">
-              <header><div><span>{scope === 2 ? "2-HOP CONTEXT" : "BROADER ECOSYSTEM"}</span><p>Следующий круг связанности без отрисовки плотной «паутиной». Выберите Agent, чтобы сделать его новым фокусом.</p></div><b>{broaderContext.length}</b></header>
-              <div>{broaderContext.length ? broaderContext.map(({ agent, hops }) => <button type="button" onClick={() => setFocusAgentId(agent.id)} style={{ "--relation-layer": layerMeta[agent.layer].color } as CSSProperties} key={agent.id}><span>{String(agent.id).padStart(2, "0")} · {hops} HOPS</span><strong>{agent.name}</strong><small>{agent.profile.simply}</small></button>) : <p className="relationship-empty">Дополнительные подтверждённые связи не найдены в текущих фильтрах.</p>}</div>
-            </section>
-          )}
-        </>
-      ) : selectedProcess ? (
-        <section className="process-team-view">
-          <header>
-            <div><span>{selectedProcess.id} · {selectedProcess.kind.toUpperCase()} PROCESS</span><h3>{selectedProcess.name}</h3><p>{selectedProcess.purpose}</p></div>
-            <dl><div><dt>OWNER</dt><dd>{case1ProcessGraph.actors.find((actor) => actor.id === selectedProcess.ownerActorId)?.shortName}</dd></div><div><dt>TRIGGER</dt><dd>{selectedProcess.trigger}</dd></div><div><dt>TIMING</dt><dd>{selectedProcess.timing}</dd></div><div><dt>STATE</dt><dd>{selectedProcess.state.toUpperCase()}</dd></div></dl>
-          </header>
-          <div className="process-team-flow">
-            <section><span>PROCESS INPUTS</span>{selectedProcess.inputs.map((input) => <article key={input.name}><strong>{input.name}</strong><small>{input.sourceKind} · {input.availability}</small><b>{input.blocking ? "BLOCKING" : "NON-BLOCKING"}</b></article>)}</section>
-            <i aria-hidden="true">→</i>
-            <section className="process-team-agents"><span>AGENT TEAM</span>{selectedProcessExecutions.map((execution) => { const agent = agentById.get(execution.agentId)!; return <article key={execution.agentId} style={{ "--relation-layer": layerMeta[agent.layer].color } as CSSProperties}><div><b>{String(agent.id).padStart(2, "0")}</b><em>{tierLabels[getAgentTier(agent.id)]}</em></div><strong>{agent.name}</strong><p>{execution.role}</p><small><b>IN</b>{execution.input || "Process context"}</small><small><b>OUT</b>{execution.output || agent.output.primary}</small><button type="button" onClick={() => { setFocusAgentId(agent.id); setExplorerMode("agent"); setRelationshipFilter("all"); }}>Explore family →</button></article>; })}</section>
-            <i aria-hidden="true">→</i>
-            <section><span>PROCESS OUTPUTS</span>{selectedProcess.outputArtifactIds.map((artifactId) => { const artifact = case1ProcessGraph.artifacts.find((item) => item.id === artifactId); return <article key={artifactId}><strong>{artifact?.name ?? artifactId}</strong><small>{artifact?.persistence ?? "case-state"}</small><b>{selectedProcess.consumerRefs.join(" · ")}</b></article>; })}</section>
-          </div>
-          <p className="process-team-provenance"><b>CASE 1 CONTEXT:</b> Process membership is case-scoped evidence, not permanent ownership. Agents remain canonical roles and Processes remain separate first-class architectural nodes.</p>
-        </section>
-      ) : null}
-
-      <footer className="relationships-validation-note">
-        <div><span>ARCHITECTURE VALIDATION</span><strong>{relationshipGroups.length} resolved functional relation groups · {boundaryPairCount} boundary reviews · {unresolvedRelationshipCount} external/process endpoints</strong></div>
-        <p>{isolatedAgents.length ? `${isolatedAgents.length} Agents remain isolated and require review.` : "Все 64 Agents имеют минимум одну resolved Agent-to-Agent relationship."} Mandatory/conditional companion и parallel collaboration не заявляются как постоянные связи без подтверждённого Process/Case evidence.</p>
-      </footer>
+      <footer className="relationships-map-validation"><span>CANONICAL MODEL</span><strong>{allGroups.length} resolved functional relation groups · {unresolvedRelationshipCount} external/process endpoints · {case1ProcessGraph.processes.length} explicit Process teams</strong><p>Связи и расположение не создаются вручную в UI. Isolated Agents сохраняются как isolated; Process membership остаётся case-scoped evidence, а не постоянной Agent ownership.</p></footer>
     </section>
   );
 }
