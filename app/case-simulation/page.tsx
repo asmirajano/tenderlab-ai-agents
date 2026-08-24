@@ -28,7 +28,9 @@ import Case9Module from "./case-9-module";
 import Case10Module from "./case-10-module";
 import CaseComparison from "./case-comparison";
 import CaseProgramConclusion from "./case-program-conclusion";
+import { validationCases } from "./case-program-conclusion-data";
 import { CaseExpansionProvider, useAllCaseExpansion, useCaseExpansion } from "./case-expansion";
+import { SectionFocusButton, useSectionFocusMode } from "./section-focus-mode";
 import {
   case1,
   case1Engagements,
@@ -66,6 +68,8 @@ import "./case-simulation.css";
 
 type StatusFilter = "all" | EngagementStatus;
 type TierFilter = "all" | AgentTier;
+type ParticipationSort = "none" | "descending" | "ascending";
+type ParticipationMetric = { cases: number; percent: number };
 
 const statusLabels: Record<EngagementStatus, string> = {
   required: "Обязателен",
@@ -103,6 +107,21 @@ const case7EngagementByAgentId = new Map(case7Engagements.map((engagement) => [e
 const case8EngagementByAgentId = new Map(case8Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case9EngagementByAgentId = new Map(case9Engagements.map((engagement) => [engagement.agentId, engagement]));
 const case10EngagementByAgentId = new Map(case10Engagements.map((engagement) => [engagement.agentId, engagement]));
+const participationByAgentId = new Map(agents.map((agent): [number, ParticipationMetric] => {
+  const participatingCases = validationCases.reduce((count, engagements) => {
+    const engagement = engagements.find((record) => record.agentId === agent.id);
+    return count + (engagement && engagement.status !== "not-involved" ? 1 : 0);
+  }, 0);
+  return [agent.id, {
+    cases: participatingCases,
+    percent: Math.round((participatingCases / validationCases.length) * 100),
+  }];
+}));
+const participationStage = {
+  id: "participation-ranking",
+  number: "Σ",
+  title: "Participation across 10 Cases",
+};
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 const agentByName = new Map(agents.map((agent) => [agent.name, agent]));
 const semanticDocuments = agents.map((agent) => {
@@ -192,8 +211,10 @@ function CaseSimulationContent() {
   const [selectedChronologyStep, setSelectedChronologyStep] = useState<number | null>(null);
   const [selectedCaseNumber, setSelectedCaseNumber] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10>(1);
   const [caseExpanded, setCaseExpanded] = useCaseExpansion("case-1", false);
-  const { allExpanded: allCasesExpanded, caseCount, caseIds, setAllCasesExpanded } = useAllCaseExpansion();
-  const [matrixExpanded, setMatrixExpanded] = useState(true);
+  const { allExpanded: allSectionsExpanded, caseCount: sectionCount, caseIds: sectionIds, setAllCasesExpanded: setAllSectionsExpanded } = useAllCaseExpansion();
+  const [matrixExpanded, setMatrixExpanded] = useCaseExpansion("engagement-matrix", true);
+  const matrixFocusMode = useSectionFocusMode(matrixExpanded, setMatrixExpanded);
+  const [participationSort, setParticipationSort] = useState<ParticipationSort>("none");
   const [caseView, setCaseView] = useState<"map" | "narrative">("map");
   const matrixScrollRef = useRef<HTMLDivElement | null>(null);
   const matrixSectionRef = useRef<HTMLElement | null>(null);
@@ -240,10 +261,31 @@ function CaseSimulationContent() {
     ? visibleSemanticResults.map((result) => agentById.get(result.id)).filter((agent): agent is Agent => Boolean(agent))
     : baseFilteredAgents, [baseFilteredAgents, query, visibleSemanticResults]);
 
-  const groupedRows = useMemo(() => caseStages.map((stage) => ({
-    stage,
-    agents: filteredAgents.filter((agent) => engagementByAgentId.get(agent.id)?.stageId === stage.id),
-  })).filter((group) => group.agents.length > 0), [filteredAgents]);
+  const groupedRows = useMemo(() => {
+    if (participationSort !== "none") {
+      const direction = participationSort === "descending" ? -1 : 1;
+      const rankedAgents = [...filteredAgents].sort((agentA, agentB) => {
+        const difference = participationByAgentId.get(agentA.id)!.percent - participationByAgentId.get(agentB.id)!.percent;
+        return difference === 0 ? agentA.id - agentB.id : difference * direction;
+      });
+      return [{
+        stage: {
+          ...participationStage,
+          title: `${participationStage.title} · ${participationSort === "descending" ? "100 → 0%" : "0 → 100%"}`,
+        },
+        agents: rankedAgents,
+      }];
+    }
+
+    return caseStages.map((stage) => ({
+      stage,
+      agents: filteredAgents.filter((agent) => engagementByAgentId.get(agent.id)?.stageId === stage.id),
+    })).filter((group) => group.agents.length > 0);
+  }, [filteredAgents, participationSort]);
+
+  function cycleParticipationSort() {
+    setParticipationSort((current) => current === "none" ? "descending" : current === "descending" ? "ascending" : "none");
+  }
 
   const selectedAgent = selectedAgentId ? agents.find((agent) => agent.id === selectedAgentId) ?? null : null;
   const selectedEngagementMap = selectedCaseNumber === 1 ? engagementByAgentId : selectedCaseNumber === 2 ? case2EngagementByAgentId : selectedCaseNumber === 3 ? case3EngagementByAgentId : selectedCaseNumber === 4 ? case4EngagementByAgentId : selectedCaseNumber === 5 ? case5EngagementByAgentId : selectedCaseNumber === 6 ? case6EngagementByAgentId : selectedCaseNumber === 7 ? case7EngagementByAgentId : selectedCaseNumber === 8 ? case8EngagementByAgentId : selectedCaseNumber === 9 ? case9EngagementByAgentId : case10EngagementByAgentId;
@@ -334,9 +376,9 @@ function CaseSimulationContent() {
   };
 
   const toggleAllCases = () => {
-    const nextExpanded = !allCasesExpanded;
+    const nextExpanded = !allSectionsExpanded;
     if (!nextExpanded) closeAgent();
-    setAllCasesExpanded(nextExpanded);
+    setAllSectionsExpanded(nextExpanded);
   };
 
   const revealMatrix = () => {
@@ -397,18 +439,18 @@ function CaseSimulationContent() {
         </div>
       </section>
 
-      <div className="case-list-controls" aria-label="Управление отображением Cases">
-        <span>CASES{caseCount > 0 ? ` · ${caseCount}` : ""}</span>
+      <div className="case-list-controls" aria-label="Управление всеми сворачиваемыми секциями страницы">
+        <span>PAGE SECTIONS{sectionCount > 0 ? ` · ${sectionCount}` : ""}</span>
         <button
           type="button"
           className="case-expand-all-button"
-          aria-expanded={allCasesExpanded}
-          aria-controls={caseIds.map((caseId) => `${caseId}-content`).join(" ") || undefined}
-          disabled={caseCount === 0}
+          aria-expanded={allSectionsExpanded}
+          aria-controls={sectionIds.map((sectionId) => `${sectionId}-content`).join(" ") || undefined}
+          disabled={sectionCount === 0}
           onClick={toggleAllCases}
         >
-          <span>{allCasesExpanded ? "Свернуть все" : "Развернуть все"}</span>
-          <i aria-hidden="true">{allCasesExpanded ? "−" : "+"}</i>
+          <span>{allSectionsExpanded ? "Свернуть все" : "Развернуть все"}</span>
+          <i aria-hidden="true">{allSectionsExpanded ? "−" : "+"}</i>
         </button>
       </div>
 
@@ -669,10 +711,11 @@ function CaseSimulationContent() {
 
       <CaseComparison onOpenAgent={(agentId, caseNumber) => openAgent(agentId, null, caseNumber as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10)} />
 
-      <section className={`engagement-matrix-section ${matrixExpanded ? "is-expanded" : "is-collapsed"}`} aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef}>
+      <section className={`engagement-matrix-section ${matrixExpanded ? "is-expanded" : "is-collapsed"} ${matrixFocusMode.active ? "is-focus-mode" : ""}`} aria-label="Главная матрица Cases × 64 Agents" ref={matrixSectionRef} data-focus-mode={matrixFocusMode.active ? "active" : "inactive"}>
         <div className="section-heading matrix-heading">
           <div><p>CASES × 64 AGENTS</p><h2>Матрица вовлечения</h2></div>
           <span>Cases 1–10 активны; 10-Case validation programme завершён. Нажмите статус, чтобы увидеть input, output, Dataset impact и handoff.</span>
+          <SectionFocusButton active={matrixFocusMode.active} buttonRef={matrixFocusMode.buttonRef} onClick={matrixFocusMode.toggle} />
           <button type="button" className="case-section-toggle" aria-expanded={matrixExpanded} aria-controls="engagement-matrix-content" onClick={() => setMatrixExpanded((current) => !current)}>
             <span>{matrixExpanded ? "Свернуть" : "Развернуть"}</span><i aria-hidden="true">{matrixExpanded ? "−" : "+"}</i>
           </button>
@@ -774,6 +817,21 @@ function CaseSimulationContent() {
                 <th className="case-eight-column"><span>CASE 08 · ACTIVE</span><b>E-bus PPP dialogue</b><small>Перу · $218 млн CAPEX</small></th>
                 <th className="case-nine-column"><span>CASE 09 · ACTIVE</span><b>FIDIC claim + DAB</b><small>Марокко · $94,80 млн contract</small></th>
                 <th className="case-ten-column"><span>CASE 10 · FINAL</span><b>Cyber integrity No-Bid</b><small>Молдова · €42,0 млн ceiling</small></th>
+                <th
+                  className="participation-column"
+                  aria-sort={participationSort === "none" ? "none" : participationSort}
+                >
+                  <button
+                    type="button"
+                    className="participation-sort-button"
+                    onClick={cycleParticipationSort}
+                    title="Сортировать агентов по участию во всех 10 Cases"
+                  >
+                    <span>PARTICIPATION</span>
+                    <b>Участие в 10 Cases</b>
+                    <small>{participationSort === "none" ? "SORT ↕" : participationSort === "descending" ? "100 → 0% ↓" : "0 → 100% ↑"}</small>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -823,7 +881,7 @@ function StageRows({
   highlightedAgentId,
   registerRow,
 }: {
-  stage: (typeof caseStages)[number];
+  stage: { id: string; number: string; title: string };
   stageAgents: Agent[];
   onSelect: (agentId: number, caseNumber: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10) => void;
   semanticResults: Map<number, SemanticSearchResult>;
@@ -833,7 +891,7 @@ function StageRows({
   return (
     <>
       <tr className="matrix-stage-row">
-        <th colSpan={11}><span>{stage.number}</span><b>{stage.title}</b><small>{stageAgents.length} агентов в текущем фильтре</small></th>
+        <th colSpan={12}><span>{stage.number}</span><b>{stage.title}</b><small>{stageAgents.length} агентов в текущем фильтре</small></th>
       </tr>
       {stageAgents.map((agent) => {
         const engagement = engagementByAgentId.get(agent.id)!;
@@ -846,6 +904,7 @@ function StageRows({
         const case8Engagement = case8EngagementByAgentId.get(agent.id)!;
         const case9Engagement = case9EngagementByAgentId.get(agent.id)!;
         const case10Engagement = case10EngagementByAgentId.get(agent.id)!;
+        const participation = participationByAgentId.get(agent.id)!;
         const tier = getAgentTier(agent.id);
         const semanticResult = semanticResults.get(agent.id);
         return (
@@ -933,6 +992,24 @@ function StageRows({
                 <b>{statusLabels[case10Engagement.status]}</b>
                 <small>{case10Engagement.status === "conditional" ? (case10Engagement.activation === "triggered" ? "условие сработало" : "резерв") : case10Engagement.status === "background" ? "Process execution" : case10Engagement.when}</small>
               </button>
+            </td>
+            <td className="participation-column">
+              <div
+                className={`participation-cell participation-${participation.percent >= 80 ? "high" : participation.percent >= 50 ? "medium" : "low"}`}
+                aria-label={`${agent.name}: участие в ${participation.cases} из ${validationCases.length} Cases, ${participation.percent}%`}
+              >
+                <span className="participation-value"><strong>{participation.percent}%</strong><small>{participation.cases}/{validationCases.length}</small></span>
+                <span
+                  className="participation-track"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={participation.percent}
+                  aria-label={`${participation.percent}% участия`}
+                >
+                  <i style={{ width: `${participation.percent}%` }} />
+                </span>
+              </div>
             </td>
           </tr>
         );

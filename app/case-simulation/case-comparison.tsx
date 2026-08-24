@@ -11,6 +11,8 @@ import {
   type ComparisonRelation,
   type ComparisonValue,
 } from "./case-comparison-data";
+import { useCaseExpansion } from "./case-expansion";
+import { SectionFocusButton, useSectionFocusMode } from "./section-focus-mode";
 
 const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 const relationMeta: Record<ComparisonRelation, { icon: string; label: string }> = {
@@ -43,7 +45,8 @@ function involvedIds(profile: CaseComparisonProfile) {
 }
 
 export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId: number, caseNumber: number) => void }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useCaseExpansion("case-comparison", true);
+  const focusMode = useSectionFocusMode(expanded, setExpanded);
   const [leftId, setLeftId] = useState(caseComparisonRegistry[0]?.caseNumber ?? 1);
   const [rightId, setRightId] = useState(caseComparisonRegistry[1]?.caseNumber ?? caseComparisonRegistry[0]?.caseNumber ?? 1);
   const left = caseComparisonRegistry.find((item) => item.caseNumber === leftId) ?? caseComparisonRegistry[0];
@@ -86,7 +89,7 @@ export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId:
     }
   };
 
-  return <section className={`case-comparison-section ${expanded ? "is-expanded" : "is-collapsed"}`} aria-labelledby="case-comparison-title">
+  return <section className={`case-comparison-section ${expanded ? "is-expanded" : "is-collapsed"} ${focusMode.active ? "is-focus-mode" : ""}`} aria-labelledby="case-comparison-title" data-focus-mode={focusMode.active ? "active" : "inactive"}>
     <header className="case-comparison-heading">
       <div><span>STRATEGIC CASE COMPARISON</span><h2 id="case-comparison-title">Сравнить бизнес-маршруты</h2><p>Сначала условия и работа. Затем Events, Processes и Agent participation.</p></div>
       <div className="case-comparison-controls">
@@ -95,6 +98,7 @@ export default function CaseComparison({ onOpenAgent }: { onOpenAgent: (agentId:
           <i aria-hidden="true">↔</i>
           <label><span>CASE B</span><select value={right.caseNumber} onChange={(event) => selectCase("right", Number(event.target.value))}>{caseComparisonRegistry.map((item) => <option value={item.caseNumber} key={item.caseNumber}>Case {item.caseNumber} · {item.shortName}</option>)}</select></label>
         </div>
+        <SectionFocusButton active={focusMode.active} buttonRef={focusMode.buttonRef} onClick={focusMode.toggle} dark />
         <button type="button" className="case-section-toggle is-dark" aria-expanded={expanded} aria-controls="case-comparison-content" onClick={() => setExpanded((current) => !current)}>
           <span>{expanded ? "Свернуть" : "Развернуть"}</span><i aria-hidden="true">{expanded ? "−" : "+"}</i>
         </button>
