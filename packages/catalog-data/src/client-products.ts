@@ -49,8 +49,8 @@ export const clientProducts: ClientProduct[] = [
   {
     id: "product:TA-LANDED-COST",
     family: "Tender Apps",
-    name: "Landed Cost Studio",
-    descriptor: "Incoterms conversion and auditable logistics costing",
+    name: "TENDER LOGISTICS COST",
+    descriptor: "Estimate transport, logistics and Incoterms-related costs for tender shipments",
     status: "mvp-simulation",
     ownerAgentId: "agent:TL-A050",
     commandCenterPath: "/products#landed-cost",

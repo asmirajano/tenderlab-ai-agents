@@ -20,6 +20,8 @@ test("registers both practical Agents as pages in one Tender Apps product", () =
   assert.equal(tenderBalanceProduct.status, "mvp-simulation");
   assert.equal(tenderBalanceProduct.ownerAgentId, "agent:TL-A008");
   assert.equal(landedCostProduct.ownerAgentId, "agent:TL-A050");
+  assert.equal(landedCostProduct.name, "TENDER LOGISTICS COST");
+  assert.equal(landedCostProduct.descriptor, "Estimate transport, logistics and Incoterms-related costs for tender shipments");
   assert.equal(tenderBalanceProduct.clientAppPath, "apps/tender-apps");
   assert.equal(landedCostProduct.clientAppPath, "apps/tender-apps");
   assert.equal(tenderBalanceProduct.clientRoute, "/balance-sheet-review");
@@ -42,7 +44,7 @@ test("builds TenderBalance inside the unified client app without Command Center 
   assert.match(javascript, /Practical agents/);
   assert.match(javascript, /SYNTHETIC FIXTURE/);
   assert.match(javascript, /Add balance sheet/);
-  assert.match(javascript, /Landed Cost Studio/);
+  assert.match(javascript, /TENDER LOGISTICS COST/);
   assert.match(javascript, /balance-sheet-review/);
   assert.match(javascript, /landed-cost/);
   assert.doesNotMatch(javascript, /href:"\/(?:agents|architecture|case-simulation|products)/);
@@ -95,18 +97,19 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   const clientBundle = (await Promise.all(assetNames
     .filter((name) => name.endsWith(".js"))
     .map((name) => readFile(path.join(tenderAppsRoot, "dist", "assets", name), "utf8")))).join("\n");
-  assert.match(clientBundle, /LANDED COST STUDIO · REVIEWED COST EVIDENCE/);
+  assert.match(clientBundle, /TENDER LOGISTICS COST · REVIEWED COST EVIDENCE/);
   assert.match(clientBundle, /ONE BEST CURRENT ESTIMATE/);
   assert.match(clientBundle, /tenderapps\.landed-cost\.audit\.v0\.1/);
   assert.match(shell, /Client workspace/);
   assert.match(shell, /TenderBalance/);
-  assert.match(shell, /Landed Cost Studio/);
-  assert.match(component, /LANDED COST STUDIO · REVIEWED COST EVIDENCE/);
+  assert.match(shell, /TENDER LOGISTICS COST/);
+  assert.match(component, /TENDER LOGISTICS COST · REVIEWED COST EVIDENCE/);
   assert.match(component, /Estimated Logistics Cost/);
   assert.match(component, /required \+ 1 free capacity reference/);
   assert.match(component, /productionEstimate\.transport\.allocations\.map/);
   assert.match(component, /Incoterms conversion/);
   assert.match(component, /Logistics only/);
+  assert.doesNotMatch([clientBundle, component, shell].join("\n"), /Landed Cost Studio|Cost & Landed-Price Agent|Logistics Cost Agent/);
   assert.doesNotMatch(component, /Scenario comparison/);
   assert.doesNotMatch(component, /Initial regression reproduced/);
   assert.doesNotMatch(component, /href=["']\/(?:agents|architecture|case-simulation|main-agents-run)/);

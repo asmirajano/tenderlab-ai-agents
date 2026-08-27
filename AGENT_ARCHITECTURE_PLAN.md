@@ -26,7 +26,7 @@ The teammate list A1-A15 is useful as a compact subsystem view, but it does not 
 | A10 Award / Contract Intelligence Agent | Tender Award Intelligence Agent + Award-to-Contract Agent + Tender Knowledge Graph Agent | Tender-to-award-to-contract linkage incorporated |
 | A11 Competitor Intelligence Agent | Buyer & Competitor Intelligence Agent + Market Intelligence Agent | Covered |
 | A12 Bid Strategy Agent | Bid / No-Bid Decision Agent + Proposal Strategy Agent | Positioning and bid-strategy wording incorporated |
-| A13 Commercial Estimation Agent | Commercial Attractiveness Agent + Cost & Landed-Price Agent + Pricing & BOQ Agent | Scenario analysis incorporated; teammate acronym “GP/AAP” remains unconfirmed and is not adopted |
+| A13 Commercial Estimation Agent | Commercial Attractiveness Agent + TENDER LOGISTICS COST + Pricing & BOQ Agent | Scenario analysis incorporated; teammate acronym “GP/AAP” remains unconfirmed and is not adopted |
 | A14 Knowledge Graph Intelligence | Tender Knowledge Graph Agent | Buyer, supplier, document, award, and contract relationships incorporated |
 | A15 TenderLab Orchestrator / Agent Supervisor | TenderLab Orchestrator + Evidence & Provenance Agent + Human Approval Agent + Audit & Version Control Agent | Bounded stages, retries, confidence, provenance, and human-review coordination incorporated without centralizing every responsibility |
 

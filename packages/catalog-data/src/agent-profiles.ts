@@ -712,7 +712,7 @@ export const agentProfiles: Record<number, AgentProfile> = {
     trigger: "Получены две и более неоднородные quotes либо нужна validation одной quote.",
     skipCondition: "Нет external quotes или все уже представлены в утверждённой common basis.",
     authority: "Может пометить quote comparable/non-comparable и required clarification; selection остаётся procurement owner.",
-    responsibilityBoundary: "Создаёт normalized comparison; Cost & Landed-Price добавляет freight/duties и execution costs.",
+    responsibilityBoundary: "Создаёт normalized comparison; TENDER LOGISTICS COST добавляет freight/duties и execution costs.",
     keyDistinction: "Like-for-like supplier quote normalization, не full cost model.",
     workflowStage: "Supplier commercial analysis",
     upstream: ["RFQ Orchestrator", "Supplier quotes", "Technical specs"],
@@ -792,7 +792,7 @@ export const agentProfiles: Record<number, AgentProfile> = {
     responsibilityBoundary: "Владеет numerical bid price/BOQ; Commercial Proposal оформляет required forms/terms.",
     keyDistinction: "Расчёт и целостность цены, не cost model и не коммерческий текст.",
     workflowStage: "Bid pricing",
-    upstream: ["Cost & Landed-Price", "Commercial Attractiveness", "Proposal Strategy", "Tender BOQ"],
+    upstream: ["TENDER LOGISTICS COST", "Commercial Attractiveness", "Proposal Strategy", "Tender BOQ"],
     potentialOverlaps: [{ agentIds: [50, 54, 49], note: "50 — cost basis, 54 — commercial document, 49 — compliance review." }],
   }),
   52: profile({

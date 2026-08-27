@@ -401,7 +401,7 @@ test("the TenderApps client starts empty and gates calculation behind guided rev
   assert.match(page, /DEMO \/ REGRESSION SCENARIO/);
 });
 
-test("the Landed Cost Studio overview shows inputs, transformation and a dominant finished product before the CTA", async () => {
+test("the TENDER LOGISTICS COST overview shows inputs, transformation and a dominant finished product before the CTA", async () => {
   const [page, css] = await Promise.all([
     readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8"),
     readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing.css"), "utf8"),

@@ -8,7 +8,7 @@ and canonical contracts without merging their audiences or domain models:
   datasets, providers, terminology, and methodology.
 - **Tender Apps** is one unified client-facing application. Its practical-Agent
   pages currently include **TenderBalance**, for supplied balance sheets, and
-  **Landed Cost Studio**, for Agent 50 logistics and Incoterms costing.
+  **TENDER LOGISTICS COST**, for Agent 50 transport, logistics and Incoterms costing.
 
 TenderLab.ai is the internal **Command Center** for team members and administrators.
 Client users belong only in their assigned Tender App and must never receive a
@@ -69,7 +69,7 @@ Tender Apps is one independent Vite application under \`apps/tender-apps\`:
 
 - \`/\` — practical-Agent catalog
 - \`/balance-sheet-review\` — TenderBalance
-- \`/landed-cost\` — Landed Cost Studio
+- \`/landed-cost\` — TENDER LOGISTICS COST
 
 It has no link back to the Command Center. The internal header can open the
 separately deployed Tender Apps origin only when

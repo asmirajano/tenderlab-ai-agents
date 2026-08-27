@@ -74,7 +74,7 @@ export default function ClientProductsPage() {
           </div>
           <div className="product-actions">
             <span>TEAM ACTIONS</span>
-            <a className="product-open" href={clientProductUrl(landedCostProduct)} rel="noreferrer" target="_blank">Open Landed Cost Studio ↗</a>
+            <a className="product-open" href={clientProductUrl(landedCostProduct)} rel="noreferrer" target="_blank">Open TENDER LOGISTICS COST ↗</a>
             <a href="/agents#agent-50">Open owner Agent</a>
             <span className="product-schema">Audit schema v0.1 · repository contract</span>
             <p>The app remains separate from internal routes and does not grant Command Center access.</p>

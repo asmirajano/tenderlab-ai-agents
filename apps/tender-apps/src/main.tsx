@@ -13,7 +13,7 @@ import "./logistics-costing.css";
 const routes = {
   "/": { label: "Agent catalog", title: "Tender Apps — Practical Agent catalog", component: <CatalogPage /> },
   "/balance-sheet-review": { label: "TenderBalance", title: "Tender Apps — TenderBalance", component: <BalanceSheetApp /> },
-  "/landed-cost": { label: "Landed Cost Studio", title: "Tender Apps — Landed Cost Studio", component: <LogisticsCostingApp /> },
+  "/landed-cost": { label: "TENDER LOGISTICS COST", title: "Tender Apps — TENDER LOGISTICS COST", component: <LogisticsCostingApp /> },
 } as const;
 
 function normalizePath(pathname: string) {
@@ -50,7 +50,7 @@ function TenderAppsProduct() {
             <span aria-hidden="true" className="client-navigation-flow">→</span>
             <nav aria-label="Tender Apps practical Agents" className="client-agent-nav">
               <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
-              <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">Landed Cost</a>
+              <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">TENDER LOGISTICS COST</a>
             </nav>
           </div>
           <LayoutSwitcher value={layoutMode} onChange={setLayoutMode} />

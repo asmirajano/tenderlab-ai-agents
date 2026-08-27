@@ -1,7 +1,7 @@
 # Contract Logistics & Incoterms Costing — production test evidence
 
 Evidence date: 2026-08-27  
-Scope: production Landed Cost Studio implementation in TenderApps, backed by the canonical `agent:TL-A050` capability and shared deterministic `packages/logistics-costing` package.
+Scope: production TENDER LOGISTICS COST implementation in TenderApps, backed by the canonical `agent:TL-A050` capability and shared deterministic `packages/logistics-costing` package.
 
 ## Automated verification
 
@@ -11,7 +11,7 @@ Scope: production Landed Cost Studio implementation in TenderApps, backed by the
 | Client product/deployment boundary suite | `node --experimental-strip-types --test tests/client-product-boundary.test.mjs` | 7 passed, 0 failed |
 | Static analysis | `pnpm run lint` | passed, no findings |
 | TenderApps production build | `pnpm --filter @tenderlab/tender-apps build` | passed; PDF/XLSX workers and client bundle generated |
-| Full Tender Ecosystem build and regression suite | `pnpm run test` | 162 passed, 0 failed |
+| Full Tender Ecosystem build and regression suite | `pnpm run test` | 169 passed, 0 failed |
 | Agent-spec regeneration | run by `pnpm run test` | passed; 64 canonical Agent Specifications retained without adding a duplicate Agent |
 
 The build reports only the repository's existing large-chunk advisory. It does not prevent production output and no calculation or reconciliation gate was bypassed.
@@ -67,7 +67,7 @@ These figures are the approved methodology fixture, not hard-coded production va
 
 ## Browser verification
 
-The complete production workflow was exercised at the dedicated local route `/landed-cost`:
+The complete TENDER LOGISTICS COST production workflow was exercised at the dedicated local route `/landed-cost`:
 
 `Upload quotation → local extraction → review/correct fields → EXW current term → CIP target term → inherited CIP scope → prepared benchmark costs → review → result`
 

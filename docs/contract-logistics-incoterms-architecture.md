@@ -5,7 +5,7 @@ Primary disposition: `EXISTING AGENT — STANDALONE IMPLEMENTATION`
 
 ## Placement
 
-The interactive application is a standalone implementation of canonical `agent:TL-A050` — **Cost & Landed-Price Agent**. The canonical 64-Agent registry remains unchanged. The pure calculation kernel under `packages/logistics-costing` is intentionally reusable by other Agents, but the governed cost scenario and cost-basis artifact remain Agent 50's business output.
+The interactive application is a standalone implementation of canonical `agent:TL-A050` — **TENDER LOGISTICS COST**. The canonical 64-Agent registry retains its stable identity and numbering. The pure calculation kernel under `packages/logistics-costing` is intentionally reusable by other Agents, but the governed cost scenario and cost-basis artifact remain Agent 50's business output.
 
 This placement follows the existing registry evidence:
 
@@ -22,7 +22,7 @@ No 65th canonical Agent is justified.
 ## Product placement
 
 The capability is presented in **TenderApps**, the client-facing application
-suite, as **Landed Cost Studio**. TenderApps is built independently under
+suite, as **TENDER LOGISTICS COST**. TenderApps is built independently under
 `apps/tender-apps`; it does not inherit the TenderLab Command Center shell,
 route tree, glossary UI, or navigation.
 
@@ -40,12 +40,12 @@ the governed business output, and the deterministic kernel remains shared.
 ```text
 User / Case trigger
         │
-        ├─ client uses TenderApps / Landed Cost Studio
+        ├─ client uses TenderApps / TENDER LOGISTICS COST
         │       (separate build and origin; no Command Center shell)
         │
         ├─ optional A021 Document Intake → source manifest
         ├─ optional A046 Quotation Normalization → normalized quotation basis
-        └─ required A050 Cost & Landed-Price
+        └─ required A050 TENDER LOGISTICS COST
               ├─ versioned Incoterms® 2020 responsibility rules
               ├─ deterministic logistics-costing kernel
               ├─ evidence-based cargo / loadability estimator
@@ -143,7 +143,7 @@ Agent 50's existing relation to `BOQ-COST-ITEMS` is reused for approved unit cos
 - `process.ts` — reusable process definition and explicit non-production runtime boundary.
 - `apps/tender-apps/src/client-document-extraction.ts` — local PDF/XLSX/structured extraction adapter.
 - `apps/tender-apps/src/document-semantic-extraction.ts` — document/line/shipment evidence classification and working-baseline reconciliation.
-- `apps/tender-apps` — separately built client shell and Landed Cost Studio UI.
+- `apps/tender-apps` — separately built client shell and TENDER LOGISTICS COST UI.
 
 ## Cost and responsibility resolution
 

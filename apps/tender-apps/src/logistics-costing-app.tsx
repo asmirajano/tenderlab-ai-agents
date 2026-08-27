@@ -980,7 +980,7 @@ export default function LogisticsCostingApp() {
   }
 
   const clientWorkspaceNav = (
-    <nav className="client-workspace-nav" aria-label="Landed Cost Studio pages">
+    <nav className="client-workspace-nav" aria-label="TENDER LOGISTICS COST pages">
       <button aria-current={clientSurface === "welcome" ? "page" : undefined} onClick={() => setClientSurface("welcome")} type="button">Overview</button>
       <button aria-current={clientSurface === "intake" || clientSurface === "result" ? "page" : undefined} onClick={startNewCalculation} type="button">New calculation</button>
       <button aria-current={clientSurface === "cases" ? "page" : undefined} onClick={() => { setSelectedCaseId(null); setClientSurface("cases"); }} type="button">Saved cases <span>{savedCases.length}</span></button>
@@ -1018,7 +1018,7 @@ export default function LogisticsCostingApp() {
         {clientWorkspaceNav}
         <section className="cost-product-manifesto">
           <header className="cost-product-heading">
-            <p className="costing-eyebrow"><span /> LANDED COST STUDIO · REVIEWED COST EVIDENCE</p>
+            <p className="costing-eyebrow"><span /> TENDER LOGISTICS COST · REVIEWED COST EVIDENCE</p>
             <h1>Raw commercial inputs become a{" "}<br /><em>decision-ready delivery cost.</em></h1>
             <p>See how commercial source evidence becomes one defensible logistics estimate with transport capacity, cost logic, confidence and traceable assumptions.</p>
           </header>
@@ -1040,9 +1040,9 @@ export default function LogisticsCostingApp() {
               <footer><span>PDF</span><span>XLSX</span><span>CSV / JSON</span><span>Manual input</span></footer>
             </article>
 
-            <div className="cost-transformation-bridge" aria-label="Landed Cost Studio transformation">
+            <div className="cost-transformation-bridge" aria-label="TENDER LOGISTICS COST transformation">
               <span className="story-arrow" aria-hidden="true">→</span>
-              <div className="cost-agent-medallion"><small>TENDER APPS</small><strong>Landed Cost</strong><b>Studio</b></div>
+              <div className="cost-agent-medallion"><small>TENDER APPS</small><strong>TENDER</strong><b>LOGISTICS COST</b></div>
               <ol>
                 <li>READ</li><li>STRUCTURE</li><li>ESTIMATE CARGO</li><li>SIZE TRANSPORT</li><li>PRICE LOGISTICS</li><li>EXPLAIN</li>
               </ol>
@@ -1078,7 +1078,7 @@ export default function LogisticsCostingApp() {
           </div>
 
           <footer className="cost-product-actions">
-            <div><strong>You provide the transaction evidence.</strong><span>Landed Cost Studio turns it into one calculation you can review, understand, and approve.</span></div>
+            <div><strong>You provide the transaction evidence.</strong><span>TENDER LOGISTICS COST turns it into one calculation you can review, understand, and approve.</span></div>
             <div className="welcome-actions">
               <button className="primary-client-action" onClick={startNewCalculation} type="button">Start a logistics calculation <span>→</span></button>
               <button className="secondary-client-action" onClick={openDemoScenario} type="button">Open labelled methodology example</button>
@@ -1087,7 +1087,7 @@ export default function LogisticsCostingApp() {
           </footer>
         </section>
 
-        <section className="overview-support" aria-label="How Landed Cost Studio works">
+        <section className="overview-support" aria-label="How TENDER LOGISTICS COST works">
           <article className="guided-consultation-card">
             <header><span>GUIDED CONSULTATION</span><strong>A consultation, not a technical form</strong><p>We reuse uploaded and earlier inputs, ask only for genuine gaps, and never silently treat unknown costs as zero.</p></header>
             <ol>
@@ -1104,7 +1104,7 @@ export default function LogisticsCostingApp() {
           </div>
         </section>
         <section className="client-trust-note"><strong>How it works</strong><p>The calculation is deterministic and runs locally in your browser. No AI tokens are used. Missing cargo and rate values may be estimated only from visible, versioned proxies and benchmarks; they are never presented as source facts or live quotations.</p><button onClick={() => setClientSurface("audit")} type="button">Review calculation architecture</button></section>
-        <footer className="costing-footer"><div><strong>TenderApps</strong><span>Landed Cost Studio · guided and auditable</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
+        <footer className="costing-footer"><div><strong>TenderApps</strong><span>TENDER LOGISTICS COST · guided and auditable</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
       </main>
     );
   }
@@ -1279,7 +1279,7 @@ export default function LogisticsCostingApp() {
 
       <section className="costing-hero">
         <div>
-          <p className="costing-eyebrow"><span /> LANDED COST STUDIO · PRODUCTION WORKFLOW</p>
+          <p className="costing-eyebrow"><span /> TENDER LOGISTICS COST · PRODUCTION WORKFLOW</p>
           <h1>Contract Logistics<br /><em>& Incoterms Costing</em></h1>
           <p>Inspect the canonical cargo, transport, rate, insurance and Incoterms inputs behind the single client-facing logistics estimate.</p>
         </div>
@@ -1464,7 +1464,7 @@ export default function LogisticsCostingApp() {
         <div className="source-links"><span>INCOTERMS® RULE BASIS</span>{incotermsAuthoritativeSources.map((source) => <a href={source.url} key={source.url} rel="noreferrer" target="_blank">{source.title} ↗</a>)}</div>
       </section>
 
-      <footer className="costing-footer"><div><strong>TenderApps</strong><span>Landed Cost Studio · auditable planning workspace</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
+      <footer className="costing-footer"><div><strong>TenderApps</strong><span>TENDER LOGISTICS COST · auditable planning workspace</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
     </main>
   );
 }

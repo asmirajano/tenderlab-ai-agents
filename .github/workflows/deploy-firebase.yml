@@ -74,7 +74,7 @@ jobs:
           projectId: tenderlab-ai-agents
           target: tender-balance
 
-      - name: Redirect legacy Landed Cost URL
+      - name: Redirect legacy landed-cost hosting target
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}

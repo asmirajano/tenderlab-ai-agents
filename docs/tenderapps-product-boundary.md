@@ -4,9 +4,9 @@ Status: unified client application implemented; static deployment is not product
 
 ## Naming decision
 
-**Tender Apps** is the single client-facing application for practical Agents. Each practical capability receives a dedicated page inside the shared application rather than a new app or origin. Current pages are **TenderBalance** and **Landed Cost Studio**.
+**Tender Apps** is the single client-facing application for practical Agents. Each practical capability receives a dedicated page inside the shared application rather than a new app or origin. Current pages are **TenderBalance** and **TENDER LOGISTICS COST**.
 
-The page names describe client experiences, not new canonical Agents. TenderBalance remains a bounded implementation of `agent:TL-A008`; Landed Cost Studio remains an implementation of `agent:TL-A050`. Their reusable logic remains in shared packages.
+The page names describe client experiences, not new canonical identities. TenderBalance remains a bounded implementation of `agent:TL-A008`; TENDER LOGISTICS COST remains the user-facing name of `agent:TL-A050`. Their reusable logic remains in shared packages.
 
 ## Surface contract
 

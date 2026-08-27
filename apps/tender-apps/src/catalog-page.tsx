@@ -9,9 +9,9 @@ const practicalAgents = [
   },
   {
     id: "agent:TL-A050",
-    name: "Landed Cost Studio",
-    agent: "Cost & Landed-Price Agent",
-    description: "Model Incoterms conversion, logistics expenses, packing, routes, and landed-cost scenarios.",
+    name: "TENDER LOGISTICS COST",
+    agent: "Transport, logistics and Incoterms cost estimation",
+    description: "Estimate cargo, packing, transport requirements, freight, insurance and landed cost for tender shipments.",
     href: "/landed-cost",
     status: "MVP simulation",
   },
