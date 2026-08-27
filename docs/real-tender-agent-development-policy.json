@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "1.0.0",
+  "name": "Real Tender Agent Development",
+  "knowledgeLayers": [
+    {
+      "id": "agent-strategy-and-simulation",
+      "purpose": "Canonical Agent identity, architecture, Case orchestration, and deterministic demonstrations",
+      "defaultChangePolicy": "preserve"
+    },
+    {
+      "id": "real-agent-development-methodology",
+      "purpose": "Empirical lifecycle from approved capability to validated practical Agent",
+      "defaultChangePolicy": "primary-target"
+    },
+    {
+      "id": "agent-specific-knowledge",
+      "purpose": "Domain rules, schemas, fixtures, limitations, and regressions owned by one Agent capability",
+      "defaultChangePolicy": "change-only-when-agent-is-in-scope"
+    }
+  ],
+  "lifecycle": [
+    { "id": "approved-concept", "exitEvidence": ["canonical placement", "TOR", "authority boundary"] },
+    { "id": "real-input-output-contract", "exitEvidence": ["real input contract", "primary finished product", "consumer and handoff"] },
+    { "id": "realistic-evidence-set", "exitEvidence": ["authorized real or anonymized examples", "clearly labelled synthetic edge cases", "confidentiality decision"] },
+    { "id": "isolated-experiment", "exitEvidence": ["production-independent experiment", "reproducible inputs", "inspectable outputs"] },
+    { "id": "observed-output-inspection", "exitEvidence": ["field-level comparison", "source-trace audit", "readiness and UX observations"] },
+    { "id": "failure-analysis", "exitEvidence": ["what happened", "root cause", "correction candidate", "reusable rule"] },
+    { "id": "refine-and-repeat", "exitEvidence": ["general correction", "re-run evidence", "no document-specific shortcut"] },
+    { "id": "methodology-approval", "exitEvidence": ["approved method", "accepted limitations", "production permission"] },
+    { "id": "production-implementation", "exitEvidence": ["canonical result integration", "client workflow", "case and export integration"] },
+    { "id": "realistic-production-verification", "exitEvidence": ["realistic case replay", "actual output inspection", "failure and recovery paths"] },
+    { "id": "regression-safeguards", "exitEvidence": ["observed failures encoded", "negative cases", "build and focused/full tests"] },
+    { "id": "authorized-release", "exitEvidence": ["release authorization", "deployed revision", "live verification"] },
+    { "id": "lessons-fed-back", "exitEvidence": ["methodology update", "agent-specific knowledge update", "open limitations"] }
+  ],
+  "valueClasses": [
+    { "id": "SOURCE", "meaning": "Directly reported and source-traceable", "numericValueAllowed": true },
+    { "id": "CALCULATED", "meaning": "Deterministic formula with versioned operands", "numericValueAllowed": true },
+    { "id": "ESTIMATED", "meaning": "Evidence-based model or benchmark with uncertainty", "numericValueAllowed": true },
+    { "id": "ASSUMED", "meaning": "Explicit unverified premise with owner and override path", "numericValueAllowed": true },
+    { "id": "MISSING", "meaning": "No supported value; never a zero, estimate, assumption, or template example", "numericValueAllowed": false }
+  ],
+  "documentRoles": [
+    "AUTHORITATIVE_SOURCE",
+    "STRUCTURE_TEMPLATE",
+    "SUPPORTING_DOCUMENT",
+    "USER_ASSERTION"
+  ],
+  "invariants": [
+    "source-template-separation",
+    "one-canonical-result-model",
+    "reported-derived-separation",
+    "no-silent-correction",
+    "semantic-blocking-only",
+    "experiment-first-for-uncertain-intelligence",
+    "purpose-led-primary-result",
+    "case-agent-page-separation",
+    "visualizations-explain-results",
+    "actionable-non-dead-end-workflow",
+    "truthful-readiness",
+    "methodology-feedback-loop"
+  ],
+  "failureAuditFields": [
+    "whatHappened",
+    "rootCause",
+    "correction",
+    "reusableRule",
+    "regressionEvidence"
+  ],
+  "semanticBlockingRule": {
+    "blocksWhenAllAreTrue": [
+      "field is required for the requested finished product",
+      "no supported source or user value exists",
+      "no permitted deterministic calculation exists",
+      "no explicitly permitted estimate or assumption exists",
+      "the product contract does not allow a truthful partial result"
+    ],
+    "neverTreatAsMissing": [
+      "unrequested historical year",
+      "available deterministic calculation",
+      "optional enrichment",
+      "structure-only template example"
+    ]
+  },
+  "minimumTestFamilies": [
+    "authorized-realistic-happy-path",
+    "source-template-contamination",
+    "missing-required-versus-optional",
+    "calculated-versus-reported-discrepancy",
+    "negative-and-zero-values",
+    "ambiguous-or-low-confidence-input",
+    "multi-period-and-multi-document",
+    "case-identity-and-navigation",
+    "recovery-and-truthful-terminal-state",
+    "responsive-and-accessible-result"
+  ]
+}

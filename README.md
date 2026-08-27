@@ -86,6 +86,12 @@ rendered by the shared Tender Apps shell.
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
 
+The empirical lifecycle for turning an approved capability into a real,
+source-grounded practical Agent is recorded separately in
+[`docs/real-tender-agent-development-methodology.md`](docs/real-tender-agent-development-methodology.md).
+It preserves the distinction between strategy/simulation, general production
+methodology, and Agent-specific domain knowledge.
+
 ## Local development
 
 Requires Node.js 22.13 or later and pnpm 11.19.
