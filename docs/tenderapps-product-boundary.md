@@ -55,4 +55,7 @@ Before any confidential client release:
 - keep sensitive state out of query strings, browser history, referrers, analytics, and static output;
 - verify CSP, retention, audit journal, incident recovery, and rule deployment in CI.
 
-The current Firebase release is a public, noindex static MVP and must not receive confidential client evidence.
+The current Command Center and Tender Apps Firebase releases are public,
+search-hidden static MVPs for testing. They are not access-controlled and must
+not receive confidential client evidence. Staff-only administrator authorization
+remains a production prerequisite.

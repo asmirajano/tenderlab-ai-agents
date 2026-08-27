@@ -115,6 +115,9 @@ Quick-Value migration path are documented in
 ## Deployment and access boundary
 
 - The Command Center’s existing ChatGPT Site is custom-access and owner-only.
+- Its Firebase Hosting copy is temporarily public for internal testing and is
+  search-hidden rather than access-controlled. Do not place confidential client
+  evidence there; real administrator authorization remains required before use.
 - All practical-Agent pages are built and deployed as one Tender Apps bundle
   on one Firebase Hosting target. No client bundle includes Command Center navigation.
 - Static Hosting is public delivery, even when marked noindex. Production client

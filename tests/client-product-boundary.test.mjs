@@ -50,10 +50,11 @@ test("builds TenderBalance inside the unified client app without Command Center 
   await assert.rejects(access(path.join(projectRoot, "apps", "tender-balance", "src", "App.tsx")));
 });
 
-test("keeps the public Firebase workflow from deploying the internal Command Center target", async () => {
+test("deploys the temporarily public Command Center and client products through one test-gated workflow", async () => {
   const workflow = await readFile(path.join(projectRoot, ".github", "workflows", "deploy-firebase.yml"), "utf8");
-  assert.doesNotMatch(workflow, /target:\s*tenderlab\s*$/m);
+  assert.match(workflow, /target:\s*tenderlab\s*$/m);
   assert.match(workflow, /target:\s*ecosystem-atlas\s*$/m);
+  assert.match(workflow, /target:\s*tender-apps\s*$/m);
 });
 
 test("keeps the client product out of the internal Command Center route tree", async () => {
