@@ -1,0 +1,43 @@
+{
+  "require_zero_api_cost": true,
+  "runs": [
+    {
+      "tool": "tender-balance.fin1-from-multi-statement-pdf",
+      "scope": "local-browser-exhibitb-regression",
+      "status": "complete",
+      "expected_status": "complete",
+      "semantic_status": "complete",
+      "expected_semantic_status": "complete",
+      "input_contract_status": "met",
+      "expected_input_contract_status": "met",
+      "source_contract_required": true,
+      "sources_expected": 1,
+      "sources_checked": 1,
+      "sources_unavailable": 0,
+      "source_content_inspected": true,
+      "output_contract_met": true,
+      "output_item_count": 18,
+      "expected_min_items": 18,
+      "expected_max_items": 18,
+      "validator_scope_valid": true,
+      "completion_label_truthful": true,
+      "duration_ms": 6200,
+      "budget_ms": 45000,
+      "progress": [
+        "Upload",
+        "Agent works",
+        "Result",
+        "Prepare",
+        "Review mapping",
+        "Generate"
+      ],
+      "immediate_feedback": true,
+      "result_visible": true,
+      "details_open": 0,
+      "external_api_cost_usd": 0,
+      "cancel_requested": false,
+      "cancel_status": null,
+      "notes": "Local browser run against the user-supplied exhibitb.pdf. FIN-1 exposed only 2022 and 2023, mapped 18/18 fields, reported zero gaps, and matched the independent benchmark values. No deployment performed."
+    }
+  ]
+}

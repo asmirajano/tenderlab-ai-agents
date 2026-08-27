@@ -12,11 +12,12 @@ const finCssUrl = new URL("../apps/tender-apps/src/fin-forms.css", import.meta.u
 test("TenderBalance starts with a clean client surface and keeps demos separate", async () => {
   const source = await readFile(appUrl, "utf8");
 
-  assert.match(source, /useState<BalanceSurface>\("welcome"\)/);
+  assert.match(source, /parseBalanceNavigation\(window\.location\.href\)/);
+  assert.match(source, /useState<BalanceSurface>\(initialNavigation\.surface\)/);
   assert.match(source, /useState<BalanceSheetReview\[]>\(readClientCases\)/);
   assert.doesNotMatch(source, /const \[reviews[^\n]+syntheticBalanceSheetReviews/);
   assert.match(source, /Open a clearly labelled demo/);
-  assert.match(source, /setDemoMode\(true\)/);
+  assert.match(source, /navigateTo\(\{ surface: "review", caseId: firstDemo\.reviewId, demo: true \}\)/);
   assert.match(source, /SYNTHETIC FIXTURE\|NOT CLIENT EVIDENCE/);
   assert.match(source, /was not saved as client evidence/);
   assert.match(source, /Demo workspace · never stored as client evidence/);
@@ -30,7 +31,7 @@ test("TenderBalance makes upload the only required client action before the resu
   assert.match(source, /Add an optional internal company or case reference/);
   assert.match(source, /tenderapps:tenderbalance:case-contexts:v1/);
   assert.match(source, /Upload[\s\S]*Agent works[\s\S]*Result/);
-  assert.match(source, /setSurface\("review"\)/);
+  assert.match(source, /navigateTo\(\{ surface: "review", caseId: next\.reviewId, demo: false \}\)/);
   assert.match(source, /Preparing the finished digital balance sheet and saving the case/);
   assert.doesNotMatch(source, /Confirm and open review/);
   assert.match(source, /Please add the complete statement/);
@@ -126,8 +127,8 @@ test("TenderBalance Focus Mode is keyboard accessible and restores page scrollin
 test("TenderBalance continues from the digitized result into the FIN-1 workflow", async () => {
   const [source, finWorkspace] = await Promise.all([readFile(appUrl, "utf8"), readFile(finWorkspaceUrl, "utf8")]);
 
-  assert.match(source, /Prepare IFI Financial Forms/);
-  assert.match(source, /setSurface\("fin"\)/);
+  assert.match(source, /Prepare this Case’s FIN Forms/);
+  assert.match(source, /navigateTo\(\{ surface: "fin", caseId: review\.reviewId/);
   assert.match(source, /<FinFormsWorkspace/);
   assert.match(finWorkspace, /FIN-1/);
   assert.match(finWorkspace, /Historical Financial Performance/);
@@ -136,7 +137,21 @@ test("TenderBalance continues from the digitized result into the FIN-1 workflow"
   assert.match(finWorkspace, /Source &amp; Mapping/);
 });
 
-test("FIN-1 UI exposes the source-role gate, partial-data guidance, and dynamic period rendering", async () => {
+test("TenderBalance separates Agent pages from selected-Case outputs", async () => {
+  const source = await readFile(appUrl, "utf8");
+
+  assert.match(source, /aria-label="TenderBalance Agent pages"/);
+  assert.match(source, /Overview[\s\S]*New review[\s\S]*Cases/);
+  assert.doesNotMatch(source.match(/function BalanceClientNav[\s\S]*?\n\}/)?.[0] ?? "", />Result<|>FIN Forms</);
+  assert.match(source, /aria-label={`Selected case: \$\{identity\}`}/);
+  assert.match(source, /aria-label={`\$\{review\.statement\.reportingEntity\} case outputs`}/);
+  assert.match(source, />Result<\/button>/);
+  assert.match(source, />FIN Forms <span>FIN-1<\/span>/);
+  assert.match(source, /resolveBalanceCase\(availableReviews, selectedReviewId\)/);
+  assert.doesNotMatch(source, /resolveBalanceCase\(availableReviews, selectedReviewId\) \?\?/);
+});
+
+test("FIN-1 UI exposes the source-role gate, truthful blockers, and dynamic period rendering", async () => {
   const [finWorkspace, finCss] = await Promise.all([readFile(finWorkspaceUrl, "utf8"), readFile(finCssUrl, "utf8")]);
 
   assert.match(finWorkspace, /SOURCE-ROLE GATE/);
@@ -144,8 +159,20 @@ test("FIN-1 UI exposes the source-role gate, partial-data guidance, and dynamic 
   assert.match(finWorkspace, /technically blocked from client financial data/);
   assert.match(finWorkspace, /form\.years\.map/);
   assert.match(finWorkspace, /Income Statement required/);
-  assert.match(finWorkspace, /You can still generate a partial FIN-1/);
+  assert.match(finWorkspace, /Resolve the blocking source mappings/);
+  assert.match(finWorkspace, /disabled=\{!canGenerate\}/);
+  assert.match(finWorkspace, /No figures were estimated/);
+  assert.doesNotMatch(finWorkspace, /ingestion is intentionally outside this first validated release/);
   assert.doesNotMatch(finWorkspace, /Earlier historical period|Additional historical period/);
   assert.match(finCss, /\.fin-mapping-table-wrap \{[^}]*overflow-x: auto/);
   assert.match(finCss, /@media \(max-width: 700px\)/);
+});
+
+test("FIN-1 offers a native Excel export alongside CSV and audit navigation", async () => {
+  const finWorkspace = await readFile(finWorkspaceUrl, "utf8");
+
+  assert.match(finWorkspace, /Export FIN-1 Excel/);
+  assert.match(finWorkspace, /Export CSV/);
+  assert.match(finWorkspace, /fin1ToExcel/);
+  assert.match(finWorkspace, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
 });

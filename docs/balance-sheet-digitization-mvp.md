@@ -74,7 +74,7 @@ The reusable production boundary is:
 - A missing required indicator inside an available year is a field-level source-data gap. An unprovided year is not manufactured as a missing column.
 - Reported Net Worth is retained as reported and compared with calculated `Assets − Liabilities`; discrepancies remain visible.
 - Working Capital is calculated only from eligible Current Assets and Current Liabilities and retains its formula and operand source IDs.
-- Balance-only cases can generate a partial FIN-1. Revenue, Profit Before Tax, and Profit After Tax remain explicitly unavailable until a legitimate Income Statement source is supported and supplied.
+- When the supplied financial document contains a clearly titled Income Statement or Statement of Operations, FIN-1 extracts Revenue, Profit Before Tax, and Profit After Tax with page-level source traceability. A genuinely balance-only case can still generate a partial FIN-1 with those fields explicitly unavailable.
 
 ## Running the MVP
 
@@ -161,7 +161,7 @@ Accordingly, the product now demonstrates the intended client journey and one ex
 - Subtotal validation only runs when sufficient underlying mapped lines are present. `not-testable` is not treated as passed.
 - Cases, corrections, and optional approvals are browser-local state in this static MVP. They survive routes and browser sessions on the same origin, but are not durable server records. Authentication, artifact storage, retention, tenant isolation, synchronization, and server-side access controls require a production runtime.
 - The unified client build demonstrates surface separation, not production authentication. A client pilot requires server-enforced client/reviewer authorization and tenant isolation.
-- FIN-1 currently consumes balance-derived fields only. Income-statement ingestion, cash-flow analysis, audit-opinion analysis, financial-ratio interpretation, eligibility decisions, and recommendations are not implemented; corresponding FIN-1 income fields remain declared source-data gaps.
+- FIN-1 consumes the required balance-derived fields plus Revenue, Profit Before Tax, and Profit After Tax from a clearly identified Income Statement or Statement of Operations in the supplied evidence. Broader income-statement analysis, cash-flow analysis, audit-opinion analysis, financial-ratio interpretation, eligibility decisions, and recommendations remain out of scope.
 
 ## Migration to Quick-Value Agents
 

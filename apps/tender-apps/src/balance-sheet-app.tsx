@@ -16,6 +16,14 @@ import {
 import { syntheticBalanceSheetReviews, syntheticFixtureLabels } from "../../../packages/tender-balance/src/fixtures.ts";
 import "../../../packages/design-system/src/tokens.css";
 import { ClientProductManifesto } from "./client-product-manifesto.tsx";
+import {
+  balanceNavigationHref,
+  isCaseSurface,
+  parseBalanceNavigation,
+  resolveBalanceCase,
+  type BalanceNavigationState,
+  type BalanceSurface,
+} from "./balance-sheet-navigation.ts";
 import { FinFormsWorkspace } from "./fin-forms-workspace.tsx";
 import {
   CollapsibleWorkspaceProvider,
@@ -74,7 +82,6 @@ type ComparisonDecision = {
   at: string;
 };
 
-type BalanceSurface = "welcome" | "intake" | "review" | "fin" | "cases";
 type ExtractionOutcome = "unreadable" | "readable-uncertain" | "financially-inconsistent" | "extracted" | "approved";
 type AgentStage = "idle" | "reading" | "extracting" | "structuring" | "checking" | "preparing" | "complete" | "error";
 
@@ -211,24 +218,46 @@ function downloadBytes(name: string, content: Uint8Array, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function BalanceClientNav({ active, caseCount, hasResult, onHome, onNew, onResult, onFin, onCases }: {
+function BalanceClientNav({ active, caseCount, onHome, onNew, onCases }: {
   active: BalanceSurface;
   caseCount: number;
-  hasResult: boolean;
   onHome: () => void;
   onNew: () => void;
-  onResult: () => void;
-  onFin: () => void;
   onCases: () => void;
 }) {
+  const casesActive = active === "cases" || isCaseSurface(active);
   return (
-    <nav aria-label="TenderBalance workspace" className="bs-client-nav">
+    <nav aria-label="TenderBalance Agent pages" className="bs-client-nav">
       <button aria-current={active === "welcome" ? "page" : undefined} onClick={onHome} type="button">Overview</button>
       <button aria-current={active === "intake" ? "page" : undefined} onClick={onNew} type="button">New review</button>
-      <button aria-current={active === "review" ? "page" : undefined} disabled={!hasResult} onClick={onResult} type="button">Result</button>
-      <button aria-current={active === "fin" ? "page" : undefined} disabled={!hasResult} onClick={onFin} type="button">FIN Forms</button>
-      <button aria-current={active === "cases" ? "page" : undefined} onClick={onCases} type="button">Cases <span>{caseCount}</span></button>
+      <button aria-current={casesActive ? "page" : undefined} onClick={onCases} type="button">Cases <span>{caseCount}</span></button>
     </nav>
+  );
+}
+
+function CaseWorkspaceNav({ review, active, context, demoMode, onCases, onResult, onFin }: {
+  review: BalanceSheetReview;
+  active: "review" | "fin";
+  context?: string;
+  demoMode: boolean;
+  onCases: () => void;
+  onResult: () => void;
+  onFin: () => void;
+}) {
+  const identity = `${review.statement.reportingEntity} · ${review.statement.reportingDate}`;
+  return (
+    <section aria-label={`Selected case: ${identity}`} className="bs-case-context-bar">
+      <div className="bs-case-context-identity">
+        <nav aria-label="Case breadcrumb" className="bs-case-breadcrumb">
+          <span>TenderBalance</span><i aria-hidden="true">/</i><button onClick={onCases} type="button">Cases</button><i aria-hidden="true">/</i><b>{review.statement.reportingEntity}</b>
+        </nav>
+        <div><span>{demoMode ? "DEMO CASE" : "SELECTED CASE"}</span><strong>{identity}</strong><small>{context ? `${context} · ${review.source.fileName}` : review.source.fileName}</small></div>
+      </div>
+      <nav aria-label={`${review.statement.reportingEntity} case outputs`} className="bs-case-output-nav">
+        <button aria-current={active === "review" ? "page" : undefined} onClick={onResult} type="button">Result</button>
+        <button aria-current={active === "fin" ? "page" : undefined} onClick={onFin} type="button">FIN Forms <span>FIN-1</span></button>
+      </nav>
+    </section>
   );
 }
 
@@ -241,20 +270,22 @@ export default function BalanceSheetApp() {
 }
 
 function BalanceSheetWorkspace() {
-  const [surface, setSurface] = useState<BalanceSurface>("welcome");
+  const [initialNavigation] = useState<BalanceNavigationState>(() => parseBalanceNavigation(window.location.href));
+  const [surface, setSurface] = useState<BalanceSurface>(initialNavigation.surface);
   const [reviews, setReviews] = useState<BalanceSheetReview[]>(readClientCases);
   const [demoReviews, setDemoReviews] = useState<BalanceSheetReview[]>(syntheticBalanceSheetReviews);
   const [caseContexts, setCaseContexts] = useState<Record<string, string>>(readClientContexts);
   const [comparisonDecisions, setComparisonDecisions] = useState<Record<string, ComparisonDecision>>(readComparisonDecisions);
-  const [demoMode, setDemoMode] = useState(false);
+  const [demoMode, setDemoMode] = useState(initialNavigation.demo);
   const [companyContext, setCompanyContext] = useState("");
-  const [selectedReviewId, setSelectedReviewId] = useState("");
-  const [selectedLineId, setSelectedLineId] = useState("");
+  const [selectedReviewId, setSelectedReviewId] = useState(initialNavigation.caseId);
+  const initialReview = resolveBalanceCase(initialNavigation.demo ? demoReviews : reviews, initialNavigation.caseId);
+  const [selectedLineId, setSelectedLineId] = useState(initialReview?.lineItems[0]?.id ?? "");
   const [comparisonId, setComparisonId] = useState("");
   const [reviewer, setReviewer] = useState("Finance reviewer");
   const [correctionValue, setCorrectionValue] = useState("");
   const [correctionReason, setCorrectionReason] = useState("");
-  const [activePeriod, setActivePeriod] = useState("");
+  const [activePeriod, setActivePeriod] = useState(initialReview?.statement.periods[0] ?? "");
   const [uploadState, setUploadState] = useState<"idle" | "reading" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState("Processed locally; no file is uploaded or published.");
   const [agentStage, setAgentStage] = useState<AgentStage>("idle");
@@ -267,7 +298,7 @@ function BalanceSheetWorkspace() {
   const approvalRef = useRef<HTMLElement | null>(null);
 
   const availableReviews = demoMode ? demoReviews : reviews;
-  const review = availableReviews.find((candidate) => candidate.reviewId === selectedReviewId) ?? availableReviews[0];
+  const review = resolveBalanceCase(availableReviews, selectedReviewId);
   const selectedLine = review?.lineItems.find((item) => item.id === selectedLineId) ?? review?.lineItems[0];
   const comparisonReview = review
     ? availableReviews.find((candidate) => candidate.reviewId === comparisonId && candidate.reviewId !== review.reviewId)
@@ -300,6 +331,30 @@ function BalanceSheetWorkspace() {
     { id: "preparing", label: "Preparing your result", detail: "Building the digital balance sheet and saving the case" },
   ];
   const activeAgentStageIndex = agentStages.findIndex((stage) => stage.id === agentStage);
+
+  const navigateTo = (next: BalanceNavigationState, mode: "push" | "replace" = "push") => {
+    setSurface(next.surface);
+    setSelectedReviewId(next.caseId);
+    setDemoMode(next.demo);
+    const href = balanceNavigationHref(next, window.location.pathname);
+    if (mode === "replace") window.history.replaceState(null, "", href);
+    else window.history.pushState(null, "", href);
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      const next = parseBalanceNavigation(window.location.href);
+      setSurface(next.surface);
+      setSelectedReviewId(next.caseId);
+      setDemoMode(next.demo);
+      setSelectedLineId("");
+      setActivePeriod("");
+      setCorrectionValue("");
+      setCorrectionReason("");
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     try {
@@ -346,9 +401,8 @@ function BalanceSheetWorkspace() {
   };
 
   const openReview = (next: BalanceSheetReview, asDemo = false) => {
-    setDemoMode(asDemo);
     selectReview(next);
-    setSurface("review");
+    navigateTo({ surface: "review", caseId: next.reviewId, demo: asDemo });
   };
 
   const startNewAnalysis = () => {
@@ -360,17 +414,15 @@ function BalanceSheetWorkspace() {
     setUploadState("idle");
     setAgentStage("idle");
     setUploadMessage("Documents are processed locally in this prototype.");
-    setSurface("intake");
+    navigateTo({ surface: "intake", caseId: "", demo: false });
   };
 
   const openDemo = () => {
     const firstDemo = demoReviews[0];
-    setDemoMode(true);
-    setSelectedReviewId(firstDemo.reviewId);
     setSelectedLineId(firstDemo.lineItems[0]?.id ?? "");
     setActivePeriod(firstDemo.statement.periods[0] ?? "");
     setComparisonId(demoReviews[4]?.reviewId ?? demoReviews[1]?.reviewId ?? "");
-    setSurface("review");
+    navigateTo({ surface: "review", caseId: firstDemo.reviewId, demo: true });
   };
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -397,7 +449,6 @@ function BalanceSheetWorkspace() {
     if (syntheticUploads.length) setDemoReviews(syntheticUploads);
     if (syntheticUploads.length && !clientAccepted.length) {
       const next = syntheticUploads[0];
-      setDemoMode(true);
       setSelectedReviewId(next.reviewId);
       setSelectedLineId(next.lineItems[0]?.id ?? "");
       setActivePeriod(next.statement.periods[0] ?? "");
@@ -405,11 +456,10 @@ function BalanceSheetWorkspace() {
       setUploadState("idle");
       setAgentStage("complete");
       setUploadMessage("This file identifies itself as a synthetic fixture. It was opened in the separate demo workspace and was not saved as client evidence.");
-      setSurface("review");
+      navigateTo({ surface: "review", caseId: next.reviewId, demo: true });
       return;
     }
     if (clientAccepted.length) {
-      setDemoMode(false);
       setReviews((current) => [
         ...clientAccepted,
         ...current.filter((candidate) => !clientAccepted.some((next) => next.reviewId === candidate.reviewId)),
@@ -421,7 +471,6 @@ function BalanceSheetWorkspace() {
         }));
       }
       const next = clientAccepted[0];
-      setSelectedReviewId(next.reviewId);
       setSelectedLineId(next.lineItems[0]?.id ?? "");
       setActivePeriod(next.statement.periods[0] ?? "");
       const totalRows = clientAccepted.reduce((sum, candidate) => sum + candidate.lineItems.length, 0);
@@ -440,7 +489,7 @@ function BalanceSheetWorkspace() {
       setUploadMessage(needsSource
         ? `${clientAccepted.length} document${clientAccepted.length === 1 ? " was" : "s were"} preserved, but at least one required page remains genuinely unavailable or unreadable. No figures were invented.`
         : `${totalRows} rows and ${totalValues} values were digitized.${inconsistent ? ` ${inconsistent} statement${inconsistent === 1 ? " contains" : "s contain"} reported figures that do not reconcile.` : uncertain ? ` ${uncertain} statement${uncertain === 1 ? " contains" : "s contain"} findings.` : ""} The result was saved automatically.${syntheticUploads.length ? ` ${syntheticUploads.length} synthetic fixture was kept out of client evidence.` : ""}`);
-      setSurface("review");
+      navigateTo({ surface: "review", caseId: next.reviewId, demo: false });
     } else {
       setUploadState("error");
       setAgentStage("error");
@@ -579,14 +628,23 @@ function BalanceSheetWorkspace() {
     <BalanceClientNav
       active={surface}
       caseCount={reviews.length}
-      hasResult={Boolean(review)}
-      onCases={() => { setDemoMode(false); setSurface("cases"); }}
-      onHome={() => { setDemoMode(false); setSurface("welcome"); }}
+      onCases={() => navigateTo({ surface: "cases", caseId: "", demo: false })}
+      onHome={() => navigateTo({ surface: "welcome", caseId: "", demo: false })}
       onNew={startNewAnalysis}
-      onResult={() => { if (review) setSurface("review"); }}
-      onFin={() => { if (review) setSurface("fin"); }}
     />
   );
+
+  const caseNav = review && isCaseSurface(surface) ? (
+    <CaseWorkspaceNav
+      active={surface}
+      context={caseContexts[review.reviewId]}
+      demoMode={demoMode}
+      onCases={() => navigateTo({ surface: "cases", caseId: "", demo: false })}
+      onFin={() => navigateTo({ surface: "fin", caseId: review.reviewId, demo: demoMode })}
+      onResult={() => navigateTo({ surface: "review", caseId: review.reviewId, demo: demoMode })}
+      review={review}
+    />
+  ) : null;
 
   if (surface === "welcome") {
     return (
@@ -643,7 +701,7 @@ function BalanceSheetWorkspace() {
             <>
               <p className="bs-manifesto-action-copy"><b>One client action.</b><span>Upload the statement; TenderBalance does the work and returns the product.</span></p>
               <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Digitize a balance sheet <span aria-hidden="true">→</span></button>
-              <button className="bs-secondary-action" onClick={() => setSurface("cases")} type="button">Open previous cases</button>
+              <button className="bs-secondary-action" onClick={() => navigateTo({ surface: "cases", caseId: "", demo: false })} type="button">Open previous cases</button>
             </>
           )}
         />
@@ -760,7 +818,7 @@ function BalanceSheetWorkspace() {
     return (
       <main className="bs-page bs-cases-page">
         {clientNav}
-        <section className="bs-no-cases"><h2>No document is open</h2><p>Start a new review and provide the balance-sheet evidence first.</p><button className="bs-primary-action" onClick={startNewAnalysis} type="button">Start review <span aria-hidden="true">→</span></button></section>
+        <section className="bs-no-cases"><h2>This Case is not available</h2><p>The requested Case was not found in this browser’s saved history. TenderBalance will not substitute the latest Case.</p><div className="bs-welcome-actions"><button className="bs-primary-action" onClick={() => navigateTo({ surface: "cases", caseId: "", demo: false })} type="button">Open Cases <span aria-hidden="true">→</span></button><button className="bs-secondary-action" onClick={startNewAnalysis} type="button">Start new review</button></div></section>
       </main>
     );
   }
@@ -769,7 +827,8 @@ function BalanceSheetWorkspace() {
     return (
       <main className="bs-page fin-page">
         {clientNav}
-        <FinFormsWorkspace review={review} demoMode={demoMode} onBackToBalance={() => setSurface("review")} />
+        {caseNav}
+        <FinFormsWorkspace review={review} demoMode={demoMode} onBackToBalance={() => navigateTo({ surface: "review", caseId: review.reviewId, demo: demoMode })} />
       </main>
     );
   }
@@ -790,6 +849,7 @@ function BalanceSheetWorkspace() {
     return (
       <main className="bs-page bs-result-page">
         {clientNav}
+        {caseNav}
 
         {(demoMode || isSyntheticReview(review)) && (
           <div className="bs-synthetic-banner"><b>SYNTHETIC FIXTURE</b><span>This record is a test simulation, not real client evidence.</span></div>
@@ -902,13 +962,13 @@ function BalanceSheetWorkspace() {
         {resultReady && (
           <section className="fin-next-stage">
             <div><span>NEXT WORKFLOW STAGE</span><h3>Prepare IFI Financial Forms</h3><p>Use the canonical financial dataset to review mappings and generate FIN-1 — Historical Financial Performance.</p></div>
-            <div><b>{fin1.readiness.status === "ready" ? "FIN-1 ready" : fin1.readiness.status === "partial" ? "FIN-1 partially ready" : "Period review needed"}</b><small>{fin1.years.length ? `${fin1.years.join(" · ")} · ${fin1.readiness.missingFields} missing field${fin1.readiness.missingFields === 1 ? "" : "s"}` : "No reliable FIN year available"}</small><button className="bs-primary-action" onClick={() => setSurface("fin")} type="button">Prepare IFI Financial Forms <span aria-hidden="true">→</span></button></div>
+            <div><b>{fin1.readiness.status === "ready" ? "FIN-1 ready" : fin1.readiness.status === "partial" ? "FIN-1 partially ready" : "Period review needed"}</b><small>{fin1.years.length ? `${fin1.years.join(" · ")} · ${fin1.readiness.missingFields} missing field${fin1.readiness.missingFields === 1 ? "" : "s"}` : "No reliable FIN year available"}</small><button className="bs-primary-action" onClick={() => navigateTo({ surface: "fin", caseId: review.reviewId, demo: demoMode })} type="button">Prepare this Case’s FIN Forms <span aria-hidden="true">→</span></button></div>
           </section>
         )}
 
         <section className="bs-result-actions-panel">
           <div><span>RESULT OPTIONS</span><h3>The finished product is already saved.</h3><p>Export, inspect source evidence, correct a value, compare documents, or add formal approval only when your workflow requires it.</p></div>
-          <div><button className="is-primary" onClick={() => setSurface("cases")} type="button">Open Cases</button><button onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")} type="button">Export JSON</button><button onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")} type="button">Export CSV</button><button onClick={() => downloadBytes(balanceSheetExcelFileName(review), reviewToExcel(review), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")} type="button">Export Excel</button><button onClick={startNewAnalysis} type="button">Digitize another statement</button></div>
+          <div><button className="is-primary" onClick={() => navigateTo({ surface: "cases", caseId: "", demo: false })} type="button">Open Cases</button><button onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")} type="button">Export JSON</button><button onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")} type="button">Export CSV</button><button onClick={() => downloadBytes(balanceSheetExcelFileName(review), reviewToExcel(review), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")} type="button">Export Excel</button><button onClick={startNewAnalysis} type="button">Digitize another statement</button></div>
         </section>
 
         <CollapsibleWorkspaceSection
@@ -923,7 +983,7 @@ function BalanceSheetWorkspace() {
             <section className="bs-advanced-source" ref={sourceRef}>
               <div className="bs-section-title"><div><span>SOURCE EVIDENCE</span><h3>Documents and traceability</h3></div><b>{availableReviews.length}</b></div>
               <div className="bs-advanced-source-grid">
-                <div className="bs-document-list">{availableReviews.map((candidate) => <button className={candidate.reviewId === review.reviewId ? "is-active" : ""} key={candidate.reviewId} onClick={() => selectReview(candidate)} type="button"><i>{candidate.source.synthetic ? "DEMO" : "LOCAL"}</i><strong>{candidate.source.fileName}</strong><span>{candidate.lineItems.length} rows · {candidate.statement.reportingDate}</span><small>{resultStatus(candidate)}</small></button>)}</div>
+                <div className="bs-document-list">{availableReviews.map((candidate) => <button className={candidate.reviewId === review.reviewId ? "is-active" : ""} key={candidate.reviewId} onClick={() => openReview(candidate, demoMode)} type="button"><i>{candidate.source.synthetic ? "DEMO" : "LOCAL"}</i><strong>{candidate.source.fileName}</strong><span>{candidate.lineItems.length} rows · {candidate.statement.reportingDate}</span><small>{resultStatus(candidate)}</small></button>)}</div>
                 <div className={`bs-dropzone ${uploadState}`} onDragOver={(event) => event.preventDefault()} onDrop={onDrop}><input ref={inputRef} type="file" multiple accept=".pdf,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff" onChange={onFileChange} /><span aria-hidden="true">⇧</span><strong>Add related source</strong><p>Extend the case with another statement</p><button disabled={uploadState === "reading"} onClick={() => inputRef.current?.click()} type="button">Choose file</button></div>
               </div>
             </section>
@@ -973,7 +1033,7 @@ function BalanceSheetWorkspace() {
         <aside className="bs-tor-card">
           <span>BOUNDARY / TOR</span>
           <strong>Read · structure · validate · approve</strong>
-          <p>No income statement, cash flow, audit opinion, eligibility decision, or supplier recommendation.</p>
+          <p>No broader income-statement analysis, cash-flow analysis, audit-opinion analysis, eligibility decision, or supplier recommendation.</p>
           <div><b>Current stage</b><span>{review.review.status === "approved" ? "Client approved" : blockingCount ? "Client action required" : "Human review"}</span></div>
         </aside>
       </section>
@@ -1001,7 +1061,7 @@ function BalanceSheetWorkspace() {
               const fixture = syntheticFixtureLabels[candidate.source.documentId];
               const active = candidate.reviewId === review.reviewId;
               return (
-                <button className={active ? "is-active" : ""} key={candidate.reviewId} onClick={() => selectReview(candidate)} type="button">
+                <button className={active ? "is-active" : ""} key={candidate.reviewId} onClick={() => openReview(candidate, demoMode)} type="button">
                   <i>{candidate.source.synthetic ? "DEMO" : "LOCAL"}</i>
                   <strong>{fixture?.label ?? candidate.source.fileName}</strong>
                   <span>{candidate.statement.reportingDate} · {candidate.statement.currency}</span>
@@ -1260,7 +1320,7 @@ function BalanceSheetWorkspace() {
               </div>
               <div className="bs-approved-actions">
                 <button className="is-primary" type="button" onClick={() => scrollTo(lineSectionRef.current)}>View approved result</button>
-                {!demoMode && <button type="button" onClick={() => setSurface("cases")}>Open saved case</button>}
+                {!demoMode && <button type="button" onClick={() => navigateTo({ surface: "cases", caseId: "", demo: false })}>Open saved case</button>}
                 <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")}>Export JSON</button>
                 <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")}>Export CSV</button>
                 <button type="button" onClick={() => downloadBytes(balanceSheetExcelFileName(review), reviewToExcel(review), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}>Export Excel</button>

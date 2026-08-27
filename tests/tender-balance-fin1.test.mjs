@@ -7,19 +7,41 @@ import {
   financialInputFromBalanceReview,
   generateFin1,
   normalizeFinancialPeriod,
+  prepareFin1FromBalanceReview,
 } from "../packages/tender-balance/src/fin-forms.ts";
+import { fin1ExcelFileName, fin1ToExcel } from "../packages/tender-balance/src/excel.ts";
 import { buildBalanceSheetReview } from "../packages/tender-balance/src/model.ts";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/SYNTHETIC_FIN1_CONTAMINATION_REGRESSION.json", import.meta.url), "utf8"));
 const [sourceFixture, templateFixture] = fixture.inputs;
 const sourceReview = buildBalanceSheetReview(sourceFixture.reviewInput);
 const templateReview = buildBalanceSheetReview(templateFixture.reviewInput);
+const multiStatementFixture = JSON.parse(await readFile(new URL("./fixtures/SYNTHETIC_FIN1_MULTI_STATEMENT_REGRESSION.json", import.meta.url), "utf8"));
 
 function buildRegressionDataset() {
   return buildCanonicalFinancialDataset([
     financialInputFromBalanceReview(sourceReview, sourceFixture.role),
     financialInputFromBalanceReview(templateReview, templateFixture.role),
   ]);
+}
+
+function readStoredZipEntries(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const decoder = new TextDecoder();
+  const entries = new Map();
+  let offset = 0;
+  while (offset + 30 <= bytes.length && view.getUint32(offset, true) === 0x04034b50) {
+    assert.equal(view.getUint16(offset + 8, true), 0, "Excel test expects uncompressed OpenXML entries");
+    const size = view.getUint32(offset + 18, true);
+    const nameLength = view.getUint16(offset + 26, true);
+    const extraLength = view.getUint16(offset + 28, true);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const name = decoder.decode(bytes.subarray(nameStart, nameStart + nameLength));
+    entries.set(name, decoder.decode(bytes.subarray(dataStart, dataStart + size)));
+    offset = dataStart + size;
+  }
+  return entries;
 }
 
 test("blocks populated FIN template examples from canonical financial data", () => {
@@ -43,6 +65,47 @@ test("generates only legitimate dynamic FIN periods and never turns Average into
   assert.equal(form.years.includes("Average"), false);
   assert.equal(form.years.some((year) => /Earlier|Additional|Missing/i.test(year)), false);
   assert.equal(dataset.periodMappings.find((period) => period.originalPeriod === "Average").status, "excluded");
+});
+
+test("isolates statement-local periods and reconstructs FIN-1 from balance and income statements", () => {
+  const review = buildBalanceSheetReview(multiStatementFixture);
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+  const expected = {
+    "total_assets:2022": 2_776_046,
+    "total_assets:2023": 3_568_323,
+    "total_liabilities:2022": 7_946_704,
+    "total_liabilities:2023": 10_419_639,
+    "net_worth:2022": -5_170_658,
+    "net_worth:2023": -6_851_316,
+    "current_assets:2022": 609_707,
+    "current_assets:2023": 1_880_513,
+    "current_liabilities:2022": 7_946_704,
+    "current_liabilities:2023": 10_403_744,
+    "working_capital:2022": -7_336_997,
+    "working_capital:2023": -8_523_231,
+    "total_revenue:2022": 1_222_756,
+    "total_revenue:2023": 2_689_237,
+    "profit_before_tax:2022": -2_152_484,
+    "profit_before_tax:2023": -2_535_490,
+    "profit_after_tax:2022": -2_152_484,
+    "profit_after_tax:2023": -2_535_490
+  };
+
+  assert.deepEqual(review.statement.periods, ["December 31, 2023", "2022"]);
+  assert.deepEqual(form.years, ["2022", "2023"]);
+  assert.equal(form.years.includes("2021"), false);
+  assert.equal(dataset.incomeStatementDetected, true);
+  assert.equal(form.readiness.status, "ready");
+  assert.equal(form.readiness.canGenerate, true);
+  assert.equal(form.mappings.length, 18);
+  assert.equal(form.mappings.every((mapping) => mapping.status === "ready"), true);
+  for (const mapping of form.mappings) {
+    assert.equal(mapping.value, expected[`${mapping.field}:${mapping.displayYear}`]);
+  }
+  const assets2023 = form.mappings.find((mapping) => mapping.field === "total_assets" && mapping.displayYear === "2023");
+  const revenue2023 = form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2023");
+  assert.equal(dataset.sources.find((source) => assets2023.sourceIds.includes(source.sourceId)).page, 2);
+  assert.equal(dataset.sources.find((source) => revenue2023.sourceIds.includes(source.sourceId)).page, 3);
 });
 
 test("uses MISSING only for unavailable fields inside available years", () => {
@@ -101,6 +164,21 @@ test("allows a partial FIN-1 to be reviewed and generated without inventing inco
   assert.equal(form.readiness.missingFields, 6);
   assert.equal(form.mappings.find((mapping) => mapping.field === "total_assets" && mapping.displayYear === "2016").value, 1_000);
   assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2016").value, null);
+});
+
+test("exports FIN-1 as a typed Excel workbook with a source mapping audit", () => {
+  const form = generateFin1(buildRegressionDataset());
+  const bytes = fin1ToExcel(form);
+  const entries = readStoredZipEntries(bytes);
+
+  assert.match(fin1ExcelFileName(sourceReview), /-FIN-1\.xlsx$/);
+  assert.match(entries.get("xl/workbook.xml"), /FIN-1 Form/);
+  assert.match(entries.get("xl/workbook.xml"), /Source &amp; Mapping/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Historical Financial Performance/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /<v>1000<\/v>/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /MISSING/);
+  assert.match(entries.get("xl/worksheets/sheet2.xml"), /Current Assets − Current Liabilities/);
+  assert.match(entries.get("xl/worksheets/sheet2.xml"), /source-inconsistency/);
 });
 
 test("keeps historical coverage separate from the primary FIN table", () => {

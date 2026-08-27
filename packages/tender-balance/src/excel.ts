@@ -1,5 +1,6 @@
 /* eslint-disable no-useless-escape -- XML attributes stay visually explicit inside template literals. */
 import type { BalanceSheetReview } from "./model.ts";
+import { FIN1_FIELDS, type Fin1Form } from "./fin-forms.ts";
 
 type CellValue = string | number | null | undefined;
 type CellSpec = { value: CellValue; style?: number };
@@ -122,6 +123,21 @@ function number(value: number | null | undefined, style = 4): CellSpec {
 
 const stylesXml = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><numFmts count=\"1\"><numFmt numFmtId=\"164\" formatCode=\"#,##0;[Red](#,##0);-\"/></numFmts><fonts count=\"4\"><font><sz val=\"10\"/><name val=\"Aptos\"/></font><font><b/><sz val=\"16\"/><color rgb=\"FF0F5132\"/><name val=\"Aptos Display\"/></font><font><b/><sz val=\"10\"/><color rgb=\"FF0F2A24\"/><name val=\"Aptos\"/></font><font><b/><sz val=\"10\"/><color rgb=\"FFFFFFFF\"/><name val=\"Aptos\"/></font></fonts><fills count=\"5\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF0F2A24\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFEAF3EE\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFF4D6\"/><bgColor indexed=\"64\"/></patternFill></fill></fills><borders count=\"2\"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top style=\"thin\"><color rgb=\"FF799387\"/></top><bottom/><diagonal/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"10\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/><xf numFmtId=\"0\" fontId=\"2\" fillId=\"3\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\"/><xf numFmtId=\"0\" fontId=\"3\" fillId=\"2\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"0\" fontId=\"2\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\"/><xf numFmtId=\"164\" fontId=\"2\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyNumberFormat=\"1\"/><xf numFmtId=\"10\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"0\" fontId=\"0\" fillId=\"4\" borderId=\"0\" xfId=\"0\" applyFill=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyAlignment=\"1\"><alignment vertical=\"top\" wrapText=\"1\"/></xf></cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles></styleSheet>`;
 
+function workbookZip(sheets: Array<{ name: string; xml: string }>) {
+  const workbookXml = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView xWindow=\"0\" yWindow=\"0\" windowWidth=\"24000\" windowHeight=\"12000\"/></bookViews><sheets>${sheets.map((sheet, index) => `<sheet name=\"${xml(sheet.name)}\" sheetId=\"${index + 1}\" r:id=\"rId${index + 1}\"/>`).join("")}</sheets></workbook>`;
+  const workbookRelationships = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">${sheets.map((_, index) => `<Relationship Id=\"rId${index + 1}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet${index + 1}.xml\"/>`).join("")}<Relationship Id=\"rId${sheets.length + 1}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>`;
+  const contentTypes = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>${sheets.map((_, index) => `<Override PartName=\"/xl/worksheets/sheet${index + 1}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>`).join("")}</Types>`;
+
+  return zip([
+    { name: "[Content_Types].xml", content: contentTypes },
+    { name: "_rels/.rels", content: `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>` },
+    { name: "xl/workbook.xml", content: workbookXml },
+    { name: "xl/_rels/workbook.xml.rels", content: workbookRelationships },
+    { name: "xl/styles.xml", content: stylesXml },
+    ...sheets.map((sheet, index) => ({ name: `xl/worksheets/sheet${index + 1}.xml`, content: sheet.xml })),
+  ]);
+}
+
 export function balanceSheetExcelFileName(review: BalanceSheetReview) {
   const stem = review.source.fileName.replace(/\.[^.]+$/, "").replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "balance-sheet";
   return `${stem}-digitized.xlsx`;
@@ -180,16 +196,47 @@ export function reviewToExcel(review: BalanceSheetReview) {
     { name: "Source Trace", xml: worksheetXml({ rows: traceRows, widths: [40, 22, 34, 30, 18, 22, 20, 18, 18, 10, 18, 13, 16], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
   ];
 
-  const workbookXml = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView xWindow=\"0\" yWindow=\"0\" windowWidth=\"24000\" windowHeight=\"12000\"/></bookViews><sheets>${sheets.map((sheet, index) => `<sheet name=\"${xml(sheet.name)}\" sheetId=\"${index + 1}\" r:id=\"rId${index + 1}\"/>`).join("")}</sheets></workbook>`;
-  const workbookRelationships = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">${sheets.map((_, index) => `<Relationship Id=\"rId${index + 1}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet${index + 1}.xml\"/>`).join("")}<Relationship Id=\"rId${sheets.length + 1}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>`;
-  const contentTypes = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>${sheets.map((_, index) => `<Override PartName=\"/xl/worksheets/sheet${index + 1}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>`).join("")}</Types>`;
+  return workbookZip(sheets);
+}
 
-  return zip([
-    { name: "[Content_Types].xml", content: contentTypes },
-    { name: "_rels/.rels", content: `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>` },
-    { name: "xl/workbook.xml", content: workbookXml },
-    { name: "xl/_rels/workbook.xml.rels", content: workbookRelationships },
-    { name: "xl/styles.xml", content: stylesXml },
-    ...sheets.map((sheet, index) => ({ name: `xl/worksheets/sheet${index + 1}.xml`, content: sheet.xml })),
+export function fin1ExcelFileName(review: BalanceSheetReview) {
+  const stem = review.source.fileName.replace(/\.[^.]+$/, "").replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "financial-source";
+  return `${stem}-FIN-1.xlsx`;
+}
+
+export function fin1ToExcel(form: Fin1Form) {
+  const formRows: CellSpec[][] = [
+    [text("FIN-1 — Historical Financial Performance", 1)],
+    [text("Applicant", 2), text(form.entity), text("Generation status", 2), text(form.readiness.status)],
+    [text("Currency / units", 2), text(`${form.currency} · ${form.unitLabel}`), text("Schema version", 2), text(form.schemaVersion)],
+    [text("Historical periods", 2), text(form.years.join(" · ")), text("Coverage", 2), text(form.coverage.message)],
+    [],
+    [text("Financial Indicator", 3), ...form.years.map((year) => text(`${year} — ${form.currency} · ${form.unitLabel}`, 3))],
+    ...FIN1_FIELDS.map((field) => [
+      text(field.sourceType === "calculated" ? `${field.label} (calculated)` : field.label),
+      ...form.years.map((year) => {
+        const mapping = form.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
+        return mapping?.value === null || mapping?.value === undefined ? text("MISSING", 8) : number(mapping.value);
+      }),
+    ]),
+  ];
+
+  const mappingRows: CellSpec[][] = [
+    [text("FIN-1 — Source & Mapping Audit", 1)],
+    ["Field", "Year", "Value", "Currency", "Unit scale", "Provenance", "Source summary", "Original periods", "Reported value", "Calculated value", "Difference", "Formula", "Status", "Source IDs"].map((header) => text(header, 3)),
+    ...form.mappings.map((mapping) => {
+      const issueStyle = mapping.status === "missing" || mapping.status === "source-inconsistency" ? 8 : 0;
+      return [
+        text(mapping.label, issueStyle), text(mapping.displayYear), number(mapping.value), text(mapping.currency), number(mapping.unitScale, 0),
+        text(mapping.provenance ?? "MISSING", issueStyle), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
+        number(mapping.reportedValue), number(mapping.calculatedValue), number(mapping.difference), text(mapping.calculationFormula ?? ""),
+        text(mapping.status, issueStyle), text(mapping.sourceIds.join(" | "), 9),
+      ];
+    }),
+  ];
+
+  return workbookZip([
+    { name: "FIN-1 Form", xml: worksheetXml({ rows: formRows, widths: [34, ...form.years.map(() => 23), 24], freezeRow: 6, autoFilterRow: 6, mergeTitle: true }) },
+    { name: "Source & Mapping", xml: worksheetXml({ rows: mappingRows, widths: [28, 12, 16, 12, 12, 15, 48, 24, 18, 18, 16, 38, 22, 52], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
   ]);
 }

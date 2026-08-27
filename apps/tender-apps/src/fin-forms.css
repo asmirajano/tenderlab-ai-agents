@@ -265,7 +265,7 @@
 .fin-review-actions p,
 .fin-generated-actions p { color: #b8c5be; font-size: var(--type-micro); line-height: 1.45; margin: 0; }
 .fin-review-actions > div:last-child,
-.fin-generated-actions > div:last-child { display: flex; flex: 0 0 auto; gap: 8px; }
+.fin-generated-actions > div:last-child { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .fin-review-actions .bs-primary-action,
 .fin-generated-actions .bs-primary-action { background: var(--bs-signal); border-color: var(--bs-signal); color: var(--bs-ink); }
 

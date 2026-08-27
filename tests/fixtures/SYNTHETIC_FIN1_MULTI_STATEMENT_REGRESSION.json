@@ -1,0 +1,39 @@
+{
+  "source": {
+    "documentId": "synthetic:fin1-multi-statement-regression",
+    "fileName": "SYNTHETIC_FIN1_MULTI_STATEMENT_REGRESSION.pdf",
+    "mimeType": "application/pdf",
+    "sha256": "synthetic-fin1-multi-statement-regression",
+    "pageCount": 4,
+    "expectedPageCount": 4,
+    "synthetic": true,
+    "processedAt": "2026-08-27T00:00:00.000Z",
+    "processingVersion": "tender-balance/regression"
+  },
+  "pages": [
+    {
+      "pageNumber": 1,
+      "text": "INDEPENDENT AUDITOR MATERIAL\nMarch 18, 2021\nThis page is deliberately unrelated to the financial statement columns.",
+      "extractionMethod": "digital-text",
+      "confidence": 0.98
+    },
+    {
+      "pageNumber": 2,
+      "text": "SYNTHETIC ELECTRIC VEHICLES, INC.\nCONSOLIDATED BALANCE SHEET\nAs of December 31, 2023 2022\nUSD in Dollars\nASSETS\nTotal Current Assets 1,880,513 609,707\nTotal Assets 5 3,568,323 2,776,046\nLIABILITIES AND STOCKHOLDERS' EQUITY\nTotal Current Liabilities 10,403,744 7,946,704\nTotal Liabilities 10,419,639 7,946,704\nTotal Stockholders' Equity (6,851,316) (5,170,658)\nTotal Liabilities and Stockholders' Equity 5 3,568,323 2,776,046",
+      "extractionMethod": "digital-text",
+      "confidence": 0.98
+    },
+    {
+      "pageNumber": 3,
+      "text": "SYNTHETIC ELECTRIC VEHICLES, INC.\nCONSOLIDATED STATEMENTS OF OPERATIONS\nYears Ended December 31, 2023 2022\nUSD in Dollars\nNet Revenue 2,689,237 1,222,756\nLoss before income taxes (2,535,490) (2,152,484)\nNet Income (Net Loss) (2,535,490) (2,152,484)",
+      "extractionMethod": "digital-text",
+      "confidence": 0.98
+    },
+    {
+      "pageNumber": 4,
+      "text": "NOTES TO THE FINANCIAL STATEMENTS\nAdditional historical references: 2021 and March 18, 2021.\nThese values must never become FIN-1 reporting periods.",
+      "extractionMethod": "digital-text",
+      "confidence": 0.98
+    }
+  ]
+}

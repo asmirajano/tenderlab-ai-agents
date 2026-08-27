@@ -241,9 +241,9 @@ const conceptRules: Array<{
   { concept: "personal_liabilities", classification: "liability", patterns: [/^(?:total )?personal liabilities$/i] },
   { concept: "personal_net_worth", classification: "equity", patterns: [/^personal net worth$/i] },
   { concept: "total_assets", classification: "asset", isTotal: true, patterns: [/^total (?:farm )?assets$/i, /^assets total$/i, /^итого активы?$/i, /^баланс.*актив/i, /^jami aktivlar$/i] },
-  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|shareholders?)[’'s\s-]*(?:equity)?|net worth)$/i] },
+  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|net worth)$/i] },
   { concept: "total_liabilities", classification: "liability", isTotal: true, patterns: [/^total (?:farm )?liabilities$/i, /^итого обязательств/i, /^jami majburiyatlar$/i] },
-  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|shareholders?)[’'s\s-]*)?equity$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
+  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
   { concept: "net_assets", classification: "equity", isTotal: true, patterns: [/^net assets$/i, /^чистые активы$/i, /^sof aktivlar$/i] },
   { concept: "current_assets", classification: "current_asset", isTotal: true, patterns: [/^total current assets$/i, /^current assets$/i, /^оборотные активы$/i, /^jami joriy aktivlar$/i] },
   { concept: "non_current_assets", classification: "non_current_asset", isTotal: true, patterns: [/^total non.?current assets$/i, /^non.?current assets$/i] },
@@ -293,8 +293,8 @@ export function normalizeConcept(label: string) {
 export function parseReportedNumber(raw: string): number | null {
   const trimmed = raw.trim();
   if (!trimmed || /^(?:—|–|-|n\/a)$/i.test(trimmed)) return null;
-  const negative = /^\(.*\)$/.test(trimmed) || /^[-−]/.test(trimmed);
-  let token = trimmed.replace(/[()\s\u00a0'’]/g, "").replace(/^[-−]/, "").replace(/[^\d.,]/g, "");
+  const negative = /^[({[].*[)}\]]$/.test(trimmed) || /^[-−]/.test(trimmed);
+  let token = trimmed.replace(/[(){}[\]\s\u00a0'’]/g, "").replace(/^[-−]/, "").replace(/[^\d.,]/g, "");
   if (!token) return null;
   const lastComma = token.lastIndexOf(",");
   const lastDot = token.lastIndexOf(".");
@@ -341,12 +341,19 @@ export function detectPeriods(text: string) {
   const periods: string[] = [];
   const namedDatePattern = /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:,?\s+(?:19|20)\d{2})?\b/gi;
   const namedDates = Array.from(text.matchAll(namedDatePattern), (match) => match[0].replace(/\s+/g, " "));
-  if (namedDates.length >= 2) {
-    for (const period of namedDates) {
-      if (!periods.some((candidate) => candidate.toLocaleLowerCase() === period.toLocaleLowerCase())) periods.push(period);
-    }
+  for (const period of namedDates) {
+    if (!periods.some((candidate) => candidate.toLocaleLowerCase() === period.toLocaleLowerCase())) periods.push(period);
+  }
+  if (periods.length >= 2) {
     if (/\baverage\b/i.test(text)) periods.push("Average");
     return periods.slice(0, 4);
+  }
+  if (periods.length === 1) {
+    const namedYear = periods[0].match(/\b(?:19|20)\d{2}\b/)?.[0];
+    for (const match of text.matchAll(/\b(?:19|20)\d{2}\b/g)) {
+      if (match[0] !== namedYear && !periods.includes(match[0])) periods.push(match[0]);
+    }
+    if (periods.length >= 2) return periods.slice(0, 4);
   }
   for (const match of text.matchAll(/\b(?:month|period|quarter|qtr|column)\s*[-:]?\s*\d+\b/gi)) {
     const [kind, number] = match[0].replace(/[-:]/g, " ").trim().split(/\s+/);
@@ -360,14 +367,18 @@ export function detectPeriods(text: string) {
   return periods.slice(0, 4);
 }
 
+function repairEntityOcr(value: string) {
+  return value.replace(/(?<=[A-Z])!(?=\s+[A-Z])/g, "I");
+}
+
 function detectEntity(text: string) {
   const candidates = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 16);
   const titleLine = candidates.find((line) => statementPatterns.some((pattern) => pattern.test(line)) && /\b(?:for|of)\b/i.test(line));
   const titleMatch = titleLine?.match(/(?:balance sheet|statement of financial position)\s+(?:for|of)\s+(.+?)(?:\s+[—–-]\s*(?:19|20)\d{2}\b|$)/i);
-  if (titleMatch?.[1]) return titleMatch[1].trim();
-  return candidates.find((line) => /\b(?:ltd|llc|jsc|inc|plc|company|corp|mchj|ооо|ао)\b/i.test(line))
+  if (titleMatch?.[1]) return repairEntityOcr(titleMatch[1].trim());
+  return repairEntityOcr(candidates.find((line) => /\b(?:ltd|llc|jsc|inc|plc|company|corp|mchj|ооо|ао)\b/i.test(line))
     ?? candidates.find((line) => !line.includes("\t") && normalizeConcept(line).concept === "unmapped" && !statementPatterns.some((pattern) => pattern.test(line)) && !/\b(?:19|20)\d{2}\b/.test(line) && !/^(?:description|assets?:?|liabilities:?|equity:?|notes?|average|month\s*\d+|period\s*\d+)$/i.test(line))
-    ?? "Unconfirmed reporting entity";
+    ?? "Unconfirmed reporting entity");
 }
 
 function inferClassification(concept: BalanceSheetConcept): BalanceSheetClassification {
@@ -378,11 +389,35 @@ function inferIsTotal(concept: BalanceSheetConcept) {
   return conceptRules.find((rule) => rule.concept === concept)?.isTotal ?? false;
 }
 
-function parseLineParts(line: string) {
+export function parseStatementLine(line: string, expectedValueCount = 0) {
   const pipeParts = line.split(/\s*\|\s*|\t+/).filter(Boolean);
   if (pipeParts.length >= 2) {
     const values = pipeParts.slice(1).filter((part) => parseReportedNumber(part) !== null || /^(?:—|–|-)$/.test(part));
     if (values.length) return { label: pipeParts[0], rawValues: values };
+  }
+
+  if (expectedValueCount > 0) {
+    const positionalLine = line
+      .replace(/^\d+[.)]\s*/, "")
+      .replace(/\s+\([^)]*[A-Za-z][^)]*\)\s*$/, "");
+    const numericMatches = Array.from(positionalLine.matchAll(/[({[]?[-−]?\d(?:[\d,.'’]*\d)?[)}\]]?/g));
+    if (numericMatches.length >= expectedValueCount) {
+      let selected = numericMatches.slice(0, expectedValueCount);
+      let selectedScore = Number.NEGATIVE_INFINITY;
+      for (let start = 0; start <= numericMatches.length - expectedValueCount; start += 1) {
+        const candidate = numericMatches.slice(start, start + expectedValueCount);
+        const score = candidate.reduce((sum, match) => sum + Math.log10(Math.abs(parseReportedNumber(match[0]) ?? 0) + 1), 0);
+        if (score > selectedScore) {
+          selected = candidate;
+          selectedScore = score;
+        }
+      }
+      const firstIndex = selected[0].index ?? -1;
+      if (firstIndex >= 0) {
+        const label = positionalLine.slice(0, firstIndex).replace(/(?:S?\$|[$€£₾]|\bS|\b5)\s*$/i, "").trim();
+        if (label) return { label, rawValues: selected.map((match) => match[0]) };
+      }
+    }
   }
 
   const currencyValues = Array.from(line.matchAll(/(?:[$€£₾]\s*)\(?[-−]?\d[\d,.'’\s]*\)?/g));
@@ -404,13 +439,18 @@ function parseLineParts(line: string) {
 function statementPageScore(page: SourcePageInput) {
   if (page.missing || page.imageOnly || !page.text) return { page, score: -1, tabularRows: 0 };
   const lines = page.text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const tabularRows = lines.filter((line) => (parseLineParts(line)?.rawValues.length ?? 0) >= 2).length;
+  const tabularRows = lines.filter((line) => (parseStatementLine(line)?.rawValues.length ?? 0) >= 2).length;
   const title = statementPatterns.some((pattern) => pattern.test(page.text ?? ""));
   const totals = [/total (?:farm )?assets/i, /total (?:farm )?liabilities/i, /net worth|owners?.? equity/i].filter((pattern) => pattern.test(page.text ?? "")).length;
   return { page, tabularRows, score: tabularRows * 10 + (title ? 30 : 0) + totals * 8 };
 }
 
 export function selectStatementPages(pages: SourcePageInput[]) {
+  const explicitlyTitled = pages.filter((page) => page.text?.split(/\r?\n/).some((line) =>
+    /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\(continued\))?$/i.test(line.replace(/\s+/g, " ").trim())
+      || /^statements? of financial position(?:\s*\(continued\))?$/i.test(line.replace(/\s+/g, " ").trim())
+  ));
+  if (explicitlyTitled.length) return explicitlyTitled;
   const scored = pages.map(statementPageScore);
   const strong = scored.filter((candidate) => candidate.tabularRows >= 3 && candidate.score >= 38);
   if (strong.length) return strong.map((candidate) => candidate.page);
@@ -422,6 +462,8 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
   const items: LineItemInput[] = [];
   for (const page of pages) {
     if (page.missing || page.imageOnly || !page.text) continue;
+    const pagePeriods = detectPeriods(page.text);
+    const usedPeriods = pagePeriods.length ? pagePeriods : periods;
     let pendingLabel = "";
     for (const sourceLine of page.text.split(/\r?\n/)) {
       const line = sourceLine.trim();
@@ -430,7 +472,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
         pendingLabel = "";
         continue;
       }
-      const parsed = parseLineParts(line);
+      const parsed = parseStatementLine(line, usedPeriods.length);
       let label = parsed?.label ?? "";
       const rawValues = parsed?.rawValues ?? [];
       if (pendingLabel && rawValues.length) {
@@ -444,13 +486,13 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       if (/^description$/i.test(label)) continue;
       const normalized = normalizeConcept(label);
       if (normalized.concept === "unmapped" && !/[a-zа-яўқғҳ]/i.test(label)) continue;
-      const usedPeriods = periods.length ? periods : rawValues.map((_, index) => `column-${index + 1}`);
+      const rowPeriods = usedPeriods.length ? usedPeriods : rawValues.map((_, index) => `column-${index + 1}`);
       items.push({
         page: page.pageNumber,
         originalLabel: cleanLabel(label).replace(/\s+\([^)]*\)\s*$/, ""),
         ...normalized,
-        values: rawValues.slice(0, usedPeriods.length).map((raw, index) => ({
-          period: usedPeriods[index] ?? `column-${index + 1}`,
+        values: rawValues.slice(-rowPeriods.length).map((raw, index) => ({
+          period: rowPeriods[index] ?? `column-${index + 1}`,
           raw,
           value: parseReportedNumber(raw),
           confidence: page.confidence,

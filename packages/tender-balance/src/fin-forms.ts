@@ -1,5 +1,8 @@
 import {
+  detectPeriods,
   effectiveNormalizedValue,
+  parseReportedNumber,
+  parseStatementLine,
   type BalanceSheetConcept,
   type BalanceSheetLineItem,
   type BalanceSheetReview,
@@ -116,6 +119,7 @@ export type CanonicalFinancialDataset = {
   currency: string;
   unitLabel: string;
   unitScale: number;
+  incomeStatementDetected: boolean;
   documents: FinancialDocumentRegistration[];
   periodMappings: NormalizedFinancialPeriod[];
   availableYears: string[];
@@ -488,6 +492,106 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
   }
 }
 
+const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i] },
+  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*income taxes?$/i, /^profit before tax$/i] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^profit after tax$/i] },
+];
+
+function incomeStatementPages(review: BalanceSheetReview) {
+  return review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
+    const normalized = line.replace(/\s+/g, " ").trim();
+    return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)$/i.test(normalized)
+      || /^(?:consolidated\s+)?income statements?$/i.test(normalized);
+  }));
+}
+
+function normalizeIncomeLabel(label: string) {
+  return label.replace(/[{}]/g, (token) => token === "{" ? "(" : ")").replace(/\s+/g, " ").trim();
+}
+
+function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
+  const review = input.review;
+  if (!review || input.role !== "FINANCIAL_SOURCE") return;
+  const pages = incomeStatementPages(review);
+  if (!pages.length) return;
+  dataset.incomeStatementDetected = true;
+  const discovered = new Set<string>();
+
+  for (const page of pages) {
+    const periods = detectPeriods(page.text ?? "").filter((period) => Boolean(yearFrom(period)));
+    if (!periods.length) {
+      pushIssue(dataset, {
+        id: `issue:income-period:${review.source.documentId}:${page.pageNumber}`,
+        type: "mapping-problem",
+        message: `An income statement was found on page ${page.pageNumber}, but its reporting years could not be mapped reliably.`,
+        action: "Review income-statement periods",
+      });
+      continue;
+    }
+
+    for (const sourceLine of (page.text ?? "").split(/\r?\n/)) {
+      const parsed = parseStatementLine(sourceLine.trim(), periods.length);
+      if (!parsed) continue;
+      const label = normalizeIncomeLabel(parsed.label);
+      const definition = INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(label)));
+      if (!definition) continue;
+      const rawValues = parsed.rawValues.slice(-periods.length);
+      for (let index = 0; index < periods.length; index += 1) {
+        const displayYear = yearFrom(periods[index]);
+        const reportedValue = parseReportedNumber(rawValues[index] ?? "");
+        if (!displayYear || reportedValue === null) continue;
+        const sourceId = `source:${review.reviewId}:income:${definition.field}:${displayYear}:${page.pageNumber}`;
+        const confidence = page.confidence ?? 0.65;
+        dataset.sources.push({
+          sourceId,
+          documentId: review.source.documentId,
+          fileName: review.source.fileName,
+          documentRole: input.role,
+          page: page.pageNumber,
+          originalLabel: label,
+          originalPeriod: periods[index],
+          displayYear,
+          provenance: "SOURCE",
+          eligibleForCanonicalFinancialDataset: true,
+          eligibleForGeneratedFinValues: true,
+        });
+        dataset.values.push({
+          id: `value:${definition.field}:${displayYear}:${review.source.documentId}`,
+          field: definition.field,
+          displayYear,
+          value: reportedValue * review.statement.unitScale,
+          currency: review.statement.currency,
+          unitScale: review.statement.unitScale,
+          reportedValue: reportedValue * review.statement.unitScale,
+          calculatedValue: null,
+          difference: null,
+          provenance: "SOURCE",
+          sourceIds: [sourceId],
+          status: confidence < 0.8 ? "extraction-problem" : "ready",
+          problemType: confidence < 0.8 ? "extraction-problem" : undefined,
+        });
+        discovered.add(`${definition.field}:${displayYear}`);
+      }
+    }
+  }
+
+  const balanceYears = new Set(dataset.periodMappings.flatMap((period) => period.eligibleForFin && period.displayYear ? [period.displayYear] : []));
+  for (const displayYear of balanceYears) {
+    for (const definition of INCOME_FIELD_PATTERNS) {
+      if (discovered.has(`${definition.field}:${displayYear}`)) continue;
+      pushIssue(dataset, {
+        id: `issue:income-extraction:${review.source.documentId}:${definition.field}:${displayYear}`,
+        type: "extraction-problem",
+        field: definition.field,
+        displayYear,
+        message: `The uploaded document contains an income statement for ${displayYear}, but ${FIN1_FIELDS.find((field) => field.id === definition.field)?.label ?? definition.field} was not extracted reliably.`,
+        action: "Review income-statement extraction",
+      });
+    }
+  }
+}
+
 function addUserValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
   if (input.role !== "USER_INPUT") return;
   for (const [index, supplied] of (input.userValues ?? []).entries()) {
@@ -572,6 +676,7 @@ export function buildCanonicalFinancialDataset(inputs: FinancialDatasetInput[]):
     currency: eligibleReview?.statement.currency ?? inputs.flatMap((input) => input.userValues ?? [])[0]?.currency ?? "UNSPECIFIED",
     unitLabel: eligibleReview?.statement.unitLabel ?? "units",
     unitScale: eligibleReview?.statement.unitScale ?? 1,
+    incomeStatementDetected: false,
     documents: inputs.map(roleRegistration),
     periodMappings: [],
     availableYears: [],
@@ -590,6 +695,7 @@ export function buildCanonicalFinancialDataset(inputs: FinancialDatasetInput[]):
       });
     }
     addBalanceSourceValues(dataset, input);
+    addIncomeSourceValues(dataset, input);
     addUserValues(dataset, input);
   }
 
@@ -619,6 +725,8 @@ export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCou
       const value = dataset.values.find((candidate) => candidate.field === fieldDefinition.id && candidate.displayYear === displayYear);
       const sources = value ? dataset.sources.filter((source) => value.sourceIds.includes(source.sourceId)) : [];
       const missing = !value;
+      const missingIssue = missing ? dataset.issues.find((issue) => issue.field === fieldDefinition.id && issue.displayYear === displayYear && ["extraction-problem", "mapping-problem"].includes(issue.type)) : undefined;
+      const missingStatus: Fin1Mapping["status"] = missingIssue?.type === "extraction-problem" || missingIssue?.type === "mapping-problem" ? missingIssue.type : "missing";
       mappings.push({
         id: `fin1:${fieldDefinition.id}:${displayYear}`,
         field: fieldDefinition.id,
@@ -636,9 +744,9 @@ export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCou
         reportedValue: value?.reportedValue ?? null,
         calculatedValue: value?.calculatedValue ?? null,
         difference: value?.difference ?? null,
-        status: missing ? "missing" : value.status,
-        problemType: missing ? "source-data-gap" : value.problemType,
-        action: missing ? missingAction(fieldDefinition.id) : value.status === "source-inconsistency" ? "Review reported and calculated values" : value.status === "extraction-problem" ? "Review extraction" : value.status === "mapping-problem" ? "Review mapping" : undefined,
+        status: missing ? missingStatus : value.status,
+        problemType: missing ? (missingIssue?.type ?? "source-data-gap") : value.problemType,
+        action: missing ? (missingIssue?.action ?? missingAction(fieldDefinition.id)) : value.status === "source-inconsistency" ? "Review reported and calculated values" : value.status === "extraction-problem" ? "Review extraction" : value.status === "mapping-problem" ? "Review mapping" : undefined,
       });
     }
   }
@@ -646,7 +754,10 @@ export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCou
   const readyFields = mappings.filter((mapping) => mapping.status === "ready").length;
   const missingFields = mappings.filter((mapping) => mapping.status === "missing").length;
   const problemFields = mappings.filter((mapping) => ["extraction-problem", "mapping-problem", "source-inconsistency"].includes(mapping.status)).length;
-  const canGenerate = dataset.availableYears.length > 0 && mappings.some((mapping) => mapping.value !== null);
+  const requiredBalanceFields = new Set<Fin1FieldId>(["total_assets", "total_liabilities", "net_worth", "current_assets", "current_liabilities", "working_capital"]);
+  const balanceComplete = dataset.availableYears.every((displayYear) => Array.from(requiredBalanceFields).every((field) => mappings.some((mapping) => mapping.field === field && mapping.displayYear === displayYear && mapping.value !== null)));
+  const blockingMappingProblem = mappings.some((mapping) => mapping.status === "extraction-problem" || mapping.status === "mapping-problem");
+  const canGenerate = dataset.availableYears.length > 0 && balanceComplete && !blockingMappingProblem;
   const status: Fin1Form["readiness"]["status"] = !canGenerate ? "not-ready" : missingFields || problemFields ? "partial" : "ready";
   const requiredYears = requiredYearCount && requiredYearCount > 0 ? requiredYearCount : null;
   const coverageStatus: Fin1Form["coverage"]["status"] = requiredYears === null
@@ -673,7 +784,9 @@ export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCou
         ? "All FIN-1 fields are available for the legitimate source-driven periods."
         : status === "partial"
           ? "FIN-1 is partially ready. Available values can be reviewed and generated while genuine source-data gaps remain explicit."
-          : "A reliable FIN year and at least one eligible financial value are required before generation.",
+          : !balanceComplete
+            ? "FIN-1 cannot be generated until every required balance-sheet field is reliably mapped for each source-driven year."
+            : "FIN-1 cannot be generated while extraction or period-mapping problems remain unresolved.",
     },
     coverage: {
       availableYears: dataset.availableYears.length,
