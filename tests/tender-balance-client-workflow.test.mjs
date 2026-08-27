@@ -140,6 +140,7 @@ test("TenderBalance continues from the digitized result into the FIN-1 workflow"
   assert.match(finWorkspace, /Extraction review required/);
   assert.match(source, /EXTRACTION REVIEW REQUIRED/);
   assert.match(source, /This saved result needs/);
+  assert.match(source, /Re-digitization required/);
 });
 
 test("TenderBalance separates Agent pages from selected-Case outputs", async () => {

@@ -153,9 +153,14 @@ function latestActivity(review: BalanceSheetReview) {
   return review.review.approvedAt ?? review.source.processedAt ?? review.review.auditTrail.at(-1)?.at ?? "";
 }
 
+function hasExtractionPeriodProblem(review: BalanceSheetReview) {
+  return review.statement.reportingDate === "Unconfirmed" || prepareFin1FromBalanceReview(review).form.years.length === 0;
+}
+
 function resultStatus(review: BalanceSheetReview) {
   const needsSource = review.issues.some((issue) => ["MISSING_PAGE", "OCR_REQUIRED", "STATEMENT_PAGE_NOT_FOUND"].includes(issue.code));
   if (!review.lineItems.length || needsSource) return "Needs source";
+  if (hasExtractionPeriodProblem(review)) return "Re-digitization required";
   if (review.issues.some((issue) => issue.severity !== "info")) return "Completed with findings";
   return "Completed";
 }
@@ -843,7 +848,7 @@ function BalanceSheetWorkspace() {
     const statementPages = Array.from(new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page))));
     const hasConcept = (concept: string) => review.lineItems.some((item) => item.normalizedConcept === concept);
     const fin1 = prepareFin1FromBalanceReview(review).form;
-    const extractionPeriodProblem = review.statement.reportingDate === "Unconfirmed" || fin1.years.length === 0;
+    const extractionPeriodProblem = hasExtractionPeriodProblem(review);
     const resultReady = review.lineItems.length > 0 && genuineBlockers.length === 0 && !extractionPeriodProblem;
     const hasReadableRows = review.lineItems.length > 0;
 
