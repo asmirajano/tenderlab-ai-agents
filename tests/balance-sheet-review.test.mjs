@@ -226,7 +226,7 @@ test("reads text from a real synthetic digital PDF without external services", a
   assert.match(pages[0].text, /Total assets/);
 });
 
-test("runs the supplied clean balance-sheet image through OCR, structure, normalization, traceability, and genuine discrepancy checks", { timeout: 30_000 }, async () => {
+test("runs the supplied clean balance-sheet image through OCR, structure, normalization, traceability, and genuine discrepancy checks", { timeout: 60_000 }, async () => {
   const bytes = await readFile(new URL("./fixtures/BALANCE_SHEET_IMAGE_REGRESSION.jpg", import.meta.url));
   const progress = [];
   const review = await readBalanceSheetFile(

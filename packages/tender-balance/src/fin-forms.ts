@@ -493,15 +493,15 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i] },
-  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*income taxes?$/i, /^profit before tax$/i] },
-  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^profit after tax$/i] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i] },
+  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i] },
 ];
 
 function incomeStatementPages(review: BalanceSheetReview) {
   return review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
     const normalized = line.replace(/\s+/g, " ").trim();
-    return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)$/i.test(normalized)
+    return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?$/i.test(normalized)
       || /^(?:consolidated\s+)?income statements?$/i.test(normalized);
   }));
 }

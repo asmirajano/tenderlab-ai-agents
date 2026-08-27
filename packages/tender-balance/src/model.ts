@@ -241,29 +241,29 @@ const conceptRules: Array<{
   { concept: "personal_liabilities", classification: "liability", patterns: [/^(?:total )?personal liabilities$/i] },
   { concept: "personal_net_worth", classification: "equity", patterns: [/^personal net worth$/i] },
   { concept: "total_assets", classification: "asset", isTotal: true, patterns: [/^total (?:farm )?assets$/i, /^assets total$/i, /^итого активы?$/i, /^баланс.*актив/i, /^jami aktivlar$/i] },
-  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|net worth)$/i] },
+  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|partners?[’'s\s-]*(?:equity|deficit)|net worth)$/i] },
   { concept: "total_liabilities", classification: "liability", isTotal: true, patterns: [/^total (?:farm )?liabilities$/i, /^итого обязательств/i, /^jami majburiyatlar$/i] },
-  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
+  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^(?:total )?partners?[’'s\s-]*(?:equity|deficit)$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
   { concept: "net_assets", classification: "equity", isTotal: true, patterns: [/^net assets$/i, /^чистые активы$/i, /^sof aktivlar$/i] },
   { concept: "current_assets", classification: "current_asset", isTotal: true, patterns: [/^total current assets$/i, /^current assets$/i, /^оборотные активы$/i, /^jami joriy aktivlar$/i] },
   { concept: "non_current_assets", classification: "non_current_asset", isTotal: true, patterns: [/^total non.?current assets$/i, /^non.?current assets$/i] },
   { concept: "current_liabilities", classification: "current_liability", isTotal: true, patterns: [/^total current liabilities$/i, /^current liabilities$/i, /^краткосрочные обязательства$/i, /^jami joriy majburiyatlar$/i] },
-  { concept: "non_current_liabilities", classification: "non_current_liability", isTotal: true, patterns: [/^total non.?current liabilities$/i, /^non.?current liabilities$/i] },
+  { concept: "non_current_liabilities", classification: "non_current_liability", isTotal: true, patterns: [/^total non.?current liabilities$/i, /^non.?current liabilities$/i, /^total long.?term liabilities$/i] },
   { concept: "cash_and_cash_equivalents", classification: "current_asset", patterns: [/cash( and cash equivalents)?/i, /денежн/i, /pul mablag/i] },
-  { concept: "trade_receivables", classification: "current_asset", patterns: [/trade (and other )?receivables/i, /accounts receivable/i, /дебитор/i, /debitor/i] },
+  { concept: "trade_receivables", classification: "current_asset", patterns: [/trade (and other )?receivables/i, /accounts receivable/i, /^receivables from affiliates$/i, /дебитор/i, /debitor/i] },
   { concept: "inventories", classification: "current_asset", patterns: [/inventor/i, /запас/i, /tovar.?moddiy/i, /fertilizer and supplies/i, /growing crops/i, /crops held for sale/i, /market livestock/i] },
   { concept: "other_current_assets", classification: "current_asset", patterns: [/other current assets/i, /prepaid expenses?/i, /current portion of savings/i, /прочие оборотные/i, /boshqa joriy aktiv/i] },
   { concept: "property_plant_equipment", classification: "non_current_asset", patterns: [/property.*plant.*equipment/i, /^equipment$/i, /^property$/i, /machinery and equipment/i, /^buildings$/i, /^land$/i, /fixed assets/i, /основные средства/i, /asosiy vositalar/i] },
-  { concept: "intangible_assets", classification: "non_current_asset", patterns: [/intangible assets/i, /^goodwill$/i, /нематериальные активы/i, /nomoddiy aktivlar/i] },
-  { concept: "other_non_current_assets", classification: "non_current_asset", patterns: [/other non.?current assets/i, /breeding livestock/i, /investments? in cooperatives/i, /прочие внеоборотные/i, /boshqa uzoq muddatli aktiv/i] },
+  { concept: "intangible_assets", classification: "non_current_asset", patterns: [/intangible assets/i, /goodwill.*intangibles/i, /^goodwill$/i, /нематериальные активы/i, /nomoddiy aktivlar/i] },
+  { concept: "other_non_current_assets", classification: "non_current_asset", patterns: [/other non.?current assets/i, /^other assets$/i, /breeding livestock/i, /investments? in cooperatives/i, /прочие внеоборотные/i, /boshqa uzoq muddatli aktiv/i] },
   { concept: "trade_payables", classification: "current_liability", patterns: [/trade (and other )?payables/i, /accounts payable/i, /кредитор/i, /kreditor/i] },
-  { concept: "short_term_borrowings", classification: "current_liability", patterns: [/short.?term borrow/i, /current borrow/i, /current loans? due within/i, /current portion of term debt/i, /operating debt/i, /borrowed principal due within/i, /краткосрочн.*за[её]м/i, /qisqa muddatli qarz/i] },
-  { concept: "other_current_liabilities", classification: "current_liability", patterns: [/other current liabilities/i, /accrued expenses?/i, /accrued interest/i, /income (?:&|and) social security taxes payable/i, /^current portion:\s*deferred taxes/i, /real estate and personal property taxes/i, /unearned revenue/i, /salar(?:y|ies) payable/i, /income taxes? payable/i, /warranty liabilit/i, /прочие краткосрочные/i, /boshqa joriy majburiyat/i] },
+  { concept: "short_term_borrowings", classification: "current_liability", patterns: [/short.?term borrow/i, /current borrow/i, /current loans? due within/i, /current portion(?:\s*[-:]| of).*long.?term debt/i, /current portion of term debt/i, /operating debt/i, /borrowed principal due within/i, /краткосрочн.*за[её]м/i, /qisqa muddatli qarz/i] },
+  { concept: "other_current_liabilities", classification: "current_liability", patterns: [/other current liabilities/i, /accrued expenses?/i, /accrued interest/i, /income (?:&|and) social security taxes payable/i, /^current portion:\s*deferred taxes/i, /real estate and personal property taxes/i, /^taxes payable$/i, /unearned revenue/i, /salar(?:y|ies) payable/i, /income taxes? payable/i, /warranty liabilit/i, /прочие краткосрочные/i, /boshqa joriy majburiyat/i] },
   { concept: "long_term_borrowings", classification: "non_current_liability", patterns: [/long.?term (?:borrow|debt|loans?)/i, /intermediate loans?/i, /term debt/i, /non.?current borrow/i, /долгосрочн.*за[её]м/i, /uzoq muddatli qarz/i] },
   { concept: "other_non_current_liabilities", classification: "non_current_liability", patterns: [/other (?:non.?current|long.?term) liabilities/i, /noncurrent portion:\s*deferred taxes/i, /прочие долгосрочные/i, /boshqa uzoq muddatli majburiyat/i] },
   { concept: "share_capital", classification: "equity", patterns: [/(?:share|equity) capital/i, /уставн.*капитал/i, /ustav kapital/i] },
-  { concept: "retained_earnings", classification: "equity", patterns: [/retained earnings/i, /accumulated (loss|profit)/i, /нераспределенн.*прибыл/i, /непокрыт.*убыт/i, /taqsimlanmagan/i] },
-  { concept: "other_equity", classification: "equity", patterns: [/other (reserves|equity)/i, /прочие резервы/i, /boshqa kapital/i] },
+  { concept: "retained_earnings", classification: "equity", patterns: [/retained earnings/i, /accumulated (deficit|loss|profit)/i, /нераспределенн.*прибыл/i, /непокрыт.*убыт/i, /taqsimlanmagan/i] },
+  { concept: "other_equity", classification: "equity", patterns: [/other (reserves|equity)/i, /accumulated other comprehensive (?:income|loss)/i, /прочие резервы/i, /boshqa kapital/i] },
 ];
 
 const requiredConcepts: BalanceSheetConcept[] = [
@@ -450,10 +450,15 @@ function statementPageScore(page: SourcePageInput) {
 }
 
 export function selectStatementPages(pages: SourcePageInput[]) {
-  const explicitlyTitled = pages.filter((page) => page.text?.split(/\r?\n/).some((line) =>
-    /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\(continued\))?$/i.test(line.replace(/\s+/g, " ").trim())
-      || /^statements? of financial position(?:\s*\(continued\))?$/i.test(line.replace(/\s+/g, " ").trim())
-  ));
+  const explicitlyTitled = pages.filter((page) => {
+    const leadingLines = (page.text ?? "").split(/\r?\n/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 10);
+    const notesPage = leadingLines.some((line) => /^notes? to (?:the )?(?:consolidated )?financial statements?\b/i.test(line));
+    if (notesPage) return false;
+    return leadingLines.some((line) =>
+      /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\(continued\))?$/i.test(line)
+        || /^statements? of financial position(?:\s*\(continued\))?$/i.test(line)
+    );
+  });
   if (explicitlyTitled.length) return explicitlyTitled;
   const scored = pages.map(statementPageScore);
   const strong = scored.filter((candidate) => candidate.tabularRows >= 3 && candidate.score >= 38);
@@ -472,9 +477,10 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
     for (const sourceLine of page.text.split(/\r?\n/)) {
       const line = sourceLine.trim();
       if (!line) continue;
-      const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s*$/i.test(line)
+      const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?(?:\s+(?:(?:19|20)\d{2})(?:\s*(?:,|and)?\s*(?:19|20)\d{2})*)?\s*$/i.test(line)
         || /^(?:(?:19|20)\d{2}[\s|,;]*){1,4}$/.test(line)
-        || /^description(?:\s|\t)/i.test(line);
+        || /^description(?:\s|\t)/i.test(line)
+        || /^assets(?:\s|\t)+(?:19|20)\d{2}(?:\s|\t)+(?:19|20)\d{2}$/i.test(line);
       if (statementPatterns.some((pattern) => pattern.test(line)) || (!pendingLabel && /^(?:assets|current assets|liabilities(?: and (?:net worth|stockholders.? equity))?|current liabilities|stockholders.? equity):?$/i.test(line)) || /^commitments? and contingencies\b/i.test(line) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line) || isPeriodHeader) {
         pendingLabel = "";
         continue;

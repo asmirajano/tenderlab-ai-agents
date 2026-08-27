@@ -108,6 +108,69 @@ test("isolates statement-local periods and reconstructs FIN-1 from balance and i
   assert.equal(dataset.sources.find((source) => revenue2023.sourceIds.includes(source.sourceId)).page, 3);
 });
 
+test("keeps note tables out of the primary balance sheet and accepts comprehensive-income statement titles", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:notes-page-isolation", fileName: "SYNTHETIC_NOTES_PAGE_ISOLATION.pdf", sha256: "synthetic-notes-page-isolation", synthetic: true },
+    pages: [
+      {
+        pageNumber: 1,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC COMPANY LTD",
+          "Consolidated Balance Sheets",
+          "December 31, 2024 and 2023",
+          "USD thousands",
+          "Assets 2024 2023",
+          "Total current assets 50 45",
+          "Total assets 100 90",
+          "Total current liabilities 20 18",
+          "Total liabilities 60 55",
+          "Total partners' deficit 40 35",
+          "Total liabilities and partners' deficit 100 90",
+        ].join("\n"),
+      },
+      {
+        pageNumber: 2,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC COMPANY LTD",
+          "Notes to Consolidated Financial Statements",
+          "Balance Sheet",
+          "December 31, 2024 and 2023",
+          "Derivative asset 999 888",
+        ].join("\n"),
+      },
+      {
+        pageNumber: 3,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC COMPANY LTD",
+          "Consolidated Statements of Income and Comprehensive Income",
+          "Years ended December 31, 2024 and 2023",
+          "Net sales 200 180",
+          "Income from continuing operations before tax expense 30 25",
+          "Total net income 24 20",
+        ].join("\n"),
+      },
+    ],
+  });
+
+  const { form } = prepareFin1FromBalanceReview(review);
+  assert.deepEqual([...new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page)))], [1]);
+  assert.deepEqual(review.statement.periods, ["December 31, 2024", "2023"]);
+  assert.equal(review.lineItems.some((item) => item.originalLabel === "Derivative asset"), false);
+  assert.equal(form.readiness.status, "ready");
+  assert.equal(form.readiness.readyFields, 18);
+  assert.equal(form.readiness.missingFields, 0);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_assets" && mapping.displayYear === "2023")?.value, 90_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2024")?.value, 200_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2023")?.value, 25_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2024")?.value, 24_000);
+});
+
 test("uses MISSING only for unavailable fields inside available years", () => {
   const form = generateFin1(buildRegressionDataset());
   const missing = form.mappings.filter((mapping) => mapping.status === "missing");

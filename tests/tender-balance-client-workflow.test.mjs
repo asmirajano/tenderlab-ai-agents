@@ -136,6 +136,8 @@ test("TenderBalance continues from the digitized result into the FIN-1 workflow"
   assert.match(finWorkspace, /Generate FIN-1/);
   assert.match(finWorkspace, /Source &amp; Mapping/);
   assert.match(finWorkspace, /Re-digitize source/);
+  assert.match(finWorkspace, /Re-digitize or add source/);
+  assert.match(finWorkspace, /finReady=\{form\.readiness\.canGenerate\}/);
   assert.match(finWorkspace, /no reliable financial year/);
   assert.match(finWorkspace, /Extraction review required/);
   assert.match(source, /EXTRACTION REVIEW REQUIRED/);
