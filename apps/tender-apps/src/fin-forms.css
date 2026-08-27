@@ -136,6 +136,8 @@
 .fin-workflow-line li.is-active { border-color: var(--bs-green); color: var(--bs-ink); }
 .fin-workflow-line li.is-complete > span { background: var(--bs-green); color: white; }
 .fin-workflow-line li.is-active > span { background: var(--bs-signal); color: var(--bs-ink); }
+.fin-workflow-line li.is-blocked { border-color: #d55650; color: var(--bs-ink); }
+.fin-workflow-line li.is-blocked > span { background: #fde4e1; color: #a53a34; }
 
 .fin-source-gate,
 .fin-catalog-card,
@@ -160,6 +162,8 @@
 .fin-role-record small { color: #718077; font-size: var(--type-micro); line-height: 1.45; }
 .fin-role-record .is-eligible { background: #edf7f1; }
 .fin-role-record .is-eligible strong { color: var(--bs-green); }
+.fin-role-record .is-blocked { background: #fff1ef; }
+.fin-role-record .is-blocked strong { color: #a53a34; }
 .fin-source-gate > p { background: #f3f6f4; border-top: 1px solid var(--bs-line); color: #64746b; font-size: var(--type-label); line-height: 1.55; margin: 0; padding: 14px 24px; }
 .fin-source-gate code { background: #e2eae5; border-radius: 4px; color: var(--bs-ink); font-size: var(--type-micro); padding: 2px 5px; }
 

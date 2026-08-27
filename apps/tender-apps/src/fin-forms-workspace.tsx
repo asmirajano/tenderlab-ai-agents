@@ -16,6 +16,7 @@ type FinFormsWorkspaceProps = {
   review: BalanceSheetReview;
   demoMode: boolean;
   onBackToBalance: () => void;
+  onStartNewReview: () => void;
 };
 
 function formatFigure(value: number | null, scale: number) {
@@ -70,21 +71,21 @@ function FormHeader({ view, onChange, canGenerate }: { view: FinView; onChange: 
   );
 }
 
-function SourceRoleGate({ review }: { review: BalanceSheetReview }) {
+function SourceRoleGate({ review, finReady }: { review: BalanceSheetReview; finReady: boolean }) {
   return (
     <section className="fin-source-gate" aria-label="Financial source role gate">
       <header><div><span>SOURCE-ROLE GATE</span><h2>Financial facts and form structure stay separate.</h2></div><b>ENFORCED</b></header>
       <div className="fin-role-record">
         <div><span>DOCUMENT</span><strong>{review.source.fileName}</strong><small>{review.source.documentId}</small></div>
         <div><span>ASSIGNED ROLE</span><strong>Financial source</strong><small>Eligible for canonical financial data</small></div>
-        <div className="is-eligible"><span>FIN-1 ELIGIBILITY</span><strong>Eligible ✓</strong><small>Every mapped value retains its source trace</small></div>
+        <div className={finReady ? "is-eligible" : "is-blocked"}><span>FIN-1 READINESS</span><strong>{finReady ? "Mapped evidence ready ✓" : "Extraction review required"}</strong><small>{finReady ? "Every mapped value retains its source trace" : "The file is an allowed source, but no reliable financial year can be mapped from this saved extraction."}</small></div>
       </div>
       <p><b>Permanent rule:</b> a document classified as <code>TEMPLATE</code> can define FIN-1 structure and requirements, but its populated example names, years, and figures are technically blocked from client financial data.</p>
     </section>
   );
 }
 
-export function FinFormsWorkspace({ review, demoMode, onBackToBalance }: FinFormsWorkspaceProps) {
+export function FinFormsWorkspace({ review, demoMode, onBackToBalance, onStartNewReview }: FinFormsWorkspaceProps) {
   const [view, setView] = useState<FinView>("catalog");
   const [sourceHelpMapping, setSourceHelpMapping] = useState<Fin1Mapping | null>(null);
   const { dataset, form } = useMemo(() => prepareFin1FromBalanceReview(review), [review]);
@@ -93,6 +94,7 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance }: FinForm
   const missingBalanceFields = incompleteMappings.filter((mapping) => !["total_revenue", "profit_before_tax", "profit_after_tax"].includes(mapping.field));
   const normalizedPeriods = dataset.periodMappings.filter((period) => period.eligibleForFin);
   const excludedPeriods = dataset.periodMappings.filter((period) => !period.eligibleForFin && period.status === "excluded");
+  const hasReliablePeriods = form.years.length > 0;
 
   if (view === "catalog") {
     return (
@@ -104,13 +106,13 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance }: FinForm
         </section>
 
         <ol className="fin-workflow-line" aria-label="Financial form preparation workflow">
-          <li className="is-complete"><span>✓</span><div><b>Digitized</b><small>Canonical balance data</small></div></li>
+          <li className={hasReliablePeriods ? "is-complete" : "is-blocked"}><span>{hasReliablePeriods ? "✓" : "!"}</span><div><b>{hasReliablePeriods ? "Digitized" : "Extraction needs review"}</b><small>{hasReliablePeriods ? "Canonical balance data" : "No reliable reporting year"}</small></div></li>
           <li className="is-active"><span>2</span><div><b>Prepare</b><small>Select IFI form</small></div></li>
           <li><span>3</span><div><b>Review mapping</b><small>Sources and gaps</small></div></li>
           <li><span>4</span><div><b>Generate</b><small>Clean FIN form</small></div></li>
         </ol>
 
-        <SourceRoleGate review={review} />
+        <SourceRoleGate review={review} finReady={hasReliablePeriods} />
 
         <section className="fin-catalog-card">
           <div className="fin-form-identity"><span>FORM FIN–1</span><div><strong>Historical Financial Performance</strong><p>Source-driven periods · balance-derived indicators · income-statement evidence when available</p></div></div>
@@ -118,7 +120,7 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance }: FinForm
             <span className={`fin-state is-${form.readiness.status}`}>{statusLabel(form)}</span>
             <dl><div><dt>Available years</dt><dd>{form.years.join(" · ") || "Needs review"}</dd></div><div><dt>Field mappings</dt><dd>{form.mappings.length}</dd></div><div><dt>Missing fields</dt><dd>{form.readiness.missingFields}</dd></div><div><dt>Historical coverage</dt><dd>{form.coverage.requiredYears ? `${form.coverage.availableYears}/${form.coverage.requiredYears}` : `${form.coverage.availableYears} available · requirement not set`}</dd></div></dl>
           </div>
-          <div className="fin-catalog-actions"><p>{form.readiness.message}</p><button className="bs-primary-action" disabled={!form.readiness.canGenerate} onClick={() => setView("mapping")} type="button">Review FIN-1 mapping <span aria-hidden="true">→</span></button><button className="bs-secondary-action" onClick={onBackToBalance} type="button">Back to balance result</button></div>
+          <div className="fin-catalog-actions"><p>{hasReliablePeriods ? form.readiness.message : "This saved extraction has no reliable financial year, so FIN-1 has nothing trustworthy to map. Re-digitize the source with the corrected extractor; the original file must be selected again because client documents are not retained by this local-first app."}</p>{hasReliablePeriods ? <button className="bs-primary-action" onClick={() => setView("mapping")} type="button">Review FIN-1 mapping <span aria-hidden="true">→</span></button> : <button className="bs-primary-action" onClick={onStartNewReview} type="button">Re-digitize source <span aria-hidden="true">→</span></button>}<button className="bs-secondary-action" onClick={onBackToBalance} type="button">Back to balance result</button></div>
         </section>
 
         <section className="fin-scope-note"><span>FIRST PRODUCTION TEMPLATE</span><div><b>Only FIN-1 is implemented.</b><p>The mapping layer is reusable, but no inactive catalogue or unvalidated IFI forms have been added.</p></div></section>

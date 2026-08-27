@@ -828,7 +828,7 @@ function BalanceSheetWorkspace() {
       <main className="bs-page fin-page">
         {clientNav}
         {caseNav}
-        <FinFormsWorkspace review={review} demoMode={demoMode} onBackToBalance={() => navigateTo({ surface: "review", caseId: review.reviewId, demo: demoMode })} />
+        <FinFormsWorkspace review={review} demoMode={demoMode} onBackToBalance={() => navigateTo({ surface: "review", caseId: review.reviewId, demo: demoMode })} onStartNewReview={startNewAnalysis} />
       </main>
     );
   }
@@ -842,9 +842,10 @@ function BalanceSheetWorkspace() {
     const findingCount = review.issues.filter((issue) => issue.severity !== "info").length;
     const statementPages = Array.from(new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page))));
     const hasConcept = (concept: string) => review.lineItems.some((item) => item.normalizedConcept === concept);
-    const resultReady = review.lineItems.length > 0 && genuineBlockers.length === 0;
-    const hasReadableRows = review.lineItems.length > 0;
     const fin1 = prepareFin1FromBalanceReview(review).form;
+    const extractionPeriodProblem = review.statement.reportingDate === "Unconfirmed" || fin1.years.length === 0;
+    const resultReady = review.lineItems.length > 0 && genuineBlockers.length === 0 && !extractionPeriodProblem;
+    const hasReadableRows = review.lineItems.length > 0;
 
     return (
       <main className="bs-page bs-result-page">
@@ -857,10 +858,12 @@ function BalanceSheetWorkspace() {
 
         <section className={`bs-ready-hero ${genuineBlockers.length ? "needs-source" : "is-ready"}`}>
           <div className="bs-ready-copy">
-            <p className="bs-eyebrow"><span /> {genuineBlockers.length ? "SOURCE CLARIFICATION NEEDED" : "PROCESSING COMPLETE"}</p>
-            <h1>{resultReady ? <>Your balance sheet<br /><em>is ready.</em></> : <>TenderBalance needs<br /><em>clearer source evidence.</em></>}</h1>
+            <p className="bs-eyebrow"><span /> {genuineBlockers.length ? "SOURCE CLARIFICATION NEEDED" : extractionPeriodProblem ? "EXTRACTION REVIEW REQUIRED" : "PROCESSING COMPLETE"}</p>
+            <h1>{resultReady ? <>Your balance sheet<br /><em>is ready.</em></> : extractionPeriodProblem ? <>This saved result needs<br /><em>re-digitization.</em></> : <>TenderBalance needs<br /><em>clearer source evidence.</em></>}</h1>
             <p>{resultReady
               ? `${review.lineItems.length} rows and ${valueCount} reported values were digitized from ${review.source.fileName}. The complete result is available below and ${demoMode ? "remains in the demo workspace" : "was saved automatically to Cases"}.`
+              : extractionPeriodProblem
+                ? `The saved extraction did not establish a reliable financial year, so it is not safe for FIN-1 mapping. The displayed source rows remain available for audit, but this file must be selected again to run the corrected extractor.`
               : hasReadableRows
                 ? `${review.lineItems.length} readable rows were preserved, but TenderBalance cannot safely complete the statement until the requested source evidence is supplied. No values were invented.`
                 : "No values were invented. Add a clearer or complete statement and TenderBalance will continue automatically."}</p>
@@ -868,17 +871,18 @@ function BalanceSheetWorkspace() {
               {resultReady && <button className="bs-primary-action" onClick={() => scrollTo(lineSectionRef.current)} type="button">View digital balance sheet <span aria-hidden="true">↓</span></button>}
               {findingCount > 0 && <button className="bs-secondary-action" onClick={() => scrollTo(issuesRef.current)} type="button">View {findingCount} finding{findingCount === 1 ? "" : "s"}</button>}
               {genuineBlockers.length > 0 && <button className="bs-secondary-action" onClick={() => inputRef.current?.click()} type="button">Add clearer or complete source</button>}
+              {extractionPeriodProblem && <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Re-digitize source <span aria-hidden="true">→</span></button>}
             </div>
           </div>
           <aside className="bs-finished-summary" aria-label="Finished result summary">
-            <span>{resultReady ? "FINISHED PRODUCT" : "PRESERVED PARTIAL RESULT"}</span>
+            <span>{resultReady ? "FINISHED PRODUCT" : extractionPeriodProblem ? "SAVED EXTRACTION — REVIEW REQUIRED" : "PRESERVED PARTIAL RESULT"}</span>
             <strong>{review.statement.reportingEntity}</strong>
             <p>Balance Sheet · {review.statement.reportingDate}</p>
             <dl>
               <div><dt>Rows</dt><dd>{review.lineItems.length}</dd></div>
               <div><dt>Values</dt><dd>{valueCount}</dd></div>
               <div><dt>Checks</dt><dd>{passedChecks}/{review.arithmeticChecks.length}</dd></div>
-              <div><dt>Result</dt><dd>{resultStatus(review)}</dd></div>
+              <div><dt>Result</dt><dd>{extractionPeriodProblem ? "Re-digitize" : resultStatus(review)}</dd></div>
             </dl>
             <small>{demoMode ? "Demo result · not retained as client evidence" : "Saved automatically · reopen from Cases"}</small>
           </aside>

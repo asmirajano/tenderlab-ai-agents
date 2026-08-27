@@ -14,11 +14,33 @@ import {
   reviewToCsv,
 } from "../packages/tender-balance/src/model.ts";
 import { syntheticBalanceSheetReviews } from "../packages/tender-balance/src/fixtures.ts";
-import { readBalanceSheetFile, readPdfPages } from "../packages/tender-balance/src/file-reader.ts";
+import { readBalanceSheetFile, readPdfPages, reconstructPdfPageText } from "../packages/tender-balance/src/file-reader.ts";
 import { balanceSheetExcelFileName, reviewToExcel } from "../packages/tender-balance/src/excel.ts";
 import { agentDatasetContributions } from "../packages/catalog-data/src/agent-dataset-relations.ts";
 
 const [clean, lowConfidence, negative, missingPage, comparativeConflict] = syntheticBalanceSheetReviews;
+
+test("reconstructs adjacent PDF number fragments without collapsing reporting columns", () => {
+  const items = [
+    { str: "December 31,", width: 58, transform: [1, 0, 0, 1, 395, 660] },
+    { str: "", hasEOL: true, width: 0, transform: [1, 0, 0, 1, 370, 647] },
+    { str: "202", width: 15, transform: [1, 0, 0, 1, 370, 647] },
+    { str: "4", width: 5, transform: [1, 0, 0, 1, 385, 647] },
+    { str: "202", width: 15, transform: [1, 0, 0, 1, 461, 647] },
+    { str: "3", width: 5, transform: [1, 0, 0, 1, 476, 647] },
+    { str: "", hasEOL: true, width: 0, transform: [1, 0, 0, 1, 115, 585] },
+    { str: "Prepaid expenses", width: 69, transform: [1, 0, 0, 1, 115, 585] },
+    { str: "and other current assets", width: 94, transform: [1, 0, 0, 1, 187, 585] },
+    { str: "1", width: 5, transform: [1, 0, 0, 1, 403, 585] },
+    { str: "01", width: 10, transform: [1, 0, 0, 1, 408, 585] },
+    { str: "1", width: 5, transform: [1, 0, 0, 1, 491, 585] },
+    { str: "75", width: 10, transform: [1, 0, 0, 1, 496, 585] },
+  ];
+
+  const text = reconstructPdfPageText(items);
+  assert.match(text, /December 31,\n2024\t2023/);
+  assert.match(text, /Prepaid expenses and other current assets\t101\t175/);
+});
 
 function readStoredZipEntries(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);

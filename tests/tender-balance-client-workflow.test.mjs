@@ -135,6 +135,11 @@ test("TenderBalance continues from the digitized result into the FIN-1 workflow"
   assert.match(finWorkspace, /Review FIN-1 mapping/);
   assert.match(finWorkspace, /Generate FIN-1/);
   assert.match(finWorkspace, /Source &amp; Mapping/);
+  assert.match(finWorkspace, /Re-digitize source/);
+  assert.match(finWorkspace, /no reliable financial year/);
+  assert.match(finWorkspace, /Extraction review required/);
+  assert.match(source, /EXTRACTION REVIEW REQUIRED/);
+  assert.match(source, /This saved result needs/);
 });
 
 test("TenderBalance separates Agent pages from selected-Case outputs", async () => {

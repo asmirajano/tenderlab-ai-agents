@@ -11,6 +11,43 @@ export type FileReadProgress = {
 
 type ProgressReporter = (progress: FileReadProgress) => void;
 
+type PositionedPdfTextItem = {
+  str: string;
+  hasEOL?: boolean;
+  width?: number;
+  transform?: ArrayLike<number>;
+};
+
+/**
+ * Reconstruct readable rows from PDF.js text items without inserting spaces
+ * inside a number whose glyphs were emitted as adjacent fragments. Large
+ * horizontal gaps are retained as tabs so downstream table parsing can keep
+ * the label and each reported column distinct.
+ */
+export function reconstructPdfPageText(items: PositionedPdfTextItem[]) {
+  let text = "";
+  let previousEndX: number | null = null;
+  for (const item of items) {
+    const value = item.str ?? "";
+    const x = Number(item.transform?.[4]);
+    const width = Number(item.width ?? 0);
+    if (value) {
+      if (previousEndX !== null && Number.isFinite(x)) {
+        const gap = x - previousEndX;
+        if (gap > 24) text += "\t";
+        else if (gap > 1.25) text += " ";
+      }
+      text += value;
+      previousEndX = Number.isFinite(x) ? x + width : null;
+    }
+    if (item.hasEOL) {
+      text += "\n";
+      previousEndX = null;
+    }
+  }
+  return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 async function sha256Hex(buffer: ArrayBuffer) {
   const digest = await crypto.subtle.digest("SHA-256", buffer);
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -55,12 +92,7 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
     onProgress?.({ stage: "extracting-text", label: `Reading text on page ${pageNumber} of ${pdf.numPages}`, progress: (pageNumber - 1) / pdf.numPages, pageNumber });
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    let text = "";
-    for (const item of content.items) {
-      if (!("str" in item)) continue;
-      text += `${item.str}${item.hasEOL ? "\n" : " "}`;
-    }
-    text = text.replace(/[ \t]+\n/g, "\n").replace(/[ \t]{2,}/g, "  ").trim();
+    let text = reconstructPdfPageText(content.items.filter((item): item is PositionedPdfTextItem => "str" in item));
     if (text.length < 24) {
       const renderedPage = await renderPdfPageForOcr(page);
       if (renderedPage) {

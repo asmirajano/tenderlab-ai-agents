@@ -277,7 +277,7 @@ const requiredConcepts: BalanceSheetConcept[] = [
 const statementPatterns = [/balance sheet/i, /statement of financial position/i, /бухгалтерский баланс/i, /баланс/i, /moliyaviy holat/i];
 
 function cleanLabel(label: string) {
-  return label.replace(/^\s*\d+[.)]?\s*/, "").replace(/\s+/g, " ").trim();
+  return label.replace(/^\s*\d+(?:[.)]\s*|\s+)/, "").replace(/\s+/g, " ").trim();
 }
 
 export function normalizeConcept(label: string) {
@@ -392,8 +392,8 @@ function inferIsTotal(concept: BalanceSheetConcept) {
 export function parseStatementLine(line: string, expectedValueCount = 0) {
   const pipeParts = line.split(/\s*\|\s*|\t+/).filter(Boolean);
   if (pipeParts.length >= 2) {
-    const values = pipeParts.slice(1).filter((part) => parseReportedNumber(part) !== null || /^(?:—|–|-)$/.test(part));
-    if (values.length) return { label: pipeParts[0], rawValues: values };
+    const values = pipeParts.slice(1).filter((part) => /^(?:[$€£₾]\s*)?(?:\(?[-−]?\d[\d,.'’\s]*\)?|—|–|-)$/.test(part.trim()));
+    if (values.length && (expectedValueCount === 0 || values.length >= expectedValueCount)) return { label: pipeParts[0], rawValues: values };
   }
 
   if (expectedValueCount > 0) {
@@ -413,7 +413,9 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
         }
       }
       const firstIndex = selected[0].index ?? -1;
-      if (firstIndex >= 0) {
+      const last = selected.at(-1);
+      const suffix = last ? positionalLine.slice((last.index ?? 0) + last[0].length).trim() : "";
+      if (firstIndex >= 0 && /^(?:[)}\]]|[,.;:]|[$€£₾]|S)*$/i.test(suffix)) {
         const label = positionalLine.slice(0, firstIndex).replace(/(?:S?\$|[$€£₾]|\bS|\b5)\s*$/i, "").trim();
         if (label) return { label, rawValues: selected.map((match) => match[0]) };
       }
@@ -421,7 +423,7 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
   }
 
   const currencyValues = Array.from(line.matchAll(/(?:[$€£₾]\s*)\(?[-−]?\d[\d,.'’\s]*\)?/g));
-  if (currencyValues.length) {
+  if (currencyValues.length && (expectedValueCount === 0 || currencyValues.length >= expectedValueCount)) {
     const firstIndex = currencyValues[0].index ?? -1;
     if (firstIndex >= 0) {
       return {
@@ -433,7 +435,9 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
 
   const match = line.match(/^(.*?)\s+(\(?[-−]?\d[\d,.'’]*\)?|—|–|-)(?:\s+(\(?[-−]?\d[\d,.'’]*\)?|—|–|-))?(?:\s+(\(?[-−]?\d[\d,.'’]*\)?|—|–|-))?\s*$/);
   if (!match) return undefined;
-  return { label: match[1], rawValues: [match[2], match[3], match[4]].filter((value): value is string => Boolean(value)) };
+  const rawValues = [match[2], match[3], match[4]].filter((value): value is string => Boolean(value));
+  if (expectedValueCount > 0 && rawValues.length < expectedValueCount) return undefined;
+  return { label: match[1], rawValues };
 }
 
 function statementPageScore(page: SourcePageInput) {
@@ -468,17 +472,28 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
     for (const sourceLine of page.text.split(/\r?\n/)) {
       const line = sourceLine.trim();
       if (!line) continue;
-      if (statementPatterns.some((pattern) => pattern.test(line)) || (!pendingLabel && /^(?:assets|liabilities(?: and net worth)?):?$/i.test(line)) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line)) {
+      const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s*$/i.test(line)
+        || /^(?:(?:19|20)\d{2}[\s|,;]*){1,4}$/.test(line)
+        || /^description(?:\s|\t)/i.test(line);
+      if (statementPatterns.some((pattern) => pattern.test(line)) || (!pendingLabel && /^(?:assets|current assets|liabilities(?: and (?:net worth|stockholders.? equity))?|current liabilities|stockholders.? equity):?$/i.test(line)) || /^commitments? and contingencies\b/i.test(line) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line) || isPeriodHeader) {
         pendingLabel = "";
         continue;
       }
-      const parsed = parseStatementLine(line, usedPeriods.length);
+      if (/\b(?:authorized as of|shares issued|outstanding as of)\b/i.test(line)) {
+        pendingLabel = `${pendingLabel} ${cleanLabel(line)}`.trim();
+        continue;
+      }
+      const valueOnlyContinuation = Boolean(pendingLabel) && /^(?:[$€£₾]|S?\$|[({[]?[-−]?\d|—|–)/.test(line);
+      const parsed = valueOnlyContinuation
+        ? parseStatementLine(`continued-row ${line}`, usedPeriods.length)
+        : parseStatementLine(line, usedPeriods.length);
       let label = parsed?.label ?? "";
+      if (valueOnlyContinuation && label === "continued-row") label = "";
       const rawValues = parsed?.rawValues ?? [];
       if (pendingLabel && rawValues.length) {
         label = `${pendingLabel} ${label}`.trim();
         pendingLabel = "";
-      } else if (!rawValues.length && (/^\d+[.)]?\s*\p{L}/u.test(line) || pendingLabel)) {
+      } else if (!rawValues.length && (/^\d+[.)]?\s*\p{L}/u.test(line) || /^common stock\b/i.test(line) || pendingLabel)) {
         pendingLabel = `${pendingLabel} ${cleanLabel(line)}`.trim();
         continue;
       }
