@@ -1,5 +1,6 @@
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
+  extractSpreadsheetCommercialSummary,
   parseStructuredDocument,
   type CalculationWarning,
   type DocumentIntakeRecord,
@@ -91,11 +92,27 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
   const rows: Record<string, unknown>[] = [];
   const summaryRow: Record<string, unknown> = {};
   const fieldSources: Record<string, string> = {};
+  const spreadsheetFieldEvidence: NonNullable<DocumentIntakeRecord["fieldEvidence"]> = {};
+  const spreadsheetWarnings: CalculationWarning[] = [];
+  let spreadsheetLineItemCount = 0;
+  let spreadsheetCalculatedTotal: number | undefined;
+  let spreadsheetPrintedTotal: number | undefined;
   const sections: SemanticTextSection[] = [];
   for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) continue;
     const arrayRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: "" });
+    const commercialSummary = extractSpreadsheetCommercialSummary(arrayRows, file.name, sheetName);
+    Object.entries(commercialSummary.row).forEach(([key, value]) => {
+      summaryRow[key] = value;
+      const sourceRef = commercialSummary.fieldSources[key] ?? `${file.name} · ${sheetName}`;
+      fieldSources[key] = sourceRef;
+      spreadsheetFieldEvidence[key] = { sourceRef, confidence: "high", scope: "document", basis: key === "contract_value" ? "Independently summed from priced quotation rows and reconciled against any labelled total." : "Read from the quotation table or labelled commercial-total row." };
+    });
+    spreadsheetWarnings.push(...commercialSummary.warnings);
+    spreadsheetLineItemCount = Math.max(spreadsheetLineItemCount, commercialSummary.lineItemCount ?? 0);
+    if (commercialSummary.calculatedLineItemTotal !== undefined) spreadsheetCalculatedTotal = commercialSummary.calculatedLineItemTotal;
+    if (commercialSummary.printedCommercialTotal !== undefined) spreadsheetPrintedTotal = commercialSummary.printedCommercialTotal;
     const textLines: string[] = [];
     arrayRows.forEach((cells, index) => {
       const values = cells.map((cell) => String(cell).trim()).filter(Boolean);
@@ -122,7 +139,7 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
   });
   if (Object.keys(summaryRow).length) rows.unshift(summaryRow);
   const recognizedCount = Object.keys(textExtraction.row).length + Object.keys(summaryRow).filter((key) => !key.startsWith("__")).length;
-  const warnings: CalculationWarning[] = rows.length ? [...textExtraction.warnings] : [{ code: "EMPTY_SPREADSHEET", severity: "blocking", message: `${file.name} contains no readable worksheet cells. Upload a populated workbook or another supported format.` }];
+  const warnings: CalculationWarning[] = rows.length ? [...textExtraction.warnings, ...spreadsheetWarnings] : [{ code: "EMPTY_SPREADSHEET", severity: "blocking", message: `${file.name} contains no readable worksheet cells. Upload a populated workbook or another supported format.` }];
   if (rows.length && recognizedCount === 0) warnings.push({ code: "NO_RECOGNIZED_FIELDS", severity: "warning", message: `${file.name} was read, but its headings did not match transaction or logistics fields. Use clear labels or complete the missing fields manually.` });
   if (ignoredInstructions.length) warnings.push({ code: "UNTRUSTED_DOCUMENT_INSTRUCTION", severity: "warning", message: `${ignoredInstructions.length} instruction-like spreadsheet value(s) were quarantined as document content and were not executed.` });
   return {
@@ -135,8 +152,17 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
     ignoredInstructions,
     warnings,
     fieldSources: Object.fromEntries(Object.entries(fieldSources).map(([key, source]) => [normalizedKey(key), source])),
-    fieldEvidence: Object.fromEntries(Object.entries(textExtraction.fieldEvidence).map(([key, evidence]) => [normalizedKey(key), evidence])),
-    documentProfile: textExtraction.profile,
+    fieldEvidence: { ...Object.fromEntries(Object.entries(textExtraction.fieldEvidence).map(([key, evidence]) => [normalizedKey(key), evidence])), ...spreadsheetFieldEvidence },
+    documentProfile: {
+      ...textExtraction.profile,
+      documentType: textExtraction.profile.documentType === "unknown" && spreadsheetLineItemCount > 0 ? "quotation" : textExtraction.profile.documentType,
+      lineItemCount: spreadsheetLineItemCount || textExtraction.profile.lineItemCount,
+      workingCommercialLineCount: spreadsheetLineItemCount || textExtraction.profile.workingCommercialLineCount,
+      calculatedLineItemTotal: spreadsheetCalculatedTotal ?? textExtraction.profile.calculatedLineItemTotal,
+      printedCommercialTotal: spreadsheetPrintedTotal ?? textExtraction.profile.printedCommercialTotal,
+      commercialTotalDiscrepancy: spreadsheetCalculatedTotal !== undefined && spreadsheetPrintedTotal !== undefined ? spreadsheetCalculatedTotal - spreadsheetPrintedTotal : textExtraction.profile.commercialTotalDiscrepancy,
+      commercialTotalReconciled: spreadsheetCalculatedTotal !== undefined && spreadsheetPrintedTotal !== undefined ? Math.abs(spreadsheetCalculatedTotal - spreadsheetPrintedTotal) <= 0.01 : textExtraction.profile.commercialTotalReconciled,
+    },
     extractionMethod: "spreadsheet-cells",
   };
 }

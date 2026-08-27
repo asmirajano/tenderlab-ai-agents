@@ -394,7 +394,8 @@ test("the TenderApps client starts empty and gates calculation behind guided rev
   assert.match(page, /Not applicable/);
   assert.match(page, /Here is the calculation basis/);
   assert.match(page, /Calculate result/);
-  assert.match(page, /Approve estimate/);
+  assert.match(page, /Confirm and save estimate/);
+  assert.match(page, /Save preliminary case/);
   assert.match(page, /SAVED_CASES_KEY/);
   assert.match(page, /Saved cases/);
   assert.doesNotMatch(page, /Create alternative scenario/);
@@ -436,13 +437,15 @@ test("the guided client flow combines manual and genuinely parsed document input
   assert.match(page, /Partially parsed automatically/);
   assert.match(page, /Reading document/);
   assert.match(page, /Mapping fields/);
-  assert.match(page, /As per current Incoterm/);
+  assert.match(page, /SUPPLIER \/ SOURCE CONDITION/);
   assert.match(page, /Automatically populated values are never final truth/);
   assert.match(page, /Extracted confidently/);
   assert.match(page, /Needs confirmation/);
   assert.match(page, /Client-adjusted value/);
-  assert.match(page, /As per selected Incoterm/);
-  assert.match(page, /Client-selected alternative logistics scope/);
+  assert.match(page, /What delivery term should we calculate\?/);
+  assert.match(page, /RECOMMENDED TARGET/);
+  assert.match(page, /CIP.*Recommended/);
+  assert.doesNotMatch(page, /Calculate a different \/ custom logistics scope instead/);
   assert.match(page, /Review the estimate we prepared/);
   assert.match(page, /Only the remaining gaps/);
   assert.match(page, /benchmark-estimated values/);
@@ -482,6 +485,25 @@ $14,614` }]);
   assert.ok(extraction.warnings.some((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY"));
 });
 
+test("spreadsheet quotation extraction calculates the commercial total from priced rows", async () => {
+  const { extractSpreadsheetCommercialSummary } = await load("packages/logistics-costing/src/index.ts");
+  const rows = [
+    ["BIOBASE quotation"],
+    [],
+    ["Item Code", "Item", "Product Name", "Model", "Picture", "QTY", "Unit Price / USD", "Amount /USD"],
+    ["A", 1, "Analyzer", "M1", "", 2, 100, 200],
+    ["B", 2, "Centrifuge", "M2", "", 3, 50, 150],
+    ["EXW PRICE", "", "", "", "", "", "", 350],
+  ];
+  const extraction = extractSpreadsheetCommercialSummary(rows, "quotation.xlsx", "Quotation");
+  assert.equal(extraction.row.contract_value, 350);
+  assert.equal(extraction.row.currency, "USD");
+  assert.equal(extraction.row.source_incoterm, "EXW");
+  assert.equal(extraction.lineItemCount, 2);
+  assert.equal(extraction.calculatedLineItemTotal, 350);
+  assert.equal(extraction.printedCommercialTotal, 350);
+});
+
 test("production result UI separates exact and approximate values and exposes the approved dashboard sections", async () => {
   const [page, css, model] = await Promise.all([
     readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8"),
@@ -493,7 +515,8 @@ test("production result UI separates exact and approximate values and exposes th
   assert.match(page, /ONE BEST CURRENT ESTIMATE/);
   assert.match(page, /Dynamic truck utilization/);
   assert.match(page, /Why This Transport\?/);
-  assert.match(page, /ПРОСТЫМИ СЛОВАМИ/);
+  assert.match(page, /IN PLAIN LANGUAGE/);
+  assert.doesNotMatch(page, /ПРОСТЫМИ СЛОВАМИ/);
   assert.match(page, /Logistics Cost Breakdown/);
   assert.match(page, /Commercial Summary/);
   assert.match(model, /displayedTruckCount:\s*requiredTruckCount \+ 1/);

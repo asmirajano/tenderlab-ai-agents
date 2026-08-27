@@ -4,5 +4,6 @@ export * from "./engine.ts";
 export * from "./packing.ts";
 export * from "./production-estimate.ts";
 export * from "./document-intake.ts";
+export * from "./spreadsheet-commercial.ts";
 export * from "./process.ts";
 export * from "./fixtures.ts";

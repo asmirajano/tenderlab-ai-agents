@@ -67,8 +67,9 @@ type ResponsibilityAnswers = {
 type SavedCase = {
   id: string;
   name: string;
-  approvedAt: string;
-  status: "approved";
+  savedAt: string;
+  approvedAt?: string;
+  status: "approved" | "preliminary";
   cargo: string;
   quantity: string;
   origin: string;
@@ -92,7 +93,7 @@ const guidedSteps = [
 ] as const;
 
 const clientGoals: Array<{ id: Exclude<ClientGoal, "">; title: string; description: string; chooseWhen: string }> = [
-  { id: "logistics", title: "Calculate logistics cost", description: "Price a route or selected logistics scope without changing the commercial term.", chooseWhen: "You want a transport and handling budget while keeping the current Incoterm unchanged." },
+  { id: "logistics", title: "Calculate logistics cost", description: "Estimate the cost of moving from the supplier's delivery term to the term you need.", chooseWhen: "You have a supplier quotation and want one defensible logistics addition to a target Incoterm." },
   { id: "conversion", title: "Change delivery responsibilities", description: "See the cost impact of moving from the current arrangement to a different one.", chooseWhen: "You want the added or removed cost of changing terms, for example EXW → CIP." },
   { id: "landed", title: "Calculate landed cost", description: "Include the complete route and, when supplied, import clearance, duties and taxes.", chooseWhen: "You need the goods-plus-logistics total, optionally including import duties and taxes." },
   { id: "term-advice", title: "Help structure delivery terms", description: "Describe who should handle each responsibility and receive a closest-rule suggestion.", chooseWhen: "You do not yet know which Incoterm best matches the intended responsibilities." },
@@ -235,11 +236,30 @@ function extractDocumentInputs(records: DocumentIntakeRecord[]): DocumentExtract
 function readSavedCases(): SavedCase[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(SAVED_CASES_KEY) ?? "[]") as unknown;
-    return Array.isArray(parsed) ? parsed as SavedCase[] : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((candidate) => {
+      const saved = candidate as Partial<SavedCase> & { approvedAt?: string };
+      const timestamp = saved.savedAt ?? saved.approvedAt ?? new Date(0).toISOString();
+      return { ...saved, savedAt: timestamp, status: saved.status === "preliminary" ? "preliminary" : "approved" } as SavedCase;
+    });
   } catch {
     return [];
   }
 }
+
+const incotermClientDescriptions: Record<IncotermCode, string> = {
+  EXW: "Buyer takes over at the seller's premises and arranges the onward logistics.",
+  FCA: "Seller delivers export-cleared goods to the named carrier or place.",
+  CPT: "Seller arranges carriage to the named destination; insurance is not included.",
+  CIP: "Seller arranges carriage and cargo insurance to the named destination.",
+  DAP: "Seller delivers to the named place; import clearance, duties and unloading remain with the buyer.",
+  DPU: "Seller delivers and unloads at the named place; import clearance and duties remain with the buyer.",
+  DDP: "Seller delivers with import clearance and duties paid, subject to a lawful importer-of-record basis.",
+  FAS: "Seller places export-cleared goods alongside the vessel at the named port.",
+  FOB: "Seller loads export-cleared goods on board the vessel at the named port.",
+  CFR: "Seller pays sea freight to the named port; insurance is not included.",
+  CIF: "Seller pays sea freight and minimum cargo insurance to the named port.",
+};
 
 const logisticsScopes: Array<{ id: LogisticsScope; label: string }> = [
   { id: "factory-to-terminal", label: "Factory → terminal" },
@@ -770,6 +790,7 @@ export default function LogisticsCostingApp() {
   const inferredSourceTerm = inferClosestTerm(currentResponsibilities);
   const inferredTargetTerm = inferClosestTerm(desiredResponsibilities);
   const displayedTargetTerm = targetTermSelected ? targetTerm : inferredTargetTerm;
+  const applicableTargetTerms = incotermCodes.filter((term) => incotermProfiles[term].modeFamily === "any-mode" || transportMode === "sea" || transportMode === "inland-waterway");
   const selectedSavedCase = savedCases.find((savedCase) => savedCase.id === selectedCaseId);
 
   const requiredCostComponents = useMemo<CostComponentCode[]>(() => {
@@ -834,18 +855,13 @@ export default function LogisticsCostingApp() {
 
   function chooseGoal(goal: Exclude<ClientGoal, "">) {
     setClientGoal(goal);
-    if (goal === "logistics") {
-      setWorkspaceMode("logistics");
-      setLogisticsScope("");
-      setCostScopeBasis("incoterm");
-    } else if (goal === "landed") {
-      setWorkspaceMode("logistics");
-      setLogisticsScope("landed-cost-including-duty-tax");
-      setCostScopeBasis("landed-cost-including-duty-tax");
-    } else {
-      setWorkspaceMode("conversion");
-      setCostScopeBasis("incoterm");
-    }
+    setWorkspaceMode("conversion");
+    setLogisticsScope("");
+    setCostScopeBasis("incoterm");
+    if (goal === "landed") setTargetTerm("DDP");
+    else setTargetTerm("CIP");
+    setTargetTermKnowledge(goal === "term-advice" ? "help" : "known");
+    setTargetTermSelected(goal !== "term-advice");
   }
 
   function missingForStep(step: number) {
@@ -861,7 +877,6 @@ export default function LogisticsCostingApp() {
     ].filter(Boolean) as string[];
     if (step === 3) return sourceTermKnowledge === "known" && sourceTermSelected || sourceTermKnowledge === "help" && inferredSourceTerm ? [] : ["current Incoterm or responsibility answers"];
     if (step === 4) {
-      if (workspaceMode === "logistics") return costScopeBasis === "incoterm" && sourceTermSelected || logisticsScope ? [] : ["current Incoterm or alternative logistics scope"];
       return targetTermKnowledge === "known" && targetTermSelected || targetTermKnowledge === "help" && inferredTargetTerm ? [] : ["target Incoterm or responsibility answers"];
     }
     return [];
@@ -877,7 +892,7 @@ export default function LogisticsCostingApp() {
       setSourceTerm(inferredSourceTerm);
       setSourceTermSelected(true);
     }
-    if (clientStep === 4 && workspaceMode !== "logistics" && targetTermKnowledge === "help" && inferredTargetTerm) {
+    if (clientStep === 4 && targetTermKnowledge === "help" && inferredTargetTerm) {
       setTargetTerm(inferredTargetTerm);
       setTargetTermSelected(true);
       setCostScopeBasis("incoterm");
@@ -972,14 +987,16 @@ export default function LogisticsCostingApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function approveResult() {
-    if (approvedCaseId || result.status === "blocked") return;
+  function saveResult(status: SavedCase["status"]) {
+    if (approvedCaseId) return;
     const id = crypto.randomUUID();
+    const savedAt = new Date().toISOString();
     const savedCase: SavedCase = {
       id,
       name: scenarioName.trim() || `${cargoDescription} · ${sourceTerm}${workspaceMode === "logistics" ? " logistics" : ` → ${targetTerm}`}`,
-      approvedAt: new Date().toISOString(),
-      status: "approved",
+      savedAt,
+      approvedAt: status === "approved" ? savedAt : undefined,
+      status,
       cargo: cargoDescription,
       quantity: quantityDescription,
       origin: sourcePlace,
@@ -1129,16 +1146,16 @@ export default function LogisticsCostingApp() {
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
         <section className="cases-heading">
-          <div><p className="costing-eyebrow"><span /> SAVED CASES</p><h1>Approved calculations,<br /><em>kept separately.</em></h1><p>Every approved calculation preserves its inputs, assumptions, result and approval time.</p></div>
+          <div><p className="costing-eyebrow"><span /> SAVED CASES</p><h1>Saved calculations,<br /><em>kept separately.</em></h1><p>Every saved calculation preserves its inputs, assumptions, result and review status.</p></div>
           <button className="primary-client-action" onClick={startNewCalculation} type="button">New calculation <span>＋</span></button>
         </section>
         {savedCases.length === 0 ? (
-          <section className="empty-cases"><span>0 SAVED CASES</span><strong>No approved calculations yet</strong><p>Complete a guided calculation and explicitly approve the result. It will appear here.</p><button onClick={startNewCalculation} type="button">Start the first calculation</button></section>
+          <section className="empty-cases"><span>0 SAVED CASES</span><strong>No saved calculations yet</strong><p>Complete a guided calculation and save either a preliminary or approved result. It will appear here.</p><button onClick={startNewCalculation} type="button">Start the first calculation</button></section>
         ) : (
           <>
             <section className="saved-case-grid" aria-label="Saved calculations">
               {savedCases.map((savedCase) => <article key={savedCase.id}>
-                <header><span>APPROVED</span><time dateTime={savedCase.approvedAt}>{new Date(savedCase.approvedAt).toLocaleString()}</time></header>
+                <header><span>{savedCase.status.toUpperCase()}</span><time dateTime={savedCase.savedAt}>{new Date(savedCase.savedAt).toLocaleString()}</time></header>
                 <strong>{savedCase.name}</strong><p>{savedCase.cargo}{savedCase.quantity ? ` · ${savedCase.quantity}` : ""}</p>
                 <dl><div><dt>ROUTE</dt><dd>{savedCase.origin} → {savedCase.destination}</dd></div><div><dt>TERMS / SCOPE</dt><dd>{savedCase.input.mode === "logistics-only" ? savedCase.input.logisticsScope : `${savedCase.input.sourceTerm} → ${savedCase.input.targetTerm}`}</dd></div><div><dt>ORIGINAL</dt><dd>{money(savedCase.result.sourceContractTotal, savedCase.result.currency)}</dd></div><div><dt>ADJUSTMENT</dt><dd>{money(savedCase.result.incrementalCost, savedCase.result.currency)}</dd></div><div><dt>RESULT</dt><dd>{money(savedCase.result.revisedContractTotal, savedCase.result.currency)}</dd></div></dl>
                 <div><button onClick={() => setSelectedCaseId(savedCase.id)} type="button">Open case</button></div>
@@ -1146,7 +1163,7 @@ export default function LogisticsCostingApp() {
             </section>
           </>
         )}
-        {selectedSavedCase && <section className="case-detail" aria-label="Saved case details"><header><div><span>APPROVED CASE</span><h2>{selectedSavedCase.name}</h2></div><button onClick={() => setSelectedCaseId(null)} type="button" aria-label="Close saved case details">×</button></header><div className="case-detail-grid"><article><span>INPUTS</span><p><b>Cargo:</b> {selectedSavedCase.cargo}</p><p><b>Quantity:</b> {selectedSavedCase.quantity || "Not specified"}</p><p><b>Route:</b> {selectedSavedCase.origin} → {selectedSavedCase.destination}</p><p><b>Value:</b> {money(selectedSavedCase.input.sourceContractTotal, selectedSavedCase.input.currency)}</p></article><article><span>ASSUMPTIONS</span>{selectedSavedCase.result.assumptions.map((assumption) => <p key={assumption}>{assumption}</p>)}</article><article><span>RESULT</span><strong>{money(selectedSavedCase.result.revisedContractTotal, selectedSavedCase.result.currency)}</strong><p>Adjustment: {money(selectedSavedCase.result.incrementalCost, selectedSavedCase.result.currency)}</p><p>Status at calculation: {selectedSavedCase.result.status}</p></article><article><span>APPROVAL</span><strong>Approved</strong><p>{new Date(selectedSavedCase.approvedAt).toLocaleString()}</p><p>Saved locally in this browser.</p></article></div></section>}
+        {selectedSavedCase && <section className="case-detail" aria-label="Saved case details"><header><div><span>{selectedSavedCase.status.toUpperCase()} CASE</span><h2>{selectedSavedCase.name}</h2></div><button onClick={() => setSelectedCaseId(null)} type="button" aria-label="Close saved case details">×</button></header><div className="case-detail-grid"><article><span>INPUTS</span><p><b>Cargo:</b> {selectedSavedCase.cargo}</p><p><b>Quantity:</b> {selectedSavedCase.quantity || "Not specified"}</p><p><b>Route:</b> {selectedSavedCase.origin} → {selectedSavedCase.destination}</p><p><b>Value:</b> {money(selectedSavedCase.input.sourceContractTotal, selectedSavedCase.input.currency)}</p></article><article><span>ASSUMPTIONS</span>{selectedSavedCase.result.assumptions.map((assumption) => <p key={assumption}>{assumption}</p>)}</article><article><span>RESULT</span><strong>{money(selectedSavedCase.result.revisedContractTotal, selectedSavedCase.result.currency)}</strong><p>Adjustment: {money(selectedSavedCase.result.incrementalCost, selectedSavedCase.result.currency)}</p><p>Status at calculation: {selectedSavedCase.result.status}</p></article><article><span>CASE STATUS</span><strong>{selectedSavedCase.status === "approved" ? "Approved" : "Preliminary"}</strong><p>{new Date(selectedSavedCase.savedAt).toLocaleString()}</p><p>Saved locally in this browser.</p></article></div></section>}
         <footer className="costing-footer"><div><strong>TenderApps</strong><span>Saved cases · local browser storage</span></div><p>Export audit artifacts for durable tender or contract records</p></footer>
       </main>
     );
@@ -1178,8 +1195,8 @@ export default function LogisticsCostingApp() {
                 <label><span>Contract or goods value <b>Required</b></span><input min="0" step="0.01" type="number" placeholder="0.00" value={sourceTotal || ""} onChange={(event) => { setSourceTotal(Number(event.target.value)); markInputFieldAdjusted("sourceTotal"); }} /><InputEvidence field="sourceTotal" /></label>
                 <label><span>Currency <b>Required</b></span><input maxLength={3} placeholder="e.g. USD" value={currency} onChange={(event) => { const nextCurrency = event.target.value.toUpperCase(); setCurrency(nextCurrency); setNewLineCurrency(nextCurrency); setCostLines((current) => current.map((line) => line.amount === 0 && !line.sourceRef ? { ...line, currency: nextCurrency || line.currency } : line)); markInputFieldAdjusted("currency"); }} /><InputEvidence field="currency" /></label>
                 <label><span>Supplier / origin <b>Required</b></span><input placeholder="City, country or supplier premises" value={sourcePlace} onChange={(event) => { setSourcePlace(event.target.value); markInputFieldAdjusted("sourcePlace"); }} /><InputEvidence field="sourcePlace" /></label>
-                <label><span>Exact named destination <b>Required</b></span><input placeholder="e.g. Tashkent, Uzbekistan or named terminal/site" value={targetPlace} onChange={(event) => { setTargetPlace(event.target.value); markInputFieldAdjusted("targetPlace"); }} /><InputEvidence field="targetPlace" />{targetPlace && !isSpecificNamedDestination(targetPlace) && <small className="packing-empty-guidance">A country alone is not priceable. Add the city, terminal, airport or delivery site.</small>}</label>
-                <label><span>Transport mode <b>Required</b></span><select value={transportModeAnswer} onChange={(event) => { const value = event.target.value as TransportMode | ""; setTransportModeAnswer(value); markInputFieldAdjusted("transportMode"); if (value) { setTransportMode(value); setPreferredUnitId(value === "road" ? "road-enclosed-136" : transportUnits.find((unit) => unit.mode === value)?.id ?? "multimodal-40hc"); } }}><option value="">Select transport mode</option>{transportModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select><InputEvidence field="transportMode" /></label>
+                <label><span>Exact named destination <b>Required</b></span><input placeholder="e.g. Tashkent, Uzbekistan or named terminal/site" value={targetPlace} onChange={(event) => { setTargetPlace(event.target.value); markInputFieldAdjusted("targetPlace"); }} /><InputEvidence field="targetPlace" />{!targetPlace && <button className="planning-default-button" onClick={() => { setTargetPlace("Tashkent, Uzbekistan"); setInputFieldEvidence((current) => ({ ...current, targetPlace: { status: "needs-confirmation", sourceRef: "TenderApps planning suggestion", originalValue: "Tashkent, Uzbekistan", basis: "Editable default requested for cases where the source document has no exact destination." } })); }} type="button">Use suggested default: Tashkent, Uzbekistan</button>}{targetPlace && !isSpecificNamedDestination(targetPlace) && <small className="packing-empty-guidance">A country alone is not priceable. Add the city, terminal, airport or delivery site.</small>}</label>
+                <label><span>Transport mode <b>Required</b></span><select value={transportModeAnswer} onChange={(event) => { const value = event.target.value as TransportMode | ""; setTransportModeAnswer(value); markInputFieldAdjusted("transportMode"); if (value) { setTransportMode(value); setPreferredUnitId(value === "road" ? "road-enclosed-136" : transportUnits.find((unit) => unit.mode === value)?.id ?? "multimodal-40hc"); } }}><option value="">Select transport mode</option>{transportModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}</select><InputEvidence field="transportMode" />{!transportModeAnswer && <button className="planning-default-button" onClick={() => { setTransportModeAnswer("road"); setTransportMode("road"); setPreferredUnitId("road-enclosed-136"); setInputFieldEvidence((current) => ({ ...current, transportMode: { status: "needs-confirmation", sourceRef: "TenderApps planning suggestion", originalValue: "road", basis: "Editable default requested when the source document does not specify a transport mode." } })); }} type="button">Use suggested default: road</button>}</label>
                 <label><span>Shipment packed volume · m³ <i>Optional</i></span><input min="0" step="0.1" type="number" placeholder="Agent-estimable" value={packedVolumeM3 || ""} onChange={(event) => { setPackedVolumeM3(Number(event.target.value)); markInputFieldAdjusted("packedVolumeM3"); }} /><InputEvidence field="packedVolumeM3" />{!packedVolumeM3 && <small className="packing-empty-guidance">If left blank, the agent estimates packed cube from source evidence and editable category proxies. Product dimensions are not silently treated as packed dimensions.</small>}</label>
                 <label><span>Shipment gross weight · kg <i>Optional</i></span><input min="0" step="0.1" type="number" placeholder="Agent-estimable" value={grossWeightKg || ""} onChange={(event) => { setGrossWeightKg(Number(event.target.value)); markInputFieldAdjusted("grossWeightKg"); }} /><InputEvidence field="grossWeightKg" />{!grossWeightKg && <small className="packing-empty-guidance">If left blank, the agent estimates gross weight from source evidence and category proxies. It remains visibly provisional.</small>}</label>
                 <label className="field-wide"><span>Special-cargo declaration <i>Required before approval</i></span><select value={specialCargoDeclaration} onChange={(event) => setSpecialCargoDeclaration(event.target.value as SpecialCargoDeclaration)}><option value="">Not confirmed yet — continue with warning</option><option value="standard-confirmed">No DG, cold-chain or special handling declared</option><option value="possible-special">Possible special cargo — declarations pending</option><option value="declared-special">Special cargo declared — review surcharges</option></select><small className="packing-empty-guidance">A preliminary estimate may continue without confirmation; approval remains unavailable until this declaration is completed.</small></label>
@@ -1191,23 +1208,16 @@ export default function LogisticsCostingApp() {
           {clientStep === 3 && <div className="intake-step terms-step"><header><span>STEP 3 · CURRENT ARRANGEMENT</span><h2>How is delivery handled now?</h2><p>If you know the current Incoterm, select it directly. Otherwise describe who handles the work and we will suggest the closest standard rule.</p></header><div className="knowledge-switch" role="group" aria-label="Current Incoterm knowledge"><button aria-pressed={sourceTermKnowledge === "known"} onClick={() => setSourceTermKnowledge("known")} type="button">I know the current Incoterm</button><button aria-pressed={sourceTermKnowledge === "help"} onClick={() => { setSourceTermKnowledge("help"); setSourceTermSelected(false); }} type="button">I don't know · help me</button></div>{sourceTermKnowledge === "known" && <div className="known-term-card"><label><span>Current Incoterm</span><select value={sourceTermSelected ? sourceTerm : ""} onChange={(event) => { setSourceTerm(event.target.value as IncotermCode); setSourceTermSelected(true); markInputFieldAdjusted("sourceTerm"); }}><option value="">Select a rule</option>{incotermCodes.map((term) => <option key={term} value={term}>{term} · {incotermProfiles[term].name}</option>)}</select><InputEvidence field="sourceTerm" /></label><label><span>Current named place</span><input value={sourcePlace} onChange={(event) => { setSourcePlace(event.target.value); markInputFieldAdjusted("sourcePlace"); }} /><small>The exact place matters for delivery, risk and cost boundaries.</small></label></div>}{sourceTermKnowledge === "help" && <ResponsibilityQuestionnaire side="current" answers={currentResponsibilities} inferred={inferredSourceTerm} />}</div>}
 
           {clientStep === 4 && <div className="intake-step terms-step">
-            <header><span>STEP 4 · DESIRED SITUATION</span><h2>{workspaceMode === "logistics" ? "Which responsibility boundary should define the logistics budget?" : "What delivery arrangement do you want?"}</h2><p>{workspaceMode === "logistics" ? `The existing ${sourceTermSelected ? sourceTerm : "commercial"} Incoterm remains unchanged and supplies the default cost scope.` : "Choose the target Incoterm once. Its standard cost boundary will automatically become the calculation scope."}</p></header>
-            {workspaceMode === "logistics" ? <section className="inherited-scope-panel">
-              <div className="inherited-scope-heading"><span>RECOMMENDED / DEFAULT</span><h3>Use the current Incoterm automatically</h3><p>The commercial term is not changed; its seller-paid responsibilities define which logistics costs belong in this standalone budget.</p></div>
-              <button className="recommended-scope" aria-pressed={costScopeBasis === "incoterm"} onClick={() => { setCostScopeBasis("incoterm"); setLogisticsScope(""); }} type="button"><span>{costScopeBasis === "incoterm" ? "✓" : "○"}</span><div><b>As per current Incoterm — {sourceTerm} ({incotermProfiles[sourceTerm].name})</b><small>The Incoterms engine selects the relevant seller-paid cost components. Actual monetary rates still require document evidence, a client input or an explicitly approved planning allowance.</small></div><em>SELECTED BY DEFAULT</em></button>
-              <details className="alternative-scope-options" open={costScopeBasis !== "incoterm"}><summary>Calculate a different / custom logistics scope instead</summary><p>Use this only when the budget intentionally differs from the current {sourceTerm} responsibility boundary.</p><div className="scope-choice-grid">{logisticsScopes.map((scope) => <button aria-pressed={costScopeBasis === scope.id} key={scope.id} onClick={() => { setLogisticsScope(scope.id); setCostScopeBasis(scope.id); }} type="button"><span>{costScopeBasis === scope.id ? "✓" : ""}</span><strong>{scope.label}</strong></button>)}</div></details>
-              {costScopeBasis !== "incoterm" && <div className="scope-deviation-warning"><strong>△ Alternative logistics scope</strong><p>This budget no longer follows the standard seller-paid components of {sourceTerm}. The override remains visible in the audit trail.</p></div>}
-            </section> : <>
-              <div className="knowledge-switch" role="group" aria-label="Target Incoterm knowledge"><button aria-pressed={targetTermKnowledge === "known"} onClick={() => setTargetTermKnowledge("known")} type="button">I know the target Incoterm</button><button aria-pressed={targetTermKnowledge === "help"} onClick={() => { setTargetTermKnowledge("help"); setTargetTermSelected(false); }} type="button">Help me choose by responsibility</button></div>
-              {targetTermKnowledge === "known" && <div className="known-term-card"><label><span>Target Incoterm</span><select value={targetTermSelected ? targetTerm : ""} onChange={(event) => { setTargetTerm(event.target.value as IncotermCode); setTargetTermSelected(true); setCostScopeBasis("incoterm"); markInputFieldAdjusted("targetTerm"); }}><option value="">Select a rule</option>{incotermCodes.map((term) => <option key={term} value={term}>{term} · {incotermProfiles[term].name}</option>)}</select><InputEvidence field="targetTerm" /></label><label><span>Target named place</span><input value={targetPlace} onChange={(event) => { setTargetPlace(event.target.value); markInputFieldAdjusted("targetPlace"); }} /><small>Use the terminal, port, airport or final delivery site stated in the proposed arrangement.</small></label></div>}
-              {targetTermKnowledge === "help" && <ResponsibilityQuestionnaire side="desired" answers={desiredResponsibilities} inferred={inferredTargetTerm} />}
-              {displayedTargetTerm && <section className="inherited-scope-panel">
-                <div className="inherited-scope-heading"><span>CALCULATION SCOPE</span><h3>Use the selected Incoterm by default</h3><p>You do not need to define the same responsibility twice.</p></div>
-                <button className="recommended-scope" aria-pressed={costScopeBasis === "incoterm"} onClick={() => setCostScopeBasis("incoterm")} type="button"><span>{costScopeBasis === "incoterm" ? "✓" : "○"}</span><div><b>As per selected Incoterm — {displayedTargetTerm} ({incotermProfiles[displayedTargetTerm].name})</b><small>The existing Incoterms engine determines the relevant seller-paid cost components.</small></div><em>RECOMMENDED</em></button>
-                <details className="alternative-scope-options" open={costScopeBasis !== "incoterm"}><summary>Choose an alternative logistics scope</summary><p>Use this only when the cost exercise intentionally differs from the standard {displayedTargetTerm} boundary.</p><div className="scope-choice-grid">{logisticsScopes.map((scope) => <button aria-pressed={costScopeBasis === scope.id} key={scope.id} onClick={() => { setLogisticsScope(scope.id); setCostScopeBasis(scope.id); }} type="button"><span>{costScopeBasis === scope.id ? "✓" : ""}</span><strong>{scope.label}</strong></button>)}</div></details>
-                {costScopeBasis !== "incoterm" && <div className="scope-deviation-warning"><strong>△ Contract-specific calculation scope</strong><p>This selection overrides the standard cost components implied by {displayedTargetTerm}. The deviation will remain visible in the assumptions and audit trail.</p></div>}
-              </section>}
-            </>}
+            <header><span>STEP 4 · TARGET DELIVERY CONDITION</span><h2>What delivery term should we calculate?</h2><p>The supplier's Incoterm is the source condition. Select the target Incoterm and the engine will calculate only the additional or removed responsibilities.</p></header>
+            <section className="incoterm-transformation" aria-label="Delivery transformation">
+              <article><span>SUPPLIER / SOURCE CONDITION</span><strong>{sourceTerm} {sourcePlace}</strong><small>Extracted supplier condition; editable in Step 3.</small></article>
+              <b aria-hidden="true">→</b>
+              <article className="target"><span>RECOMMENDED TARGET</span><strong>{displayedTargetTerm ?? "CIP"} {targetPlace}</strong><small>{displayedTargetTerm === "CIP" ? "Selected by default" : "Client-selected target"}</small></article>
+            </section>
+            <div className="knowledge-switch" role="group" aria-label="Target Incoterm knowledge"><button aria-pressed={targetTermKnowledge === "known"} onClick={() => { setTargetTermKnowledge("known"); if (!targetTermSelected) { setTargetTerm("CIP"); setTargetTermSelected(true); } }} type="button">Select target Incoterm</button><button aria-pressed={targetTermKnowledge === "help"} onClick={() => { setTargetTermKnowledge("help"); setTargetTermSelected(false); }} type="button">Help me choose by responsibility</button></div>
+            {targetTermKnowledge === "known" && <div className="known-term-card"><label><span>Target Incoterm</span><select value={targetTermSelected ? targetTerm : ""} onChange={(event) => { setTargetTerm(event.target.value as IncotermCode); setTargetTermSelected(true); setCostScopeBasis("incoterm"); markInputFieldAdjusted("targetTerm"); }}><option value="">Select a rule</option>{applicableTargetTerms.map((term) => <option key={term} value={term}>{term}{term === "CIP" ? " · Recommended" : ""} · {incotermProfiles[term].name}</option>)}</select><InputEvidence field="targetTerm" />{displayedTargetTerm && <small>{incotermClientDescriptions[displayedTargetTerm]}</small>}</label><label><span>Target named place</span><input value={targetPlace} onChange={(event) => { setTargetPlace(event.target.value); markInputFieldAdjusted("targetPlace"); }} /><small>The named place is part of the commercial term and directly affects the route and estimate.</small></label></div>}
+            {targetTermKnowledge === "help" && <ResponsibilityQuestionnaire side="desired" answers={desiredResponsibilities} inferred={inferredTargetTerm} />}
+            {displayedTargetTerm && <section className="inherited-scope-panel"><div className="inherited-scope-heading"><span>CALCULATED DIFFERENCE</span><h3>{sourceTerm} {sourcePlace} → {displayedTargetTerm} {targetPlace}</h3><p>The Incoterms engine determines the changed logistics components. Origin handling, freight, insurance, import costs and other services are outputs—not alternative target scopes.</p></div>{sourceTerm === displayedTargetTerm && sourcePlace.trim().toLowerCase() === targetPlace.trim().toLowerCase() && <div className="scope-deviation-warning"><strong>No Incoterm conversion required</strong><p>The selected target matches the supplier's existing delivery condition.</p></div>}</section>}
           </div>}
 
           {clientStep === 5 && <div className="intake-step costs-step">
@@ -1249,10 +1259,10 @@ export default function LogisticsCostingApp() {
       ...productionEstimate.warnings,
     ].slice(0, 5);
     const plainLanguage = productionEstimate.transport.limitingFactor === "VOLUME / LOADABILITY"
-      ? `Груз не слишком тяжёлый для выбранного транспорта, но занимает много полезного пространства, и часть оборудования нельзя плотно штабелировать. Поэтому количество машин определяется прежде всего объёмом. ${productionEstimate.transport.requiredTruckCount > 1 ? `Вторая машина нужна для оставшихся примерно ${Math.round(productionEstimate.transport.allocations[1]?.volumeUtilizationPercent ?? 0)}% полезного объёма.` : "Одной машины достаточно с текущим запасом по объёму."}`
+      ? `The cargo is not too heavy for the selected transport, but it occupies usable space and some equipment cannot be tightly stacked. Truck count is therefore driven mainly by volume and loadability. ${productionEstimate.transport.requiredTruckCount > 1 ? `The additional truck is needed for the remaining approximately ${Math.round(productionEstimate.transport.allocations[1]?.volumeUtilizationPercent ?? 0)}% of usable volume.` : "One truck is sufficient with the current volume allowance."}`
       : productionEstimate.transport.limitingFactor === "WEIGHT"
-        ? `Груз помещается по объёму, но ограничение по полезной нагрузке требует ${productionEstimate.transport.requiredTruckCount} транспортных единиц. Поэтому расчёт определяется прежде всего весом.`
-        : `Объём и вес одновременно близки к практическим ограничениям транспорта, поэтому для текущего груза требуется ${productionEstimate.transport.requiredTruckCount} транспортных единиц.`;
+        ? `The cargo fits by volume, but the payload limit requires ${productionEstimate.transport.requiredTruckCount} transport unit${productionEstimate.transport.requiredTruckCount === 1 ? "" : "s"}. The transport requirement is therefore driven mainly by weight.`
+        : `Volume and weight are both close to the practical transport limits, so the current cargo requires ${productionEstimate.transport.requiredTruckCount} transport unit${productionEstimate.transport.requiredTruckCount === 1 ? "" : "s"}.`;
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
@@ -1270,7 +1280,7 @@ export default function LogisticsCostingApp() {
 
         <section className="why-transport-section">
           <header><span>PHYSICAL MODEL</span><h2>Why This Transport?</h2></header>
-          <div className="transport-model-grid"><dl><div><dt>Estimated packed volume</dt><dd>{approximateNumber(productionEstimate.cargo.packedVolumeM3.value, "m³")}</dd></div><div><dt>Planning volume after loadability</dt><dd>{approximateNumber(productionEstimate.cargo.planningVolumeM3, "m³")}</dd></div><div><dt>Estimated gross weight</dt><dd>{approximateNumber(productionEstimate.cargo.grossWeightKg.value, "kg")}</dd></div><div><dt>Usable volume per truck</dt><dd>{approximateNumber(productionEstimate.transport.unit.usableVolumeM3, "m³")}</dd></div><div><dt>Payload per truck</dt><dd>{approximateNumber(productionEstimate.transport.unit.payloadKg, "kg")}</dd></div><div><dt>Required trucks</dt><dd>{productionEstimate.transport.requiredTruckCount}</dd></div><div><dt>Limiting factor</dt><dd>{productionEstimate.transport.limitingFactor}</dd></div></dl><article><span>ПРОСТЫМИ СЛОВАМИ</span><h3>Почему требуется именно столько транспорта</h3><p>{plainLanguage}</p></article></div>
+          <div className="transport-model-grid"><dl><div><dt>Estimated packed volume</dt><dd>{approximateNumber(productionEstimate.cargo.packedVolumeM3.value, "m³")}</dd></div><div><dt>Planning volume after loadability</dt><dd>{approximateNumber(productionEstimate.cargo.planningVolumeM3, "m³")}</dd></div><div><dt>Estimated gross weight</dt><dd>{approximateNumber(productionEstimate.cargo.grossWeightKg.value, "kg")}</dd></div><div><dt>Usable volume per truck</dt><dd>{approximateNumber(productionEstimate.transport.unit.usableVolumeM3, "m³")}</dd></div><div><dt>Payload per truck</dt><dd>{approximateNumber(productionEstimate.transport.unit.payloadKg, "kg")}</dd></div><div><dt>Required trucks</dt><dd>{productionEstimate.transport.requiredTruckCount}</dd></div><div><dt>Limiting factor</dt><dd>{productionEstimate.transport.limitingFactor}</dd></div></dl><article><span>IN PLAIN LANGUAGE</span><h3>Why this amount of transport is required</h3><p>{plainLanguage}</p></article></div>
         </section>
 
         <section className="cost-and-commercial-grid">
@@ -1280,7 +1290,7 @@ export default function LogisticsCostingApp() {
 
         <section className="key-warnings"><header><span>KEY ASSUMPTIONS & WARNINGS</span><h2>What may change the estimate</h2></header><ul>{primaryWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></section>
 
-        <section className="result-next-actions"><div><span>NEXT DECISION</span><h2>{approvedCaseId ? "Estimate approved and saved" : !specialCargoDeclaration ? "Confirm special-cargo status before approval" : hasOpenCostInputs ? "Review the remaining unestimable inputs" : "Review or approve this estimate"}</h2><p>{approvedCaseId ? "The approved case is preserved in Saved cases." : "This remains a preliminary benchmark estimate until replaced by confirmed packing, carrier and insurer evidence."}</p></div><div>{!demoLoaded && <button className="approve-action" disabled={Boolean(approvedCaseId) || result.status === "blocked" || hasOpenCostInputs || !specialCargoDeclaration} onClick={approveResult} type="button">{approvedCaseId ? "✓ Approved and saved" : !specialCargoDeclaration ? "Confirm special cargo before approval" : "Approve estimate"}</button>}<button onClick={() => { setClientStep(hasOpenCostInputs ? 5 : 6); setClientSurface("intake"); }} type="button">Change inputs</button><button onClick={() => setClientSurface("audit")} type="button">Open methodology / audit</button><button onClick={exportAudit} type="button">Export audit JSON</button></div></section>
+        <section className="result-next-actions"><div><span>NEXT DECISION</span><h2>{approvedCaseId ? "Estimate saved" : !specialCargoDeclaration ? "Confirm special-cargo status or save as preliminary" : hasOpenCostInputs ? "Save now or review the remaining open inputs" : "Confirm and save this estimate"}</h2><p>{approvedCaseId ? "The case is preserved in Saved cases." : "Saving is always available. Approval requires a special-cargo declaration and no unestimable required cost inputs."}</p>{!approvedCaseId && <label className="result-special-cargo"><span>Special-cargo status</span><select value={specialCargoDeclaration} onChange={(event) => setSpecialCargoDeclaration(event.target.value as SpecialCargoDeclaration)}><option value="">Not confirmed yet</option><option value="standard-confirmed">No DG, cold-chain or special handling declared</option><option value="possible-special">Possible special cargo — declarations pending</option><option value="declared-special">Special cargo declared — review surcharges</option></select></label>}</div><div>{!demoLoaded && <><button className="approve-action" disabled={Boolean(approvedCaseId) || result.status === "blocked" || hasOpenCostInputs || !specialCargoDeclaration} onClick={() => saveResult("approved")} type="button">{approvedCaseId ? "✓ Saved" : "Confirm and save estimate"}</button><button disabled={Boolean(approvedCaseId)} onClick={() => saveResult("preliminary")} type="button">Save preliminary case</button></>}<button onClick={() => { setClientStep(hasOpenCostInputs ? 5 : 6); setClientSurface("intake"); }} type="button">Change inputs</button><button onClick={() => setClientSurface("audit")} type="button">Open methodology / audit</button><button onClick={exportAudit} type="button">Export audit JSON</button></div></section>
         <details className="client-result-details"><summary>Expandable methodology, sources and HS candidates</summary><div><section><span>METHODOLOGY / SOURCES</span><ul>{productionEstimate.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul><p><b>Benchmark:</b> {productionEstimate.benchmark.id} · {productionEstimate.benchmark.sourceRef}</p><p><b>Cargo volume:</b> {productionEstimate.cargo.packedVolumeM3.method} · {productionEstimate.cargo.packedVolumeM3.sourceRef}</p><p><b>Gross weight:</b> {productionEstimate.cargo.grossWeightKg.method} · {productionEstimate.cargo.grossWeightKg.sourceRef}</p></section><section><span>REFERENCE HS CANDIDATES</span>{productionEstimate.hsCandidates.length ? <><ul>{productionEstimate.hsCandidates.map((candidate) => <li key={candidate.code}><b>{candidate.code}</b> · {candidate.description} · {candidate.confidence} confidence</li>)}</ul><p>Reference HS classification — verify against the latest applicable customs tariff before actual shipment.</p></> : <p>No defensible reference HS candidate was identified from the available description. Provide item-level descriptions or HS codes.</p>}</section></div></details>
         <footer className="costing-footer"><div><strong>TenderApps</strong><span>Client-readable result · deterministic audit underneath</span></div><p>Engine {result.audit.engineVersion} · no AI-token consumption</p></footer>
       </main>
