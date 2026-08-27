@@ -58,7 +58,7 @@ function TenderAppsProduct() {
         <div className="client-surface-status">
           <i aria-hidden="true" />
           <span>Client workspace</span>
-          <small>{route.label} · Phase 1</small>
+          <small>{route.label} · deterministic calculation</small>
         </div>
       </header>
       {route.component}

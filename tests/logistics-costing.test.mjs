@@ -104,6 +104,26 @@ test("logistics-only scope works without changing the commercial Incoterm", asyn
   assert.equal(result.treatments.find((line) => line.lineId === "duty").treatment, "excluded");
 });
 
+test("logistics-only scope can inherit the current Incoterm without changing it", async () => {
+  const { calculateScenario } = await load("packages/logistics-costing/src/index.ts");
+  const result = calculateScenario({
+    id: "cip-budget", mode: "logistics-only", sourceContractTotal: 100_000, currency: "USD",
+    sourceTerm: "CIP", sourceNamedPlace: "Tashkent terminal", incotermsVersion: "2020", transportMode: "road",
+    logisticsScopeIncoterm: "CIP",
+    costLines: [
+      { id: "freight", component: "main_freight", label: "Road freight", amount: 4_000, currency: "USD", evidenceKind: "user-input", confidence: "high" },
+      { id: "delivery", component: "final_delivery", label: "Final delivery", amount: 800, currency: "USD", evidenceKind: "user-input", confidence: "high" },
+    ],
+    insurance: { enabled: true, premiumRate: 0.003, coverageFactor: 1.1, basis: "cost-before-insurance", clauses: "A" },
+  });
+  assert.equal(result.sourceTerm, "CIP");
+  assert.equal(result.targetTerm, undefined);
+  assert.equal(result.logisticsScopeIncoterm, "CIP");
+  assert.equal(result.treatments.find((line) => line.lineId === "freight").treatment, "added");
+  assert.equal(result.treatments.find((line) => line.lineId === "delivery").treatment, "excluded");
+  assert.equal(result.incrementalCost, 4_343.2);
+});
+
 test("DAP, DPU and DDP preserve unloading and import-cost differences", async () => {
   const { calculateScenario } = await load("packages/logistics-costing/src/index.ts");
   const base = {
@@ -166,6 +186,80 @@ test("packing estimates distinguish proxies, flag contradictions and recommend u
   assert.ok(invalid.warnings.some((warning) => warning.code === "PACKED_WEIGHT_BELOW_PRODUCT"));
 });
 
+test("approved production fixture produces one reconciled road estimate and dynamic truck allocation", async () => {
+  const { buildProductionLogisticsEstimate, calculateScenario, roundMoney } = await load("packages/logistics-costing/src/index.ts");
+  const estimate = buildProductionLogisticsEstimate({
+    sourceValue: 1_586_386,
+    currency: "USD",
+    cargoDescription: "Medical, veterinary and laboratory equipment",
+    sourceLineCount: 167,
+    origin: "Guangzhou, China",
+    destination: "Tashkent, Uzbekistan",
+    transportMode: "road",
+    preferredUnitId: "road-enclosed-136",
+  });
+  assert.equal(estimate.cargo.packedVolumeM3.value, 85.769150405);
+  assert.equal(estimate.cargo.grossWeightKg.value, 10_758.668);
+  assert.equal(estimate.transport.requiredTruckCount, 2);
+  assert.equal(estimate.transport.displayedTruckCount, 3);
+  assert.equal(estimate.transport.allocations.length, 3);
+  assert.equal(estimate.transport.allocations[0].state, "full");
+  assert.equal(Math.round(estimate.transport.allocations[1].volumeUtilizationPercent), 28);
+  assert.equal(estimate.transport.allocations[2].state, "free");
+  assert.equal(estimate.transport.limitingFactor, "VOLUME / LOADABILITY");
+  assert.equal(estimate.nonInsuranceCost, 22_550);
+  assert.equal(roundMoney(estimate.estimatedInsurance), 6_218.34);
+  assert.equal(roundMoney(estimate.estimatedLogisticsCost), 28_768.34);
+  assert.equal(estimate.confidence.score, 45);
+  assert.equal(estimate.confidence.label, "Medium/Low");
+
+  const result = calculateScenario({
+    id: "approved-production-fixture",
+    mode: "incoterm-conversion",
+    sourceContractTotal: 1_586_386,
+    currency: "USD",
+    sourceTerm: "EXW",
+    sourceNamedPlace: "Guangzhou, China",
+    targetTerm: "CIP",
+    targetNamedPlace: "Tashkent, Uzbekistan",
+    incotermsVersion: "2020",
+    transportMode: "road",
+    costLines: estimate.costLines,
+    insurance: { enabled: true, premiumRate: estimate.insuranceRate, coverageFactor: estimate.insuranceCoverageFactor, basis: "final-contract-value", clauses: "A", note: "Estimated insurance benchmark" },
+  });
+  assert.equal(result.nonInsuranceAdded, 22_550);
+  assert.equal(result.insurance, 6_218.34);
+  assert.equal(result.incrementalCost, 28_768.34);
+  assert.equal(result.revisedContractTotal, 1_615_154.34);
+  assert.equal(roundMoney(result.sourceContractTotal + result.incrementalCost), result.revisedContractTotal);
+});
+
+test("transport model distinguishes volume, weight and genuinely joint constraints", async () => {
+  const { buildProductionLogisticsEstimate } = await load("packages/logistics-costing/src/index.ts");
+  const base = { sourceValue: 100_000, currency: "USD", cargoDescription: "Mixed equipment", origin: "City A, China", destination: "City B, Uzbekistan", transportMode: "road", preferredUnitId: "road-enclosed-136" };
+  const volume = buildProductionLogisticsEstimate({ ...base, sourcePackedVolumeM3: 86, sourceGrossWeightKg: 10_000 });
+  const weight = buildProductionLogisticsEstimate({ ...base, sourcePackedVolumeM3: 10, sourceGrossWeightKg: 50_000 });
+  const both = buildProductionLogisticsEstimate({ ...base, sourcePackedVolumeM3: 134.16, sourceGrossWeightKg: 44_000 });
+  assert.equal(volume.transport.limitingFactor, "VOLUME / LOADABILITY");
+  assert.equal(weight.transport.limitingFactor, "WEIGHT");
+  assert.equal(both.transport.limitingFactor, "BOTH");
+  assert.equal(weight.transport.displayedTruckCount, weight.transport.requiredTruckCount + 1);
+  assert.ok(weight.transport.allocations.slice(0, -1).every((allocation) => allocation.weightUtilizationPercent > 0));
+  assert.deepEqual(weight.transport.allocations.at(-1), { index: weight.transport.requiredTruckCount + 1, state: "free", allocatedPlanningVolumeM3: 0, allocatedWeightKg: 0, volumeUtilizationPercent: 0, weightUtilizationPercent: 0 });
+});
+
+test("benchmark and special-cargo status remain explicit rather than masquerading as live facts", async () => {
+  const { buildProductionLogisticsEstimate, isSpecificNamedDestination } = await load("packages/logistics-costing/src/index.ts");
+  const estimate = buildProductionLogisticsEstimate({ sourceValue: 50_000, currency: "USD", cargoDescription: "Cryogenic laboratory refrigerator with lithium battery", sourceLineCount: 4, origin: "Supplier, Guangzhou, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
+  assert.equal(estimate.benchmark.isLiveQuote, false);
+  assert.match(estimate.benchmark.sourceRef, /not a carrier quotation/i);
+  assert.ok(estimate.warnings.some((warning) => /Special-cargo status is not confirmed/i.test(warning)));
+  assert.ok(estimate.warnings.some((warning) => /possible special-cargo indicators/i.test(warning)));
+  assert.ok(estimate.hsCandidates.length > 0);
+  assert.equal(isSpecificNamedDestination("Uzbekistan"), false);
+  assert.equal(isSpecificNamedDestination("Tashkent, Uzbekistan"), true);
+});
+
 test("quotation allocation reconciles all 165 source and resulting lines exactly", async () => {
   const { allocateResultToContractLines, calculateScenario, exwGuangzhouToCipTashkent, regressionQuotationLines, roundMoney } = await load("packages/logistics-costing/src/index.ts");
   const result = calculateScenario(exwGuangzhouToCipTashkent);
@@ -187,6 +281,66 @@ test("document content cannot promote embedded instructions to user authority", 
   assert.equal(csv.rows[0].note, "Fragile, keep upright");
   assert.equal(csv.rows[1].volume, "2.0");
   assert.equal(csv.ignoredInstructions.length, 1);
+});
+
+test("semantic quotation extraction promotes document totals and rejects line-item weight, volume and storage false positives", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const extraction = extractSemanticBusinessFacts([
+    {
+      label: "complex-quotation.pdf · page 1",
+      pageNumber: 1,
+      text: `GUANGZHOU EXAMPLE MEDICAL EQUIPMENT CO., LTD.
+No.188, Xinye Road, Guangzhou, China
+Quotation
+TO Company: Example Buyer
+Destination: Uzbekistan
+Delivery place: Guangzhou
+No. Item Descriptions Qty (PCS) Unit Price (USD) Total (USD)
+1 Trinocular microscope medical laboratory equipment
+4 $799 $3,196
+2 Veterinary urine analyzer medical veterinary laboratory equipment
+2 $546 $1,092`,
+    },
+    {
+      label: "complex-quotation.pdf · page 2",
+      pageNumber: 2,
+      text: `20 Vertical Laminar Flow Cabinet
+Gross weight: 228kg
+Storage tank: Purification Output 40L/H
+14 Cryogenic Vessel, Volume: 3.6 L.
+Gross Weight 4.8kgs`,
+    },
+    {
+      label: "complex-quotation.pdf · page 3",
+      pageNumber: 3,
+      text: `$4,288
+Notes: all the price are EXW without any shipping cost.`,
+    },
+  ]);
+  assert.match(String(extraction.row.cargo_description), /medical, veterinary and laboratory/i);
+  assert.equal(extraction.row.contract_value, 4_288);
+  assert.equal(extraction.row.currency, "USD");
+  assert.match(String(extraction.row.supplier_origin), /Guangzhou Example Medical Equipment Co\., Ltd\..*Guangzhou, China/i);
+  assert.equal(extraction.row.destination, "Uzbekistan");
+  assert.equal(extraction.row.current_incoterm, "EXW");
+  assert.equal(extraction.row.packed_volume_m3, undefined);
+  assert.equal(extraction.row.gross_weight_kg, undefined);
+  assert.equal(extraction.row.storage_amount, undefined);
+  assert.equal(extraction.profile.commercialTotalReconciled, true);
+  assert.ok(extraction.profile.suppressedLineItemMetricCount >= 3);
+  assert.match(extraction.warnings.map((warning) => warning.code).join(" "), /LINE_ITEM_METRICS_EXCLUDED/);
+});
+
+test("semantic extraction accepts weight and cube only when the document states shipment-level totals", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const extraction = extractSemanticBusinessFacts([{ label: "packing-list.pdf · page 1", pageNumber: 1, text: `Packing List
+Total packed volume (m³): 52.4
+Total gross weight (kg): 8400
+Total packages: 24 pallets` }]);
+  assert.equal(extraction.row.packed_volume_m3, 52.4);
+  assert.equal(extraction.row.gross_weight_kg, 8400);
+  assert.equal(extraction.fieldEvidence.packed_volume_m3.scope, "shipment");
+  assert.equal(extraction.fieldEvidence.gross_weight_kg.scope, "shipment");
 });
 
 test("evidence classes stay separate in the audit result", async () => {
@@ -213,7 +367,7 @@ test("the TenderApps costing module exposes accessible modes, exports and respon
   assert.match(page, /aria-label="Calculation mode"/);
   assert.match(page, /Incoterms conversion/);
   assert.match(page, /Logistics only/);
-  assert.match(page, /Scenario comparison/);
+  assert.doesNotMatch(page, /Scenario comparison/);
   assert.match(page, /Transport unit/);
   assert.match(page, /Export audit JSON/);
   assert.match(page, /Export line CSV/);
@@ -226,4 +380,120 @@ test("the TenderApps costing module exposes accessible modes, exports and respon
   assert.match(css, /@media \(max-width: 1180px\)/);
   assert.match(css, /@media \(max-width: 820px\)/);
   assert.match(css, /@media \(max-width: 560px\)/);
+});
+
+test("the TenderApps client starts empty and gates calculation behind guided review and approval", async () => {
+  const page = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8");
+  assert.match(page, /useState\(0\)/);
+  assert.match(page, /makeEmptyCostLines/);
+  assert.match(page, /Start a logistics calculation/);
+  assert.match(page, /What are you trying to calculate\?/);
+  assert.match(page, /I don't know · help me/);
+  assert.match(page, /Provided/);
+  assert.match(page, /Not applicable/);
+  assert.match(page, /Here is the calculation basis/);
+  assert.match(page, /Calculate result/);
+  assert.match(page, /Approve estimate/);
+  assert.match(page, /SAVED_CASES_KEY/);
+  assert.match(page, /Saved cases/);
+  assert.doesNotMatch(page, /Create alternative scenario/);
+  assert.match(page, /Calculation details \/ audit/);
+  assert.match(page, /DEMO \/ REGRESSION SCENARIO/);
+});
+
+test("the Landed Cost Studio overview shows inputs, transformation and a dominant finished product before the CTA", async () => {
+  const [page, css] = await Promise.all([
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing.css"), "utf8"),
+  ]);
+  assert.match(page, /WHAT YOU PROVIDE/);
+  assert.match(page, /ESTIMATE CARGO/);
+  assert.match(page, /Estimated Logistics Cost/);
+  assert.match(page, /ILLUSTRATIVE DEMO · NOT CLIENT DATA/);
+  assert.match(page, /PRIMARY RESULT/);
+  assert.match(page, /Ready for commercial \/ tender decision/);
+  assert.match(page, /Open saved cases/);
+  assert.match(page, /A consultation, not a technical form/);
+  assert.match(css, /\.cost-product-story/);
+  assert.match(css, /grid-template-columns:\s*minmax\(250px, \.62fr\)\s+minmax\(96px, \.18fr\)\s+minmax\(650px, 1\.55fr\)/);
+  assert.match(css, /@media \(max-width: 820px\)[\s\S]*\.cost-product-story \{ grid-template-columns: 1fr; \}/);
+});
+
+test("the guided client flow combines manual and genuinely parsed document inputs before Incoterm-scoped cost review", async () => {
+  const [page, css, extractor] = await Promise.all([
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing.css"), "utf8"),
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "client-document-extraction.ts"), "utf8"),
+  ]);
+  assert.match(page, /I will fill it myself/);
+  assert.match(page, /Fill automatically from uploaded inputs/);
+  assert.match(page, /extractDocumentInputs/);
+  assert.match(page, /Fully parsed automatically/);
+  assert.match(page, /Partially parsed automatically/);
+  assert.match(page, /Reading document/);
+  assert.match(page, /Mapping fields/);
+  assert.match(page, /As per current Incoterm/);
+  assert.match(page, /Automatically populated values are never final truth/);
+  assert.match(page, /Extracted confidently/);
+  assert.match(page, /Needs confirmation/);
+  assert.match(page, /Client-adjusted value/);
+  assert.match(page, /As per selected Incoterm/);
+  assert.match(page, /Client-selected alternative logistics scope/);
+  assert.match(page, /Review the estimate we prepared/);
+  assert.match(page, /Only the remaining gaps/);
+  assert.match(page, /benchmark-estimated values/);
+  assert.match(page, /Preliminary estimate — not a carrier quotation/);
+  assert.match(page, /the agent estimates packed cube/);
+  assert.match(css, /\.input-supply-choice/);
+  assert.match(css, /\.recommended-scope/);
+  assert.match(css, /\.cost-preparation-summary/);
+  assert.match(css, /\.cost-state-badge/);
+  assert.match(css, /\.document-processing-progress/);
+  assert.match(extractor, /getDocument/);
+  assert.match(extractor, /sheet_to_json/);
+  assert.match(extractor, /IMAGE_BASED_PDF/);
+  assert.match(extractor, /UNTRUSTED_DOCUMENT_INSTRUCTION/);
+});
+
+test("semantic quotation extraction preserves priced accessories but excludes subordinate sublines from the working baseline", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const extraction = extractSemanticBusinessFacts([{ label: "quotation.pdf · page 1", pageNumber: 1, text: `Quotation
+No. Item Qty Unit Price (USD) Total (USD)
+29 Analyzer 1 $5,603 $5,603
+Real-time Quantitative 1 $8,134 $8,134
+30
+Laptop Computer 1 $600 $600
+UPS 500W 1 $178 $178
+31 Water bath 1 $99 $99
+$14,614` }]);
+  assert.equal(extraction.profile.lineItemCount, 5);
+  assert.equal(extraction.profile.workingCommercialLineCount, 3);
+  assert.equal(extraction.profile.pricedSublineCount, 2);
+  assert.equal(extraction.profile.calculatedLineItemTotal, 13_836);
+  assert.equal(extraction.row.contract_value, 13_836);
+  assert.equal(extraction.profile.printedCommercialTotal, 14_614);
+  assert.equal(extraction.profile.commercialTotalDiscrepancy, 778);
+  assert.ok(extraction.warnings.some((warning) => warning.code === "SUBORDINATE_PRICED_LINES_EXCLUDED"));
+  assert.ok(extraction.warnings.some((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY"));
+});
+
+test("production result UI separates exact and approximate values and exposes the approved dashboard sections", async () => {
+  const [page, css, model] = await Promise.all([
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing.css"), "utf8"),
+    readFile(path.join(projectRoot, "packages", "logistics-costing", "src", "production-estimate.ts"), "utf8"),
+  ]);
+  assert.match(page, /approximateMoney/);
+  assert.match(page, /exactMoney/);
+  assert.match(page, /ONE BEST CURRENT ESTIMATE/);
+  assert.match(page, /Dynamic truck utilization/);
+  assert.match(page, /Why This Transport\?/);
+  assert.match(page, /ПРОСТЫМИ СЛОВАМИ/);
+  assert.match(page, /Logistics Cost Breakdown/);
+  assert.match(page, /Commercial Summary/);
+  assert.match(model, /displayedTruckCount:\s*requiredTruckCount \+ 1/);
+  assert.doesNotMatch(page, /Optimistic|High Stress|scenario switcher/i);
+  assert.match(css, /\.truck-free \{ opacity:/);
+  assert.match(css, /\.cargo-fill/);
+  assert.match(css, /@media \(max-width: 620px\)/);
 });

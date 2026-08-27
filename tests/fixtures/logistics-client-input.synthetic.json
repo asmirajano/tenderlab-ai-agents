@@ -1,0 +1,22 @@
+{
+  "cargo_description": "Laboratory instruments",
+  "quantity_package_count": "24 pallets",
+  "contract_value": 250000,
+  "currency": "USD",
+  "origin": "Guangzhou, China",
+  "destination": "Tashkent, Uzbekistan",
+  "transport_mode": "rail",
+  "packed_volume_m3": 52.4,
+  "gross_weight_kg": 8400,
+  "current_incoterm": "EXW",
+  "target_incoterm": "CIP",
+  "costs": {
+    "origin_loading": 600,
+    "origin_pickup": 900,
+    "origin_terminal": 450,
+    "export_clearance": 350,
+    "main_freight": 8200,
+    "transit_handling": 500,
+    "insurance": 920
+  }
+}

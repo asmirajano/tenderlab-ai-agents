@@ -1,6 +1,6 @@
 # Contract Logistics & Incoterms Costing — architecture decision
 
-Status: implemented phase-1 prototype with separate client-product boundary, 2026-08-27  
+Status: approved production product workflow implemented with separate client-product boundary, 2026-08-27
 Primary disposition: `EXISTING AGENT — STANDALONE IMPLEMENTATION`
 
 ## Placement
@@ -48,8 +48,10 @@ User / Case trigger
         └─ required A050 Cost & Landed-Price
               ├─ versioned Incoterms® 2020 responsibility rules
               ├─ deterministic logistics-costing kernel
-              ├─ packing / transport-unit planning proxy
-              ├─ scenario and item-allocation result
+              ├─ evidence-based cargo / loadability estimator
+              ├─ transport-capacity model and dynamic allocation
+              ├─ versioned route, equipment, HS and insurance references
+              ├─ one current logistics estimate and commercial summary
               └─ audit / assumptions / unresolved-input package
                        │
                        ├─ A003 Evidence & Provenance
@@ -70,8 +72,10 @@ and not a revival of the legacy Main Agents Run route.
 
 The reusable definition is `process-definition:TL-PD-LOGISTICS-COSTING`, version `0.1.0`. Its contract is in `packages/logistics-costing/src/process.ts`.
 
-The current TenderApps UI is client-side and deliberately does **not** claim
-production runtime or client-authorization status. A production migration must
+The current TenderApps product is deployed as a client-side deterministic
+application. “Production” here means the approved user workflow and release
+surface; it does **not** imply server-side case orchestration, live carrier
+pricing, or enforceable tenant authorization. A future persistent runtime must
 assign separate identifiers for:
 
 1. Process Definition and immutable version;
@@ -79,31 +83,35 @@ assign separate identifiers for:
 3. each Agent Execution attempt;
 4. each versioned input or output Artifact.
 
-The phase-1 exports are audit packages, not persisted canonical Artifacts or approvals.
+The JSON exports and browser-saved approvals are review artifacts, not persisted canonical Artifacts or enterprise approval records.
 
-## Simulation status and real-case fidelity
+## Production product status and real-case fidelity
 
-The current application is a **validated interactive simulation/prototype**:
+The current application is a **validated preliminary-estimation product**:
 
 - **Domain logic is close to operational calculation behavior.** All 11
   Incoterms® 2020 rules, mode restrictions, cost-set differences, logistics-only
   scopes, contract overrides, insurance, DDP gates, packing proxies, transport
   planning, FX, allocations, evidence types, and negative conditions execute
   through one deterministic kernel and automated tests.
-- **The initial aggregate arithmetic is exact.** The user-validated EXW
-  Guangzhou → CIP Tashkent totals reproduce to USD 0.01.
-- **The underlying commercial evidence is not yet a real ingested case.** The
-  protected quotation and workbook were not accessed. The 165 rows are
-  synthetic allocation placeholders; packing, rate, route, cold-chain, and
-  insurance inputs remain provisional.
-- **The operational runtime is not production-like yet.** There is no PDF/XLSX
-  extraction, carrier/tariff/tax/FX API, decimal-money ledger, persisted Process
-  Instance, immutable Artifact store, approval journal, tenant authorization,
-  retry/recovery, or governed rate validity.
+- **Real source-document intake is exercised.** Text-searchable PDF, XLSX/XLS,
+  CSV/TSV and JSON inputs are read locally, mapped to one case-data model and
+  retained with source/page provenance. Image-only PDFs fail with actionable
+  recovery guidance; no OCR result is simulated.
+- **The approved quotation is a regression fixture without being copied into
+  the repository.** It produces 167 priced evidence rows, a USD 1,586,386
+  working line-item baseline, and a visible USD 778 discrepancy against the
+  supplier's printed USD 1,587,164 total.
+- **Cargo and pricing uncertainty is explicit.** Shipment cube, gross weight,
+  loadability, route charges and insurance may be estimated from versioned
+  proxies/benchmarks. They are never presented as source facts or live quotes.
+- **The runtime remains intentionally local.** There is no carrier/tariff/tax/FX
+  API, decimal-money ledger, persisted Process Instance, immutable Artifact
+  store, approval journal, tenant authorization or governed live-rate feed.
 
-Accordingly, it is realistic for testing calculation behavior and interaction,
-but it is not evidence that a client shipment, customs treatment, carrier quote,
-or production workflow has been validated.
+Accordingly, the product provides one defensible preliminary logistics estimate;
+it is not a carrier quotation, customs determination, tax opinion or shipment
+execution commitment.
 
 ## Reused canonical records
 
@@ -129,9 +137,12 @@ Agent 50's existing relation to `BOQ-COST-ITEMS` is reused for approved unit cos
 - `incoterms.ts` — one versioned definition for all 11 Incoterms® 2020 rules, including transport-mode family, delivery, risk, cost, clearance, loading/unloading, vessel loading, carriage and insurance.
 - `engine.ts` — conversion, logistics-only scope, double-count prevention, contract overrides, dated FX, insurance, DDP validation and item allocation.
 - `packing.ts` — actual/proxy packing separation, contradiction checks, special-cargo flags and capacity/weight unit planning.
-- `document-intake.ts` — JSON/CSV parsing, binary file staging and quarantine of instruction-like document content.
+- `production-estimate.ts` — canonical cargo proxy, loadability, dynamic truck allocation, benchmark cost, insurance, HS-candidate and confidence composition.
+- `document-intake.ts` — structured input parsing and quarantine of instruction-like document content.
 - `fixtures.ts` — protected-source-free regression fixture.
 - `process.ts` — reusable process definition and explicit non-production runtime boundary.
+- `apps/tender-apps/src/client-document-extraction.ts` — local PDF/XLSX/structured extraction adapter.
+- `apps/tender-apps/src/document-semantic-extraction.ts` — document/line/shipment evidence classification and working-baseline reconciliation.
 - `apps/tender-apps` — separately built client shell and Landed Cost Studio UI.
 
 ## Cost and responsibility resolution
@@ -174,7 +185,10 @@ That formula reproduces the user-supplied regression premium without a hard-code
 
 Every cost line is one of `sourced-fact`, `user-input`, `assumption`, or `calculation`, with confidence and optional source/date metadata. Uploaded-document strings remain document content. Instruction-like values are quarantined and never promoted to user or system authority.
 
-The user-supplied external quotation and workbook paths were not accessed, copied, indexed, or persisted.
+The user-supplied quotation was accessed locally after explicit permission for
+regression verification. It was not copied, indexed, committed or deployed.
+Document text and extracted case state remain in the local browser session
+unless the user explicitly exports the audit package.
 
 ## Authoritative rule basis
 
@@ -186,9 +200,9 @@ The application is a calculation and review aid, not legal, tax, customs, insura
 
 ## Architecture findings kept open
 
-1. A scenario ledger does not yet exist; `BOQ-COST-ITEMS` must not be overloaded without a data-model decision.
+1. A persistent calculation ledger does not yet exist; `BOQ-COST-ITEMS` must not be overloaded without a data-model decision.
 2. Agent 50's canonical trigger is bid-oriented. Logistics-only and post-award reuse may justify a bounded profile clarification after more Case evidence, not a new Agent.
-3. Packed dimensions, stackability, reefer/segregation flags and transport-unit capacities are not canonical Datasets yet.
+3. Packed dimensions, stackability, reefer/segregation flags, route benchmarks and transport-unit capacities require governed canonical datasets before enterprise runtime use.
 4. Evidence metadata does not yet provide a platform-wide value-envelope contract for sourced/user/assumed/calculated values.
 5. Client-side export is not persistent audit storage or approval enforcement.
 6. The separate static product origin is not authentication. Command Center

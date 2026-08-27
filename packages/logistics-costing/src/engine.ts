@@ -134,7 +134,9 @@ function inclusionFor(
 
   if (input.mode === "logistics-only") {
     const scope = input.logisticsScope ?? "custom";
-    const selected = scope === "custom" ? input.customScopeComponents ?? [] : logisticsScopeComponents[scope];
+    const selected = input.logisticsScopeIncoterm
+      ? incotermProfiles[input.logisticsScopeIncoterm].sellerPaidComponents
+      : scope === "custom" ? input.customScopeComponents ?? [] : logisticsScopeComponents[scope];
     return { included: side === "target" && selected.includes(line.component), basis: "logistics-scope" };
   }
 
@@ -268,7 +270,7 @@ export function calculateScenario(input: CalculationInput): CalculationResult {
     for (const component of unvaluedRemovals) warnings.push({ code: "UNVALUED_REMOVED_COST", severity: "warning", message: `${componentLabels[component]} is normally in ${input.sourceTerm} but outside ${targetTerm}; no source amount is available to remove, so the reverse-conversion result is incomplete.` });
   }
 
-  if (input.mode === "logistics-only" && !input.logisticsScope) warnings.push({ code: "MISSING_LOGISTICS_SCOPE", severity: "blocking", message: "Select a logistics scope for a logistics-only calculation." });
+  if (input.mode === "logistics-only" && !input.logisticsScope && !input.logisticsScopeIncoterm) warnings.push({ code: "MISSING_LOGISTICS_SCOPE", severity: "blocking", message: "Select a logistics scope or use the current Incoterm responsibility boundary for a logistics-only calculation." });
   for (const override of input.contractOverrides ?? []) {
     warnings.push({ code: "CONTRACT_OVERRIDE", severity: "info", message: `Contract deviation preserved: ${componentLabels[override.component]} — ${override.description}` });
   }
@@ -302,6 +304,7 @@ export function calculateScenario(input: CalculationInput): CalculationResult {
     sourceTerm: input.sourceTerm,
     targetTerm,
     logisticsScope: input.logisticsScope,
+    logisticsScopeIncoterm: input.logisticsScopeIncoterm,
     nonInsuranceAdded,
     insurance: roundMoney(insurance),
     dutiesTaxes,

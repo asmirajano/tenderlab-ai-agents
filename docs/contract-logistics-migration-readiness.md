@@ -14,7 +14,10 @@ Migration status: **prepared, not executed**. No files have been copied, deploye
 | Incoterms® responsibility rules | `packages/logistics-costing/src/incoterms.ts` |
 | Deterministic calculator | `packages/logistics-costing/src/engine.ts` |
 | Packing and transport-unit estimator | `packages/logistics-costing/src/packing.ts` |
-| Document trust/intake adapter | `packages/logistics-costing/src/document-intake.ts` |
+| Production cargo/rate/confidence composer | `packages/logistics-costing/src/production-estimate.ts` |
+| Structured document trust adapter | `packages/logistics-costing/src/document-intake.ts` |
+| PDF/XLSX extraction adapter | `apps/tender-apps/src/client-document-extraction.ts` |
+| Semantic evidence mapper | `apps/tender-apps/src/document-semantic-extraction.ts` |
 | Process definition | `packages/logistics-costing/src/process.ts` |
 | Protected-source-free regression fixture | `packages/logistics-costing/src/fixtures.ts` |
 | Interactive client application | `apps/tender-apps/` |
@@ -23,16 +26,16 @@ Migration status: **prepared, not executed**. No files have been copied, deploye
 
 ## Dependencies
 
-Phase 1 adds no new third-party runtime dependency. TenderApps uses the
-project's existing React, Vite, design tokens, and Node test runner. The static
-app keeps scenario state in the browser and exports JSON/CSV. Its independent
-workspace importer is recorded in `pnpm-lock.yaml`.
+The production client uses React, Vite, the shared design system, `pdfjs-dist`
+for local text-searchable PDF parsing, and `xlsx` for local workbook parsing.
+The static app keeps case state in the browser and exports JSON/CSV. All pinned
+dependencies are recorded in the workspace lockfile.
 
 Before migration, the destination must provide or replace:
 
 - React/client route integration and design tokens;
 - an authorised persistence model if calculations must be saved;
-- PDF/OCR and XLS/XLSX extraction adapters if binary document extraction is required;
+- an OCR adapter if image-only PDFs must be processed automatically;
 - a decimal-money implementation for production-grade high-value/multi-currency accounting;
 - canonical identity mapping if destination Agent IDs differ;
 - access control, retention and source-document confidentiality rules;
@@ -62,7 +65,12 @@ Before migration, the destination must provide or replace:
 - all 11 Incoterms® 2020 codes and mode families remain unique and versioned;
 - risk, delivery and cost boundaries remain separate fields;
 - reverse conversions remove only valued source-included costs;
-- the initial 165-line regression reconciles exactly within USD 0.01;
+- the approved quotation preserves 167 priced evidence rows, uses 165 primary
+  commercial lines for the USD 1,586,386 working baseline, and exposes the USD
+  778 printed-total discrepancy;
+- displayed truck count equals required transport units plus one free reference;
+- displayed cost components reconcile to the unrounded logistics estimate;
+- the exact commercial baseline plus the unrounded logistics estimate reconciles to the revised commercial total;
 - logistics-only scope leaves the commercial Incoterm unchanged;
 - DDP is blocked without jurisdiction/importer/tax inputs;
 - CIF/CIP insurance defaults and contractual changes remain distinct;
@@ -80,8 +88,8 @@ Before migration, the destination must provide or replace:
 4. Money uses JavaScript numbers and two-decimal output rounding. Production should use decimal strings and declared currency minor units.
 5. Item allocation is source-value pro rata with final-line residual reconciliation. Weight, volume, unit, manual and direct allocation methods are not yet interactive.
 6. Transport-unit capacities are planning defaults. Carrier equipment, road/rail gauge, pallet positions, reefer capacity and loadability need verified reference data.
-7. PDF and XLS/XLSX files are staged but not extracted in the client prototype. JSON and simple CSV/TSV parse locally.
-8. No tariff, tax, FX, insurance or carrier API is connected. Inputs are user/sourced values and can be provisional.
+7. Text-searchable PDFs and worksheet cells are parsed locally. Image-only PDFs require OCR or manual recovery; complex table layouts may still require client correction.
+8. No tariff, tax, FX, insurer or carrier API is connected. Route and insurance values use dated internal benchmarks unless the user supplies better evidence.
 9. No server persistence, Process Instance journal, Artifact store, tenant/RBAC
    access, or approval enforcement exists. TenderLab and Atlas static routes are
    not currently staff-authorized.
@@ -89,8 +97,7 @@ Before migration, the destination must provide or replace:
     390px phone viewports. The separately built TenderApps surface must retain
     those checks after every shell change; persistent multi-engine/touch
     automation is not yet a repository dependency.
-11. The user-supplied quotation/workbook were not accessed. The 165 fixture lines are synthetic allocation placeholders, not extracted product rows.
-12. The TenderApps Firebase target is prepared only. It is not mapped in
-    `.firebaserc`, deployed by CI, or published.
+11. The approved quotation was exercised locally without being copied into the repository. Its extracted product rows and source provenance remain local browser state.
+12. HS codes are reference candidates, not legally definitive customs classifications.
 
 These limitations must travel with the code. Matching the regression alone is not sufficient evidence of readiness.

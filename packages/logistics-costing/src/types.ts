@@ -142,6 +142,8 @@ export type CalculationInput = {
   incotermsVersion: "2020";
   transportMode: TransportMode;
   logisticsScope?: LogisticsScope;
+  /** Cost a logistics-only scenario using the seller-paid component boundary of this Incoterm. */
+  logisticsScopeIncoterm?: IncotermCode;
   customScopeComponents?: CostComponentCode[];
   costLines: CostLine[];
   contractOverrides?: ContractOverride[];
@@ -204,6 +206,7 @@ export type CalculationResult = {
   sourceTerm: IncotermCode;
   targetTerm?: IncotermCode;
   logisticsScope?: LogisticsScope;
+  logisticsScopeIncoterm?: IncotermCode;
   nonInsuranceAdded: number;
   insurance: number;
   dutiesTaxes: number;
@@ -295,6 +298,29 @@ export type PackingEstimate = {
   specialCargo: string[];
 };
 
+export type DocumentFactScope = "document" | "lot" | "line-item" | "shipment";
+
+export type DocumentFieldEvidence = {
+  sourceRef: string;
+  confidence: "high" | "medium" | "low";
+  scope: DocumentFactScope;
+  basis: string;
+};
+
+export type DocumentProfile = {
+  documentType: "quotation" | "invoice" | "purchase-order" | "packing-list" | "contract" | "freight-quote" | "unknown";
+  pageCount?: number;
+  lineItemCount?: number;
+  workingCommercialLineCount?: number;
+  pricedSublineCount?: number;
+  calculatedLineItemTotal?: number;
+  printedCommercialTotal?: number;
+  commercialTotalDiscrepancy?: number;
+  commercialTotalReconciled?: boolean;
+  shipmentMetricsFound?: boolean;
+  suppressedLineItemMetricCount?: number;
+};
+
 export type DocumentIntakeRecord = {
   id: string;
   fileName: string;
@@ -304,4 +330,9 @@ export type DocumentIntakeRecord = {
   facts: string[];
   ignoredInstructions: string[];
   warnings: CalculationWarning[];
+  fieldSources?: Record<string, string>;
+  fieldEvidence?: Record<string, DocumentFieldEvidence>;
+  documentProfile?: DocumentProfile;
+  extractionMethod?: "structured-data" | "spreadsheet-cells" | "pdf-text" | "manual-review";
+  extractedTextLength?: number;
 };

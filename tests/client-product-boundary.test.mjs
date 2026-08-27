@@ -95,16 +95,20 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   const clientBundle = (await Promise.all(assetNames
     .filter((name) => name.endsWith(".js"))
     .map((name) => readFile(path.join(tenderAppsRoot, "dist", "assets", name), "utf8")))).join("\n");
-  assert.match(clientBundle, /LANDED COST STUDIO · PHASE 1/);
+  assert.match(clientBundle, /LANDED COST STUDIO · REVIEWED COST EVIDENCE/);
+  assert.match(clientBundle, /ONE BEST CURRENT ESTIMATE/);
   assert.match(clientBundle, /tenderapps\.landed-cost\.audit\.v0\.1/);
   assert.match(shell, /Client workspace/);
   assert.match(shell, /TenderBalance/);
   assert.match(shell, /Landed Cost Studio/);
-  assert.match(component, /LANDED COST STUDIO · PHASE 1/);
+  assert.match(component, /LANDED COST STUDIO · REVIEWED COST EVIDENCE/);
+  assert.match(component, /Estimated Logistics Cost/);
+  assert.match(component, /required \+ 1 free capacity reference/);
+  assert.match(component, /productionEstimate\.transport\.allocations\.map/);
   assert.match(component, /Incoterms conversion/);
   assert.match(component, /Logistics only/);
-  assert.match(component, /Scenario comparison/);
-  assert.match(component, /Initial regression reproduced/);
+  assert.doesNotMatch(component, /Scenario comparison/);
+  assert.doesNotMatch(component, /Initial regression reproduced/);
   assert.doesNotMatch(component, /href=["']\/(?:agents|architecture|case-simulation|main-agents-run)/);
   assert.doesNotMatch(component, /TL-A050|A021 · A046|A049 · A051/);
   assert.doesNotMatch(shell, /Command Center|top-navigation/);

@@ -7,6 +7,7 @@ export const transportUnits: TransportUnit[] = [
   { id: "sea-40std", label: "40ft standard container", mode: "sea", usableVolumeM3: 67.7, payloadKg: 26_500 },
   { id: "sea-20std", label: "20ft standard container", mode: "sea", usableVolumeM3: 33.2, payloadKg: 28_000 },
   { id: "road-curtain", label: "13.6m curtain-side truck", mode: "road", usableVolumeM3: 90, payloadKg: 24_000 },
+  { id: "road-enclosed-136", label: "13.6m enclosed FTL truck", mode: "road", usableVolumeM3: 86, payloadKg: 22_000 },
   { id: "air-pallet", label: "Air-freight pallet position", mode: "air", usableVolumeM3: 10, payloadKg: 4_500 },
   { id: "inland-40hc", label: "40HC inland-waterway container position", mode: "inland-waterway", usableVolumeM3: 76.3, payloadKg: 26_500 },
   { id: "multimodal-40hc", label: "40HC multimodal planning unit", mode: "multimodal", usableVolumeM3: 76.3, payloadKg: 26_500 },
