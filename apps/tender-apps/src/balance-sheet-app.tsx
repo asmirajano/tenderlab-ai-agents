@@ -13,6 +13,7 @@ import {
 } from "../../../packages/tender-balance/src/model.ts";
 import { syntheticBalanceSheetReviews, syntheticFixtureLabels } from "../../../packages/tender-balance/src/fixtures.ts";
 import "../../../packages/design-system/src/tokens.css";
+import { ClientProductManifesto } from "./client-product-manifesto.tsx";
 import "./balance-sheet.css";
 
 const conceptLabels: Record<string, string> = {
@@ -43,6 +44,18 @@ const conceptLabels: Record<string, string> = {
 const severityRank: Record<IssueSeverity, number> = { blocking: 4, error: 3, warning: 2, info: 1 };
 const CLIENT_CASES_STORAGE_KEY = "tenderapps:tenderbalance:client-cases:v1";
 const CLIENT_CONTEXTS_STORAGE_KEY = "tenderapps:tenderbalance:case-contexts:v1";
+const COMPARISON_DECISIONS_STORAGE_KEY = "tenderapps:tenderbalance:comparison-decisions:v1";
+
+type ComparisonDecision = {
+  id: string;
+  reviewId: string;
+  comparisonReviewId: string;
+  period: string;
+  concept: string;
+  action: "acknowledged-and-retained";
+  reviewer: string;
+  at: string;
+};
 
 type BalanceSurface = "welcome" | "intake" | "review" | "cases";
 
@@ -73,6 +86,23 @@ function readClientContexts(): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+function readComparisonDecisions(): Record<string, ComparisonDecision> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(COMPARISON_DECISIONS_STORAGE_KEY) ?? "{}") as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, ComparisonDecision> : {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizedEntityName(value: string) {
+  return value.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "").trim();
+}
+
+function comparisonDecisionId(reviewId: string, comparisonReviewId: string, period: string, concept: string) {
+  return [reviewId, comparisonReviewId, period, concept].join("::");
 }
 
 function latestActivity(review: BalanceSheetReview) {
@@ -146,6 +176,7 @@ export default function BalanceSheetApp() {
   const [reviews, setReviews] = useState<BalanceSheetReview[]>(readClientCases);
   const [demoReviews, setDemoReviews] = useState<BalanceSheetReview[]>(syntheticBalanceSheetReviews);
   const [caseContexts, setCaseContexts] = useState<Record<string, string>>(readClientContexts);
+  const [comparisonDecisions, setComparisonDecisions] = useState<Record<string, ComparisonDecision>>(readComparisonDecisions);
   const [demoMode, setDemoMode] = useState(false);
   const [intakeReviewIds, setIntakeReviewIds] = useState<string[]>([]);
   const [companyContext, setCompanyContext] = useState("");
@@ -159,6 +190,12 @@ export default function BalanceSheetApp() {
   const [uploadState, setUploadState] = useState<"idle" | "reading" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState("Processed locally; no file is uploaded or published.");
   const inputRef = useRef<HTMLInputElement>(null);
+  const sourceRef = useRef<HTMLElement | null>(null);
+  const issuesRef = useRef<HTMLElement | null>(null);
+  const lineSectionRef = useRef<HTMLElement | null>(null);
+  const inspectorRef = useRef<HTMLElement | null>(null);
+  const comparisonRef = useRef<HTMLElement | null>(null);
+  const approvalRef = useRef<HTMLElement | null>(null);
 
   const availableReviews = demoMode ? demoReviews : reviews;
   const review = availableReviews.find((candidate) => candidate.reviewId === selectedReviewId) ?? availableReviews[0];
@@ -169,9 +206,23 @@ export default function BalanceSheetApp() {
       ?? availableReviews.find((candidate) => candidate.reviewId !== review.reviewId)
     : undefined;
   const comparison = review && comparisonReview ? compareBalanceSheetReviews(review, comparisonReview) : undefined;
+  const reviewEntityKey = normalizedEntityName(review?.statement.reportingEntity ?? "");
+  const comparisonEntityKey = normalizedEntityName(comparisonReview?.statement.reportingEntity ?? "");
+  const comparisonRelevant = Boolean(review && comparisonReview && (
+    (reviewEntityKey && reviewEntityKey === comparisonEntityKey)
+    || (caseContexts[review.reviewId] && caseContexts[review.reviewId] === caseContexts[comparisonReview.reviewId])
+  ));
+  const comparisonConflicts = comparisonRelevant ? comparison?.overlaps.filter((item) => !item.matches) ?? [] : [];
+  const unresolvedComparisonConflicts = comparisonConflicts.filter((item) => !comparisonDecisions[comparisonDecisionId(review?.reviewId ?? "", comparisonReview?.reviewId ?? "", item.period, item.concept)]);
   const sortedIssues = review ? [...review.issues].sort((a, b) => severityRank[b.severity] - severityRank[a.severity]) : [];
-  const blockingCount = review?.issues.filter((issue) => issue.severity === "blocking" || issue.severity === "error").length ?? 0;
+  const blockingIssues = review?.issues.filter((issue) => issue.severity === "blocking" || issue.severity === "error") ?? [];
+  const blockingCount = blockingIssues.length;
   const reviewedCount = review?.lineItems.filter((item) => item.reviewStatus === "approved" || item.reviewStatus === "corrected").length ?? 0;
+  const unreviewedItems = review?.lineItems.filter((item) => !["approved", "corrected"].includes(item.reviewStatus)) ?? [];
+  const bulkEligibleItems = unreviewedItems.filter((item) => item.confidence >= 0.8);
+  const manualReviewItems = unreviewedItems.filter((item) => item.confidence < 0.8);
+  const remainingActionCount = blockingCount + unreviewedItems.length + unresolvedComparisonConflicts.length;
+  const finalApprovalReady = review ? canApproveStatement(review) && unresolvedComparisonConflicts.length === 0 : false;
   const averageConfidence = review?.lineItems.length ? review.lineItems.reduce((sum, item) => sum + item.confidence, 0) / review.lineItems.length : 0;
 
   useEffect(() => {
@@ -189,6 +240,16 @@ export default function BalanceSheetApp() {
       // Optional case context remains available for this page when browser storage is unavailable.
     }
   }, [caseContexts]);
+
+  useEffect(() => {
+    try {
+      const clientReviewIds = new Set(reviews.map((candidate) => candidate.reviewId));
+      const clientDecisions = Object.fromEntries(Object.entries(comparisonDecisions).filter(([, decision]) => clientReviewIds.has(decision.reviewId)));
+      window.localStorage.setItem(COMPARISON_DECISIONS_STORAGE_KEY, JSON.stringify(clientDecisions));
+    } catch {
+      // Review decisions remain available for this page when browser storage is unavailable.
+    }
+  }, [comparisonDecisions, reviews]);
 
   const replaceReview = (next: BalanceSheetReview) => {
     const replace = (current: BalanceSheetReview[]) => current.map((candidate) => candidate.reviewId === next.reviewId ? next : candidate);
@@ -316,6 +377,111 @@ export default function BalanceSheetApp() {
     setCorrectionReason("");
   };
 
+  const acknowledgeComparisonConflict = (period: string, concept: string) => {
+    if (!review || !comparisonReview) return;
+    const id = comparisonDecisionId(review.reviewId, comparisonReview.reviewId, period, concept);
+    setComparisonDecisions((current) => ({
+      ...current,
+      [id]: {
+        id,
+        reviewId: review.reviewId,
+        comparisonReviewId: comparisonReview.reviewId,
+        period,
+        concept,
+        action: "acknowledged-and-retained",
+        reviewer: reviewer.trim() || "Unnamed reviewer",
+        at: new Date().toISOString(),
+      },
+    }));
+  };
+
+  const structuredPackageJson = () => JSON.stringify({
+    schemaVersion: "tender-balance-client-package/v1",
+    review,
+    caseContext: review ? caseContexts[review.reviewId] ?? null : null,
+    crossDocumentReview: review && comparisonReview && comparisonRelevant ? {
+      comparisonReviewId: comparisonReview.reviewId,
+      comparisonDocumentId: comparisonReview.source.documentId,
+      discrepancies: comparisonConflicts.map((item) => ({
+        period: item.period,
+        concept: item.concept,
+        leftValue: item.leftValue,
+        rightValue: item.rightValue,
+        difference: item.difference,
+        decision: comparisonDecisions[comparisonDecisionId(review.reviewId, comparisonReview.reviewId, item.period, item.concept)] ?? null,
+      })),
+    } : null,
+  }, null, 2);
+
+  const scrollTo = (target: HTMLElement | null) => {
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const openLineForReview = (lineItemId: string) => {
+    const line = review?.lineItems.find((item) => item.id === lineItemId);
+    if (!line) return;
+    setSelectedLineId(line.id);
+    setActivePeriod(line.values[0]?.period ?? review?.statement.periods[0] ?? "");
+    setCorrectionValue("");
+    setCorrectionReason("");
+    window.requestAnimationFrame(() => scrollTo(inspectorRef.current));
+  };
+
+  const continueReview = () => {
+    if (!review) return;
+    const blockingLine = blockingIssues
+      .map((issue) => issue.lineItemId)
+      .find((lineItemId): lineItemId is string => Boolean(lineItemId && review.lineItems.some((item) => item.id === lineItemId)));
+    if (blockingLine) {
+      openLineForReview(blockingLine);
+      return;
+    }
+    if (unreviewedItems[0]) {
+      openLineForReview(unreviewedItems[0].id);
+      return;
+    }
+    if (blockingIssues.some((issue) => issue.code === "MISSING_PAGE" || issue.code === "OCR_REQUIRED" || issue.code === "STATEMENT_PAGE_NOT_FOUND")) {
+      scrollTo(sourceRef.current);
+      return;
+    }
+    if (unresolvedComparisonConflicts.length) {
+      scrollTo(comparisonRef.current);
+      return;
+    }
+    scrollTo(issuesRef.current);
+  };
+
+  const approveEligibleAndContinue = () => {
+    if (!review || !bulkEligibleItems.length) return;
+    const updated = approveEligibleLineItems(review, reviewer.trim() || "Unnamed reviewer");
+    replaceReview(updated);
+    const next = updated.lineItems.find((item) => !["approved", "corrected"].includes(item.reviewStatus));
+    if (next) openLineForReview(next.id);
+    else window.requestAnimationFrame(() => scrollTo(approvalRef.current));
+  };
+
+  const approveSelectedAndContinue = () => {
+    if (!review || !selectedLine) return;
+    const updated = approveLineItem(review, selectedLine.id, reviewer.trim() || "Unnamed reviewer");
+    replaceReview(updated);
+    const next = updated.lineItems.find((item) => !["approved", "corrected"].includes(item.reviewStatus));
+    if (next) {
+      setSelectedLineId(next.id);
+      setActivePeriod(next.values[0]?.period ?? updated.statement.periods[0] ?? "");
+      setCorrectionValue("");
+      setCorrectionReason("");
+      window.requestAnimationFrame(() => scrollTo(inspectorRef.current));
+    } else {
+      window.requestAnimationFrame(() => scrollTo(blockingIssues.length ? issuesRef.current : unresolvedComparisonConflicts.length ? comparisonRef.current : approvalRef.current));
+    }
+  };
+
+  const approveFinalResult = () => {
+    if (!review || !finalApprovalReady) return;
+    replaceReview(approveStatement(review, reviewer.trim() || "Unnamed reviewer"));
+    window.requestAnimationFrame(() => scrollTo(approvalRef.current));
+  };
+
   const clientNav = (
     <BalanceClientNav
       active={surface}
@@ -330,40 +496,76 @@ export default function BalanceSheetApp() {
     return (
       <main className="bs-page bs-client-start">
         {clientNav}
-        <section className="bs-welcome-hero">
-          <div>
-            <p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>
-            <h1>Turn balance sheets into<br /><em>reviewed evidence.</em></h1>
-            <p>Provide one or several balance-sheet documents. TenderBalance will identify the company and periods, structure the reported figures, validate the accounting relationships, and ask you only about information that needs confirmation.</p>
-            <div className="bs-welcome-actions">
+        <ClientProductManifesto
+          eyebrow={<p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>}
+          title={<>Raw statements become an<br /><em>approved evidence package.</em></>}
+          promise={<>See the finished product first: source-traceable figures, reconciled checks, explicit exceptions, human review, and a retained result for downstream tender work.</>}
+          input={(
+            <article className="bs-manifesto-input">
+              <div className="bs-manifesto-label"><span>01</span><b>WHAT YOU PROVIDE</b></div>
+              <div className="bs-raw-document-stack" aria-label="Examples of raw balance-sheet inputs">
+                <div><span>PDF</span><b>Balance Sheet.pdf</b><small>Digital statement</small></div>
+                <div><span>SCAN</span><b>Statement 2024.jpg</b><small>Image evidence</small></div>
+                <div><span>PDF</span><b>Comparative 2025.pdf</b><small>Several periods</small></div>
+              </div>
+              <div className="bs-input-chips"><span>PDF</span><span>Scans</span><span>Multiple periods</span></div>
+            </article>
+          )}
+          transformation={(
+            <div className="bs-manifesto-agent" aria-label="TenderBalance transformation">
+              <span className="bs-story-arrow" aria-hidden="true">→</span>
+              <div className="bs-agent-core"><small>TENDER APPS</small><strong>Tender<br />Balance</strong></div>
+              <ol><li>Read</li><li>Structure</li><li>Validate</li><li>Reconcile</li><li>Review</li></ol>
+              <span className="bs-story-arrow" aria-hidden="true">→</span>
+            </div>
+          )}
+          output={(
+            <article className="bs-finished-package">
+              <div className="bs-manifesto-label"><span>03</span><b>WHAT YOU RECEIVE</b><em>FINISHED PRODUCT</em></div>
+              <header>
+                <div><small>ILLUSTRATIVE PRODUCT PREVIEW · NOT CLIENT EVIDENCE</small><h2>Reviewed Financial Evidence</h2><p>Illustrative Company Ltd · Balance Sheet · 2025 / 2024</p></div>
+                <span className="bs-example-approved">APPROVED EXAMPLE</span>
+              </header>
+              <div className="bs-output-preview-table" role="table" aria-label="Illustrative structured balance-sheet output">
+                <div role="row" className="is-header"><span role="columnheader">Original</span><span role="columnheader">Normalized</span><span role="columnheader">2025</span><span role="columnheader">Trace</span><span role="columnheader">Status</span></div>
+                <div role="row"><span role="cell">Cash and cash equivalents</span><span role="cell">Cash & equivalents</span><span role="cell">125,400</span><span role="cell">✓ p.2</span><span role="cell">Verified</span></div>
+                <div role="row"><span role="cell">Trade receivables</span><span role="cell">Receivables</span><span role="cell">84,200</span><span role="cell">✓ p.2</span><span role="cell">Verified</span></div>
+                <div role="row"><span role="cell">Total assets</span><span role="cell">Total assets</span><span role="cell">481,900</span><span role="cell">✓ p.2</span><span role="cell">Reconciled</span></div>
+              </div>
+              <ul className="bs-finished-checks" aria-label="Finished evidence package contents">
+                <li><span>✓</span> Company & periods structured</li>
+                <li><span>✓</span> Original labels preserved</li>
+                <li><span>✓</span> Source traceability</li>
+                <li><span>✓</span> Arithmetic reconciled</li>
+                <li><span>✓</span> Exceptions reported</li>
+                <li><span>✓</span> Human-reviewed & versioned</li>
+              </ul>
+              <div className="bs-package-release"><span>APPROVED RESULT</span><b>Ready for downstream tender analysis</b><i>→</i></div>
+            </article>
+          )}
+          actions={(
+            <>
+              <p className="bs-manifesto-action-copy"><b>You provide the source.</b><span>TenderBalance guides everything required to reach this finished result.</span></p>
               <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Start financial statement review <span aria-hidden="true">→</span></button>
               <button className="bs-secondary-action" onClick={() => setSurface("cases")} type="button">Open previous cases</button>
-            </div>
+            </>
+          )}
+        />
+
+        <details className="bs-landing-details">
+          <summary>How it works, accepted inputs, and scope</summary>
+          <div className="bs-client-journey" aria-label="How TenderBalance works">
+            <article><span>01</span><strong>Provide evidence</strong><p>Add the balance-sheet document or document set you want reviewed.</p></article>
+            <article><span>02</span><strong>Confirm what was found</strong><p>We identify the company, reporting dates, currency, units, language, and comparative columns.</p></article>
+            <article><span>03</span><strong>Resolve important questions</strong><p>Missing pages, uncertain OCR, inconsistent totals, and discrepancies become clear client actions.</p></article>
+            <article><span>04</span><strong>Approve and retain</strong><p>Approve only after review, export structured evidence, and reopen the saved case later.</p></article>
           </div>
-          <aside className="bs-consultation-card">
-            <span>WHAT YOU PROVIDE</span>
-            <strong>One or several balance sheets</strong>
-            <ul>
-              <li>Digital PDF or supported extraction file</li>
-              <li>Scans or images that may require review</li>
-              <li>Comparative statements from different periods</li>
-            </ul>
-            <div><b>WHAT YOU RECEIVE</b><p>Structured figures, source traceability, reconciliation results, required review questions, and an approvable export.</p></div>
-          </aside>
-        </section>
-
-        <section className="bs-client-journey" aria-label="How TenderBalance works">
-          <article><span>01</span><strong>Provide evidence</strong><p>Add the balance-sheet document or document set you want reviewed.</p></article>
-          <article><span>02</span><strong>Confirm what was found</strong><p>We identify the company, reporting dates, currency, units, language, and comparative columns.</p></article>
-          <article><span>03</span><strong>Resolve important questions</strong><p>Missing pages, uncertain OCR, inconsistent totals, and discrepancies become clear client actions.</p></article>
-          <article><span>04</span><strong>Approve and retain</strong><p>Approve only after review, export structured evidence, and reopen the saved case later.</p></article>
-        </section>
-
-        <section className="bs-trust-boundary">
-          <div><span>SCOPE</span><strong>Digitization and validation—not a tender eligibility decision</strong></div>
-          <p>The product preserves original reported values and keeps corrections separate. It does not assess income statements, cash flows, audit opinions, financial health, supplier suitability, or final tender eligibility.</p>
-          <button onClick={openDemo} type="button">Open a clearly labelled demo</button>
-        </section>
+          <section className="bs-trust-boundary">
+            <div><span>SCOPE</span><strong>Digitization and validation—not a tender eligibility decision</strong></div>
+            <p>The product preserves original reported values and keeps corrections separate. It does not assess income statements, cash flows, audit opinions, financial health, supplier suitability, or final tender eligibility.</p>
+            <button onClick={openDemo} type="button">Open a clearly labelled demo</button>
+          </section>
+        </details>
         <footer className="bs-footer"><span>Tender Apps · TenderBalance</span><span>Private client workspace · no Command Center access</span></footer>
       </main>
     );
@@ -504,7 +706,7 @@ export default function BalanceSheetApp() {
       </section>
 
       <section className="bs-workspace">
-        <aside className="bs-source-rail">
+        <aside className="bs-source-rail" ref={sourceRef}>
           <div className="bs-panel-heading">
             <span>01 / SOURCE</span>
             <b>{availableReviews.length} documents</b>
@@ -588,7 +790,7 @@ export default function BalanceSheetApp() {
             </dl>
           </section>
 
-          <section className="bs-issues-panel">
+          <section className="bs-issues-panel" ref={issuesRef}>
             <div className="bs-section-title">
               <div><span>02 / EXCEPTIONS</span><h3>Review issues</h3></div>
               <b>{review.issues.length}</b>
@@ -600,7 +802,10 @@ export default function BalanceSheetApp() {
                   return (
                     <article className={`severity-${issue.severity}`} key={issue.id}>
                       <span>{issue.severity}</span>
-                      <div><b>{copy.title}</b><p>{copy.why}</p><strong className="bs-issue-action">Next: {copy.action}</strong></div>
+                      <div>
+                        <b>{copy.title}</b><p>{copy.why}</p><strong className="bs-issue-action">Next: {copy.action}</strong>
+                        <button className="bs-open-issue" type="button" onClick={() => issue.lineItemId ? openLineForReview(issue.lineItemId) : scrollTo(sourceRef.current)}>{issue.lineItemId ? "Inspect linked row →" : "Open source documents →"}</button>
+                      </div>
                       <small>{issue.sourceRefs.length ? `p.${Array.from(new Set(issue.sourceRefs.map((ref) => ref.page))).join(", ")}` : "document-level"}</small>
                     </article>
                   );
@@ -609,7 +814,7 @@ export default function BalanceSheetApp() {
             ) : <p className="bs-empty-state">No validation issue detected. Human review is still required before approval.</p>}
           </section>
 
-          <section className="bs-line-section">
+          <section className="bs-line-section" ref={lineSectionRef}>
             <div className="bs-section-title bs-table-title">
               <div><span>03 / DIGITIZED STATEMENT</span><h3>Reported values and normalized concepts</h3></div>
               <div className="bs-period-tabs" aria-label="Active correction period">
@@ -646,10 +851,15 @@ export default function BalanceSheetApp() {
           </section>
 
           <section className="bs-review-grid">
-            <article className="bs-line-inspector">
+            <article className="bs-line-inspector" ref={inspectorRef} tabIndex={-1}>
               <div className="bs-section-title"><div><span>04 / HUMAN REVIEW</span><h3>Inspect selected value</h3></div></div>
               {selectedLine ? (
                 <>
+                  <div className="bs-review-sequence" aria-live="polite">
+                    <span>HUMAN REVIEW</span>
+                    <b>{unreviewedItems.length ? `Item ${Math.min(reviewedCount + 1, review.lineItems.length)} of ${review.lineItems.length}` : `${review.lineItems.length} of ${review.lineItems.length} reviewed`}</b>
+                    <i><span style={{ width: `${review.lineItems.length ? (reviewedCount / review.lineItems.length) * 100 : 0}%` }} /></i>
+                  </div>
                   <div className="bs-inspector-head"><div><span>ORIGINAL LABEL</span><b>{selectedLine.originalLabel}</b></div><StatusBadge status={selectedLine.reviewStatus} /></div>
                   <div className="bs-value-pair">
                     {selectedLine.values.map((value) => (
@@ -674,7 +884,15 @@ export default function BalanceSheetApp() {
                     <button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button>
                     <p>The source value remains immutable. A correction is added as a separate reviewed value and triggers arithmetic revalidation.</p>
                   </div>
-                  <button className="bs-approve-line" type="button" onClick={() => replaceReview(approveLineItem(review, selectedLine.id, reviewer.trim() || "Unnamed reviewer"))}>✓ Mark row inspected</button>
+                  {!["approved", "corrected"].includes(selectedLine.reviewStatus) ? (
+                    <button className="bs-approve-line" type="button" onClick={approveSelectedAndContinue}>Mark reviewed and continue →</button>
+                  ) : (
+                    <button className="bs-approve-line is-complete" type="button" onClick={() => {
+                      const next = unreviewedItems.find((item) => item.id !== selectedLine.id);
+                      if (next) openLineForReview(next.id);
+                      else scrollTo(approvalRef.current);
+                    }}>Reviewed ✓ {unreviewedItems.length ? "· Next unresolved →" : "· Return to approval →"}</button>
+                  )}
                 </>
               ) : <p className="bs-empty-state">No line item is available for review.</p>}
             </article>
@@ -692,47 +910,107 @@ export default function BalanceSheetApp() {
             </article>
           </section>
 
-          <section className="bs-compare-section">
+          <section className="bs-compare-section" ref={comparisonRef}>
             <div className="bs-section-title bs-compare-title">
               <div><span>06 / CROSS-DOCUMENT CHECK</span><h3>Compare periods and documents</h3></div>
               <select value={comparisonReview?.reviewId ?? ""} onChange={(event) => setComparisonId(event.target.value)} aria-label="Comparison document">
                 {availableReviews.filter((candidate) => candidate.reviewId !== review.reviewId).map((candidate) => <option value={candidate.reviewId} key={candidate.reviewId}>{candidate.statement.reportingEntity} · {candidate.statement.reportingDate}</option>)}
               </select>
             </div>
-            {comparison && comparison.overlaps.length ? (
+            {comparisonReview && !comparisonRelevant ? (
+              <div className="bs-comparison-scope-note">
+                <span>NOT AN APPROVAL COMPARISON</span>
+                <div><b>The selected documents identify different reporting entities.</b><p>{review.statement.reportingEntity} and {comparisonReview.statement.reportingEntity} are not reconciled as one company. Select a related document to perform a mandatory cross-document review.</p></div>
+              </div>
+            ) : comparison && comparison.overlaps.length ? (
               <div className="bs-comparison-grid">
                 <div className="bs-comparison-summary">
                   <span>OVERLAPPING PERIODS</span>
-                  <b>{comparison.overlaps.filter((item) => item.matches).length} matched · {comparison.issues.length} discrepancies</b>
+                  <b>{comparison.overlaps.filter((item) => item.matches).length} matched · {comparisonConflicts.length} discrepancies</b>
                   <p>{comparisonReview?.source.fileName}</p>
+                  {unresolvedComparisonConflicts.length > 0 && <strong>{unresolvedComparisonConflicts.length} require acknowledgement</strong>}
                 </div>
                 <div className="bs-comparison-rows">
-                  {comparison.overlaps.map((item) => (
-                    <div className={item.matches ? "is-match" : "is-conflict"} key={`${item.period}:${item.concept}`}>
-                      <span>{item.period}</span><b>{conceptLabels[item.concept]}</b><small>{formatAmount(item.leftValue, review.statement.currency)} ↔ {formatAmount(item.rightValue, comparisonReview?.statement.currency ?? "")}</small><em>{item.matches ? "MATCH" : `Δ ${item.difference.toLocaleString("en-US")}`}</em>
-                    </div>
-                  ))}
+                  {comparison.overlaps.map((item) => {
+                    const decision = comparisonDecisions[comparisonDecisionId(review.reviewId, comparisonReview?.reviewId ?? "", item.period, item.concept)];
+                    return (
+                      <div className={item.matches ? "is-match" : decision ? "is-reviewed-conflict" : "is-conflict"} key={`${item.period}:${item.concept}`}>
+                        <span>{item.period}</span><b>{conceptLabels[item.concept]}</b><small>{formatAmount(item.leftValue, review.statement.currency)} ↔ {formatAmount(item.rightValue, comparisonReview?.statement.currency ?? "")}</small>
+                        {item.matches ? <em>MATCH</em> : decision ? <em>REVIEWED ✓</em> : <div className="bs-conflict-action"><i>Δ {item.difference.toLocaleString("en-US")}</i><button type="button" onClick={() => acknowledgeComparisonConflict(item.period, item.concept)}>Acknowledge & retain</button></div>}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : <p className="bs-empty-state">The selected documents have no overlapping period/concept values. Nothing was inferred.</p>}
           </section>
 
-          <section className="bs-approval-section">
-            <div>
-              <span>07 / APPROVAL & EXPORT</span>
-              <h3>Release only reviewed structured data</h3>
-              <p>Approval confirms transcription and arithmetic review. It does not determine financial health, tender eligibility, or supplier suitability.</p>
-            </div>
-            <label className="bs-reviewer"><span>Reviewer</span><input value={reviewer} onChange={(event) => setReviewer(event.target.value)} /></label>
-            <div className="bs-approval-actions">
-              <button type="button" onClick={() => replaceReview(approveEligibleLineItems(review, reviewer.trim() || "Unnamed reviewer"))}>Approve high-confidence rows</button>
-              <button className="is-primary" disabled={!canApproveStatement(review)} type="button" onClick={() => replaceReview(approveStatement(review, reviewer.trim() || "Unnamed reviewer"))}>Approve result</button>
-              <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, JSON.stringify(review, null, 2), "application/json")}>Export JSON</button>
-              <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")}>Export CSV</button>
-              {!demoMode && review.review.status === "approved" && <button type="button" onClick={() => setSurface("cases")}>View saved case</button>}
-            </div>
-            {!canApproveStatement(review) && review.review.status !== "approved" && <small className="bs-approval-help">Resolve blocking issues and inspect every row before statement approval.</small>}
-          </section>
+          {review.review.status !== "approved" && (
+            <section className={`bs-approval-readiness ${finalApprovalReady ? "is-ready" : "needs-action"}`} aria-live="polite">
+              <header>
+                <div><span>BEFORE THIS RESULT CAN BE APPROVED</span><h3>{finalApprovalReady ? "Review complete — ready for approval." : `${remainingActionCount} required action${remainingActionCount === 1 ? "" : "s"} remaining`}</h3></div>
+                <b>{finalApprovalReady ? "READY" : `${reviewedCount}/${review.lineItems.length} ROWS`}</b>
+              </header>
+              <div className="bs-readiness-body">
+                <ul>
+                  <li className="is-complete"><span>✓</span><div><b>Documents processed</b><small>{review.source.fileName}</small></div></li>
+                  <li className="is-complete"><span>✓</span><div><b>Company and periods identified</b><small>{review.statement.reportingEntity} · {review.statement.periods.join(" / ")}</small></div></li>
+                  <li className={blockingCount ? "is-required" : "is-complete"}><span>{blockingCount ? "!" : "✓"}</span><div><b>{blockingCount ? `${blockingCount} blocking validation item${blockingCount === 1 ? "" : "s"}` : "No blocking validation issues"}</b><small>{blockingCount ? "Correct a confirmed extraction error or provide the missing/clearer source." : "Arithmetic and required totals are clear for release."}</small></div></li>
+                  <li className={unreviewedItems.length ? "is-required" : "is-complete"}><span>{unreviewedItems.length ? "!" : "✓"}</span><div><b>{unreviewedItems.length ? `${unreviewedItems.length} row${unreviewedItems.length === 1 ? "" : "s"} still require review` : "Every row has been reviewed"}</b><small>{bulkEligibleItems.length ? `${bulkEligibleItems.length} meet the ≥80% bulk-confirm threshold; ${manualReviewItems.length} require individual inspection.` : manualReviewItems.length ? `${manualReviewItems.length} require individual inspection.` : "Original and corrected values remain distinct."}</small></div></li>
+                  <li className={unresolvedComparisonConflicts.length ? "is-required" : "is-complete"}><span>{unresolvedComparisonConflicts.length ? "!" : "✓"}</span><div><b>{unresolvedComparisonConflicts.length ? `${unresolvedComparisonConflicts.length} cross-document discrepanc${unresolvedComparisonConflicts.length === 1 ? "y requires" : "ies require"} acknowledgement` : "Cross-document review is complete"}</b><small>{!comparisonRelevant && comparisonReview ? "The selected comparison belongs to a different reporting entity and does not block this case." : comparisonConflicts.length ? `${comparisonConflicts.length} reported difference${comparisonConflicts.length === 1 ? " was" : "s were"} reviewed or remain explicit; none is silently corrected.` : "No overlapping discrepancy is currently detected."}</small></div></li>
+                </ul>
+                <div className="bs-next-action">
+                  <span>NEXT REQUIRED ACTION</span>
+                  <strong>{finalApprovalReady ? "Approve and save the finished evidence package." : blockingCount ? clientIssueCopy(blockingIssues[0]).title : unreviewedItems.length ? `${unreviewedItems.length} extracted row${unreviewedItems.length === 1 ? "" : "s"} await confirmation.` : `${unresolvedComparisonConflicts.length} reported difference${unresolvedComparisonConflicts.length === 1 ? " awaits" : "s await"} acknowledgement.`}</strong>
+                  <p>{finalApprovalReady ? "Final approval is now active below." : "TenderBalance will take you directly to the next unresolved item."}</p>
+                  {!finalApprovalReady && <button className="is-primary" type="button" onClick={continueReview}>Continue review →</button>}
+                  {bulkEligibleItems.length > 0 && <button type="button" onClick={approveEligibleAndContinue}>Accept {bulkEligibleItems.length} agent-validated row{bulkEligibleItems.length === 1 ? "" : "s"}</button>}
+                </div>
+              </div>
+              <ol className="bs-approval-steps" aria-label="Approval sequence">
+                <li className={bulkEligibleItems.length ? "is-current" : "is-complete"}><span>A</span><div><b>Accept agent-validated rows</b><small>Optional shortcut for unreviewed rows at or above 80% confidence.</small></div></li>
+                <li className={manualReviewItems.length || blockingCount || unresolvedComparisonConflicts.length ? "is-current" : "is-complete"}><span>B</span><div><b>Resolve exceptions manually</b><small>Inspect uncertain rows, acknowledge reported differences, and correct only confirmed extraction errors.</small></div></li>
+                <li className={finalApprovalReady ? "is-current" : ""}><span>C</span><div><b>Approve final result</b><small>Activates automatically when blockers, unreviewed rows, and unacknowledged differences reach zero.</small></div></li>
+              </ol>
+            </section>
+          )}
+
+          {review.review.status === "approved" ? (
+            <section className="bs-approved-result" ref={approvalRef} tabIndex={-1} aria-live="polite">
+              <div className="bs-approved-mark" aria-hidden="true">✓</div>
+              <div className="bs-approved-copy">
+                <span>REVIEW COMPLETED</span>
+                <h3>Financial evidence approved</h3>
+                <p>{review.statement.reportingEntity} · {review.statement.periods.join(" / ")} · approved by {review.review.reviewer ?? reviewer}{review.review.approvedAt ? ` on ${new Date(review.review.approvedAt).toLocaleDateString("en-GB")}` : ""}.</p>
+                <ul><li>Structured balance sheet retained</li><li>Source traceability preserved</li><li>Arithmetic status recorded</li><li>Exceptions and corrections retained</li></ul>
+                <strong>{demoMode ? "Demo result is not stored as client evidence." : "Saved automatically to Cases for this browser."}</strong>
+              </div>
+              <div className="bs-approved-actions">
+                <button className="is-primary" type="button" onClick={() => scrollTo(lineSectionRef.current)}>View approved result</button>
+                {!demoMode && <button type="button" onClick={() => setSurface("cases")}>Open saved case</button>}
+                <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")}>Export JSON</button>
+                <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")}>Export CSV</button>
+                <button type="button" onClick={startNewAnalysis}>Start new review</button>
+              </div>
+            </section>
+          ) : (
+            <section className="bs-approval-section" ref={approvalRef} tabIndex={-1}>
+              <div>
+                <span>07 / APPROVAL & RETENTION</span>
+                <h3>Release only reviewed structured data</h3>
+                <p>Approval confirms transcription and arithmetic review, then saves the result to Cases. Export remains optional. Approval does not determine financial health, tender eligibility, or supplier suitability.</p>
+              </div>
+              <label className="bs-reviewer"><span>Reviewer</span><input value={reviewer} onChange={(event) => setReviewer(event.target.value)} /></label>
+              <div className="bs-approval-actions">
+                <button disabled={!bulkEligibleItems.length} title={bulkEligibleItems.length ? `Accept ${bulkEligibleItems.length} unreviewed rows at or above 80% confidence.` : "No unreviewed row currently meets the ≥80% bulk-confirm threshold."} type="button" onClick={approveEligibleAndContinue}>Accept agent-validated rows</button>
+                <button className="is-primary" disabled={!finalApprovalReady} title={finalApprovalReady ? "All required reviews are complete." : `Final approval is unavailable: ${blockingCount} blocking validation item${blockingCount === 1 ? "" : "s"}, ${unreviewedItems.length} unreviewed row${unreviewedItems.length === 1 ? "" : "s"}, and ${unresolvedComparisonConflicts.length} unacknowledged cross-document discrepanc${unresolvedComparisonConflicts.length === 1 ? "y" : "ies"} remain.`} type="button" onClick={approveFinalResult}>Approve result</button>
+                {!finalApprovalReady && <button className="is-review" type="button" onClick={continueReview}>Review remaining items →</button>}
+                <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")}>Export JSON</button>
+                <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")}>Export CSV</button>
+              </div>
+              {!finalApprovalReady && <small className="bs-approval-help"><b>Why approval is locked:</b> {blockingCount} blocking validation item{blockingCount === 1 ? "" : "s"}, {unreviewedItems.length} unreviewed row{unreviewedItems.length === 1 ? "" : "s"}, and {unresolvedComparisonConflicts.length} unacknowledged cross-document discrepanc{unresolvedComparisonConflicts.length === 1 ? "y" : "ies"} remain. Use “Review remaining items” to go directly to the next action.</small>}
+            </section>
+          )}
 
           <details className="bs-audit-details">
             <summary>Advanced audit and developer details</summary>

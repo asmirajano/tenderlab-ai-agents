@@ -1,0 +1,92 @@
+.client-product-manifesto {
+  margin-inline: auto;
+  max-width: var(--balance-content-max-width);
+  padding: clamp(44px, 6vw, 82px) var(--app-gutter) 28px;
+}
+
+.client-product-manifesto__header {
+  display: grid;
+  gap: 14px;
+  margin-bottom: clamp(28px, 4vw, 48px);
+  max-width: 960px;
+}
+
+.client-product-manifesto__header h1 {
+  font-size: clamp(46px, 5.7vw, 88px);
+  font-weight: 590;
+  letter-spacing: -.07em;
+  line-height: .9;
+  margin: 0;
+}
+
+.client-product-manifesto__header h1 em {
+  color: var(--bs-green);
+  font-style: normal;
+}
+
+.client-product-manifesto__header > p {
+  color: #5f7168;
+  font-size: clamp(14px, 1.25vw, 18px);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 760px;
+}
+
+.client-product-manifesto__story {
+  align-items: stretch;
+  display: grid;
+  gap: clamp(14px, 2vw, 26px);
+  grid-template-columns: minmax(210px, .68fr) minmax(145px, .42fr) minmax(520px, 1.65fr);
+}
+
+.client-product-manifesto__input,
+.client-product-manifesto__transform,
+.client-product-manifesto__output {
+  min-width: 0;
+}
+
+.client-product-manifesto__transform {
+  align-items: center;
+  display: flex;
+}
+
+.client-product-manifesto__actions {
+  align-items: center;
+  border-top: 1px solid var(--bs-line);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 22px;
+}
+
+@media (max-width: 1120px) {
+  .client-product-manifesto__story {
+    grid-template-columns: minmax(220px, .8fr) minmax(130px, .45fr) minmax(390px, 1.35fr);
+  }
+}
+
+@media (max-width: 930px) {
+  .client-product-manifesto__story {
+    grid-template-columns: 1fr;
+  }
+
+  .client-product-manifesto__transform {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 650px) {
+  .client-product-manifesto {
+    padding: 40px 16px 24px;
+  }
+
+  .client-product-manifesto__header h1 {
+    font-size: 47px;
+  }
+
+  .client-product-manifesto__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
