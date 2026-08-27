@@ -27,7 +27,7 @@ button, input, select { font: inherit; }
   gap: clamp(32px, 7vw, 110px);
   grid-template-columns: minmax(0, 1fr) minmax(330px, 470px);
   margin: 0 auto;
-  max-width: 1580px;
+  max-width: var(--balance-content-max-width);
   padding: 66px var(--app-gutter) 38px;
 }
 
@@ -69,7 +69,7 @@ button, input, select { font: inherit; }
   gap: 18px;
   grid-template-columns: 310px minmax(0, 1fr);
   margin: 0 auto;
-  max-width: 1580px;
+  max-width: var(--balance-content-max-width);
   padding: 0 var(--app-gutter);
 }
 
@@ -225,7 +225,7 @@ button, input, select { font: inherit; }
 .bs-approval-actions button:disabled { cursor: not-allowed; opacity: .35; }
 .bs-approval-help { color: #9b650d; font-size: 8px; grid-column: 2 / -1; text-align: right; }
 
-.bs-footer { color: #7a8780; display: flex; font-family: var(--font-geist-mono), monospace; font-size: 9px; justify-content: space-between; margin: 30px auto 0; max-width: 1580px; padding: 0 var(--app-gutter); }
+.bs-footer { color: #7a8780; display: flex; font-family: var(--font-geist-mono), monospace; font-size: 9px; justify-content: space-between; margin: 30px auto 0; max-width: var(--balance-content-max-width); padding: 0 var(--app-gutter); }
 
 @media (max-width: 1250px) {
   .bs-workspace { grid-template-columns: 270px minmax(0, 1fr); }

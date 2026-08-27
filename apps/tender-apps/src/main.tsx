@@ -4,6 +4,7 @@ import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import BalanceSheetApp from "./balance-sheet-app";
 import CatalogPage from "./catalog-page";
+import { LayoutSwitcher, useLayoutPreference } from "./layout-switcher";
 import LogisticsCostingApp from "./logistics-costing-app";
 import "./balance-sheet.css";
 import "./client-shell.css";
@@ -23,23 +24,27 @@ function normalizePath(pathname: string) {
 function TenderAppsProduct() {
   const path = normalizePath(window.location.pathname);
   const route = routes[path as keyof typeof routes] ?? routes["/"];
+  const [layoutMode, setLayoutMode] = useLayoutPreference();
 
   useEffect(() => {
     document.title = route.title;
   }, [route.title]);
 
   return (
-    <div className="tender-apps-product">
+    <div className="tender-apps-product" data-layout={layoutMode}>
       <header className="client-product-bar">
         <div className="client-brand" aria-label="TenderApps">
           <span className="client-brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span><strong>TenderApps</strong><small>by TenderLab.ai</small></span>
         </div>
-        <nav aria-label="Tender Apps practical Agents">
-          <a aria-current={path === "/" ? "page" : undefined} href="/">Catalog</a>
-          <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
-          <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">Landed Cost</a>
-        </nav>
+        <div className="client-header-controls">
+          <nav aria-label="Tender Apps practical Agents">
+            <a aria-current={path === "/" ? "page" : undefined} href="/">Catalog</a>
+            <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
+            <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">Landed Cost</a>
+          </nav>
+          <LayoutSwitcher value={layoutMode} onChange={setLayoutMode} />
+        </div>
         <div className="client-surface-status">
           <i aria-hidden="true" />
           <span>Client workspace</span>

@@ -21,7 +21,7 @@
 .costing-section,
 .costing-footer {
   margin-inline: auto;
-  max-width: 1640px;
+  max-width: var(--costing-content-max-width);
   width: calc(100% - (var(--app-gutter) * 2));
 }
 
@@ -264,7 +264,7 @@
 .costing-footer span, .costing-footer p { color: #7b8881; font-size: var(--type-micro); margin: 0; }
 
 @media (min-width: 1680px) {
-  .costing-hero, .costing-governance, .costing-mode-switch, .costing-workspace, .costing-section, .costing-footer { max-width: 1760px; }
+  .costing-hero, .costing-governance, .costing-mode-switch, .costing-workspace, .costing-section, .costing-footer { max-width: var(--costing-content-max-width); }
   .costing-workspace { grid-template-columns: minmax(0, 1.8fr) minmax(430px, .68fr); }
   .costing-fieldset { padding: 26px 28px; }
 }
