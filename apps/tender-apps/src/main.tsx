@@ -38,11 +38,21 @@ function TenderAppsProduct() {
           <span><strong>TenderApps</strong><small>by TenderLab.ai</small></span>
         </div>
         <div className="client-header-controls">
-          <nav aria-label="Tender Apps practical Agents">
-            <a aria-current={path === "/" ? "page" : undefined} href="/">Catalog</a>
-            <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
-            <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">Landed Cost</a>
-          </nav>
+          <div className="client-navigation-cluster">
+            <a
+              aria-current={path === "/" ? "page" : undefined}
+              className="client-catalog-link"
+              href="/"
+            >
+              <span aria-hidden="true" className="client-catalog-icon"><i /><i /><i /><i /></span>
+              <span>Catalog</span>
+            </a>
+            <span aria-hidden="true" className="client-navigation-flow">→</span>
+            <nav aria-label="Tender Apps practical Agents" className="client-agent-nav">
+              <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
+              <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">Landed Cost</a>
+            </nav>
+          </div>
           <LayoutSwitcher value={layoutMode} onChange={setLayoutMode} />
         </div>
         <div className="client-surface-status">

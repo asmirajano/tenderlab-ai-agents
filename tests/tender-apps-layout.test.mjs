@@ -42,11 +42,45 @@ test("expands only shared workspace limits and lets responsive layouts override 
   assert.match(shell, /--balance-content-max-width:\s*1580px/);
   assert.match(shell, /--costing-content-max-width:\s*1640px/);
   assert.match(shell, /@media \(min-width: 1280px\)[\s\S]+data-layout="wide"[\s\S]+2400px/);
-  assert.match(shell, /@media \(max-width: 760px\)[\s\S]+client-header-controls[\s\S]+overflow-x:\s*auto/);
+  assert.match(shell, /@media \(max-width: 1040px\)[\s\S]+client-header-controls[\s\S]+overflow-x:\s*auto/);
   assert.match(shell, /client-layout-options[\s\S]+border-radius:\s*999px/);
   assert.match(shell, /client-header-controls[^}]+max-width:\s*100vw[^}]+width:\s*100%/);
   assert.match(balanceSheet, /max-width:\s*var\(--balance-content-max-width\)/);
   assert.match(landedCost, /max-width:\s*var\(--costing-content-max-width\)/);
   assert.doesNotMatch(shell, /data-layout="wide"[^}]+font-size/);
   assert.doesNotMatch(shell, /data-layout="wide"[^}]+zoom/);
+});
+
+test("uses one responsive typography scale across every Tender Apps surface", async () => {
+  const [shell, balanceSheet, finForms, landedCost] = await Promise.all([
+    read("apps/tender-apps/src/client-shell.css"),
+    read("apps/tender-apps/src/balance-sheet.css"),
+    read("apps/tender-apps/src/fin-forms.css"),
+    read("apps/tender-apps/src/logistics-costing.css"),
+  ]);
+
+  assert.match(shell, /\.tender-apps-product \{[\s\S]+--type-micro:\s*clamp\(/);
+  assert.match(shell, /--type-body:\s*clamp\(/);
+  assert.match(shell, /--type-control:\s*clamp\(/);
+  assert.match(shell, /font-size:\s*var\(--type-body\)/);
+  assert.ok((balanceSheet.match(/var\(--type-(?:micro|label|small)\)/g) ?? []).length > 100);
+  assert.ok((finForms.match(/var\(--type-(?:micro|label|small)\)/g) ?? []).length > 35);
+  assert.ok((landedCost.match(/var\(--type-(?:micro|label|small|body|control|card-title)\)/g) ?? []).length > 55);
+  assert.doesNotMatch(`${balanceSheet}\n${finForms}\n${landedCost}`, /font-size:\s*(?:6|7|8|9|10|11)px(?:\s*!important)?;/);
+});
+
+test("separates the platform catalog, scalable Agent navigation, and view controls", async () => {
+  const [main, shell] = await Promise.all([
+    read("apps/tender-apps/src/main.tsx"),
+    read("apps/tender-apps/src/client-shell.css"),
+  ]);
+
+  assert.match(main, /className="client-catalog-link"[\s\S]+Catalog/);
+  assert.match(main, /className="client-navigation-flow">→/);
+  assert.match(main, /aria-label="Tender Apps practical Agents" className="client-agent-nav"/);
+  assert.match(main, /client-navigation-cluster[\s\S]+client-catalog-link[\s\S]+client-agent-nav[\s\S]+<LayoutSwitcher/);
+  assert.match(shell, /\.client-catalog-link\[aria-current="page"\]/);
+  assert.match(shell, /\.client-agent-nav a\[aria-current="page"\]/);
+  assert.match(shell, /\.client-layout-switcher \{[^}]*border-left:/);
+  assert.match(shell, /\.client-agent-nav \{[^}]*border-radius:\s*999px/);
 });
