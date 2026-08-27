@@ -69,13 +69,15 @@ export function LayoutSwitcher({ value, onChange }: LayoutSwitcherProps) {
       role="group"
       title="Wide expands the workspace on large screens; responsive limits still apply on smaller screens."
     >
-      <span>Layout</span>
-      <button ref={standardButton} aria-pressed={value === "standard"} onClick={() => selectMode("standard")} onKeyDown={handleKeyDown} type="button">
-        Standard
-      </button>
-      <button ref={wideButton} aria-pressed={value === "wide"} onClick={() => selectMode("wide")} onKeyDown={handleKeyDown} type="button">
-        Wide
-      </button>
+      <span className="client-layout-caption">Layout</span>
+      <div className="client-layout-options">
+        <button ref={standardButton} aria-pressed={value === "standard"} onClick={() => selectMode("standard")} onKeyDown={handleKeyDown} type="button">
+          Standard
+        </button>
+        <button ref={wideButton} aria-pressed={value === "wide"} onClick={() => selectMode("wide")} onKeyDown={handleKeyDown} type="button">
+          Wide
+        </button>
+      </div>
     </div>
   );
 }

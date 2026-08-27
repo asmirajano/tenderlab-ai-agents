@@ -23,6 +23,8 @@ test("provides one accessible persisted layout preference in the shared Tender A
   assert.match(switcher, /aria-label="Workspace layout width"/);
   assert.match(switcher, /aria-pressed=\{value === "standard"\}/);
   assert.match(switcher, /aria-pressed=\{value === "wide"\}/);
+  assert.match(switcher, /className="client-layout-caption"/);
+  assert.match(switcher, /className="client-layout-options"/);
   assert.match(switcher, /ArrowLeft/);
   assert.match(switcher, /ArrowRight/);
   assert.match(switcher, />\s*Standard\s*</);
@@ -41,6 +43,8 @@ test("expands only shared workspace limits and lets responsive layouts override 
   assert.match(shell, /--costing-content-max-width:\s*1640px/);
   assert.match(shell, /@media \(min-width: 1280px\)[\s\S]+data-layout="wide"[\s\S]+2400px/);
   assert.match(shell, /@media \(max-width: 760px\)[\s\S]+client-header-controls[\s\S]+overflow-x:\s*auto/);
+  assert.match(shell, /client-layout-options[\s\S]+border-radius:\s*999px/);
+  assert.match(shell, /client-layout-caption[\s\S]+text-transform:\s*uppercase/);
   assert.match(shell, /client-header-controls[^}]+max-width:\s*100vw[^}]+width:\s*100%/);
   assert.match(balanceSheet, /max-width:\s*var\(--balance-content-max-width\)/);
   assert.match(landedCost, /max-width:\s*var\(--costing-content-max-width\)/);
