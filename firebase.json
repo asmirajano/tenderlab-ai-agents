@@ -32,6 +32,11 @@
         "source": "/main-agents-run",
         "destination": "/case-simulation",
         "type": 301
+      },
+      {
+        "source": "/balance-sheet-review",
+        "destination": "/products#tenderbalance",
+        "type": 301
       }
     ],
     "headers": [
@@ -97,6 +102,36 @@
             "value": "no-cache"
           }
         ]
+      },
+      {
+        "source": "/products",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/**",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow, noarchive"
+          }
+        ]
       }
     ]
   },
@@ -146,6 +181,42 @@
     ]
   },
   {
+    "target": "tender-balance",
+    "public": "apps/tender-apps/dist",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "**",
+        "destination": "https://tenderapps-ai.web.app/balance-sheet-review",
+        "type": 302
+      }
+    ]
+  },
+  {
+    "target": "tender-apps-legacy",
+    "public": "apps/tender-apps/dist",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "**",
+        "destination": "https://tenderapps-ai.web.app/landed-cost",
+        "type": 302
+      }
+    ]
+  },
+  {
     "target": "tender-apps",
     "public": "apps/tender-apps/dist",
     "cleanUrls": true,
@@ -180,7 +251,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+            "value": "default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
           },
           {
             "key": "Referrer-Policy",

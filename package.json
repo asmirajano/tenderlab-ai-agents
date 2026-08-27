@@ -12,6 +12,7 @@
     "build:tenderlab": "vinext build && node scripts/export-firebase.mjs",
     "build:atlas": "npm --prefix apps/ecosystem-atlas run build",
     "build:tender-apps": "npm --prefix apps/tender-apps run build",
+    "dev:tender-apps": "npm --prefix apps/tender-apps run dev",
     "generate:agent-specs": "node --experimental-strip-types scripts/generate-agent-specifications.mjs",
     "start": "vinext start",
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",
@@ -21,6 +22,7 @@
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "firebase": "^12.18.0",
+    "pdfjs-dist": "5.4.149",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

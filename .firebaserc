@@ -10,6 +10,15 @@
         ],
         "ecosystem-atlas": [
           "tender-ecosystem-atlas"
+        ],
+        "tender-balance": [
+          "tenderbalance-ai"
+        ],
+        "tender-apps": [
+          "tenderapps-ai"
+        ],
+        "tender-apps-legacy": [
+          "tenderapps-landed-cost"
         ]
       }
     }

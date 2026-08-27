@@ -1,14 +1,18 @@
-# TenderLab.ai + Tender Ecosystem Atlas + TenderApps
+# TenderLab.ai + Tender Ecosystem Atlas + Tender Apps
 
-Three deliberately separate products share design tokens, stable catalogue IDs,
-and a canonical glossary without merging their domain models:
+Three deliberately separate product surfaces share selected design tokens, stable catalogue IDs,
+and canonical contracts without merging their audiences or domain models:
 
 - **TenderLab.ai Command Center** explains and validates the working 64-agent architecture for the internal team and administrators.
 - **Tender Ecosystem Atlas** catalogues procurement Sides, Actor Types,
   datasets, providers, terminology, and methodology.
-- **TenderApps** is the separate client-facing product suite. Its first module,
-  **Landed Cost Studio**, implements Agent 50 logistics and Incoterms costing
-  without exposing Command Center navigation or bundling its route tree.
+- **Tender Apps** is one unified client-facing application. Its practical-Agent
+  pages currently include **TenderBalance**, for supplied balance sheets, and
+  **Landed Cost Studio**, for Agent 50 logistics and Incoterms costing.
+
+TenderLab.ai is the internal **Command Center** for team members and administrators.
+Client users belong only in their assigned Tender App and must never receive a
+Command Center route or access grant.
 
 The product boundary is implemented, but the current static TenderLab and Atlas
 hosts do not yet enforce staff roles. Treat them as non-confidential validation
@@ -44,6 +48,8 @@ artifact storage, approvals, observability/recovery and security governance.
 - \`/architecture\` — orchestration, agent tiers, platform sides, layers, and handoffs
 - \`/agents\` — canonical 64-agent hierarchy and catalog
 - \`/case-simulation\` — Validation / Case Audit across the current case portfolio
+- \`/products\` — internal Tender Apps product register and management entry
+- \`/balance-sheet-review\` — compatibility redirect to the TenderBalance product record
 
 Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 \`/main-agents-run\` resolves to Validation.
@@ -59,17 +65,23 @@ Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 
 ### TenderApps
 
-TenderApps is an independent Vite application under \`apps/tender-apps\`. Its
-root opens **Landed Cost Studio** with Incoterms conversion, standalone
-logistics costing, packing/unit planning, scenario comparison, and auditable
-exports. It has no link back to the Command Center. The internal header can
-open a separately deployed TenderApps origin only when
+Tender Apps is one independent Vite application under \`apps/tender-apps\`:
+
+- \`/\` — practical-Agent catalog
+- \`/balance-sheet-review\` — TenderBalance
+- \`/landed-cost\` — Landed Cost Studio
+
+It has no link back to the Command Center. The internal header can open the
+separately deployed Tender Apps origin only when
 \`NEXT_PUBLIC_TENDER_APPS_URL\` is configured with an absolute HTTPS URL (or a
 localhost URL during development).
 
 Shared packages live under \`packages/\`: \`catalog-schema\`, \`catalog-data\`,
 \`design-system\`, and the reusable \`logistics-costing\` calculation kernel. The
 Atlas and TenderApps are independent Vite applications under \`apps/\`.
+
+The TenderBalance engine lives in \`packages/tender-balance\`; its page is
+rendered by the shared Tender Apps shell.
 
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
@@ -81,7 +93,7 @@ Requires Node.js 22.13 or later and pnpm 11.19.
 \`\`\`bash
 pnpm install --frozen-lockfile
 pnpm dev
-pnpm --dir apps/tender-apps dev
+pnpm dev:tender-apps
 \`\`\`
 
 ## Validation
@@ -91,22 +103,38 @@ pnpm lint
 pnpm test
 \`\`\`
 
-\`pnpm test\` builds all three products, exports the TenderLab strategic pages and
+\`pnpm test\` builds all product surfaces, exports the TenderLab strategic pages and
 compatibility routes, and verifies published assets, catalogue boundaries,
 the client-product boundary, canonical registries, Case methodology, and
 semantic search.
 
-## Deployment
+The balance-sheet MVP TOR, schema, synthetic fixtures, limitations, and
+Quick-Value migration path are documented in
+[`docs/balance-sheet-digitization-mvp.md`](docs/balance-sheet-digitization-mvp.md).
 
-Firebase Hosting currently uses two live sites in the existing Firebase
-project. Pushes to \`main\` are linted, built, and tested once before those two
-sites are updated through named deploy targets.
+## Deployment and access boundary
+
+- The Command Center’s existing ChatGPT Site is custom-access and owner-only.
+- Its Firebase Hosting copy is temporarily public for internal testing and is
+  search-hidden rather than access-controlled. Do not place confidential client
+  evidence there; real administrator authorization remains required before use.
+- All practical-Agent pages are built and deployed as one Tender Apps bundle
+  on one Firebase Hosting target. No client bundle includes Command Center navigation.
+- Static Hosting is public delivery, even when marked noindex. Production client
+  onboarding still requires server-enforced authorization, tenant isolation,
+  durable storage, retention, and audit logging.
+
+See \`docs/tenderapps-product-boundary.md\` for the complete access contract.
+
+Firebase Hosting uses named sites in the existing Firebase project. Pushes to
+\`main\` are linted, built, and tested before configured sites are updated.
 
 - TenderLab.ai: https://tenderlab-ai-agents.web.app
 - Tender Ecosystem Atlas: https://tender-ecosystem-atlas.web.app
-- TenderApps: separate \`tender-apps\` target prepared, **not mapped or deployed**
+- Tender Apps: https://tenderapps-ai.web.app
+- Legacy product-specific URLs: compatibility redirects only
 - Firebase project: \`tenderlab-ai-agents\`
-- Live deploy targets: \`tenderlab\`, \`ecosystem-atlas\`
+- Live client target: \`tender-apps\`
 
 All current products are static front-end applications. No paid Firebase services,
 Cloud Functions, databases, or server-side compute are enabled.

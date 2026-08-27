@@ -1,0 +1,22 @@
+{
+  "benchmark": "balance-sheet-a-financial-management-tool_MF291.pdf",
+  "source_sha256": "700C7238BD7926A450F150ACA5B81CCE1E7C299C7962A8C4842A869FF363BDC3",
+  "evidence_type": "authorized real-document benchmark; not synthetic and not client evidence",
+  "expected_client_actions_before_result": 1,
+  "result": {
+    "statement_page": 3,
+    "reporting_entity": "Joe and Jean Farmer",
+    "reporting_year": "2017",
+    "periods": ["January 1", "December 31", "Average"],
+    "rows_expected": 35,
+    "rows_extracted": 35,
+    "values_expected": 105,
+    "values_extracted": 105,
+    "unreadable_values": 0,
+    "ambiguous_mappings": 0,
+    "blocking_extraction_issues": 0,
+    "rounding_findings": 8,
+    "classification": "Complete"
+  },
+  "workflow_observation": "One upload produced the finished digitized statement, preserved source findings without silent correction, and saved the case automatically."
+}

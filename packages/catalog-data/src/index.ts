@@ -7,4 +7,5 @@ export * from "./agent-case-evidence";
 export * from "./agent-dataset-relations";
 export * from "./datasets";
 export * from "./glossary";
+export * from "./client-products";
 export * from "./validate";

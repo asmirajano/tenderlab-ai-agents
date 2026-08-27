@@ -41,6 +41,7 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+/tmp/
 
 # Firebase Hosting
 /.firebase/

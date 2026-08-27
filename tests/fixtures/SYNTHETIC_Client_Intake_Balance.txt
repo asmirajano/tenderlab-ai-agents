@@ -1,0 +1,15 @@
+SYNTHETIC FIXTURE - NOT CLIENT EVIDENCE
+Example Manufacturing LLC
+Balance sheet
+USD thousands
+2025 | 2024
+Cash and cash equivalents | 3,000 | 2,000
+Trade receivables | 2,000 | 2,000
+Total current assets | 5,000 | 4,000
+Property plant and equipment | 5,000 | 5,000
+Total assets | 10,000 | 9,000
+Trade payables | 2,000 | 2,000
+Total current liabilities | 2,000 | 2,000
+Long term borrowings | 2,000 | 2,000
+Total liabilities | 4,000 | 4,000
+Owners equity | 6,000 | 5,000

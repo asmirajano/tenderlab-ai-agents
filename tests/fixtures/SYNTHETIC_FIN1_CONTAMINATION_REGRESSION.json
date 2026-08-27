@@ -1,0 +1,72 @@
+{
+  "fixture": "SYNTHETIC FIN-1 CONTAMINATION REGRESSION — NOT CLIENT EVIDENCE",
+  "inputs": [
+    {
+      "role": "FINANCIAL_SOURCE",
+      "reviewInput": {
+        "source": {
+          "documentId": "synthetic:fin1-source-2017",
+          "fileName": "SYNTHETIC_FINANCIAL_SOURCE_2017.json",
+          "mimeType": "application/json",
+          "sha256": "synthetic-financial-source",
+          "pageCount": 1,
+          "synthetic": true
+        },
+        "pages": [
+          {
+            "pageNumber": 1,
+            "text": "SYNTHETIC FIXTURE - NOT CLIENT EVIDENCE\nIllustrative Source Company\nBalance Sheet — 2017\nJanuary 1 | December 31 | Average",
+            "extractionMethod": "digital-text",
+            "confidence": 0.99
+          }
+        ],
+        "reportingEntity": "Illustrative Source Company",
+        "reportingDate": "2017",
+        "periods": ["January 1", "December 31", "Average"],
+        "currency": "USD",
+        "unitLabel": "units",
+        "unitScale": 1,
+        "language": "en",
+        "lineItems": [
+          { "page": 1, "originalLabel": "TOTAL ASSETS", "concept": "total_assets", "classification": "asset", "isTotal": true, "values": [{ "period": "January 1", "raw": "1,000" }, { "period": "December 31", "raw": "1,200" }, { "period": "Average", "raw": "1,100" }] },
+          { "page": 1, "originalLabel": "TOTAL LIABILITIES", "concept": "total_liabilities", "classification": "liability", "isTotal": true, "values": [{ "period": "January 1", "raw": "400" }, { "period": "December 31", "raw": "450" }, { "period": "Average", "raw": "425" }] },
+          { "page": 1, "originalLabel": "NET WORTH", "concept": "owners_equity", "classification": "equity", "isTotal": true, "values": [{ "period": "January 1", "raw": "599" }, { "period": "December 31", "raw": "750" }, { "period": "Average", "raw": "674" }] },
+          { "page": 1, "originalLabel": "TOTAL CURRENT ASSETS", "concept": "current_assets", "classification": "current_asset", "isTotal": true, "values": [{ "period": "January 1", "raw": "300" }, { "period": "December 31", "raw": "360" }, { "period": "Average", "raw": "330" }] },
+          { "page": 1, "originalLabel": "TOTAL CURRENT LIABILITIES", "concept": "current_liabilities", "classification": "current_liability", "isTotal": true, "values": [{ "period": "January 1", "raw": "150" }, { "period": "December 31", "raw": "180" }, { "period": "Average", "raw": "165" }] }
+        ]
+      }
+    },
+    {
+      "role": "TEMPLATE",
+      "reviewInput": {
+        "source": {
+          "documentId": "synthetic:populated-fin1-template",
+          "fileName": "SYNTHETIC_POPULATED_FIN1_TEMPLATE.json",
+          "mimeType": "application/json",
+          "sha256": "synthetic-template-example",
+          "pageCount": 1,
+          "synthetic": true
+        },
+        "pages": [
+          {
+            "pageNumber": 1,
+            "text": "SYNTHETIC TEMPLATE EXAMPLE - NOT CLIENT EVIDENCE\nFIN-1 Example Applicant\n2021 | 2022 | 2023 | 2024 | 2025",
+            "extractionMethod": "digital-text",
+            "confidence": 0.99
+          }
+        ],
+        "reportingEntity": "Example Applicant From Template",
+        "reportingDate": "2025",
+        "periods": ["2021", "2022", "2023", "2024", "2025"],
+        "currency": "USD",
+        "unitLabel": "units",
+        "unitScale": 1,
+        "language": "en",
+        "lineItems": [
+          { "page": 1, "originalLabel": "TOTAL ASSETS", "concept": "total_assets", "classification": "asset", "isTotal": true, "values": [{ "period": "2021", "raw": "9,999,991" }, { "period": "2022", "raw": "9,999,992" }, { "period": "2023", "raw": "9,999,993" }, { "period": "2024", "raw": "9,999,994" }, { "period": "2025", "raw": "9,999,995" }] },
+          { "page": 1, "originalLabel": "TOTAL LIABILITIES", "concept": "total_liabilities", "classification": "liability", "isTotal": true, "values": [{ "period": "2021", "raw": "8,888,881" }, { "period": "2022", "raw": "8,888,882" }, { "period": "2023", "raw": "8,888,883" }, { "period": "2024", "raw": "8,888,884" }, { "period": "2025", "raw": "8,888,885" }] }
+        ]
+      }
+    }
+  ]
+}

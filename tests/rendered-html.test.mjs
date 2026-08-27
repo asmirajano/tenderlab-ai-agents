@@ -12,14 +12,16 @@ async function readPublished(relativePath) {
   return readFile(path.join(publishRoot, relativePath), "utf8");
 }
 
-test("exports the strategic presentation, validation tools, and compatibility routes", async () => {
-  const [home, architecture, workflow, agentsPage, run, caseSimulation] = await Promise.all([
+test("exports the internal Command Center, Client Products register, and compatibility routes", async () => {
+  const [home, architecture, workflow, agentsPage, run, caseSimulation, products, balanceSheetReview] = await Promise.all([
     readPublished("index.html"),
     readPublished("architecture.html"),
     readPublished("workflow.html"),
     readPublished("agents.html"),
     readPublished("main-agents-run.html"),
     readPublished("case-simulation.html"),
+    readPublished("products.html"),
+    readPublished("balance-sheet-review.html"),
   ]);
 
   assert.match(home, /<title>TenderLab\.ai — Agent Architecture/);
@@ -90,7 +92,21 @@ test("exports the strategic presentation, validation tools, and compatibility ro
   assert.match(caseSimulation, /aria-current="page"[^>]+href="\/case-simulation"/);
   assert.doesNotMatch(caseSimulation, /href="\/main-agents-run"/);
 
-  for (const html of [home, architecture, workflow, agentsPage, run, caseSimulation]) {
+  assert.match(products, /Client products/);
+  assert.match(products, /TenderBalance/);
+  assert.match(products, /Landed Cost Studio/);
+  assert.match(products, /2(?:<!-- -->)? products/);
+  assert.match(products, /PRIVATE CLIENT WORKSPACE|assigned client users/i);
+  assert.match(products, /Command Center access/);
+  assert.match(products, /aria-current="page"[^>]+href="\/products"/);
+  assert.doesNotMatch(products, /SYNTHETIC_Northstar/);
+
+  assert.match(balanceSheetReview, /PRODUCT SEPARATED/);
+  assert.match(balanceSheetReview, /moved to TenderBalance/);
+  assert.match(balanceSheetReview, /href="\/products#tenderbalance"/);
+  assert.doesNotMatch(balanceSheetReview, /Add balance sheet/);
+
+  for (const html of [home, architecture, workflow, agentsPage, run, caseSimulation, products, balanceSheetReview]) {
     assert.match(html, /<html[^>]*lang="ru"/);
     assert.match(html, /<script[^>]+src="\/_next\/static\/chunks\//);
     assert.match(html, /Glossary/);
@@ -853,6 +869,7 @@ test("publishes client files only", async () => {
   assert.ok(topLevel.includes("agents.html"));
   assert.ok(topLevel.includes("main-agents-run.html"));
   assert.ok(topLevel.includes("case-simulation.html"));
+  assert.ok(topLevel.includes("products.html"));
   assert.ok(!topLevel.includes("glossary.html"));
   assert.ok(topLevel.includes("_next"));
   assert.ok(!topLevel.includes("server"));

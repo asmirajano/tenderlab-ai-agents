@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tenderlab.ai/schemas/fin1-historical-performance.schema.json",
+  "title": "TenderBalance FIN-1 Historical Financial Performance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "templateId", "title", "entity", "currency", "unitLabel", "unitScale", "years", "mappings", "readiness", "coverage"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "templateId": { "const": "FIN-1" },
+    "title": { "const": "Historical Financial Performance" },
+    "entity": { "type": "string", "minLength": 1 },
+    "currency": { "type": "string", "minLength": 1 },
+    "unitLabel": { "type": "string", "minLength": 1 },
+    "unitScale": { "type": "number", "exclusiveMinimum": 0 },
+    "years": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(19|20)[0-9]{2}$" },
+      "uniqueItems": true
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "field", "label", "displayYear", "value", "currency", "unitScale", "provenance", "sourceIds", "sourceSummary", "originalPeriods", "reportedValue", "calculatedValue", "difference", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "field": { "enum": ["total_assets", "total_liabilities", "net_worth", "current_assets", "current_liabilities", "working_capital", "total_revenue", "profit_before_tax", "profit_after_tax"] },
+          "label": { "type": "string" },
+          "displayYear": { "type": "string", "pattern": "^(19|20)[0-9]{2}$" },
+          "value": { "type": ["number", "null"] },
+          "currency": { "type": "string" },
+          "unitScale": { "type": "number", "exclusiveMinimum": 0 },
+          "provenance": { "enum": ["SOURCE", "CALCULATED", "USER_INPUT", "ESTIMATED", "TEMPLATE_EXAMPLE", null] },
+          "sourceIds": { "type": "array", "items": { "type": "string" } },
+          "sourceSummary": { "type": "string" },
+          "originalPeriods": { "type": "array", "items": { "type": "string" } },
+          "calculationFormula": { "type": "string" },
+          "operandSourceIds": { "type": "array", "items": { "type": "string" } },
+          "reportedValue": { "type": ["number", "null"] },
+          "calculatedValue": { "type": ["number", "null"] },
+          "difference": { "type": ["number", "null"] },
+          "status": { "enum": ["ready", "missing", "extraction-problem", "mapping-problem", "source-inconsistency"] },
+          "problemType": { "enum": ["extraction-problem", "source-data-gap", "mapping-problem", "source-inconsistency", "coverage-requirement"] },
+          "action": { "type": "string" }
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "canGenerate", "readyFields", "missingFields", "problemFields", "message"],
+      "properties": {
+        "status": { "enum": ["ready", "partial", "not-ready"] },
+        "canGenerate": { "type": "boolean" },
+        "readyFields": { "type": "integer", "minimum": 0 },
+        "missingFields": { "type": "integer", "minimum": 0 },
+        "problemFields": { "type": "integer", "minimum": 0 },
+        "message": { "type": "string" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availableYears", "requiredYears", "status", "message"],
+      "properties": {
+        "availableYears": { "type": "integer", "minimum": 0 },
+        "requiredYears": { "type": ["integer", "null"], "minimum": 1 },
+        "status": { "enum": ["not-specified", "sufficient", "insufficient"] },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}
