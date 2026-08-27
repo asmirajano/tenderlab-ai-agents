@@ -14,9 +14,23 @@ const navItems: Array<{ id: PrimaryPage; label: string; href: string }> = [
   { id: "products", label: "Client Products", href: "/products" },
 ];
 
+function configuredTenderAppsUrl() {
+  const configured = process.env.NEXT_PUBLIC_TENDER_APPS_URL?.trim();
+  if (!configured) return null;
+
+  try {
+    const url = new URL(configured);
+    const isLocalDevelopment = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+    return url.protocol === "https:" || isLocalDevelopment ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function TopNavigation({ active }: { active: PrimaryPage }) {
   const navRef = useRef<HTMLElement>(null);
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
+  const tenderAppsUrl = configuredTenderAppsUrl();
 
   useEffect(() => {
     const alignActiveLink = window.setTimeout(() => {
@@ -48,6 +62,15 @@ export default function TopNavigation({ active }: { active: PrimaryPage }) {
         ))}
       </nav>
       <div className="product-jumps" aria-label="Related product surfaces">
+        {tenderAppsUrl ? (
+          <a className="tender-apps-jump" href={tenderAppsUrl} rel="noreferrer" target="_blank">
+            <span className="product-long">TenderApps</span><span className="product-short">Apps</span><i aria-hidden="true">↗</i>
+          </a>
+        ) : (
+          <span className="tender-apps-jump is-unconfigured" title="Set NEXT_PUBLIC_TENDER_APPS_URL to the separately hosted client product">
+            <span className="product-long">TenderApps</span><span className="product-short">Apps</span><i>setup</i>
+          </span>
+        )}
         <a className="atlas-jump" href="https://tender-ecosystem-atlas.web.app"><span className="atlas-long">Ecosystem Atlas</span><span className="atlas-short">Atlas</span><span>↗</span></a>
         <a className="core-jump" href="/agents"><span>●</span> 64 agents</a>
       </div>
