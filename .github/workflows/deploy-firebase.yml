@@ -39,6 +39,9 @@ jobs:
 
       - name: Build and test
         run: pnpm run test
+        env:
+          NEXT_PUBLIC_TENDER_BALANCE_URL: https://tenderbalance-ai.web.app
+          NEXT_PUBLIC_TENDER_APPS_URL: https://tenderapps-landed-cost.web.app
 
       - name: Deploy Tender Ecosystem Atlas
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -47,3 +50,19 @@ jobs:
           channelId: live
           projectId: tenderlab-ai-agents
           target: ecosystem-atlas
+
+      - name: Deploy TenderBalance
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
+          channelId: live
+          projectId: tenderlab-ai-agents
+          target: tender-balance
+
+      - name: Deploy Cost and Landed Price
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
+          channelId: live
+          projectId: tenderlab-ai-agents
+          target: tender-apps
