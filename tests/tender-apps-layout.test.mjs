@@ -70,17 +70,26 @@ test("uses one responsive typography scale across every Tender Apps surface", as
 });
 
 test("separates the platform catalog, scalable Agent navigation, and view controls", async () => {
-  const [main, shell] = await Promise.all([
+  const [main, shell, registry, catalog] = await Promise.all([
     read("apps/tender-apps/src/main.tsx"),
     read("apps/tender-apps/src/client-shell.css"),
+    read("apps/tender-apps/src/practical-agent-registry.tsx"),
+    read("apps/tender-apps/src/catalog-page.tsx"),
   ]);
 
   assert.match(main, /className="client-catalog-link"[\s\S]+Catalog/);
   assert.match(main, /className="client-navigation-flow">→/);
   assert.match(main, /aria-label="Tender Apps practical Agents" className="client-agent-nav"/);
   assert.match(main, /client-navigation-cluster[\s\S]+client-catalog-link[\s\S]+client-agent-nav[\s\S]+<LayoutSwitcher/);
+  assert.match(main, /practicalAgents\.map/);
   assert.match(shell, /\.client-catalog-link\[aria-current="page"\]/);
   assert.match(shell, /\.client-agent-nav a\[aria-current="page"\]/);
   assert.match(shell, /\.client-layout-switcher \{[^}]*border-left:/);
-  assert.match(shell, /\.client-agent-nav \{[^}]*border-radius:\s*999px/);
+  assert.match(shell, /\.client-agent-nav \{[^}]*display:\s*flex;[^}]*gap:\s*8px/);
+  assert.doesNotMatch(shell, /\.client-agent-nav \{[^}]*(?:background|border|border-radius|padding):/);
+  assert.match(shell, /\.client-agent-nav a \{[^}]*background:\s*white;[^}]*border:\s*1px solid[^}]*border-radius:\s*11px/);
+  assert.match(shell, /\.client-layout-options \{[^}]*border-radius:\s*999px/);
+  assert.match(registry, /canonicalName:\s*"TENDER LOGISTICS COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
+  assert.match(catalog, /PracticalAgentVisual/);
+  assert.match(shell, /\.client-agent-card > header[\s\S]+\.client-agent-visual/);
 });

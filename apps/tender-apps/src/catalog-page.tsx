@@ -1,21 +1,4 @@
-const practicalAgents = [
-  {
-    id: "agent:TL-A008",
-    name: "TenderBalance",
-    agent: "Company Verification Agent",
-    description: "Digitize, validate, review, approve, compare, and export balance-sheet evidence.",
-    href: "/balance-sheet-review",
-    status: "MVP simulation",
-  },
-  {
-    id: "agent:TL-A050",
-    name: "TENDER LOGISTICS COST",
-    agent: "Transport, logistics and Incoterms cost estimation",
-    description: "Estimate cargo, packing, transport requirements, freight, insurance and landed cost for tender shipments.",
-    href: "/landed-cost",
-    status: "MVP simulation",
-  },
-] as const;
+import { PracticalAgentVisual, practicalAgents } from "./practical-agent-registry";
 
 export default function CatalogPage() {
   return (
@@ -31,12 +14,17 @@ export default function CatalogPage() {
 
       <section className="client-agent-catalog" aria-label="Practical Agent catalog">
         {practicalAgents.map((item, index) => (
-          <article key={item.id}>
-            <span>{String(index + 1).padStart(2, "0")} · {item.id}</span>
-            <h2>{item.name}</h2>
-            <b>{item.agent}</b>
+          <article className={`client-agent-card client-agent-card--${item.visual}`} key={item.id}>
+            <header>
+              <div className="client-agent-card-identity">
+                <span>{String(index + 1).padStart(2, "0")} · {item.id}</span>
+                <h2>{item.displayName}</h2>
+                <b>{item.functionalSubtitle}</b>
+              </div>
+              <PracticalAgentVisual kind={item.visual} />
+            </header>
             <p>{item.description}</p>
-            <footer><small>{item.status}</small><a href={item.href}>Open Agent page →</a></footer>
+            <footer><small>{item.status}</small><a aria-label={`Open ${item.displayName}`} href={item.href}>Open Agent page →</a></footer>
           </article>
         ))}
       </section>

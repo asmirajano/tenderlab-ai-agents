@@ -7,14 +7,18 @@ import CatalogPage from "./catalog-page";
 import { LayoutSwitcher, useLayoutPreference } from "./layout-switcher";
 import LogisticsCostingApp from "./logistics-costing-app";
 import { installVitePreloadRecovery } from "./preload-recovery";
+import { practicalAgents } from "./practical-agent-registry";
 import "./balance-sheet.css";
 import "./client-shell.css";
 import "./logistics-costing.css";
 
+const tenderBalanceAgent = practicalAgents.find((agent) => agent.href === "/balance-sheet-review")!;
+const logisticsCostAgent = practicalAgents.find((agent) => agent.href === "/landed-cost")!;
+
 const routes = {
   "/": { label: "Agent catalog", title: "Tender Apps — Practical Agent catalog", component: <CatalogPage /> },
-  "/balance-sheet-review": { label: "TenderBalance", title: "Tender Apps — TenderBalance", component: <BalanceSheetApp /> },
-  "/landed-cost": { label: "TENDER LOGISTICS COST", title: "Tender Apps — TENDER LOGISTICS COST", component: <LogisticsCostingApp /> },
+  "/balance-sheet-review": { label: tenderBalanceAgent.displayName, title: tenderBalanceAgent.pageTitle, component: <BalanceSheetApp /> },
+  "/landed-cost": { label: logisticsCostAgent.displayName, title: logisticsCostAgent.pageTitle, component: <LogisticsCostingApp /> },
 } as const;
 
 function normalizePath(pathname: string) {
@@ -50,8 +54,12 @@ function TenderAppsProduct() {
             </a>
             <span aria-hidden="true" className="client-navigation-flow">→</span>
             <nav aria-label="Tender Apps practical Agents" className="client-agent-nav">
-              <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
-              <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">TENDER LOGISTICS COST</a>
+              {practicalAgents.map((agent, index) => (
+                <a aria-current={path === agent.href ? "page" : undefined} href={agent.href} key={agent.id} title={agent.functionalSubtitle}>
+                  <span aria-hidden="true" className="client-agent-link-index">{String(index + 1).padStart(2, "0")}</span>
+                  <span>{agent.displayName}</span>
+                </a>
+              ))}
             </nav>
           </div>
           <LayoutSwitcher value={layoutMode} onChange={setLayoutMode} />

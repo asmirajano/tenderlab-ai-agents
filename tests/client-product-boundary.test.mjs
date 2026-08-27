@@ -83,10 +83,11 @@ test("provides a one-way, separately configured Command Center launch", async ()
 });
 
 test("builds one Tender Apps bundle with dedicated practical-Agent pages and no Command Center backlink", async () => {
-  const [html, component, shell, assetNames] = await Promise.all([
+  const [html, component, shell, displayRegistry, assetNames] = await Promise.all([
     readFile(path.join(tenderAppsRoot, "dist", "index.html"), "utf8"),
     readFile(path.join(tenderAppsRoot, "src", "logistics-costing-app.tsx"), "utf8"),
     readFile(path.join(tenderAppsRoot, "src", "main.tsx"), "utf8"),
+    readFile(path.join(tenderAppsRoot, "src", "practical-agent-registry.tsx"), "utf8"),
     readdir(path.join(tenderAppsRoot, "dist", "assets")),
   ]);
 
@@ -97,13 +98,14 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   const clientBundle = (await Promise.all(assetNames
     .filter((name) => name.endsWith(".js"))
     .map((name) => readFile(path.join(tenderAppsRoot, "dist", "assets", name), "utf8")))).join("\n");
-  assert.match(clientBundle, /TENDER LOGISTICS COST · REVIEWED COST EVIDENCE/);
+  assert.match(clientBundle, /Tender Logistics Cost · Reviewed Cost Evidence/);
   assert.match(clientBundle, /ONE BEST CURRENT ESTIMATE/);
   assert.match(clientBundle, /tenderapps\.landed-cost\.audit\.v0\.1/);
   assert.match(shell, /Client workspace/);
-  assert.match(shell, /TenderBalance/);
-  assert.match(shell, /TENDER LOGISTICS COST/);
-  assert.match(component, /TENDER LOGISTICS COST · REVIEWED COST EVIDENCE/);
+  assert.match(shell, /practicalAgents/);
+  assert.match(displayRegistry, /displayName:\s*"TenderBalance"/);
+  assert.match(displayRegistry, /canonicalName:\s*"TENDER LOGISTICS COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
+  assert.match(component, /Tender Logistics Cost · Reviewed Cost Evidence/);
   assert.match(component, /Estimated Logistics Cost/);
   assert.match(component, /required \+ 1 free capacity reference/);
   assert.match(component, /productionEstimate\.transport\.allocations\.map/);
