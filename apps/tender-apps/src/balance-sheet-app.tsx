@@ -13,7 +13,7 @@ import {
 } from "../../../packages/tender-balance/src/model.ts";
 import { syntheticBalanceSheetReviews, syntheticFixtureLabels } from "../../../packages/tender-balance/src/fixtures.ts";
 import "../../../packages/design-system/src/tokens.css";
-import "./styles.css";
+import "./balance-sheet.css";
 
 const conceptLabels: Record<string, string> = {
   total_assets: "Total assets",
@@ -61,7 +61,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`bs-status status-${status}`}>{status.replaceAll("-", " ")}</span>;
 }
 
-export default function App() {
+export default function BalanceSheetApp() {
   const [reviews, setReviews] = useState<BalanceSheetReview[]>(syntheticBalanceSheetReviews);
   const [selectedReviewId, setSelectedReviewId] = useState(syntheticBalanceSheetReviews[0].reviewId);
   const [selectedLineId, setSelectedLineId] = useState(syntheticBalanceSheetReviews[0].lineItems[0]?.id ?? "");
@@ -142,15 +142,6 @@ export default function App() {
 
   return (
     <main className="bs-page">
-      <header className="tb-product-header">
-        <div className="tb-product-brand" aria-label="TenderBalance home">
-          <span className="tb-product-mark" aria-hidden="true"><i /><i /><i /></span>
-          <strong>TenderBalance</strong>
-          <small>by Tender Apps</small>
-        </div>
-        <div className="tb-product-context"><span>PRIVATE CLIENT WORKSPACE</span><b>Balance-sheet review</b></div>
-      </header>
-
       <section className="bs-hero">
         <div>
           <p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>

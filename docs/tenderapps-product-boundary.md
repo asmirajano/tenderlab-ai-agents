@@ -1,12 +1,12 @@
 # TenderApps client-product boundary
 
-Status: implemented product separation; deployment and production authorization pending, 2026-08-27
+Status: unified client application implemented; static deployment is not production authorization, 2026-08-27
 
 ## Naming decision
 
-**TenderApps** is the client-facing product umbrella. It is short, describes a suite rather than one calculator, and avoids conflating client tools with the internal TenderLab Command Center or the Tender Ecosystem Atlas. The first module is **Landed Cost Studio**.
+**Tender Apps** is the single client-facing application for practical Agents. Each practical capability receives a dedicated page inside the shared application rather than a new app or origin. Current pages are **TenderBalance** and **Landed Cost Studio**.
 
-The names describe product surfaces, not new canonical Agents. Landed Cost Studio remains a standalone implementation of `agent:TL-A050` — Cost & Landed-Price Agent — and imports the shared `packages/logistics-costing` kernel.
+The page names describe client experiences, not new canonical Agents. TenderBalance remains a bounded implementation of `agent:TL-A008`; Landed Cost Studio remains an implementation of `agent:TL-A050`. Their reusable logic remains in shared packages.
 
 ## Surface contract
 
@@ -14,17 +14,18 @@ The names describe product surfaces, not new canonical Agents. Landed Cost Studi
 |---|---|---|---|
 | TenderLab.ai Command Center | TenderLab team and administrators | Architecture, Agent registry, validation, review, and future product administration | May open the separate TenderApps origin after `NEXT_PUBLIC_TENDER_APPS_URL` is configured |
 | Tender Ecosystem Atlas | Internal architecture/data administration and reference | Dataset, Actor, Process, Artifact, and methodology catalogues | Separate product; not a client execution surface |
-| TenderApps | Clients and explicitly authorized support staff | Usable tender applications, starting with Landed Cost Studio | Contains no Command Center route, shell, backlink, or client-side copy of the Command Center pages |
+| Tender Apps | Clients and explicitly authorized support staff | Unified practical-Agent catalog and dedicated workflow pages | Contains no Command Center route, shell, backlink, or client-side copy of the Command Center pages |
 
 The Command Center launch uses an absolute HTTPS URL, opens a separate origin, and passes no quotation values, client IDs, document IDs, tokens, or other sensitive context in the URL. Local development may use `http://localhost` or `http://127.0.0.1`.
 
 ## Build and hosting separation
 
 - Command Center source: `app/`; static export: `dist/firebase`.
-- TenderApps source: `apps/tender-apps/`; static build: `apps/tender-apps/dist`.
-- Shared deterministic logic: `packages/logistics-costing/`.
-- Separate prepared Firebase target: `tender-apps`.
-- The TenderApps target has not been mapped to a Firebase site, deployed, or added to the deployment workflow.
+- Tender Apps source: `apps/tender-apps/`; static build: `apps/tender-apps/dist`.
+- Page routes: `/`, `/balance-sheet-review`, and `/landed-cost`.
+- Shared deterministic logic: `packages/tender-balance/` and `packages/logistics-costing/`.
+- One Firebase target: `tender-apps` → `tenderapps-ai`.
+- Historic product-specific sites are redirects into the corresponding page on the unified origin.
 - The old Command Center route `/logistics-costing` is not generated or published.
 
 This prevents accidental shell/navigation coupling and permits separate release, domain, CSP, cache, monitoring, and identity policies. It does not by itself authorize users.
@@ -43,9 +44,9 @@ Therefore:
 
 ## Production handoff requirements
 
-Before any client release:
+Before any confidential client release:
 
-- map `tender-apps` to a separately approved site/domain;
+- retain one approved Tender Apps origin and route-level tenant authorization;
 - enforce staff-only authorization on the Command Center and administrative Atlas surfaces;
 - define TenderApps tenant/client/support roles and least-privilege data rules;
 - add Firestore/Storage emulator tests for anonymous, cross-tenant, client, support, and administrator access;
@@ -54,4 +55,4 @@ Before any client release:
 - keep sensitive state out of query strings, browser history, referrers, analytics, and static output;
 - verify CSP, retention, audit journal, incident recovery, and rule deployment in CI.
 
-No migration, deployment, or publication outside the Tender AI Agents Project was performed in this phase.
+The current Firebase release is a public, noindex static MVP and must not receive confidential client evidence.

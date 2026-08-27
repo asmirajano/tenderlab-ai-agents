@@ -94,6 +94,8 @@ test("exports the internal Command Center, Client Products register, and compati
 
   assert.match(products, /Client products/);
   assert.match(products, /TenderBalance/);
+  assert.match(products, /Landed Cost Studio/);
+  assert.match(products, /2 products/);
   assert.match(products, /PRIVATE CLIENT WORKSPACE|assigned client users/i);
   assert.match(products, /Command Center access/);
   assert.match(products, /aria-current="page"[^>]+href="\/products"/);

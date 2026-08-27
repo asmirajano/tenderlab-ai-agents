@@ -8,7 +8,7 @@
 
 **Disposition:** `EXISTING AGENT — SPECIALIZED CAPABILITY`
 
-TenderBalance is a standalone client-facing product powered by a bounded capability of **TL-A008 Company Verification Agent**. It is not a 65th canonical Agent and it is not a client route inside the internal Command Center.
+TenderBalance is a dedicated page inside the unified Tender Apps client application, powered by a bounded capability of **TL-A008 Company Verification Agent**. It is not a 65th canonical Agent and it is not a client route inside the internal Command Center.
 
 - TL-A008 owns evidence-backed verification of company facts and the verified company dossier.
 - TL-A022 Tender OCR & Translation Agent may provide a readable text layer, but does not interpret financial meaning.
@@ -60,12 +60,12 @@ No access to an originating-session client audit report is assumed.
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm dev:tender-balance
+pnpm dev:tender-apps
 ```
 
-Open `http://127.0.0.1:4175`.
+Open `http://127.0.0.1:4174/balance-sheet-review`.
 
-The internal Command Center runs separately with `pnpm dev` at `http://127.0.0.1:3000`. Its `/products` page is a team-facing register that can open TenderBalance; the TenderBalance app has no navigation, route, or permission path back into the Command Center.
+The internal Command Center runs separately with `pnpm dev` at `http://127.0.0.1:3000`. Its `/products` page is a team-facing register that opens the TenderBalance page on the separate Tender Apps origin; Tender Apps has no navigation, route, or permission path back into the Command Center.
 
 The page starts with five clearly labelled synthetic fixtures. Use **Add balance sheet** for a local file. Digital PDFs are read client-side. Image-only inputs are accepted into a blocked review state and require OCR or manual transcription; the MVP does not send them to an external OCR service.
 
@@ -99,7 +99,7 @@ Implemented and exercised as real software:
 - metadata/line parsing, normalization, immutable raw values, source-page/column references, confidence, and review state;
 - arithmetic and cross-document validations;
 - correction audit entries, approval gates, comparison, JSON export, and CSV export;
-- responsive standalone product UI and explicit exception states.
+- responsive practical-Agent page inside the unified Tender Apps shell and explicit exception states.
 
 Simulated or assumed:
 
@@ -118,7 +118,7 @@ Accordingly, the workflow closely represents how a real reviewer would inspect, 
 - Currency/unit detection is heuristic unless supplied explicitly.
 - Subtotal validation only runs when sufficient underlying mapped lines are present. `not-testable` is not treated as passed.
 - Corrections and approvals are browser-memory state in this static MVP. Export the record to preserve work; durable authentication, artifact storage, retention, tenant isolation, and server-side access controls require a production runtime.
-- The local standalone build demonstrates surface separation, not production authentication. A client pilot must run on a separate origin with its own server-enforced client/reviewer access policy.
+- The unified client build demonstrates surface separation, not production authentication. A client pilot requires server-enforced client/reviewer authorization and tenant isolation.
 - No income statement, cash-flow statement, audit-opinion analysis, financial ratio interpretation, eligibility decision, or recommendation is implemented.
 
 ## Migration to Quick-Value Agents

@@ -15,6 +15,9 @@
           "tenderbalance-ai"
         ],
         "tender-apps": [
+          "tenderapps-ai"
+        ],
+        "tender-apps-legacy": [
           "tenderapps-landed-cost"
         ]
       }

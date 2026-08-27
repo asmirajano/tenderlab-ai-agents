@@ -2,8 +2,12 @@ import TopNavigation from "../top-navigation";
 import { clientProducts, landedCostProduct, tenderBalanceProduct } from "../../packages/catalog-data/src/client-products";
 import "./products.css";
 
-const clientAppUrl = process.env.NEXT_PUBLIC_TENDER_BALANCE_URL ?? tenderBalanceProduct.localPreviewUrl;
-const landedCostAppUrl = process.env.NEXT_PUBLIC_TENDER_APPS_URL ?? landedCostProduct.localPreviewUrl;
+const clientAppBaseUrl = process.env.NEXT_PUBLIC_TENDER_APPS_URL;
+
+function clientProductUrl(product: typeof tenderBalanceProduct) {
+  const baseUrl = clientAppBaseUrl ?? product.localPreviewUrl;
+  return new URL(product.clientRoute, baseUrl).toString();
+}
 
 export default function ClientProductsPage() {
   return (
@@ -46,7 +50,7 @@ export default function ClientProductsPage() {
           </div>
           <div className="product-actions">
             <span>TEAM ACTIONS</span>
-            <a className="product-open" href={clientAppUrl} rel="noreferrer" target="_blank">Open TenderBalance ↗</a>
+            <a className="product-open" href={clientProductUrl(tenderBalanceProduct)} rel="noreferrer" target="_blank">Open TenderBalance ↗</a>
             <a href="/agents#agent-8">Open owner Agent</a>
             <span className="product-schema">Schema v1.0.0 · repository contract</span>
             <p>The app URL must resolve on a different origin in production. Do not add client identities to the Command Center allowlist.</p>
@@ -70,7 +74,7 @@ export default function ClientProductsPage() {
           </div>
           <div className="product-actions">
             <span>TEAM ACTIONS</span>
-            <a className="product-open" href={landedCostAppUrl} rel="noreferrer" target="_blank">Open Landed Cost Studio ↗</a>
+            <a className="product-open" href={clientProductUrl(landedCostProduct)} rel="noreferrer" target="_blank">Open Landed Cost Studio ↗</a>
             <a href="/agents#agent-50">Open owner Agent</a>
             <span className="product-schema">Audit schema v0.1 · repository contract</span>
             <p>The app remains separate from internal routes and does not grant Command Center access.</p>

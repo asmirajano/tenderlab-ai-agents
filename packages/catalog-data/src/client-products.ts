@@ -18,6 +18,7 @@ export type ClientProduct = {
   ownerAgentId: string;
   commandCenterPath: string;
   clientAppPath: string;
+  clientRoute: string;
   schemaPath: string;
   localPreviewUrl: string;
   access: ClientProductAccessPolicy;
@@ -32,9 +33,10 @@ export const clientProducts: ClientProduct[] = [
     status: "mvp-simulation",
     ownerAgentId: "agent:TL-A008",
     commandCenterPath: "/products#tenderbalance",
-    clientAppPath: "apps/tender-balance",
+    clientAppPath: "apps/tender-apps",
+    clientRoute: "/balance-sheet-review",
     schemaPath: "packages/catalog-schema/schema/balance-sheet-review.schema.json",
-    localPreviewUrl: "http://127.0.0.1:4175",
+    localPreviewUrl: "http://127.0.0.1:4174",
     access: {
       commandCenterAudience: "team-admin-only",
       clientAppAudience: "assigned-client-users-and-reviewers",
@@ -53,6 +55,7 @@ export const clientProducts: ClientProduct[] = [
     ownerAgentId: "agent:TL-A050",
     commandCenterPath: "/products#landed-cost",
     clientAppPath: "apps/tender-apps",
+    clientRoute: "/landed-cost",
     schemaPath: "packages/logistics-costing/src/types.ts",
     localPreviewUrl: "http://127.0.0.1:4174",
     access: {

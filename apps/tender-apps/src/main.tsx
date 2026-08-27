@@ -1,10 +1,33 @@
-import { StrictMode } from "react";
+/* eslint-disable @next/next/no-html-link-for-pages -- this is a Vite SPA with Firebase rewrites */
+
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import BalanceSheetApp from "./balance-sheet-app";
+import CatalogPage from "./catalog-page";
 import LogisticsCostingApp from "./logistics-costing-app";
+import "./balance-sheet.css";
 import "./client-shell.css";
 import "./logistics-costing.css";
 
+const routes = {
+  "/": { label: "Agent catalog", title: "Tender Apps — Practical Agent catalog", component: <CatalogPage /> },
+  "/balance-sheet-review": { label: "TenderBalance", title: "Tender Apps — TenderBalance", component: <BalanceSheetApp /> },
+  "/landed-cost": { label: "Landed Cost Studio", title: "Tender Apps — Landed Cost Studio", component: <LogisticsCostingApp /> },
+} as const;
+
+function normalizePath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  return normalized === "/tenderbalance" ? "/balance-sheet-review" : normalized === "/logistics-costing" ? "/landed-cost" : normalized;
+}
+
 function TenderAppsProduct() {
+  const path = normalizePath(window.location.pathname);
+  const route = routes[path as keyof typeof routes] ?? routes["/"];
+
+  useEffect(() => {
+    document.title = route.title;
+  }, [route.title]);
+
   return (
     <div className="tender-apps-product">
       <header className="client-product-bar">
@@ -12,16 +35,18 @@ function TenderAppsProduct() {
           <span className="client-brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span><strong>TenderApps</strong><small>by TenderLab.ai</small></span>
         </div>
-        <nav aria-label="TenderApps modules">
-          <span aria-current="page">Landed Cost Studio</span>
+        <nav aria-label="Tender Apps practical Agents">
+          <a aria-current={path === "/" ? "page" : undefined} href="/">Catalog</a>
+          <a aria-current={path === "/balance-sheet-review" ? "page" : undefined} href="/balance-sheet-review">TenderBalance</a>
+          <a aria-current={path === "/landed-cost" ? "page" : undefined} href="/landed-cost">Landed Cost</a>
         </nav>
         <div className="client-surface-status">
           <i aria-hidden="true" />
           <span>Client workspace</span>
-          <small>Phase 1 · under validation</small>
+          <small>{route.label} · Phase 1</small>
         </div>
       </header>
-      <LogisticsCostingApp />
+      {route.component}
     </div>
   );
 }
