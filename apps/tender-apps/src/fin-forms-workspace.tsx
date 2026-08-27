@@ -112,7 +112,7 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance, onStartNe
           <li><span>4</span><div><b>Generate</b><small>Clean FIN form</small></div></li>
         </ol>
 
-        <SourceRoleGate review={review} finReady={hasReliablePeriods} />
+        <SourceRoleGate review={review} finReady={form.readiness.canGenerate} />
 
         <section className="fin-catalog-card">
           <div className="fin-form-identity"><span>FORM FIN–1</span><div><strong>Historical Financial Performance</strong><p>Source-driven periods · balance-derived indicators · income-statement evidence when available</p></div></div>
@@ -164,7 +164,7 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance, onStartNe
           </div>
         </details>
 
-        <section className="fin-review-actions"><div><span>NEXT STEP</span><h3>{form.readiness.canGenerate ? "Generate the source-grounded FIN-1." : "Resolve the blocking source mappings."}</h3><p>{form.readiness.canGenerate ? "Available source values and permitted calculations will be shown. Genuine absent fields remain explicit." : form.readiness.message}</p></div><div><button className="bs-primary-action" disabled={!form.readiness.canGenerate} onClick={() => setView("form")} title={!form.readiness.canGenerate ? form.readiness.message : undefined} type="button">Generate FIN-1 <span aria-hidden="true">→</span></button><button className="bs-secondary-action" onClick={() => setView("catalog")} type="button">Back to forms</button></div></section>
+        <section className="fin-review-actions"><div><span>NEXT STEP</span><h3>{form.readiness.canGenerate ? "Generate the source-grounded FIN-1." : "Resolve the blocking source mappings."}</h3><p>{form.readiness.canGenerate ? "Available source values and permitted calculations will be shown. Genuine absent fields remain explicit." : `${form.readiness.message} Re-digitize the statement or add the missing eligible source; the app will not invent unavailable figures.`}</p></div><div>{form.readiness.canGenerate ? <button className="bs-primary-action" onClick={() => setView("form")} type="button">Generate FIN-1 <span aria-hidden="true">→</span></button> : <button className="bs-primary-action" onClick={onStartNewReview} type="button">Re-digitize or add source <span aria-hidden="true">→</span></button>}<button className="bs-secondary-action" onClick={() => setView("catalog")} type="button">Back to forms</button></div></section>
         <footer className="bs-footer"><span>Tender Apps · TenderBalance · FIN-1 Mapping</span><span>Original dates and provenance retained</span></footer>
       </>
     );

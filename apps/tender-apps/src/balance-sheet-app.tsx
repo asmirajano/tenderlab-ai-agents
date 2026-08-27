@@ -25,6 +25,7 @@ import {
   type BalanceSurface,
 } from "./balance-sheet-navigation.ts";
 import { FinFormsWorkspace } from "./fin-forms-workspace.tsx";
+import { consumePreloadRecoveryNotice } from "./preload-recovery.ts";
 import {
   CollapsibleWorkspaceProvider,
   CollapsibleWorkspaceSection,
@@ -292,7 +293,7 @@ function BalanceSheetWorkspace() {
   const [correctionReason, setCorrectionReason] = useState("");
   const [activePeriod, setActivePeriod] = useState(initialReview?.statement.periods[0] ?? "");
   const [uploadState, setUploadState] = useState<"idle" | "reading" | "error">("idle");
-  const [uploadMessage, setUploadMessage] = useState("Processed locally; no file is uploaded or published.");
+  const [uploadMessage, setUploadMessage] = useState(() => consumePreloadRecoveryNotice() || "Processed locally; no file is uploaded or published.");
   const [agentStage, setAgentStage] = useState<AgentStage>("idle");
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<HTMLElement | null>(null);
@@ -446,7 +447,11 @@ function BalanceSheetWorkspace() {
           setAgentStage(progress.stage === "reading" ? "reading" : progress.stage === "structuring" ? "structuring" : "extracting");
         }));
       } catch (error) {
-        failures.push(`${file.name}: ${error instanceof Error ? error.message : "could not be read"}`);
+        const message = error instanceof Error ? error.message : "could not be read";
+        const readableMessage = /dynamically imported module|importing a module script|modulepreload/i.test(message)
+          ? "TenderApps was updated while this page was open. Refresh the page and choose the document again."
+          : message;
+        failures.push(`${file.name}: ${readableMessage}`);
       }
     }
     const syntheticUploads = accepted.filter(isSyntheticReview);
