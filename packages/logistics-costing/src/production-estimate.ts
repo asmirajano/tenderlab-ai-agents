@@ -393,5 +393,5 @@ export function isSpecificNamedDestination(value: string) {
   const normalized = value.trim().toLowerCase();
   if (!normalized) return false;
   const countryOnly = new Set(["uzbekistan", "china", "kazakhstan", "kyrgyzstan", "tajikistan", "turkmenistan", "russia", "united states", "usa", "germany", "france", "italy", "india"]);
-  return !countryOnly.has(normalized) && (value.includes(",") || /terminal|port|airport|warehouse|factory|site|address|city|district|street|road|avenue/i.test(value));
+  return !countryOnly.has(normalized);
 }

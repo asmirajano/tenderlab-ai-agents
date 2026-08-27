@@ -91,11 +91,11 @@ const guidedSteps = [
   { id: 6, short: "Review", label: "Check what we understood" },
 ] as const;
 
-const clientGoals: Array<{ id: Exclude<ClientGoal, "">; title: string; description: string }> = [
-  { id: "logistics", title: "Calculate logistics cost", description: "Price a route or selected logistics scope without changing the commercial term." },
-  { id: "conversion", title: "Change delivery responsibilities", description: "See the cost impact of moving from the current arrangement to a different one." },
-  { id: "landed", title: "Calculate landed cost", description: "Include the complete route and, when supplied, import clearance, duties and taxes." },
-  { id: "term-advice", title: "Help structure delivery terms", description: "Describe who should handle each responsibility and receive a closest-rule suggestion." },
+const clientGoals: Array<{ id: Exclude<ClientGoal, "">; title: string; description: string; chooseWhen: string }> = [
+  { id: "logistics", title: "Calculate logistics cost", description: "Price a route or selected logistics scope without changing the commercial term.", chooseWhen: "You want a transport and handling budget while keeping the current Incoterm unchanged." },
+  { id: "conversion", title: "Change delivery responsibilities", description: "See the cost impact of moving from the current arrangement to a different one.", chooseWhen: "You want the added or removed cost of changing terms, for example EXW → CIP." },
+  { id: "landed", title: "Calculate landed cost", description: "Include the complete route and, when supplied, import clearance, duties and taxes.", chooseWhen: "You need the goods-plus-logistics total, optionally including import duties and taxes." },
+  { id: "term-advice", title: "Help structure delivery terms", description: "Describe who should handle each responsibility and receive a closest-rule suggestion.", chooseWhen: "You do not yet know which Incoterm best matches the intended responsibilities." },
 ];
 
 const responsibilityQuestions: Array<{ key: keyof ResponsibilityAnswers; label: string; hint: string }> = [
@@ -848,12 +848,27 @@ export default function LogisticsCostingApp() {
     }
   }
 
+  function missingForStep(step: number) {
+    if (step === 1) return clientGoal ? [] : ["calculation goal"];
+    if (step === 2) return [
+      !cargoDescription.trim() && "product or cargo",
+      !(sourceTotal > 0) && "contract or goods value",
+      !currency.trim() && "currency",
+      !sourcePlace.trim() && "supplier / origin",
+      !targetPlace.trim() && "exact named destination",
+      targetPlace.trim() && !isSpecificNamedDestination(targetPlace) && "a city, terminal, airport or delivery site—not only a country",
+      (!transportModeAnswer || transportModeAnswer === "unknown") && "transport mode",
+    ].filter(Boolean) as string[];
+    if (step === 3) return sourceTermKnowledge === "known" && sourceTermSelected || sourceTermKnowledge === "help" && inferredSourceTerm ? [] : ["current Incoterm or responsibility answers"];
+    if (step === 4) {
+      if (workspaceMode === "logistics") return costScopeBasis === "incoterm" && sourceTermSelected || logisticsScope ? [] : ["current Incoterm or alternative logistics scope"];
+      return targetTermKnowledge === "known" && targetTermSelected || targetTermKnowledge === "help" && inferredTargetTerm ? [] : ["target Incoterm or responsibility answers"];
+    }
+    return [];
+  }
+
   function canContinueFromStep(step: number) {
-    if (step === 1) return Boolean(clientGoal);
-    if (step === 2) return Boolean(cargoDescription.trim() && sourceTotal > 0 && currency.trim() && sourcePlace.trim() && isSpecificNamedDestination(targetPlace) && transportModeAnswer && transportModeAnswer !== "unknown");
-    if (step === 3) return sourceTermKnowledge === "known" ? sourceTermSelected : sourceTermKnowledge === "help" && Boolean(inferredSourceTerm);
-    if (step === 4) return workspaceMode === "logistics" ? costScopeBasis === "incoterm" && sourceTermSelected || Boolean(logisticsScope) : (targetTermKnowledge === "known" ? targetTermSelected : targetTermKnowledge === "help" && Boolean(inferredTargetTerm));
-    return true;
+    return missingForStep(step).length === 0;
   }
 
   function continueIntake() {
@@ -1146,7 +1161,7 @@ export default function LogisticsCostingApp() {
           {guidedSteps.map((step) => <li className={step.id < clientStep ? "completed" : step.id === clientStep ? "current" : "upcoming"} key={step.id} aria-current={step.id === clientStep ? "step" : undefined}><span>{step.id < clientStep ? "✓" : step.id}</span><b>{step.short}</b></li>)}
         </ol>
         <section className="intake-card" aria-live="polite">
-          {clientStep === 1 && <div className="intake-step goal-step"><header><span>STEP 1 · YOUR GOAL</span><h2>What are you trying to calculate?</h2><p>Choose the business outcome. We will translate it into the appropriate calculation workflow.</p></header><div className="goal-choice-grid">{clientGoals.map((goal) => <button aria-pressed={clientGoal === goal.id} key={goal.id} onClick={() => chooseGoal(goal.id)} type="button"><span>{clientGoal === goal.id ? "✓" : "→"}</span><strong>{goal.title}</strong><p>{goal.description}</p></button>)}</div></div>}
+          {clientStep === 1 && <div className="intake-step goal-step"><header><span>STEP 1 · YOUR GOAL</span><h2>What are you trying to calculate?</h2><p>Choose the business outcome. We will translate it into the appropriate calculation workflow.</p></header><div className="goal-choice-grid">{clientGoals.map((goal) => <button aria-pressed={clientGoal === goal.id} key={goal.id} onClick={() => chooseGoal(goal.id)} type="button"><span>{clientGoal === goal.id ? "✓" : "→"}</span><strong>{goal.title}</strong><p>{goal.description}</p><small><b>Choose this when:</b> {goal.chooseWhen}</small></button>)}</div></div>}
 
           {clientStep === 2 && <div className="intake-step shipment-step">
             <header><span>STEP 2 · TRANSACTION</span><h2>How would you like to provide the details?</h2><p>Both options feed the same structured calculation. You can upload documents and still complete or correct any field manually.</p></header>
@@ -1209,7 +1224,7 @@ export default function LogisticsCostingApp() {
           {clientStep === 6 && <div className="intake-step review-step"><header><span>STEP 6 · REVIEW</span><h2>Here is the calculation basis</h2><p>Review the commercial facts, estimated cargo profile, benchmark basis and remaining warnings before calculation.</p></header><div className="review-summary-grid"><article><header><span>GOAL</span><button onClick={() => setClientStep(1)} type="button">Edit</button></header><strong>{clientGoals.find((goal) => goal.id === clientGoal)?.title}</strong><p>{workspaceMode === "logistics" ? costScopeBasis === "incoterm" ? `As per current Incoterm — ${sourceTerm}` : logisticsScopes.find((scope) => scope.id === logisticsScope)?.label : `${sourceTerm} → ${targetTerm}`}</p></article><article><header><span>SHIPMENT</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{cargoDescription}</strong><p>{quantityDescription || `${sourceLineCount ?? 1} source line(s)`}</p><p>{sourcePlace} → {targetPlace}</p><p>{exactMoney(sourceTotal, currency)}</p></article><article><header><span>TRANSPORT</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{productionEstimate.transport.requiredTruckCount} × {productionEstimate.transport.unit.label}</strong><p>{productionEstimate.transport.limitingFactor} · {transportMode}</p></article><article><header><span>CARGO ESTIMATE</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{approximateNumber(productionEstimate.cargo.packedVolumeM3.value, "m³")} · {approximateNumber(productionEstimate.cargo.grossWeightKg.value, "kg")}</strong><p>Confidence {productionEstimate.confidence.score}% · {productionEstimate.confidence.label}</p></article></div><div className="review-findings"><section className={blockingMissing.length ? "blocking" : "complete"}><span>{blockingMissing.length ? "REQUIRED INFORMATION" : "REQUIRED INFORMATION COMPLETE"}</span>{blockingMissing.length ? <ul>{blockingMissing.map((item) => <li key={item}>{item}</li>)}</ul> : <p>All inputs required to define the calculation are present.</p>}</section><section className={unknownRequiredCosts.length ? "provisional" : "complete"}><span>{unknownRequiredCosts.length ? "UNESTIMABLE COST INPUTS" : "ESTIMATE PREPARED"}</span>{unknownRequiredCosts.length ? <ul>{unknownRequiredCosts.map((component) => <li key={component}>{componentLabels[component]}</li>)}</ul> : <p>Every relevant cost is sourced, provided, estimated or explicitly excluded.</p>}</section><section className="assumptions"><span>KEY BOUNDARIES</span><ul><li>Freight is benchmark-derived, not a carrier quotation.</li><li>Estimated packing remains separate from source facts.</li><li>Duties and VAT remain outside standard CIP.</li><li>{specialCargoDeclaration ? "Special-cargo declaration recorded for this preliminary case." : "Special-cargo declaration is still required before approval."}</li></ul></section></div><label className="scenario-name-field"><span>Case name <i>Optional</i></span><input placeholder={`${cargoDescription} · ${sourceTerm}${workspaceMode === "logistics" ? " logistics" : ` → ${targetTerm}`}`} value={scenarioName} onChange={(event) => setScenarioName(event.target.value)} /></label></div>}
           {clientStep === 5 && workspaceMode !== "logistics" && targetTerm === "DDP" && <div className="ddp-guidance"><div><span>DDP JURISDICTION GATE</span><strong>Confirm that seller-paid import is legally workable</strong><p>DDP requires an import jurisdiction and a lawful seller-side importer-of-record basis.</p></div><label><span>Import jurisdiction <b>Required</b></span><input placeholder="e.g. Uzbekistan" value={importJurisdiction} onChange={(event) => setImportJurisdiction(event.target.value)} /></label><label><span>Seller-side importer of record <b>Required</b></span><input placeholder="Legal entity or confirmed basis" value={importerOfRecord} onChange={(event) => setImporterOfRecord(event.target.value)} /></label><label><span>Tax registration / recovery basis <i>Optional</i></span><input placeholder="Registration and recoverability assumption" value={taxRegistrationBasis} onChange={(event) => setTaxRegistrationBasis(event.target.value)} /></label></div>}
         </section>
-        <nav className="intake-actions" aria-label="Guided calculation actions"><button disabled={clientStep === 1} onClick={() => setClientStep((current) => Math.max(1, current - 1))} type="button">← Back</button><span>Your answers stay in this browser session.</span>{clientStep < 6 ? <button className="continue-button" disabled={!canContinueFromStep(clientStep)} onClick={continueIntake} type="button">Continue →</button> : <button className="continue-button" disabled={blockingMissing.length > 0} onClick={calculateClientScenario} type="button">Calculate result →</button>}</nav>
+        <nav className="intake-actions" aria-label="Guided calculation actions"><button disabled={clientStep === 1} onClick={() => setClientStep((current) => Math.max(1, current - 1))} type="button">← Back</button><span className={clientStep < 6 && !canContinueFromStep(clientStep) ? "continue-requirement" : ""}>{clientStep < 6 && !canContinueFromStep(clientStep) ? `To continue, complete: ${missingForStep(clientStep).join(", ")}.` : "Your answers stay in this browser session."}</span>{clientStep < 6 ? <button className="continue-button" disabled={!canContinueFromStep(clientStep)} onClick={continueIntake} type="button">Continue →</button> : <button className="continue-button" disabled={blockingMissing.length > 0} onClick={calculateClientScenario} type="button">Calculate result →</button>}</nav>
         <footer className="costing-footer"><div><strong>TenderApps</strong><span>Guided client consultation</span></div><p>Calculation details remain available in the audit view</p></footer>
       </main>
     );

@@ -257,6 +257,7 @@ test("benchmark and special-cargo status remain explicit rather than masqueradin
   assert.ok(estimate.warnings.some((warning) => /possible special-cargo indicators/i.test(warning)));
   assert.ok(estimate.hsCandidates.length > 0);
   assert.equal(isSpecificNamedDestination("Uzbekistan"), false);
+  assert.equal(isSpecificNamedDestination("Tashkent"), true);
   assert.equal(isSpecificNamedDestination("Tashkent, Uzbekistan"), true);
 });
 
@@ -427,6 +428,9 @@ test("the guided client flow combines manual and genuinely parsed document input
   ]);
   assert.match(page, /I will fill it myself/);
   assert.match(page, /Fill automatically from uploaded inputs/);
+  assert.match(page, /Choose this when:/);
+  assert.match(page, /You want the added or removed cost of changing terms, for example EXW → CIP/);
+  assert.match(page, /To continue, complete:/);
   assert.match(page, /extractDocumentInputs/);
   assert.match(page, /Fully parsed automatically/);
   assert.match(page, /Partially parsed automatically/);
@@ -449,6 +453,7 @@ test("the guided client flow combines manual and genuinely parsed document input
   assert.match(css, /\.cost-preparation-summary/);
   assert.match(css, /\.cost-state-badge/);
   assert.match(css, /\.document-processing-progress/);
+  assert.match(css, /\.continue-requirement/);
   assert.match(extractor, /getDocument/);
   assert.match(extractor, /sheet_to_json/);
   assert.match(extractor, /IMAGE_BASED_PDF/);

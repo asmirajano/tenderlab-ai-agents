@@ -507,13 +507,17 @@
 .intake-step > header h2 { font-size: clamp(29px, 3vw, 43px); letter-spacing: -.05em; margin: 7px 0 0; }
 .intake-step > header p { color: #6c7a72; font-size: var(--type-small); line-height: 1.55; margin: 9px 0 0; max-width: 850px; }
 .goal-choice-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 28px 30px; }
-.goal-choice-grid button { background: #f5f8f6; border: 1px solid var(--costing-line); border-radius: 13px; cursor: pointer; display: grid; gap: 4px 14px; grid-template-columns: 36px 1fr; min-height: 124px; padding: 18px; text-align: left; }
-.goal-choice-grid button > span { align-items: center; background: white; border: 1px solid #cbd7d0; border-radius: 9px; color: var(--costing-green); display: flex; grid-row: 1 / span 2; height: 34px; justify-content: center; width: 34px; }
+.goal-choice-grid button { background: #f5f8f6; border: 1px solid var(--costing-line); border-radius: 13px; cursor: pointer; display: grid; gap: 4px 14px; grid-template-columns: 36px 1fr; min-height: 154px; padding: 18px; text-align: left; }
+.goal-choice-grid button > span { align-items: center; background: white; border: 1px solid #cbd7d0; border-radius: 9px; color: var(--costing-green); display: flex; grid-row: 1 / span 3; height: 34px; justify-content: center; width: 34px; }
 .goal-choice-grid strong { font-size: var(--type-card-title); line-height: 1.25; }
 .goal-choice-grid p { color: #6e7c74; font-size: var(--type-small); line-height: 1.45; margin: 3px 0 0; }
+.goal-choice-grid small { border-top: 1px solid #d7e1db; color: #52655b; font-size: var(--type-meta); line-height: 1.45; margin-top: 8px; padding-top: 9px; }
+.goal-choice-grid small b { color: var(--costing-green); font-size: inherit; }
 .goal-choice-grid button[aria-pressed="true"] { background: var(--costing-ink); border-color: var(--costing-ink); color: white; }
 .goal-choice-grid button[aria-pressed="true"] > span { background: var(--costing-signal); border-color: var(--costing-signal); color: var(--costing-ink); }
 .goal-choice-grid button[aria-pressed="true"] p { color: #bbc9c1; }
+.goal-choice-grid button[aria-pressed="true"] small { border-color: #3b5448; color: #d7e1db; }
+.goal-choice-grid button[aria-pressed="true"] small b { color: var(--costing-signal); }
 .goal-choice-grid button:hover, .goal-choice-grid button:focus-visible { border-color: var(--costing-green); outline: 3px solid rgba(20,116,84,.11); }
 .input-supply-choice { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 28px 30px; }
 .input-supply-choice button { background: #f5f8f6; border: 1px solid var(--costing-line); border-radius: 14px; color: var(--costing-ink); cursor: pointer; display: grid; gap: 5px 15px; grid-template-columns: 46px 1fr; min-height: 145px; padding: 21px; text-align: left; }
@@ -709,6 +713,7 @@
 .intake-actions > button { background: white; border: 1px solid #bdccc3; border-radius: 9px; color: var(--costing-green); cursor: pointer; font-size: var(--type-control); font-weight: 780; min-height: 48px; padding: 10px 16px; }
 .intake-actions > button:disabled { cursor: not-allowed; opacity: .42; }
 .intake-actions > span { color: #829088; font-size: var(--type-micro); text-align: center; }
+.intake-actions > span.continue-requirement { color: #8a5b08; font-size: var(--type-meta); font-weight: 720; }
 .intake-actions .continue-button { background: var(--costing-green); border-color: var(--costing-green); color: white; min-width: 150px; }
 .intake-actions .continue-button:not(:disabled):hover, .intake-actions .continue-button:not(:disabled):focus-visible { background: var(--costing-signal); color: var(--costing-ink); outline: 3px solid rgba(20,116,84,.12); }
 
@@ -1010,6 +1015,7 @@
   .review-findings .assumptions { grid-column: auto; }
   .intake-actions { grid-template-columns: 1fr 1fr; }
   .intake-actions > span { display: none; }
+  .intake-actions > span.continue-requirement { display: block; grid-column: 1 / -1; }
   .result-explanation-grid { grid-template-columns: 1fr; }
   .result-explanation-grid > article:last-child { grid-column: auto; }
   .result-next-actions { grid-template-columns: 1fr; }
