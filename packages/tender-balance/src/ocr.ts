@@ -53,7 +53,12 @@ async function acquireWorker(onProgress?: (progress: OcrProgress) => void) {
     return { worker: await configuredWorker(onProgress), terminateAfterUse: true };
   }
   if (onProgress) browserProgressListeners.add(onProgress);
-  if (!browserWorkerPromise) browserWorkerPromise = configuredWorker(broadcastBrowserProgress);
+  if (!browserWorkerPromise) {
+    browserWorkerPromise = configuredWorker(broadcastBrowserProgress).catch((error) => {
+      browserWorkerPromise = undefined;
+      throw error;
+    });
+  }
   return { worker: await browserWorkerPromise, terminateAfterUse: false };
 }
 

@@ -696,8 +696,8 @@ function validate(review: Omit<BalanceSheetReview, "issues" | "arithmeticChecks"
     issues.push({ id: "issue:missing-pages", code: "MISSING_PAGE", severity: "blocking", message: `Missing expected page(s): ${missingNumbers.join(", ")}.`, sourceRefs: [] });
   }
   const imageOnlyPages = review.pages.filter((page) => page.imageOnly);
-  if (imageOnlyPages.length) {
-    issues.push({ id: "issue:ocr-required", code: "OCR_REQUIRED", severity: "blocking", message: `Page(s) ${imageOnlyPages.map((page) => page.pageNumber).join(", ")} contain no usable text layer; OCR or manual transcription is required.`, sourceRefs: [] });
+  if (imageOnlyPages.length && review.lineItems.length === 0) {
+    issues.push({ id: "issue:ocr-required", code: "OCR_REQUIRED", severity: "blocking", message: `No balance-sheet rows could be recovered. Page(s) ${imageOnlyPages.map((page) => page.pageNumber).join(", ")} contain no usable text layer; targeted OCR or manual transcription is required.`, sourceRefs: [] });
   }
   const lowConfidencePages = review.pages.filter((page) => page.confidence !== undefined && page.confidence < 0.8);
   if (lowConfidencePages.length) {

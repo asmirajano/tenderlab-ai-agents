@@ -3,7 +3,7 @@ import { recognizeBalanceSheetImage } from "./ocr.ts";
 import type { PDFPageProxy } from "pdfjs-dist/types/src/display/api";
 
 export type FileReadProgress = {
-  stage: "reading" | "extracting-text" | "ocr" | "structuring";
+  stage: "reading" | "extracting-text" | "triage" | "ocr" | "structuring";
   label: string;
   progress?: number;
   pageNumber?: number;
@@ -67,9 +67,9 @@ function pagesFromText(text: string): SourcePageInput[] {
   }));
 }
 
-async function renderPdfPageForOcr(page: PDFPageProxy) {
+async function renderPdfPageForOcr(page: PDFPageProxy, scale = 2) {
   if (typeof document === "undefined") return undefined;
-  const viewport = page.getViewport({ scale: 2 });
+  const viewport = page.getViewport({ scale });
   const canvas = document.createElement("canvas");
   canvas.width = Math.ceil(viewport.width);
   canvas.height = Math.ceil(viewport.height);
@@ -77,6 +77,51 @@ async function renderPdfPageForOcr(page: PDFPageProxy) {
   if (!context) return undefined;
   await page.render({ canvas, canvasContext: context, viewport }).promise;
   return await new Promise<Blob | undefined>((resolve) => canvas.toBlob((blob) => resolve(blob ?? undefined), "image/png"));
+}
+
+const balanceSheetTitlePattern = /\b(?:balance sheets?|statement of financial position|statement of assets and liabilities|бухгалтерский баланс|moliyaviy holat)\b/i;
+const statementTotalPatterns = [/\btotal assets\b/i, /\btotal liabilities\b/i, /\b(?:stockholders.?|shareholders.?|owners.?) equity\b/i, /\bnet (?:assets|worth)\b/i];
+export const OCR_DISCOVERY_BATCH_SIZE = 12;
+
+export function balanceSheetEvidenceScore(text: string) {
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (!compact) return 0;
+  const titleScore = balanceSheetTitlePattern.test(compact) ? 8 : 0;
+  const totalScore = statementTotalPatterns.filter((pattern) => pattern.test(compact)).length * 3;
+  const tabularRows = text.split(/\r?\n/).filter((line) => (line.match(/\(?[-−]?\d[\d,.'’]*\)?/g)?.length ?? 0) >= 2).length;
+  return titleScore + totalScore + Math.min(6, tabularRows);
+}
+
+export function chooseOcrCandidatePages(pages: SourcePageInput[], attempted = new Set<number>(), batchSize = OCR_DISCOVERY_BATCH_SIZE) {
+  const unread = pages.filter((page) => page.imageOnly && !attempted.has(page.pageNumber));
+  const textSignals = pages
+    .filter((page) => !page.imageOnly && balanceSheetTitlePattern.test(page.text ?? ""))
+    .map((page) => page.pageNumber);
+  const adjacent = unread.filter((page) => textSignals.some((signal) => page.pageNumber > signal && page.pageNumber <= signal + 3));
+  return (adjacent.length ? adjacent : unread).slice(0, batchSize).map((page) => page.pageNumber);
+}
+
+function replacePage(pages: SourcePageInput[], replacement: SourcePageInput) {
+  const index = pages.findIndex((page) => page.pageNumber === replacement.pageNumber);
+  if (index >= 0) pages[index] = replacement;
+}
+
+async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCount: number, scale: number, onProgress?: ProgressReporter) {
+  const renderedPage = await renderPdfPageForOcr(page, scale);
+  if (!renderedPage) return undefined;
+  const recognized = await recognizeBalanceSheetImage(renderedPage, (progress) => onProgress?.({
+    stage: "ocr",
+    label: progress.status === "recognizing text" ? `Recognizing candidate page ${pageNumber} of ${pageCount}` : `Preparing OCR for candidate page ${pageNumber} of ${pageCount}`,
+    progress: progress.progress,
+    pageNumber,
+  }));
+  return {
+    pageNumber,
+    text: recognized.text,
+    extractionMethod: "ocr" as const,
+    confidence: recognized.text.length >= 24 ? recognized.confidence : undefined,
+    imageOnly: recognized.text.length < 24,
+  };
 }
 
 export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressReporter): Promise<SourcePageInput[]> {
@@ -92,27 +137,7 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
     onProgress?.({ stage: "extracting-text", label: `Reading text on page ${pageNumber} of ${pdf.numPages}`, progress: (pageNumber - 1) / pdf.numPages, pageNumber });
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    let text = reconstructPdfPageText(content.items.filter((item): item is PositionedPdfTextItem => "str" in item));
-    if (text.length < 24) {
-      const renderedPage = await renderPdfPageForOcr(page);
-      if (renderedPage) {
-        const recognized = await recognizeBalanceSheetImage(renderedPage, (progress) => onProgress?.({
-          stage: "ocr",
-          label: progress.status === "recognizing text" ? `Recognizing page ${pageNumber} of ${pdf.numPages}` : `Preparing OCR for page ${pageNumber} of ${pdf.numPages}`,
-          progress: progress.progress,
-          pageNumber,
-        }));
-        text = recognized.text;
-        pages.push({
-          pageNumber,
-          text,
-          extractionMethod: "ocr",
-          confidence: text.length >= 24 ? recognized.confidence : undefined,
-          imageOnly: text.length < 24,
-        });
-        continue;
-      }
-    }
+    const text = reconstructPdfPageText(content.items.filter((item): item is PositionedPdfTextItem => "str" in item));
     pages.push({
       pageNumber,
       text,
@@ -120,6 +145,28 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
       confidence: text.length >= 24 ? 0.98 : undefined,
       imageOnly: text.length < 24,
     });
+  }
+
+  if (typeof document !== "undefined" && pages.some((page) => page.imageOnly)) {
+    const attempted = new Set<number>();
+    let statementFound = pages.some((page) => balanceSheetEvidenceScore(page.text ?? "") >= 11);
+    while (!statementFound) {
+      const candidates = chooseOcrCandidatePages(pages, attempted);
+      if (!candidates.length) break;
+      onProgress?.({ stage: "triage", label: `Locating the balance sheet before detailed OCR · ${attempted.size}/${pdf.numPages} pages checked`, progress: attempted.size / pdf.numPages });
+      for (const pageNumber of candidates) {
+        attempted.add(pageNumber);
+        const recognized = await recognizePdfPage(await pdf.getPage(pageNumber), pageNumber, pdf.numPages, 1.25, onProgress);
+        if (!recognized) continue;
+        replacePage(pages, recognized);
+        if (balanceSheetEvidenceScore(recognized.text) >= 11) {
+          statementFound = true;
+          const detailed = await recognizePdfPage(await pdf.getPage(pageNumber), pageNumber, pdf.numPages, 2, onProgress);
+          if (detailed) replacePage(pages, detailed);
+          break;
+        }
+      }
+    }
   }
   return pages;
 }

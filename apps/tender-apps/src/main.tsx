@@ -6,6 +6,7 @@ import BalanceSheetApp from "./balance-sheet-app";
 import CatalogPage from "./catalog-page";
 import { LayoutSwitcher, useLayoutPreference } from "./layout-switcher";
 import LogisticsCostingApp from "./logistics-costing-app";
+import { installVitePreloadRecovery } from "./preload-recovery";
 import "./balance-sheet.css";
 import "./client-shell.css";
 import "./logistics-costing.css";
@@ -68,6 +69,8 @@ function TenderAppsProduct() {
 
 const root = document.getElementById("root");
 if (!root) throw new Error("TenderApps root element is missing");
+
+installVitePreloadRecovery();
 
 createRoot(root).render(
   <StrictMode>
