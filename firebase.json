@@ -32,6 +32,11 @@
         "source": "/main-agents-run",
         "destination": "/case-simulation",
         "type": 301
+      },
+      {
+        "source": "/balance-sheet-review",
+        "destination": "/products#tenderbalance",
+        "type": 301
       }
     ],
     "headers": [
@@ -91,6 +96,15 @@
       },
       {
         "source": "/case-simulation",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/products",
         "headers": [
           {
             "key": "Cache-Control",

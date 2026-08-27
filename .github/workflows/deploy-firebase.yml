@@ -1,4 +1,4 @@
-name: Test and deploy to Firebase Hosting
+name: Test and deploy public Firebase products
 
 on:
   workflow_dispatch:
@@ -39,14 +39,6 @@ jobs:
 
       - name: Build and test
         run: pnpm run test
-
-      - name: Deploy TenderLab.ai
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
-          channelId: live
-          projectId: tenderlab-ai-agents
-          target: tenderlab
 
       - name: Deploy Tender Ecosystem Atlas
         uses: FirebaseExtended/action-hosting-deploy@v0

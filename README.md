@@ -1,11 +1,17 @@
-# TenderLab.ai + Tender Ecosystem Atlas
+# TenderLab.ai + Tender Ecosystem Atlas + Tender Apps
 
-Two deliberately separate products share design tokens, stable catalogue IDs,
-and a canonical glossary without merging their domain models:
+Three deliberately separate product surfaces share selected design tokens, stable catalogue IDs,
+and canonical contracts without merging their audiences or domain models:
 
 - **TenderLab.ai** explains and validates the working 64-agent architecture.
 - **Tender Ecosystem Atlas** catalogues procurement Sides, Actor Types,
   datasets, providers, terminology, and methodology.
+- **Tender Apps** is the client-product family. Its first standalone app,
+  **TenderBalance**, digitizes and verifies supplied balance sheets.
+
+TenderLab.ai is the internal **Command Center** for team members and administrators.
+Client users belong only in their assigned Tender App and must never receive a
+Command Center route or access grant.
 
 Agent ↔ Actor ↔ Dataset relationships are intentionally deferred until the
 independent catalogues have been validated.
@@ -36,6 +42,8 @@ artifact storage, approvals, observability/recovery and security governance.
 - \`/architecture\` — orchestration, agent tiers, platform sides, layers, and handoffs
 - \`/agents\` — canonical 64-agent hierarchy and catalog
 - \`/case-simulation\` — Validation / Case Audit, currently limited to Case 1
+- \`/products\` — internal Tender Apps product register and management entry
+- \`/balance-sheet-review\` — compatibility redirect to the TenderBalance product record
 
 Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 \`/main-agents-run\` resolves to Validation.
@@ -49,9 +57,18 @@ Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 - \`/glossary\` — shared terminology with contextual scopes
 - \`/methodology\` — identity, maturity and governance rules
 
+### TenderBalance
+
+- independent Vite app under \`apps/tender-balance\`
+- local product URL: \`http://127.0.0.1:4175\`
+- no Command Center navigation or routes
+
 Shared packages live under \`packages/\`: \`catalog-schema\`, \`catalog-data\`,
 and \`design-system\`. The Atlas is an independent Vite application under
 \`apps/ecosystem-atlas\`.
+
+The TenderBalance engine lives in \`packages/tender-balance\`; its app shell is
+separate from both internal catalogue products.
 
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
@@ -65,6 +82,12 @@ pnpm install --frozen-lockfile
 pnpm dev
 \`\`\`
 
+Run the client product separately:
+
+\`\`\`bash
+pnpm dev:tender-balance
+\`\`\`
+
 ## Validation
 
 \`\`\`bash
@@ -72,23 +95,23 @@ pnpm lint
 pnpm test
 \`\`\`
 
-\`pnpm test\` builds both products, exports the TenderLab strategic pages and
+\`pnpm test\` builds all three product surfaces, exports the TenderLab strategic pages and
 compatibility routes, and verifies published assets, catalogue boundaries,
 canonical registries, Case 1 methodology, and semantic search.
 
-## Deployment
+The balance-sheet MVP TOR, schema, synthetic fixtures, limitations, and
+Quick-Value migration path are documented in
+[`docs/balance-sheet-digitization-mvp.md`](docs/balance-sheet-digitization-mvp.md).
 
-Firebase Hosting uses two free Hosting sites in the existing Firebase project.
-Pushes to \`main\` are linted, built, and tested once before both live sites are
-updated through named deploy targets.
+## Deployment and access boundary
 
-- TenderLab.ai: https://tenderlab-ai-agents.web.app
-- Tender Ecosystem Atlas: https://tender-ecosystem-atlas.web.app
-- Firebase project: \`tenderlab-ai-agents\`
-- Deploy targets: \`tenderlab\`, \`ecosystem-atlas\`
+- The Command Center’s existing ChatGPT Site is custom-access and owner-only.
+- The public Firebase workflow deploys only Tender Ecosystem Atlas. The legacy
+  public TenderLab target is no longer updated and must be disabled before any
+  client onboarding.
+- TenderBalance is intentionally local-only at this stage. A pilot deployment
+  must use its own origin, server-enforced client/reviewer authorization, tenant
+  isolation, durable storage, retention, and audit logging.
+- Publishing and deployment of TenderBalance are out of scope for this MVP.
 
-Both products are static front-end applications. No paid Firebase services,
-Cloud Functions, databases, or server-side compute are enabled.
-
-The original \`.openai/hosting.json\` remains in the repository so the previous
-OpenAI Sites deployment can be recovered during the hosting transition.
+See \`docs/tender-apps-product-boundary.md\` for the complete access contract.

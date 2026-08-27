@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tenderlab.ai/schemas/balance-sheet-review/1.0.0",
+  "title": "TenderBalance Review",
+  "description": "Stable reviewed output of the TenderBalance product and TL-A008 balance-sheet digitization capability. Reported, normalized, corrected, and calculated values are intentionally separate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "reviewId", "capability", "source", "pages", "statement", "lineItems", "arithmeticChecks", "issues", "review"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "reviewId": { "type": "string", "minLength": 1 },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "ownerAgentId", "ownerAgentName", "supportingAgentIds"],
+      "properties": {
+        "disposition": { "const": "EXISTING AGENT — SPECIALIZED CAPABILITY" },
+        "ownerAgentId": { "const": "agent:TL-A008" },
+        "ownerAgentName": { "const": "Company Verification Agent" },
+        "supportingAgentIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentId", "fileName", "mimeType", "sha256", "pageCount"],
+      "properties": {
+        "documentId": { "type": "string", "minLength": 1 },
+        "fileName": { "type": "string", "minLength": 1 },
+        "mimeType": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "minLength": 1 },
+        "pageCount": { "type": "integer", "minimum": 1 },
+        "expectedPageCount": { "type": "integer", "minimum": 1 },
+        "synthetic": { "type": "boolean" }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pageNumber"],
+        "properties": {
+          "pageNumber": { "type": "integer", "minimum": 1 },
+          "text": { "type": "string" },
+          "extractionMethod": { "enum": ["digital-text", "ocr", "manual-transcription"] },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "missing": { "type": "boolean" },
+          "imageOnly": { "type": "boolean" }
+        }
+      }
+    },
+    "statement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reportingEntity", "reportingDate", "periods", "currency", "unitLabel", "unitScale", "language"],
+      "properties": {
+        "reportingEntity": { "type": "string", "minLength": 1 },
+        "reportingDate": { "type": "string", "minLength": 1 },
+        "periods": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "currency": { "type": "string", "minLength": 1 },
+        "unitLabel": { "type": "string", "minLength": 1 },
+        "unitScale": { "type": "number", "exclusiveMinimum": 0 },
+        "language": { "enum": ["en", "ru", "uz", "und"] }
+      }
+    },
+    "lineItems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lineItem" }
+    },
+    "arithmeticChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "period", "formula", "leftValue", "rightValue", "difference", "status", "inputs"],
+        "properties": {
+          "id": { "type": "string" },
+          "period": { "type": "string" },
+          "formula": { "enum": ["assets = liabilities + equity", "net assets = assets - liabilities", "subtotal = underlying lines"] },
+          "leftValue": { "type": ["number", "null"] },
+          "rightValue": { "type": ["number", "null"] },
+          "difference": { "type": ["number", "null"] },
+          "status": { "enum": ["passed", "failed", "not-testable"] },
+          "inputs": { "type": "array", "items": { "type": "object" } }
+        }
+      }
+    },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "auditTrail"],
+      "properties": {
+        "status": { "enum": ["draft", "needs-review", "approved"] },
+        "reviewer": { "type": "string" },
+        "approvedAt": { "type": "string" },
+        "auditTrail": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "action", "actor", "at", "detail"],
+            "properties": {
+              "id": { "type": "string" },
+              "action": { "enum": ["created", "corrected", "line-approved", "statement-approved", "approval-revoked"] },
+              "actor": { "type": "string" },
+              "at": { "type": "string" },
+              "detail": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentId", "fileName", "page", "originalLabel", "period", "columnIndex", "extractionMethod", "confidence"],
+      "properties": {
+        "documentId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "page": { "type": "integer", "minimum": 1 },
+        "originalLabel": { "type": "string" },
+        "period": { "type": "string" },
+        "columnIndex": { "type": "integer", "minimum": 0 },
+        "extractionMethod": { "enum": ["digital-text", "ocr", "manual-transcription"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "lineItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "originalLabel", "normalizedConcept", "classification", "isTotal", "values", "confidence", "reviewStatus"],
+      "properties": {
+        "id": { "type": "string" },
+        "originalLabel": { "type": "string" },
+        "normalizedConcept": { "type": "string" },
+        "classification": { "type": "string" },
+        "isTotal": { "type": "boolean" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "reviewStatus": { "enum": ["unreviewed", "needs-review", "corrected", "approved"] },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["period", "rawReportedValue", "reportedValue", "normalizedValue", "source"],
+            "properties": {
+              "period": { "type": "string" },
+              "rawReportedValue": { "type": "string" },
+              "reportedValue": { "type": ["number", "null"] },
+              "normalizedValue": { "type": ["number", "null"] },
+              "correction": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["correctedReportedValue", "correctedNormalizedValue", "reason", "reviewer", "at"],
+                "properties": {
+                  "correctedReportedValue": { "type": "number" },
+                  "correctedNormalizedValue": { "type": "number" },
+                  "reason": { "type": "string", "minLength": 1 },
+                  "reviewer": { "type": "string", "minLength": 1 },
+                  "at": { "type": "string" }
+                }
+              },
+              "source": { "$ref": "#/$defs/sourceReference" }
+            }
+          }
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "required": ["id", "code", "severity", "message", "sourceRefs"],
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "severity": { "enum": ["info", "warning", "error", "blocking"] },
+        "message": { "type": "string" },
+        "period": { "type": "string" },
+        "lineItemId": { "type": "string" },
+        "difference": { "type": "number" },
+        "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceReference" } }
+      }
+    }
+  }
+}

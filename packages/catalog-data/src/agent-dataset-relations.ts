@@ -76,7 +76,12 @@ const relations: Record<number, RelationSeed[]> = {
   5: [["RELATIONSHIP-GRAPH", "updates-record", ["entity nodes", "verified edges", "temporal relations"]]],
   6: [["CAPABILITY-PROFILES", "updates-record", ["company capabilities", "capacity", "geography", "evidence links"]]],
   7: [["PRODUCT-CATALOGUE", "enriches-record", ["normalized products", "technical attributes"]], ["CAPABILITY-PROFILES", "enriches-record", ["production capacity", "capability constraints"]]],
-  8: [["COMPANY-REGISTRY", "validates-record", ["legal identity", "operating status"]], ["CAPABILITY-PROFILES", "validates-record", ["factory", "experience", "references"]]],
+  8: [
+    ["COMPANY-REGISTRY", "validates-record", ["legal identity", "operating status"]],
+    ["CAPABILITY-PROFILES", "validates-record", ["factory", "experience", "references"]],
+    ["FINANCIAL-FILINGS", "creates-record", ["reported balance-sheet labels and figures", "normalized concepts and values", "periods, currency and units", "source page and column provenance", "arithmetic findings and review status"], "Только после line-level human review; statement approval authorizes downstream reuse but не является tender eligibility decision."],
+    ["EVIDENCE-VAULT", "enriches-record", ["original balance-sheet file identity", "file hash", "page manifest", "document access classification"], "Когда клиент явно предоставил документ и доступ к нему разрешён; UI state и synthetic fixtures не становятся client evidence."],
+  ],
   9: [["COMPANY-READINESS-ASSESSMENTS", "creates-record", ["readiness score", "blocking gaps", "improvement priorities", "evidence basis"]]],
   10: [["CERTIFICATES", "updates-record", ["certificate scope", "issuer", "validity"]], ["LICENCES", "updates-record", ["licence scope", "expiry"]], ["EVIDENCE-VAULT", "enriches-record", ["credential evidence files"]]],
   11: [["PERFORMANCE-HISTORY", "enriches-record", ["delivery history", "quality", "supplier risk"]]],
