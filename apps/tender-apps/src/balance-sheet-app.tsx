@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { readBalanceSheetFile } from "../../../packages/tender-balance/src/file-reader.ts";
+import { balanceSheetExcelFileName, reviewToExcel } from "../../../packages/tender-balance/src/excel.ts";
+import { prepareFin1FromBalanceReview } from "../../../packages/tender-balance/src/fin-forms.ts";
 import {
   approveEligibleLineItems,
   approveLineItem,
@@ -14,15 +16,24 @@ import {
 import { syntheticBalanceSheetReviews, syntheticFixtureLabels } from "../../../packages/tender-balance/src/fixtures.ts";
 import "../../../packages/design-system/src/tokens.css";
 import { ClientProductManifesto } from "./client-product-manifesto.tsx";
+import { FinFormsWorkspace } from "./fin-forms-workspace.tsx";
+import {
+  CollapsibleWorkspaceProvider,
+  CollapsibleWorkspaceSection,
+  WorkspaceGlobalControls,
+} from "./collapsible-workspace.tsx";
 import "./balance-sheet.css";
 
 const conceptLabels: Record<string, string> = {
   total_assets: "Total assets",
   total_liabilities: "Total liabilities",
+  total_liabilities_and_equity: "Total liabilities & equity",
   owners_equity: "Owners’ equity",
   net_assets: "Net assets",
   current_assets: "Current assets",
+  non_current_assets: "Non-current assets",
   current_liabilities: "Current liabilities",
+  non_current_liabilities: "Non-current liabilities",
   cash_and_cash_equivalents: "Cash & equivalents",
   trade_receivables: "Trade receivables",
   inventories: "Inventories",
@@ -38,6 +49,12 @@ const conceptLabels: Record<string, string> = {
   share_capital: "Share capital",
   retained_earnings: "Retained earnings / loss",
   other_equity: "Other equity",
+  personal_assets: "Personal assets",
+  total_assets_including_personal: "Total assets including personal assets",
+  personal_liabilities: "Personal liabilities",
+  personal_net_worth: "Personal net worth",
+  total_liabilities_including_personal: "Total liabilities including personal liabilities",
+  total_net_worth_including_personal: "Total net worth including personal assets and liabilities",
   unmapped: "Unmapped",
 };
 
@@ -57,7 +74,27 @@ type ComparisonDecision = {
   at: string;
 };
 
-type BalanceSurface = "welcome" | "intake" | "review" | "cases";
+type BalanceSurface = "welcome" | "intake" | "review" | "fin" | "cases";
+type ExtractionOutcome = "unreadable" | "readable-uncertain" | "financially-inconsistent" | "extracted" | "approved";
+type AgentStage = "idle" | "reading" | "extracting" | "structuring" | "checking" | "preparing" | "complete" | "error";
+
+function extractionOutcome(review: BalanceSheetReview): ExtractionOutcome {
+  if (review.review.status === "approved") return "approved";
+  const codes = new Set(review.issues.map((issue) => issue.code));
+  if (!review.lineItems.length && ["OCR_REQUIRED", "STATEMENT_PAGE_NOT_FOUND"].some((code) => codes.has(code as BalanceSheetReview["issues"][number]["code"]))) return "unreadable";
+  if (["ACCOUNTING_EQUATION_MISMATCH", "NET_ASSETS_MISMATCH", "SUBTOTAL_MISMATCH"].some((code) => codes.has(code as BalanceSheetReview["issues"][number]["code"]))) return "financially-inconsistent";
+  if (review.issues.some((issue) => issue.code === "OCR_LOW_CONFIDENCE" || issue.code === "REQUIRED_TOTAL_MISSING" || issue.code === "CLASSIFICATION_ANOMALY")) return "readable-uncertain";
+  return "extracted";
+}
+
+function outcomeCopy(review: BalanceSheetReview) {
+  const outcome = extractionOutcome(review);
+  if (outcome === "approved") return { outcome, title: "This structured statement is approved.", detail: "The reviewed result is retained and ready for export or downstream tender analysis." };
+  if (outcome === "unreadable") return { outcome, title: "This page is genuinely unreadable to the current extraction pipeline.", detail: "No figures were invented. Provide a clearer source or transcribe the affected values with source review." };
+  if (outcome === "financially-inconsistent") return { outcome, title: "The statement was extracted, but the reported figures do not reconcile.", detail: "This is a financial inconsistency in the extracted evidence—not an OCR failure. The reported values remain unchanged for review." };
+  if (outcome === "readable-uncertain") return { outcome, title: "The statement is readable, but some extracted evidence remains uncertain.", detail: "Confirm the highlighted source rows before approval; uncertainty is retained rather than silently resolved." };
+  return { outcome, title: "The statement was structured successfully and is ready for human review.", detail: "No blocking extraction or arithmetic issue is currently open." };
+}
 
 function isSyntheticReview(review: Partial<BalanceSheetReview>) {
   return review.source?.synthetic === true
@@ -106,7 +143,14 @@ function comparisonDecisionId(reviewId: string, comparisonReviewId: string, peri
 }
 
 function latestActivity(review: BalanceSheetReview) {
-  return review.review.approvedAt ?? review.review.auditTrail.at(-1)?.at ?? "";
+  return review.review.approvedAt ?? review.source.processedAt ?? review.review.auditTrail.at(-1)?.at ?? "";
+}
+
+function resultStatus(review: BalanceSheetReview) {
+  const needsSource = review.issues.some((issue) => ["MISSING_PAGE", "OCR_REQUIRED", "STATEMENT_PAGE_NOT_FOUND"].includes(issue.code));
+  if (!review.lineItems.length || needsSource) return "Needs source";
+  if (review.issues.some((issue) => issue.severity !== "info")) return "Completed with findings";
+  return "Completed";
 }
 
 function clientIssueCopy(issue: BalanceSheetReview["issues"][number]) {
@@ -131,6 +175,8 @@ function clientIssueCopy(issue: BalanceSheetReview["issues"][number]) {
     case "REQUIRED_TOTAL_MISSING":
     case "SUBTOTAL_MISMATCH":
       return { title: "A required total is missing or unsupported", why: "The structured result cannot yet substantiate the statement totals.", action: "Please review the underlying lines and confirm whether the source contains the missing total." };
+    case "ROUNDING_DIFFERENCE":
+      return { title: "Minor reported rounding difference", why: "The source was read successfully, but a reported total differs slightly from the calculated value.", action: "No action is required unless your control policy requires investigation." };
     default:
       return { title: "This item needs your review", why: issue.message, action: "Please inspect the linked source evidence before approval." };
   }
@@ -155,30 +201,52 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`bs-status status-${status}`}>{status.replaceAll("-", " ")}</span>;
 }
 
-function BalanceClientNav({ active, caseCount, onHome, onNew, onCases }: {
+function downloadBytes(name: string, content: Uint8Array, mimeType: string) {
+  const bytes = new Uint8Array(content);
+  const url = URL.createObjectURL(new Blob([bytes.buffer], { type: mimeType }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function BalanceClientNav({ active, caseCount, hasResult, onHome, onNew, onResult, onFin, onCases }: {
   active: BalanceSurface;
   caseCount: number;
+  hasResult: boolean;
   onHome: () => void;
   onNew: () => void;
+  onResult: () => void;
+  onFin: () => void;
   onCases: () => void;
 }) {
   return (
     <nav aria-label="TenderBalance workspace" className="bs-client-nav">
       <button aria-current={active === "welcome" ? "page" : undefined} onClick={onHome} type="button">Overview</button>
-      <button aria-current={active === "intake" || active === "review" ? "page" : undefined} onClick={onNew} type="button">New review</button>
+      <button aria-current={active === "intake" ? "page" : undefined} onClick={onNew} type="button">New review</button>
+      <button aria-current={active === "review" ? "page" : undefined} disabled={!hasResult} onClick={onResult} type="button">Result</button>
+      <button aria-current={active === "fin" ? "page" : undefined} disabled={!hasResult} onClick={onFin} type="button">FIN Forms</button>
       <button aria-current={active === "cases" ? "page" : undefined} onClick={onCases} type="button">Cases <span>{caseCount}</span></button>
     </nav>
   );
 }
 
 export default function BalanceSheetApp() {
+  return (
+    <CollapsibleWorkspaceProvider>
+      <BalanceSheetWorkspace />
+    </CollapsibleWorkspaceProvider>
+  );
+}
+
+function BalanceSheetWorkspace() {
   const [surface, setSurface] = useState<BalanceSurface>("welcome");
   const [reviews, setReviews] = useState<BalanceSheetReview[]>(readClientCases);
   const [demoReviews, setDemoReviews] = useState<BalanceSheetReview[]>(syntheticBalanceSheetReviews);
   const [caseContexts, setCaseContexts] = useState<Record<string, string>>(readClientContexts);
   const [comparisonDecisions, setComparisonDecisions] = useState<Record<string, ComparisonDecision>>(readComparisonDecisions);
   const [demoMode, setDemoMode] = useState(false);
-  const [intakeReviewIds, setIntakeReviewIds] = useState<string[]>([]);
   const [companyContext, setCompanyContext] = useState("");
   const [selectedReviewId, setSelectedReviewId] = useState("");
   const [selectedLineId, setSelectedLineId] = useState("");
@@ -189,6 +257,7 @@ export default function BalanceSheetApp() {
   const [activePeriod, setActivePeriod] = useState("");
   const [uploadState, setUploadState] = useState<"idle" | "reading" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState("Processed locally; no file is uploaded or published.");
+  const [agentStage, setAgentStage] = useState<AgentStage>("idle");
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<HTMLElement | null>(null);
   const issuesRef = useRef<HTMLElement | null>(null);
@@ -199,7 +268,6 @@ export default function BalanceSheetApp() {
 
   const availableReviews = demoMode ? demoReviews : reviews;
   const review = availableReviews.find((candidate) => candidate.reviewId === selectedReviewId) ?? availableReviews[0];
-  const intakeReviews = intakeReviewIds.map((reviewId) => reviews.find((candidate) => candidate.reviewId === reviewId)).filter((candidate): candidate is BalanceSheetReview => Boolean(candidate));
   const selectedLine = review?.lineItems.find((item) => item.id === selectedLineId) ?? review?.lineItems[0];
   const comparisonReview = review
     ? availableReviews.find((candidate) => candidate.reviewId === comparisonId && candidate.reviewId !== review.reviewId)
@@ -224,6 +292,14 @@ export default function BalanceSheetApp() {
   const remainingActionCount = blockingCount + unreviewedItems.length + unresolvedComparisonConflicts.length;
   const finalApprovalReady = review ? canApproveStatement(review) && unresolvedComparisonConflicts.length === 0 : false;
   const averageConfidence = review?.lineItems.length ? review.lineItems.reduce((sum, item) => sum + item.confidence, 0) / review.lineItems.length : 0;
+  const agentStages: Array<{ id: AgentStage; label: string; detail: string }> = [
+    { id: "reading", label: "Reading documents", detail: "Opening supplied pages and locating the financial statement" },
+    { id: "extracting", label: "Extracting financial data", detail: "Reading original labels, columns, and reported values" },
+    { id: "structuring", label: "Structuring the statement", detail: "Organizing assets, liabilities, equity, periods, and totals" },
+    { id: "checking", label: "Checking arithmetic", detail: "Reconciling subtotals and accounting relationships" },
+    { id: "preparing", label: "Preparing your result", detail: "Building the digital balance sheet and saving the case" },
+  ];
+  const activeAgentStageIndex = agentStages.findIndex((stage) => stage.id === agentStage);
 
   useEffect(() => {
     try {
@@ -277,12 +353,12 @@ export default function BalanceSheetApp() {
 
   const startNewAnalysis = () => {
     setDemoMode(false);
-    setIntakeReviewIds([]);
     setCompanyContext("");
     setSelectedReviewId("");
     setSelectedLineId("");
     setActivePeriod("");
     setUploadState("idle");
+    setAgentStage("idle");
     setUploadMessage("Documents are processed locally in this prototype.");
     setSurface("intake");
   };
@@ -301,12 +377,17 @@ export default function BalanceSheetApp() {
     const suppliedFiles = Array.from(files);
     if (!suppliedFiles.length) return;
     setUploadState("reading");
+    setAgentStage("reading");
     setUploadMessage(`Reading ${suppliedFiles.length} document${suppliedFiles.length === 1 ? "" : "s"} locally…`);
     const accepted: BalanceSheetReview[] = [];
     const failures: string[] = [];
     for (const file of suppliedFiles) {
       try {
-        accepted.push(await readBalanceSheetFile(file));
+        accepted.push(await readBalanceSheetFile(file, (progress) => {
+          const percentage = progress.progress === undefined ? "" : ` · ${Math.round(progress.progress * 100)}%`;
+          setUploadMessage(`${progress.label}${percentage}`);
+          setAgentStage(progress.stage === "reading" ? "reading" : progress.stage === "structuring" ? "structuring" : "extracting");
+        }));
       } catch (error) {
         failures.push(`${file.name}: ${error instanceof Error ? error.message : "could not be read"}`);
       }
@@ -322,6 +403,7 @@ export default function BalanceSheetApp() {
       setActivePeriod(next.statement.periods[0] ?? "");
       setComparisonId(syntheticUploads[1]?.reviewId ?? "");
       setUploadState("idle");
+      setAgentStage("complete");
       setUploadMessage("This file identifies itself as a synthetic fixture. It was opened in the separate demo workspace and was not saved as client evidence.");
       setSurface("review");
       return;
@@ -332,7 +414,6 @@ export default function BalanceSheetApp() {
         ...clientAccepted,
         ...current.filter((candidate) => !clientAccepted.some((next) => next.reviewId === candidate.reviewId)),
       ]);
-      setIntakeReviewIds(clientAccepted.map((candidate) => candidate.reviewId));
       if (companyContext.trim()) {
         setCaseContexts((current) => ({
           ...current,
@@ -343,14 +424,26 @@ export default function BalanceSheetApp() {
       setSelectedReviewId(next.reviewId);
       setSelectedLineId(next.lineItems[0]?.id ?? "");
       setActivePeriod(next.statement.periods[0] ?? "");
-      setUploadState("idle");
       const totalRows = clientAccepted.reduce((sum, candidate) => sum + candidate.lineItems.length, 0);
-      const imageOnly = clientAccepted.some((candidate) => candidate.pages.some((page) => page.imageOnly));
-      setUploadMessage(imageOnly
-        ? `${clientAccepted.length} document${clientAccepted.length === 1 ? " was" : "s were"} accepted. At least one scan needs OCR or manual transcription; no figures were invented.`
-        : `I extracted ${totalRows} line items from ${clientAccepted.length} document${clientAccepted.length === 1 ? "" : "s"}. Please confirm what I found.${syntheticUploads.length ? ` ${syntheticUploads.length} synthetic fixture was kept out of client evidence.` : ""}`);
+      const totalValues = clientAccepted.reduce((sum, candidate) => sum + candidate.lineItems.reduce((valueSum, item) => valueSum + item.values.length, 0), 0);
+      const needsSource = clientAccepted.some((candidate) => candidate.issues.some((issue) => ["MISSING_PAGE", "OCR_REQUIRED", "STATEMENT_PAGE_NOT_FOUND"].includes(issue.code)));
+      const inconsistent = clientAccepted.filter((candidate) => extractionOutcome(candidate) === "financially-inconsistent").length;
+      const uncertain = clientAccepted.filter((candidate) => extractionOutcome(candidate) === "readable-uncertain").length;
+      setAgentStage("checking");
+      setUploadMessage(`Checking ${totalRows} rows and ${totalValues} reported values…`);
+      await new Promise((resolve) => window.setTimeout(resolve, 160));
+      setAgentStage("preparing");
+      setUploadMessage("Preparing the finished digital balance sheet and saving the case…");
+      await new Promise((resolve) => window.setTimeout(resolve, 160));
+      setUploadState("idle");
+      setAgentStage("complete");
+      setUploadMessage(needsSource
+        ? `${clientAccepted.length} document${clientAccepted.length === 1 ? " was" : "s were"} preserved, but at least one required page remains genuinely unavailable or unreadable. No figures were invented.`
+        : `${totalRows} rows and ${totalValues} values were digitized.${inconsistent ? ` ${inconsistent} statement${inconsistent === 1 ? " contains" : "s contain"} reported figures that do not reconcile.` : uncertain ? ` ${uncertain} statement${uncertain === 1 ? " contains" : "s contain"} findings.` : ""} The result was saved automatically.${syntheticUploads.length ? ` ${syntheticUploads.length} synthetic fixture was kept out of client evidence.` : ""}`);
+      setSurface("review");
     } else {
       setUploadState("error");
+      setAgentStage("error");
       setUploadMessage(failures.join(" ") || "The supplied documents could not be read.");
     }
     if (clientAccepted.length && failures.length) {
@@ -486,9 +579,12 @@ export default function BalanceSheetApp() {
     <BalanceClientNav
       active={surface}
       caseCount={reviews.length}
+      hasResult={Boolean(review)}
       onCases={() => { setDemoMode(false); setSurface("cases"); }}
       onHome={() => { setDemoMode(false); setSurface("welcome"); }}
       onNew={startNewAnalysis}
+      onResult={() => { if (review) setSurface("review"); }}
+      onFin={() => { if (review) setSurface("fin"); }}
     />
   );
 
@@ -498,8 +594,8 @@ export default function BalanceSheetApp() {
         {clientNav}
         <ClientProductManifesto
           eyebrow={<p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>}
-          title={<>Raw statements become an<br /><em>approved evidence package.</em></>}
-          promise={<>See the finished product first: source-traceable figures, reconciled checks, explicit exceptions, human review, and a retained result for downstream tender work.</>}
+          title={<>Raw statements become a<br /><em>finished digital balance sheet.</em></>}
+          promise={<>You provide the source. TenderBalance finds the statement, digitizes every readable value, checks the arithmetic, reports genuine findings, and saves the completed result.</>}
           input={(
             <article className="bs-manifesto-input">
               <div className="bs-manifesto-label"><span>01</span><b>WHAT YOU PROVIDE</b></div>
@@ -515,7 +611,7 @@ export default function BalanceSheetApp() {
             <div className="bs-manifesto-agent" aria-label="TenderBalance transformation">
               <span className="bs-story-arrow" aria-hidden="true">→</span>
               <div className="bs-agent-core"><small>TENDER APPS</small><strong>Tender<br />Balance</strong></div>
-              <ol><li>Read</li><li>Structure</li><li>Validate</li><li>Reconcile</li><li>Review</li></ol>
+              <ol><li>Read</li><li>Identify</li><li>Extract</li><li>Structure</li><li>Check</li></ol>
               <span className="bs-story-arrow" aria-hidden="true">→</span>
             </div>
           )}
@@ -523,13 +619,13 @@ export default function BalanceSheetApp() {
             <article className="bs-finished-package">
               <div className="bs-manifesto-label"><span>03</span><b>WHAT YOU RECEIVE</b><em>FINISHED PRODUCT</em></div>
               <header>
-                <div><small>ILLUSTRATIVE PRODUCT PREVIEW · NOT CLIENT EVIDENCE</small><h2>Reviewed Financial Evidence</h2><p>Illustrative Company Ltd · Balance Sheet · 2025 / 2024</p></div>
-                <span className="bs-example-approved">APPROVED EXAMPLE</span>
+                <div><small>ILLUSTRATIVE PRODUCT PREVIEW · NOT CLIENT EVIDENCE</small><h2>Digitized Balance Sheet</h2><p>Illustrative Company Ltd · 2025 / 2024</p></div>
+                <span className="bs-example-approved">COMPLETED EXAMPLE</span>
               </header>
               <div className="bs-output-preview-table" role="table" aria-label="Illustrative structured balance-sheet output">
                 <div role="row" className="is-header"><span role="columnheader">Original</span><span role="columnheader">Normalized</span><span role="columnheader">2025</span><span role="columnheader">Trace</span><span role="columnheader">Status</span></div>
-                <div role="row"><span role="cell">Cash and cash equivalents</span><span role="cell">Cash & equivalents</span><span role="cell">125,400</span><span role="cell">✓ p.2</span><span role="cell">Verified</span></div>
-                <div role="row"><span role="cell">Trade receivables</span><span role="cell">Receivables</span><span role="cell">84,200</span><span role="cell">✓ p.2</span><span role="cell">Verified</span></div>
+                <div role="row"><span role="cell">Cash and cash equivalents</span><span role="cell">Cash & equivalents</span><span role="cell">125,400</span><span role="cell">✓ p.2</span><span role="cell">Digitized</span></div>
+                <div role="row"><span role="cell">Trade receivables</span><span role="cell">Receivables</span><span role="cell">84,200</span><span role="cell">✓ p.2</span><span role="cell">Digitized</span></div>
                 <div role="row"><span role="cell">Total assets</span><span role="cell">Total assets</span><span role="cell">481,900</span><span role="cell">✓ p.2</span><span role="cell">Reconciled</span></div>
               </div>
               <ul className="bs-finished-checks" aria-label="Finished evidence package contents">
@@ -538,15 +634,15 @@ export default function BalanceSheetApp() {
                 <li><span>✓</span> Source traceability</li>
                 <li><span>✓</span> Arithmetic reconciled</li>
                 <li><span>✓</span> Exceptions reported</li>
-                <li><span>✓</span> Human-reviewed & versioned</li>
+                <li><span>✓</span> Automatically saved & versioned</li>
               </ul>
-              <div className="bs-package-release"><span>APPROVED RESULT</span><b>Ready for downstream tender analysis</b><i>→</i></div>
+              <div className="bs-package-release"><span>COMPLETED RESULT</span><b>Ready for downstream tender analysis</b><i>→</i></div>
             </article>
           )}
           actions={(
             <>
-              <p className="bs-manifesto-action-copy"><b>You provide the source.</b><span>TenderBalance guides everything required to reach this finished result.</span></p>
-              <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Start financial statement review <span aria-hidden="true">→</span></button>
+              <p className="bs-manifesto-action-copy"><b>One client action.</b><span>Upload the statement; TenderBalance does the work and returns the product.</span></p>
+              <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Digitize a balance sheet <span aria-hidden="true">→</span></button>
               <button className="bs-secondary-action" onClick={() => setSurface("cases")} type="button">Open previous cases</button>
             </>
           )}
@@ -555,10 +651,10 @@ export default function BalanceSheetApp() {
         <details className="bs-landing-details">
           <summary>How it works, accepted inputs, and scope</summary>
           <div className="bs-client-journey" aria-label="How TenderBalance works">
-            <article><span>01</span><strong>Provide evidence</strong><p>Add the balance-sheet document or document set you want reviewed.</p></article>
-            <article><span>02</span><strong>Confirm what was found</strong><p>We identify the company, reporting dates, currency, units, language, and comparative columns.</p></article>
-            <article><span>03</span><strong>Resolve important questions</strong><p>Missing pages, uncertain OCR, inconsistent totals, and discrepancies become clear client actions.</p></article>
-            <article><span>04</span><strong>Approve and retain</strong><p>Approve only after review, export structured evidence, and reopen the saved case later.</p></article>
+            <article><span>01</span><strong>Upload statements</strong><p>Add one balance sheet or several related source documents.</p></article>
+            <article><span>02</span><strong>The agent works</strong><p>TenderBalance identifies, extracts, structures, reconciles, and validates the statement independently.</p></article>
+            <article><span>03</span><strong>Receive the result</strong><p>The complete digital balance sheet, checks, and findings appear in the app and save automatically.</p></article>
+            <article><span>04</span><strong>Inspect only if useful</strong><p>Source trace, corrections, comparison, and formal approval remain optional professional controls.</p></article>
           </div>
           <section className="bs-trust-boundary">
             <div><span>SCOPE</span><strong>Digitization and validation—not a tender eligibility decision</strong></div>
@@ -576,67 +672,48 @@ export default function BalanceSheetApp() {
       <main className="bs-page bs-client-intake-page">
         {clientNav}
         <section className="bs-intake-heading">
-          <p className="bs-eyebrow"><span /> NEW FINANCIAL STATEMENT REVIEW</p>
-          <h1>Provide the evidence.<br /><em>We’ll guide the review.</em></h1>
-          <p>You can upload one statement or several related documents. We will extract reliable context from the documents first and ask you to type information only when it cannot be determined confidently.</p>
+          <p className="bs-eyebrow"><span /> NEW DIGITAL BALANCE SHEET</p>
+          <h1>Upload the statement.<br /><em>TenderBalance does the work.</em></h1>
+          <p>Add one balance sheet or several related documents. The agent will locate the statement, digitize its values, validate the arithmetic, save the case, and open the finished result automatically.</p>
         </section>
 
-        <ol className="bs-intake-progress" aria-label="Review progress">
-          <li className="is-complete"><span>1</span><div><b>Purpose</b><small>Balance-sheet review</small></div></li>
-          <li className={intakeReviews.length ? "is-complete" : "is-active"}><span>2</span><div><b>Documents</b><small>Provide source evidence</small></div></li>
-          <li className={intakeReviews.length ? "is-active" : ""}><span>3</span><div><b>Confirm</b><small>Check extracted context</small></div></li>
-          <li><span>4</span><div><b>Review</b><small>Resolve required items</small></div></li>
-          <li><span>5</span><div><b>Approve</b><small>Release structured result</small></div></li>
+        <ol className="bs-intake-progress bs-three-step-progress" aria-label="Digitization progress">
+          <li className={uploadState === "reading" ? "is-complete" : "is-active"}><span>1</span><div><b>Upload</b><small>Provide raw statements</small></div></li>
+          <li className={uploadState === "reading" ? "is-active" : ""}><span>2</span><div><b>Agent works</b><small>Read · structure · check</small></div></li>
+          <li><span>3</span><div><b>Result</b><small>Digital balance sheet</small></div></li>
         </ol>
 
         <section className="bs-intake-card">
           <header>
-            <div><span>DOCUMENT INTAKE</span><h2>What balance-sheet documents do you have?</h2></div>
-            <b>{intakeReviews.length ? `${intakeReviews.length} accepted` : "Start here"}</b>
+            <div><span>YOUR RAW MATERIAL</span><h2>Add the balance-sheet documents</h2></div>
+            <b>{uploadState === "reading" ? "Agent working" : "One action"}</b>
           </header>
-          <label className="bs-company-context">
-            <span>Company or case context <small>Optional—leave blank if the document identifies the company clearly</small></span>
-            <input value={companyContext} onChange={(event) => setCompanyContext(event.target.value)} placeholder="e.g. Supplier legal name or internal case reference" />
-          </label>
           <div className={`bs-client-dropzone ${uploadState}`} onDragOver={(event) => event.preventDefault()} onDrop={onDrop}>
             <input ref={inputRef} type="file" multiple accept=".pdf,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff" onChange={onFileChange} />
             <span aria-hidden="true">⇧</span>
-            <div><strong>{uploadState === "reading" ? "Reading supplied documents…" : "Add one or several balance sheets"}</strong><p>PDF, TXT, JSON extraction envelope, PNG, JPG, or TIFF. Scans remain subject to OCR/manual review.</p></div>
+            <div><strong>{uploadState === "reading" ? "TenderBalance is working…" : "Drop one or several balance sheets here"}</strong><p>Digital PDF, scan, image, TXT, or structured JSON. The agent processes supplied evidence locally in this prototype.</p></div>
             <button disabled={uploadState === "reading"} onClick={() => inputRef.current?.click()} type="button">Choose documents</button>
           </div>
           <p aria-live="polite" className={`bs-client-upload-message ${uploadState === "error" ? "is-error" : ""}`}>{uploadMessage}</p>
+          <details className="bs-optional-context">
+            <summary>Add an optional internal company or case reference</summary>
+            <label className="bs-company-context">
+              <span>Reference <small>Leave blank when the document identifies the entity</small></span>
+              <input value={companyContext} onChange={(event) => setCompanyContext(event.target.value)} placeholder="e.g. supplier or internal case reference" />
+            </label>
+          </details>
         </section>
 
-        {intakeReviews.length > 0 && (
-          <section className="bs-found-section">
-            <header><div><span>WHAT I FOUND</span><h2>Please confirm the extracted context</h2></div><p>Nothing below has been approved yet.</p></header>
-            <div className="bs-found-grid">
-              {intakeReviews.map((candidate) => {
-                const needsAction = candidate.issues.filter((issue) => issue.severity !== "info");
-                return (
-                  <article key={candidate.reviewId}>
-                    <div className="bs-found-document"><span>DOCUMENT</span><strong>{candidate.source.fileName}</strong><small>{candidate.lineItems.length} extracted line items · {candidate.pages.length} source page{candidate.pages.length === 1 ? "" : "s"}</small></div>
-                    <dl>
-                      <div><dt>Company</dt><dd>{candidate.statement.reportingEntity || "Needs confirmation"}</dd></div>
-                      <div><dt>Reporting date</dt><dd>{candidate.statement.reportingDate || "Needs confirmation"}</dd></div>
-                      <div><dt>Periods</dt><dd>{candidate.statement.periods.join(" · ") || "Needs confirmation"}</dd></div>
-                      <div><dt>Currency / units</dt><dd>{candidate.statement.currency} · {candidate.statement.unitLabel}</dd></div>
-                      <div><dt>Language</dt><dd>{candidate.statement.language.toUpperCase()}</dd></div>
-                    </dl>
-                    {needsAction.length > 0 ? (
-                      <div className="bs-client-questions">
-                        <b>{needsAction.length} item{needsAction.length === 1 ? " needs" : "s need"} your attention</b>
-                        {needsAction.slice(0, 3).map((issue) => {
-                          const copy = clientIssueCopy(issue);
-                          return <div key={issue.id}><strong>{copy.title}</strong><p>{copy.action}</p></div>;
-                        })}
-                      </div>
-                    ) : <p className="bs-ready-note">No blocking extraction issue was detected. Human review is still required before approval.</p>}
-                    <button className="bs-primary-action" onClick={() => openReview(candidate)} type="button">Confirm and open review <span aria-hidden="true">→</span></button>
-                  </article>
-                );
+        {uploadState === "reading" && (
+          <section className="bs-agent-progress" aria-live="polite">
+            <header><div><span>AGENT WORK</span><h2>TenderBalance is preparing your result</h2></div><b>Automatic</b></header>
+            <ol>
+              {agentStages.map((stage, index) => {
+                const complete = activeAgentStageIndex > index || agentStage === "complete";
+                const active = activeAgentStageIndex === index;
+                return <li className={complete ? "is-complete" : active ? "is-active" : ""} key={stage.id}><span>{complete ? "✓" : active ? "•" : index + 1}</span><div><b>{stage.label}{active ? "…" : ""}</b><small>{stage.detail}</small></div></li>;
               })}
-            </div>
+            </ol>
           </section>
         )}
         <footer className="bs-footer"><span>Tender Apps · TenderBalance</span><span>Documents remain local in this prototype</span></footer>
@@ -654,7 +731,7 @@ export default function BalanceSheetApp() {
         </section>
         {reviews.length ? (
           <section className="bs-case-list" aria-label="Saved balance-sheet cases">
-            <div className="bs-case-list-header"><span>Company / document</span><span>Reporting period</span><span>Currency</span><span>Validation</span><span>Approval</span><span>Activity</span><span /></div>
+            <div className="bs-case-list-header"><span>Company / document</span><span>Reporting period</span><span>Currency</span><span>Validation</span><span>Result</span><span>Processed</span><span /></div>
             {reviews.map((candidate) => {
               const blocking = candidate.issues.filter((issue) => issue.severity === "blocking" || issue.severity === "error").length;
               const activity = latestActivity(candidate);
@@ -664,7 +741,7 @@ export default function BalanceSheetApp() {
                   <span>{candidate.statement.periods.join(" · ") || candidate.statement.reportingDate}</span>
                   <span>{candidate.statement.currency} · {candidate.statement.unitLabel}</span>
                   <span>{blocking ? `${blocking} blocking` : `${candidate.arithmeticChecks.filter((check) => check.status === "passed").length}/${candidate.arithmeticChecks.length} checks passed`}</span>
-                  <StatusBadge status={candidate.review.status} />
+                  <StatusBadge status={resultStatus(candidate).toLocaleLowerCase().replaceAll(" ", "-")} />
                   <span>{activity ? new Date(activity).toLocaleDateString("en-GB") : "—"}</span>
                   <button onClick={() => openReview(candidate)} type="button">Open case</button>
                 </article>
@@ -672,7 +749,7 @@ export default function BalanceSheetApp() {
             })}
           </section>
         ) : (
-          <section className="bs-no-cases"><span aria-hidden="true">□</span><h2>No client cases yet</h2><p>Your first review will appear here after you provide a balance-sheet document. Demo fixtures are kept separate.</p><button className="bs-primary-action" onClick={startNewAnalysis} type="button">Start first review <span aria-hidden="true">→</span></button></section>
+          <section className="bs-no-cases"><span aria-hidden="true">□</span><h2>No client cases yet</h2><p>Your first result will be saved here automatically after you provide a balance-sheet document. Demo fixtures are kept separate.</p><button className="bs-primary-action" onClick={startNewAnalysis} type="button">Digitize first statement <span aria-hidden="true">→</span></button></section>
         )}
         <footer className="bs-footer"><span>Tender Apps · TenderBalance</span><span>Saved locally for this browser session</span></footer>
       </main>
@@ -684,6 +761,202 @@ export default function BalanceSheetApp() {
       <main className="bs-page bs-cases-page">
         {clientNav}
         <section className="bs-no-cases"><h2>No document is open</h2><p>Start a new review and provide the balance-sheet evidence first.</p><button className="bs-primary-action" onClick={startNewAnalysis} type="button">Start review <span aria-hidden="true">→</span></button></section>
+      </main>
+    );
+  }
+
+  if (surface === "fin") {
+    return (
+      <main className="bs-page fin-page">
+        {clientNav}
+        <FinFormsWorkspace review={review} demoMode={demoMode} onBackToBalance={() => setSurface("review")} />
+      </main>
+    );
+  }
+
+  if (surface === "review") {
+    const valueCount = review.lineItems.reduce((sum, item) => sum + item.values.length, 0);
+    const passedChecks = review.arithmeticChecks.filter((check) => check.status === "passed").length;
+    const roundingFindings = review.issues.filter((issue) => issue.code === "ROUNDING_DIFFERENCE");
+    const arithmeticFindingCount = review.issues.filter((issue) => ["ROUNDING_DIFFERENCE", "ACCOUNTING_EQUATION_MISMATCH", "NET_ASSETS_MISMATCH", "SUBTOTAL_MISMATCH"].includes(issue.code)).length;
+    const genuineBlockers = review.issues.filter((issue) => ["MISSING_PAGE", "OCR_REQUIRED", "STATEMENT_PAGE_NOT_FOUND"].includes(issue.code));
+    const findingCount = review.issues.filter((issue) => issue.severity !== "info").length;
+    const statementPages = Array.from(new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page))));
+    const hasConcept = (concept: string) => review.lineItems.some((item) => item.normalizedConcept === concept);
+    const resultReady = review.lineItems.length > 0 && genuineBlockers.length === 0;
+    const hasReadableRows = review.lineItems.length > 0;
+    const fin1 = prepareFin1FromBalanceReview(review).form;
+
+    return (
+      <main className="bs-page bs-result-page">
+        {clientNav}
+
+        {(demoMode || isSyntheticReview(review)) && (
+          <div className="bs-synthetic-banner"><b>SYNTHETIC FIXTURE</b><span>This record is a test simulation, not real client evidence.</span></div>
+        )}
+
+        <section className={`bs-ready-hero ${genuineBlockers.length ? "needs-source" : "is-ready"}`}>
+          <div className="bs-ready-copy">
+            <p className="bs-eyebrow"><span /> {genuineBlockers.length ? "SOURCE CLARIFICATION NEEDED" : "PROCESSING COMPLETE"}</p>
+            <h1>{resultReady ? <>Your balance sheet<br /><em>is ready.</em></> : <>TenderBalance needs<br /><em>clearer source evidence.</em></>}</h1>
+            <p>{resultReady
+              ? `${review.lineItems.length} rows and ${valueCount} reported values were digitized from ${review.source.fileName}. The complete result is available below and ${demoMode ? "remains in the demo workspace" : "was saved automatically to Cases"}.`
+              : hasReadableRows
+                ? `${review.lineItems.length} readable rows were preserved, but TenderBalance cannot safely complete the statement until the requested source evidence is supplied. No values were invented.`
+                : "No values were invented. Add a clearer or complete statement and TenderBalance will continue automatically."}</p>
+            <div className="bs-ready-actions">
+              {resultReady && <button className="bs-primary-action" onClick={() => scrollTo(lineSectionRef.current)} type="button">View digital balance sheet <span aria-hidden="true">↓</span></button>}
+              {findingCount > 0 && <button className="bs-secondary-action" onClick={() => scrollTo(issuesRef.current)} type="button">View {findingCount} finding{findingCount === 1 ? "" : "s"}</button>}
+              {genuineBlockers.length > 0 && <button className="bs-secondary-action" onClick={() => inputRef.current?.click()} type="button">Add clearer or complete source</button>}
+            </div>
+          </div>
+          <aside className="bs-finished-summary" aria-label="Finished result summary">
+            <span>{resultReady ? "FINISHED PRODUCT" : "PRESERVED PARTIAL RESULT"}</span>
+            <strong>{review.statement.reportingEntity}</strong>
+            <p>Balance Sheet · {review.statement.reportingDate}</p>
+            <dl>
+              <div><dt>Rows</dt><dd>{review.lineItems.length}</dd></div>
+              <div><dt>Values</dt><dd>{valueCount}</dd></div>
+              <div><dt>Checks</dt><dd>{passedChecks}/{review.arithmeticChecks.length}</dd></div>
+              <div><dt>Result</dt><dd>{resultStatus(review)}</dd></div>
+            </dl>
+            <small>{demoMode ? "Demo result · not retained as client evidence" : "Saved automatically · reopen from Cases"}</small>
+          </aside>
+        </section>
+
+        <section className="bs-result-metadata" aria-label="Statement identity">
+          <div><span>Entity</span><b>{review.statement.reportingEntity}</b></div>
+          <div><span>Reporting date</span><b>{review.statement.reportingDate}</b></div>
+          <div><span>Columns</span><b>{review.statement.periods.join(" · ") || "Unconfirmed"}</b></div>
+          <div><span>Currency / units</span><b>{review.statement.currency} · {review.statement.unitLabel}</b></div>
+          <div><span>Statement page</span><b>{statementPages.length ? statementPages.join(", ") : "Not located"}</b></div>
+        </section>
+
+        <section className="bs-product-health" aria-label="Automatic extraction and validation summary">
+          <article><span>EXTRACTION</span><strong>{review.lineItems.length} rows · {valueCount} values</strong><p>{Math.round(averageConfidence * 100)}% average extraction confidence</p></article>
+          <article><span>STRUCTURE</span><strong>{["total_assets", "current_assets", "non_current_assets", "total_liabilities", "owners_equity"].filter(hasConcept).length}/5 core groups</strong><p>Assets · liabilities · net worth preserved</p></article>
+          <article><span>ARITHMETIC</span><strong>{passedChecks} passed · {arithmeticFindingCount} finding{arithmeticFindingCount === 1 ? "" : "s"}</strong><p>{roundingFindings.length ? `${roundingFindings.length} small reported difference${roundingFindings.length === 1 ? "" : "s"} identified` : "Reported totals checked automatically"}</p></article>
+          <article><span>CASE</span><strong>{demoMode ? "Demo only" : "Saved automatically"}</strong><p>{review.source.processingVersion ?? "tender-balance/1.0.0"} · {latestActivity(review) ? new Date(latestActivity(review)).toLocaleDateString("en-GB") : "current session"}</p></article>
+        </section>
+
+        <WorkspaceGlobalControls />
+
+        <CollapsibleWorkspaceSection
+          aside={<><b>{review.lineItems.length}/{review.lineItems.length} rows</b><small>{valueCount}/{valueCount} values</small></>}
+          className="bs-digital-statement"
+          description={`${review.statement.reportingEntity} · ${review.statement.reportingDate} · original reported values`}
+          eyebrow="PRIMARY OUTPUT"
+          primary
+          ref={lineSectionRef}
+          sectionId="balance-sheet-output"
+          title="Digitized Balance Sheet"
+        >
+          {review.lineItems.length ? (
+            <div className="bs-table-scroll">
+              <table className="bs-client-result-table">
+                <thead><tr><th>Section</th><th>Balance item</th>{review.statement.periods.map((period) => <th key={period}>{period}<small>reported</small></th>)}</tr></thead>
+                <tbody>
+                  {review.lineItems.map((item) => (
+                    <tr className={item.isTotal ? "is-total" : ""} key={item.id}>
+                      <td><span>{item.classification.replaceAll("_", " ")}</span></td>
+                      <td><b>{item.originalLabel}</b>{item.values.some((value) => value.correction) && <small>Correction retained separately</small>}</td>
+                      {review.statement.periods.map((period) => {
+                        const value = item.values.find((candidate) => candidate.period === period);
+                        return <td className={value?.correction ? "is-corrected" : ""} key={period}><b>{value?.rawReportedValue ?? "—"}</b>{value?.correction && <small>corrected: {value.correction.correctedReportedValue.toLocaleString("en-US")}</small>}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="bs-empty-state">No balance-sheet rows could be read from the supplied source.</p>}
+        </CollapsibleWorkspaceSection>
+
+        <CollapsibleWorkspaceSection
+          aside={<b>{genuineBlockers.length ? `${genuineBlockers.length} source request${genuineBlockers.length === 1 ? "" : "s"}` : "Result available"}</b>}
+          className="bs-findings-summary"
+          eyebrow="AUTOMATIC VALIDATION"
+          ref={issuesRef}
+          sectionId="automatic-validation"
+          title={findingCount ? `${findingCount} finding${findingCount === 1 ? "" : "s"} reported` : "No validation finding detected"}
+        >
+          <div className="bs-validation-checks">
+            <article><span>✓</span><div><b>Statement located</b><p>{statementPages.length ? `Source page ${statementPages.join(", ")}` : "Location unavailable"}</p></div></article>
+            <article><span>✓</span><div><b>Original figures preserved</b><p>No reported value was silently altered</p></div></article>
+            <article className={arithmeticFindingCount ? "has-finding" : ""}><span>{arithmeticFindingCount ? "△" : "✓"}</span><div><b>Arithmetic checked</b><p>{arithmeticFindingCount ? `${arithmeticFindingCount} reported difference${arithmeticFindingCount === 1 ? "" : "s"} retained` : `${passedChecks} relationships reconciled`}</p></div></article>
+            <article className={genuineBlockers.length ? "has-blocker" : ""}><span>{genuineBlockers.length ? "!" : "✓"}</span><div><b>{genuineBlockers.length ? "Specific source evidence needed" : "No client action required"}</b><p>{genuineBlockers.length ? clientIssueCopy(genuineBlockers[0]).action : "Inspect details only if useful"}</p></div></article>
+          </div>
+          {sortedIssues.length > 0 && (
+            <details className="bs-finding-details">
+              <summary>View detailed findings</summary>
+              <div className="bs-issue-list">
+                {sortedIssues.map((issue) => {
+                  const copy = clientIssueCopy(issue);
+                  return <article className={`severity-${issue.severity}`} key={issue.id}><span>{issue.severity}</span><div><b>{copy.title}</b><p>{issue.message}</p>{genuineBlockers.includes(issue) && <strong className="bs-issue-action">Needed: {copy.action}</strong>}</div><small>{issue.sourceRefs.length ? `p.${Array.from(new Set(issue.sourceRefs.map((ref) => ref.page))).join(", ")}` : "document-level"}</small></article>;
+                })}
+              </div>
+            </details>
+          )}
+        </CollapsibleWorkspaceSection>
+
+        {resultReady && (
+          <section className="fin-next-stage">
+            <div><span>NEXT WORKFLOW STAGE</span><h3>Prepare IFI Financial Forms</h3><p>Use the canonical financial dataset to review mappings and generate FIN-1 — Historical Financial Performance.</p></div>
+            <div><b>{fin1.readiness.status === "ready" ? "FIN-1 ready" : fin1.readiness.status === "partial" ? "FIN-1 partially ready" : "Period review needed"}</b><small>{fin1.years.length ? `${fin1.years.join(" · ")} · ${fin1.readiness.missingFields} missing field${fin1.readiness.missingFields === 1 ? "" : "s"}` : "No reliable FIN year available"}</small><button className="bs-primary-action" onClick={() => setSurface("fin")} type="button">Prepare IFI Financial Forms <span aria-hidden="true">→</span></button></div>
+          </section>
+        )}
+
+        <section className="bs-result-actions-panel">
+          <div><span>RESULT OPTIONS</span><h3>The finished product is already saved.</h3><p>Export, inspect source evidence, correct a value, compare documents, or add formal approval only when your workflow requires it.</p></div>
+          <div><button className="is-primary" onClick={() => setSurface("cases")} type="button">Open Cases</button><button onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")} type="button">Export JSON</button><button onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")} type="button">Export CSV</button><button onClick={() => downloadBytes(balanceSheetExcelFileName(review), reviewToExcel(review), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")} type="button">Export Excel</button><button onClick={startNewAnalysis} type="button">Digitize another statement</button></div>
+        </section>
+
+        <CollapsibleWorkspaceSection
+          className="bs-professional-controls"
+          contentClassName="bs-professional-body"
+          defaultExpanded={false}
+          description="Source trace · normalized concepts · corrections · comparison · formal approval"
+          eyebrow="OPTIONAL"
+          sectionId="advanced-review-audit"
+          title="Advanced Review & Audit"
+        >
+            <section className="bs-advanced-source" ref={sourceRef}>
+              <div className="bs-section-title"><div><span>SOURCE EVIDENCE</span><h3>Documents and traceability</h3></div><b>{availableReviews.length}</b></div>
+              <div className="bs-advanced-source-grid">
+                <div className="bs-document-list">{availableReviews.map((candidate) => <button className={candidate.reviewId === review.reviewId ? "is-active" : ""} key={candidate.reviewId} onClick={() => selectReview(candidate)} type="button"><i>{candidate.source.synthetic ? "DEMO" : "LOCAL"}</i><strong>{candidate.source.fileName}</strong><span>{candidate.lineItems.length} rows · {candidate.statement.reportingDate}</span><small>{resultStatus(candidate)}</small></button>)}</div>
+                <div className={`bs-dropzone ${uploadState}`} onDragOver={(event) => event.preventDefault()} onDrop={onDrop}><input ref={inputRef} type="file" multiple accept=".pdf,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff" onChange={onFileChange} /><span aria-hidden="true">⇧</span><strong>Add related source</strong><p>Extend the case with another statement</p><button disabled={uploadState === "reading"} onClick={() => inputRef.current?.click()} type="button">Choose file</button></div>
+              </div>
+            </section>
+
+            <section className="bs-line-section">
+              <div className="bs-section-title"><div><span>EXTRACTION DETAIL</span><h3>Original and normalized rows</h3></div></div>
+              <div className="bs-table-scroll"><table className="bs-line-table"><thead><tr><th>Original source label</th><th>Normalized concept</th><th>Confidence / trace</th><th>Professional status</th></tr></thead><tbody>{review.lineItems.map((item) => <tr className={`${item.id === selectedLine?.id ? "is-selected" : ""} ${item.isTotal ? "is-total" : ""}`} key={item.id} onClick={() => { setSelectedLineId(item.id); setActivePeriod(item.values[0]?.period ?? ""); }}><td><button type="button">{item.originalLabel}</button><small>{item.classification.replaceAll("_", " ")}</small></td><td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td><td><b>{Math.round(item.confidence * 100)}%</b><small>p.{item.values[0]?.source.page ?? "—"}</small></td><td><StatusBadge status={item.reviewStatus} /></td></tr>)}</tbody></table></div>
+            </section>
+
+            <section className="bs-review-grid">
+              <article className="bs-line-inspector" ref={inspectorRef} tabIndex={-1}>
+                <div className="bs-section-title"><div><span>OPTIONAL CORRECTION</span><h3>Inspect or correct selected row</h3></div></div>
+                {selectedLine ? <><div className="bs-inspector-head"><div><span>ORIGINAL LABEL</span><b>{selectedLine.originalLabel}</b></div><StatusBadge status={selectedLine.reviewStatus} /></div><div className="bs-value-pair">{selectedLine.values.map((value) => <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button"><span>{value.period}</span><b>{value.rawReportedValue}</b><small>normalized: {formatAmount(value.normalizedValue, review.statement.currency)}</small></button>)}</div><div className="bs-provenance-card"><span>SOURCE TRACE</span><code>{review.source.fileName} · p.{selectedLine.values.find((value) => value.period === activePeriod)?.source.page ?? selectedLine.values[0]?.source.page}</code><p>“{selectedLine.originalLabel}” · {selectedLine.values[0]?.source.extractionMethod} · {Math.round(selectedLine.confidence * 100)}% confidence</p></div><div className="bs-correction-form"><label><span>Corrected value in reported units</span><input inputMode="decimal" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label><label><span>Reason — required</span><input value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="What was wrong in extraction?" /></label><button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button><p>The reported source remains immutable; a correction is stored separately and revalidates the result.</p></div></> : <p className="bs-empty-state">No line item is available.</p>}
+              </article>
+              <article className="bs-checks-card"><div className="bs-section-title"><div><span>ARITHMETIC EVIDENCE</span><h3>Reported vs calculated</h3></div></div><div className="bs-check-list">{review.arithmeticChecks.map((check) => <div className={`check-${check.status}`} key={check.id}><span>{check.status === "passed" ? "✓" : check.status === "failed" ? "!" : "—"}</span><div><b>{check.formula}</b><small>{check.period}</small><p>{formatAmount(check.leftValue, review.statement.currency)} <i>vs</i> {formatAmount(check.rightValue, review.statement.currency)}</p></div></div>)}</div></article>
+            </section>
+
+            <section className="bs-compare-section" ref={comparisonRef}>
+              <div className="bs-section-title bs-compare-title"><div><span>OPTIONAL COMPARISON</span><h3>Compare periods and documents</h3></div><select value={comparisonReview?.reviewId ?? ""} onChange={(event) => setComparisonId(event.target.value)} aria-label="Comparison document"><option value="">Select another document</option>{availableReviews.filter((candidate) => candidate.reviewId !== review.reviewId).map((candidate) => <option value={candidate.reviewId} key={candidate.reviewId}>{candidate.statement.reportingEntity} · {candidate.statement.reportingDate}</option>)}</select></div>
+              {comparison && comparisonRelevant && comparison.overlaps.length ? <div className="bs-comparison-rows">{comparison.overlaps.map((item) => <div className={item.matches ? "is-match" : "is-conflict"} key={`${item.period}:${item.concept}`}><span>{item.period}</span><b>{conceptLabels[item.concept]}</b><small>{formatAmount(item.leftValue, review.statement.currency)} ↔ {formatAmount(item.rightValue, comparisonReview?.statement.currency ?? "")}</small><em>{item.matches ? "MATCH" : `Δ ${item.difference.toLocaleString("en-US")}`}</em></div>)}</div> : <p className="bs-empty-state">Select a related document when cross-document comparison is useful.</p>}
+            </section>
+
+            <section className="bs-approval-section" ref={approvalRef} tabIndex={-1}>
+              <div><span>OPTIONAL FORMAL CONTROL</span><h3>Human review and approval</h3><p>This is not required to receive, save, inspect, or export the result. Use it only when an organizational control policy requires named human approval.</p></div>
+              <label className="bs-reviewer"><span>Reviewer</span><input value={reviewer} onChange={(event) => setReviewer(event.target.value)} /></label>
+              <div className="bs-approval-actions"><button disabled={!bulkEligibleItems.length} type="button" onClick={approveEligibleAndContinue}>Accept agent-validated rows</button><button className="is-primary" disabled={!finalApprovalReady} type="button" onClick={approveFinalResult}>{review.review.status === "approved" ? "Formally approved" : "Approve formally"}</button></div>
+              {!finalApprovalReady && review.review.status !== "approved" && <small className="bs-approval-help">Formal approval requires {blockingCount} blocking validation item{blockingCount === 1 ? "" : "s"}, {unreviewedItems.length} unreviewed row{unreviewedItems.length === 1 ? "" : "s"}, and {unresolvedComparisonConflicts.length} comparison discrepancy acknowledgement{unresolvedComparisonConflicts.length === 1 ? "" : "s"} to reach zero. These controls do not block the client result.</small>}
+            </section>
+
+            <details className="bs-audit-details"><summary>Developer and schema details</summary><div><p><b>Source identity</b><code>SHA-256 {review.source.sha256}</code></p><p><b>Processing</b><code>{review.source.processingVersion ?? "tender-balance/1.0.0"} · {latestActivity(review)}</code></p><p><b>Capability owner</b><code>{review.capability.ownerAgentId} · {review.capability.ownerAgentName}</code></p><p><b>Schema</b><code>{review.schemaVersion}</code></p></div></details>
+        </CollapsibleWorkspaceSection>
+
+        <footer className="bs-footer"><span>Tender Apps · TenderBalance</span><span>{demoMode ? "Demo workspace · never stored as client evidence" : "Private client workspace · saved automatically"}</span></footer>
       </main>
     );
   }
@@ -772,14 +1045,14 @@ export default function BalanceSheetApp() {
             <div><span>Arithmetic checks</span><b>{review.arithmeticChecks.filter((check) => check.status === "passed").length} / {review.arithmeticChecks.length}</b></div>
           </section>
 
-          <section className={`bs-result-overview ${review.review.status === "approved" ? "is-approved" : blockingCount ? "needs-action" : "is-reviewing"}`}>
+          <section className={`bs-result-overview outcome-${outcomeCopy(review).outcome} ${review.review.status === "approved" ? "is-approved" : blockingCount ? "needs-action" : "is-reviewing"}`}>
             <div>
               <span>CLIENT RESULT</span>
-              <h3>{review.review.status === "approved" ? "This structured statement is approved." : blockingCount ? "Your review is needed before this result can be approved." : "The statement was structured successfully and is ready for human review."}</h3>
+              <h3>{outcomeCopy(review).title}</h3>
               <p>
                 {review.source.fileName} contains {review.statement.periods.length || "unconfirmed"} reporting period{review.statement.periods.length === 1 ? "" : "s"} and {review.lineItems.length} extracted line items.
                 {blockingCount ? ` ${blockingCount} blocking validation item${blockingCount === 1 ? " remains" : "s remain"}.` : " No blocking validation issue is currently open."}
-                {review.review.status === "approved" ? " The reviewed result is available for export and downstream tender analysis." : " Original reported figures remain separate from any client corrections."}
+                {` ${outcomeCopy(review).detail}`} Original reported figures remain separate from any client corrections.
               </p>
             </div>
             <dl>
@@ -990,6 +1263,7 @@ export default function BalanceSheetApp() {
                 {!demoMode && <button type="button" onClick={() => setSurface("cases")}>Open saved case</button>}
                 <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")}>Export JSON</button>
                 <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")}>Export CSV</button>
+                <button type="button" onClick={() => downloadBytes(balanceSheetExcelFileName(review), reviewToExcel(review), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}>Export Excel</button>
                 <button type="button" onClick={startNewAnalysis}>Start new review</button>
               </div>
             </section>
@@ -1007,6 +1281,7 @@ export default function BalanceSheetApp() {
                 {!finalApprovalReady && <button className="is-review" type="button" onClick={continueReview}>Review remaining items →</button>}
                 <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.json`, structuredPackageJson(), "application/json")}>Export JSON</button>
                 <button type="button" onClick={() => download(`${review.source.documentId.replaceAll(":", "-")}.csv`, reviewToCsv(review), "text/csv;charset=utf-8")}>Export CSV</button>
+                <button type="button" onClick={() => downloadBytes(balanceSheetExcelFileName(review), reviewToExcel(review), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}>Export Excel</button>
               </div>
               {!finalApprovalReady && <small className="bs-approval-help"><b>Why approval is locked:</b> {blockingCount} blocking validation item{blockingCount === 1 ? "" : "s"}, {unreviewedItems.length} unreviewed row{unreviewedItems.length === 1 ? "" : "s"}, and {unresolvedComparisonConflicts.length} unacknowledged cross-document discrepanc{unresolvedComparisonConflicts.length === 1 ? "y" : "ies"} remain. Use “Review remaining items” to go directly to the next action.</small>}
             </section>

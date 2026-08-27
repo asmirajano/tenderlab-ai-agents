@@ -155,7 +155,8 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 760px) {
   .client-product-bar { gap: 12px; grid-template-columns: 1fr auto; }
-  .client-header-controls { background: white; border-bottom: 1px solid var(--tl-line); display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-start; justify-self: stretch; left: 0; max-width: 100vw; overflow-x: auto; padding: 7px 12px; position: fixed; right: 0; top: 72px; width: 100%; }
+  .client-header-controls { background: white; border-bottom: 1px solid var(--tl-line); display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-start; justify-self: stretch; left: 0; max-width: 100vw; overflow-x: auto; padding: 7px 12px; position: fixed; right: 0; scrollbar-width: none; top: 72px; width: 100%; }
+  .client-header-controls::-webkit-scrollbar { display: none; }
   .client-product-bar nav { display: flex; flex: 0 0 auto; justify-content: center; }
   .client-product-bar nav a { white-space: nowrap; }
   .client-layout-switcher { flex: 0 0 auto; }

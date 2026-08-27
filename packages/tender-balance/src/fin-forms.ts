@@ -1,0 +1,706 @@
+import {
+  effectiveNormalizedValue,
+  type BalanceSheetConcept,
+  type BalanceSheetLineItem,
+  type BalanceSheetReview,
+} from "./model.ts";
+
+export const FIN_FORMS_SCHEMA_VERSION = "1.0.0";
+
+export type FinancialDocumentRole =
+  | "FINANCIAL_SOURCE"
+  | "TEMPLATE"
+  | "USER_INPUT"
+  | "OTHER_SUPPORTING_DOCUMENT";
+
+export type FinancialProvenance =
+  | "SOURCE"
+  | "CALCULATED"
+  | "USER_INPUT"
+  | "ESTIMATED"
+  | "TEMPLATE_EXAMPLE";
+
+export type FinancialProblemType =
+  | "extraction-problem"
+  | "source-data-gap"
+  | "mapping-problem"
+  | "source-inconsistency"
+  | "coverage-requirement";
+
+export type Fin1FieldId =
+  | "total_assets"
+  | "total_liabilities"
+  | "net_worth"
+  | "current_assets"
+  | "current_liabilities"
+  | "working_capital"
+  | "total_revenue"
+  | "profit_before_tax"
+  | "profit_after_tax";
+
+export type FinancialUserValue = {
+  id?: string;
+  field: Fin1FieldId;
+  period: string;
+  value: number;
+  currency: string;
+  unitScale?: number;
+  sourceLabel: string;
+  provenance?: "USER_INPUT" | "ESTIMATED";
+  estimationExplicitlyPermitted?: boolean;
+};
+
+export type FinancialDatasetInput = {
+  documentId: string;
+  fileName: string;
+  role: FinancialDocumentRole;
+  review?: BalanceSheetReview;
+  userValues?: FinancialUserValue[];
+};
+
+export type FinancialDocumentRegistration = {
+  documentId: string;
+  fileName: string;
+  role: FinancialDocumentRole;
+  eligibleForCanonicalFinancialDataset: boolean;
+  eligibleForGeneratedFinValues: boolean;
+  decision: string;
+};
+
+export type NormalizedFinancialPeriod = {
+  id: string;
+  sourceDocumentId: string;
+  originalPeriod: string;
+  displayYear: string | null;
+  status: "direct" | "normalized" | "excluded" | "needs-review";
+  rationale: string;
+  confidence: "high" | "review-required";
+  eligibleForFin: boolean;
+};
+
+export type CanonicalFinancialSource = {
+  sourceId: string;
+  documentId: string;
+  fileName: string;
+  documentRole: FinancialDocumentRole;
+  page: number | null;
+  originalLabel: string;
+  originalPeriod: string;
+  displayYear: string;
+  provenance: FinancialProvenance;
+  eligibleForCanonicalFinancialDataset: boolean;
+  eligibleForGeneratedFinValues: boolean;
+};
+
+export type CanonicalFinancialValue = {
+  id: string;
+  field: Fin1FieldId;
+  displayYear: string;
+  value: number;
+  currency: string;
+  unitScale: number;
+  reportedValue: number | null;
+  calculatedValue: number | null;
+  difference: number | null;
+  provenance: FinancialProvenance;
+  sourceIds: string[];
+  calculationFormula?: string;
+  operandSourceIds?: string[];
+  status: "ready" | "extraction-problem" | "mapping-problem" | "source-inconsistency";
+  problemType?: FinancialProblemType;
+};
+
+export type CanonicalFinancialDataset = {
+  schemaVersion: typeof FIN_FORMS_SCHEMA_VERSION;
+  entity: string;
+  currency: string;
+  unitLabel: string;
+  unitScale: number;
+  documents: FinancialDocumentRegistration[];
+  periodMappings: NormalizedFinancialPeriod[];
+  availableYears: string[];
+  sources: CanonicalFinancialSource[];
+  values: CanonicalFinancialValue[];
+  issues: Array<{
+    id: string;
+    type: FinancialProblemType;
+    message: string;
+    action: string;
+    field?: Fin1FieldId;
+    displayYear?: string;
+  }>;
+};
+
+export type Fin1Mapping = {
+  id: string;
+  field: Fin1FieldId;
+  label: string;
+  displayYear: string;
+  value: number | null;
+  currency: string;
+  unitScale: number;
+  provenance: FinancialProvenance | null;
+  sourceIds: string[];
+  sourceSummary: string;
+  originalPeriods: string[];
+  calculationFormula?: string;
+  operandSourceIds?: string[];
+  reportedValue: number | null;
+  calculatedValue: number | null;
+  difference: number | null;
+  status: "ready" | "missing" | "extraction-problem" | "mapping-problem" | "source-inconsistency";
+  problemType?: FinancialProblemType;
+  action?: string;
+};
+
+export type Fin1Form = {
+  schemaVersion: typeof FIN_FORMS_SCHEMA_VERSION;
+  templateId: "FIN-1";
+  title: "Historical Financial Performance";
+  entity: string;
+  currency: string;
+  unitLabel: string;
+  unitScale: number;
+  years: string[];
+  mappings: Fin1Mapping[];
+  readiness: {
+    status: "ready" | "partial" | "not-ready";
+    canGenerate: boolean;
+    readyFields: number;
+    missingFields: number;
+    problemFields: number;
+    message: string;
+  };
+  coverage: {
+    availableYears: number;
+    requiredYears: number | null;
+    status: "not-specified" | "sufficient" | "insufficient";
+    message: string;
+  };
+};
+
+export const FIN1_FIELDS: ReadonlyArray<{ id: Fin1FieldId; label: string; sourceType: "balance-sheet" | "income-statement" | "calculated" }> = [
+  { id: "total_assets", label: "Total Assets", sourceType: "balance-sheet" },
+  { id: "total_liabilities", label: "Total Liabilities", sourceType: "balance-sheet" },
+  { id: "net_worth", label: "Net Worth", sourceType: "balance-sheet" },
+  { id: "current_assets", label: "Current Assets", sourceType: "balance-sheet" },
+  { id: "current_liabilities", label: "Current Liabilities", sourceType: "balance-sheet" },
+  { id: "working_capital", label: "Working Capital", sourceType: "calculated" },
+  { id: "total_revenue", label: "Total Revenue", sourceType: "income-statement" },
+  { id: "profit_before_tax", label: "Profit Before Tax", sourceType: "income-statement" },
+  { id: "profit_after_tax", label: "Profit After Tax", sourceType: "income-statement" },
+];
+
+const FINANCIAL_FACT_ROLES = new Set<FinancialDocumentRole>(["FINANCIAL_SOURCE", "USER_INPUT"]);
+const BALANCE_FIELD_CONCEPTS: Partial<Record<Fin1FieldId, BalanceSheetConcept>> = {
+  total_assets: "total_assets",
+  total_liabilities: "total_liabilities",
+  current_assets: "current_assets",
+  current_liabilities: "current_liabilities",
+};
+
+function yearFrom(value: string) {
+  return value.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? null;
+}
+
+function isAverage(value: string) {
+  return /\baverage\b/i.test(value);
+}
+
+function isJanuaryFirst(value: string) {
+  return /(?:\bjanuary\s+1\b|\b1(?:st)?\s+january\b)/i.test(value);
+}
+
+function isDecemberThirtyFirst(value: string) {
+  return /(?:\bdecember\s+31\b|\b31(?:st)?\s+december\b)/i.test(value);
+}
+
+function periodId(documentId: string, originalPeriod: string) {
+  return `period:${documentId}:${originalPeriod}`;
+}
+
+export function normalizeFinancialPeriod(review: BalanceSheetReview, originalPeriod: string): NormalizedFinancialPeriod {
+  const documentId = review.source.documentId;
+  if (isAverage(originalPeriod)) {
+    return {
+      id: periodId(documentId, originalPeriod),
+      sourceDocumentId: documentId,
+      originalPeriod,
+      displayYear: null,
+      status: "excluded",
+      rationale: "Average is retained in source data but is not a historical FIN year.",
+      confidence: "high",
+      eligibleForFin: false,
+    };
+  }
+
+  const explicitYear = yearFrom(originalPeriod);
+  const reportingYear = yearFrom(review.statement.reportingDate);
+  const closingPeriod = review.statement.periods.find((period) => isDecemberThirtyFirst(period));
+  const closingYear = closingPeriod ? yearFrom(closingPeriod) ?? reportingYear : null;
+
+  if (isJanuaryFirst(originalPeriod) && closingPeriod) {
+    const openingYear = explicitYear ?? reportingYear;
+    if (openingYear && closingYear === openingYear) {
+      return {
+        id: periodId(documentId, originalPeriod),
+        sourceDocumentId: documentId,
+        originalPeriod,
+        displayYear: String(Number(openingYear) - 1),
+        status: "normalized",
+        rationale: "Opening balance carried into the reporting year; mapped to the immediately preceding year-end for balance-sheet point-in-time fields only.",
+        confidence: "high",
+        eligibleForFin: true,
+      };
+    }
+  }
+
+  if (isDecemberThirtyFirst(originalPeriod) && (explicitYear ?? reportingYear)) {
+    return {
+      id: periodId(documentId, originalPeriod),
+      sourceDocumentId: documentId,
+      originalPeriod,
+      displayYear: explicitYear ?? reportingYear,
+      status: "direct",
+      rationale: "Closing balance mapped directly to its reporting year.",
+      confidence: "high",
+      eligibleForFin: true,
+    };
+  }
+
+  if (/^(?:19|20)\d{2}$/.test(originalPeriod.trim())) {
+    return {
+      id: periodId(documentId, originalPeriod),
+      sourceDocumentId: documentId,
+      originalPeriod,
+      displayYear: originalPeriod.trim(),
+      status: "direct",
+      rationale: "Source period is already expressed as a financial year.",
+      confidence: "high",
+      eligibleForFin: true,
+    };
+  }
+
+  if (explicitYear) {
+    return {
+      id: periodId(documentId, originalPeriod),
+      sourceDocumentId: documentId,
+      originalPeriod,
+      displayYear: explicitYear,
+      status: "direct",
+      rationale: "The source period explicitly identifies the financial year.",
+      confidence: "high",
+      eligibleForFin: true,
+    };
+  }
+
+  return {
+    id: periodId(documentId, originalPeriod),
+    sourceDocumentId: documentId,
+    originalPeriod,
+    displayYear: null,
+    status: "needs-review",
+    rationale: "No reliable financial-year mapping can be established from this source label.",
+    confidence: "review-required",
+    eligibleForFin: false,
+  };
+}
+
+function roleRegistration(input: FinancialDatasetInput): FinancialDocumentRegistration {
+  const eligible = FINANCIAL_FACT_ROLES.has(input.role);
+  const decision = input.role === "TEMPLATE"
+    ? "Structure and requirements only. Populated template examples are technically ineligible for client financial data."
+    : input.role === "OTHER_SUPPORTING_DOCUMENT"
+      ? "Supporting context only; no financial figure may be generated from this document."
+      : input.role === "USER_INPUT"
+        ? "Explicit user-supplied figures are eligible only with field-level provenance."
+        : "Validated financial-source values are eligible with source traceability.";
+  return {
+    documentId: input.documentId,
+    fileName: input.fileName,
+    role: input.role,
+    eligibleForCanonicalFinancialDataset: eligible,
+    eligibleForGeneratedFinValues: eligible,
+    decision,
+  };
+}
+
+function firstConcept(review: BalanceSheetReview, concept: BalanceSheetConcept) {
+  return review.lineItems.find((item) => item.normalizedConcept === concept);
+}
+
+function sourceFor(
+  review: BalanceSheetReview,
+  item: BalanceSheetLineItem,
+  originalPeriod: string,
+  displayYear: string,
+  role: FinancialDocumentRole,
+  provenance: FinancialProvenance,
+): CanonicalFinancialSource | null {
+  const value = item.values.find((candidate) => candidate.period === originalPeriod);
+  if (!value) return null;
+  return {
+    sourceId: `source:${review.reviewId}:${item.id}:${originalPeriod}`,
+    documentId: review.source.documentId,
+    fileName: review.source.fileName,
+    documentRole: role,
+    page: value.source.page,
+    originalLabel: item.originalLabel,
+    originalPeriod,
+    displayYear,
+    provenance,
+    eligibleForCanonicalFinancialDataset: true,
+    eligibleForGeneratedFinValues: true,
+  };
+}
+
+function valueForConcept(
+  review: BalanceSheetReview,
+  concept: BalanceSheetConcept,
+  field: Fin1FieldId,
+  originalPeriod: string,
+  displayYear: string,
+  role: FinancialDocumentRole,
+  sources: CanonicalFinancialSource[],
+): CanonicalFinancialValue | null {
+  const item = firstConcept(review, concept);
+  const lineValue = item?.values.find((candidate) => candidate.period === originalPeriod);
+  if (!item || !lineValue) return null;
+  const value = effectiveNormalizedValue(item, originalPeriod);
+  if (value === null) return null;
+  const provenance: FinancialProvenance = lineValue.correction ? "USER_INPUT" : "SOURCE";
+  const source = sourceFor(review, item, originalPeriod, displayYear, role, provenance);
+  if (!source) return null;
+  sources.push(source);
+  const extractionProblem = item.confidence < 0.8;
+  return {
+    id: `value:${field}:${displayYear}:${review.source.documentId}`,
+    field,
+    displayYear,
+    value,
+    currency: review.statement.currency,
+    unitScale: review.statement.unitScale,
+    reportedValue: lineValue.normalizedValue,
+    calculatedValue: null,
+    difference: null,
+    provenance,
+    sourceIds: [source.sourceId],
+    status: extractionProblem ? "extraction-problem" : "ready",
+    problemType: extractionProblem ? "extraction-problem" : undefined,
+  };
+}
+
+function tolerance(unitScale: number) {
+  return Math.max(0.000001, unitScale * 0.000001);
+}
+
+function pushIssue(dataset: CanonicalFinancialDataset, issue: CanonicalFinancialDataset["issues"][number]) {
+  if (!dataset.issues.some((candidate) => candidate.id === issue.id)) dataset.issues.push(issue);
+}
+
+function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
+  const review = input.review;
+  if (!review || input.role !== "FINANCIAL_SOURCE") return;
+  const periodMappings = review.statement.periods.map((period) => normalizeFinancialPeriod(review, period));
+  dataset.periodMappings.push(...periodMappings);
+
+  for (const period of periodMappings) {
+    if (!period.eligibleForFin || !period.displayYear) {
+      if (period.status === "needs-review") {
+        pushIssue(dataset, {
+          id: `issue:period:${review.source.documentId}:${period.originalPeriod}`,
+          type: "mapping-problem",
+          message: `The source period “${period.originalPeriod}” could not be normalized to a reliable FIN year.`,
+          action: "Review period mapping",
+        });
+      }
+      continue;
+    }
+    for (const [field, concept] of Object.entries(BALANCE_FIELD_CONCEPTS) as Array<[Fin1FieldId, BalanceSheetConcept]>) {
+      const mapped = valueForConcept(review, concept, field, period.originalPeriod, period.displayYear, input.role, dataset.sources);
+      if (mapped) dataset.values.push(mapped);
+    }
+
+    const reportedNetWorth = valueForConcept(review, "owners_equity", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources)
+      ?? valueForConcept(review, "net_assets", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources);
+    const assets = dataset.values.find((value) => value.field === "total_assets" && value.displayYear === period.displayYear);
+    const liabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
+    const calculatedNetWorth = assets && liabilities ? assets.value - liabilities.value : null;
+    if (reportedNetWorth) {
+      const difference = calculatedNetWorth === null ? null : reportedNetWorth.value - calculatedNetWorth;
+      reportedNetWorth.calculatedValue = calculatedNetWorth;
+      reportedNetWorth.difference = difference;
+      reportedNetWorth.calculationFormula = "Total Assets − Total Liabilities";
+      reportedNetWorth.operandSourceIds = [...(assets?.sourceIds ?? []), ...(liabilities?.sourceIds ?? [])];
+      if (difference !== null && Math.abs(difference) > tolerance(review.statement.unitScale)) {
+        reportedNetWorth.status = "source-inconsistency";
+        reportedNetWorth.problemType = "source-inconsistency";
+        pushIssue(dataset, {
+          id: `issue:net-worth:${period.displayYear}:${review.source.documentId}`,
+          type: "source-inconsistency",
+          field: "net_worth",
+          displayYear: period.displayYear,
+          message: `Reported Net Worth differs from Assets − Liabilities by ${difference.toLocaleString("en-US")} ${review.statement.currency}. The reported value remains unchanged.`,
+          action: "Review reported and calculated values",
+        });
+      }
+      dataset.values.push(reportedNetWorth);
+    } else if (calculatedNetWorth !== null && assets && liabilities) {
+      dataset.values.push({
+        id: `value:net_worth:${period.displayYear}:calculated`,
+        field: "net_worth",
+        displayYear: period.displayYear,
+        value: calculatedNetWorth,
+        currency: review.statement.currency,
+        unitScale: review.statement.unitScale,
+        reportedValue: null,
+        calculatedValue: calculatedNetWorth,
+        difference: null,
+        provenance: "CALCULATED",
+        sourceIds: [...assets.sourceIds, ...liabilities.sourceIds],
+        calculationFormula: "Total Assets − Total Liabilities",
+        operandSourceIds: [...assets.sourceIds, ...liabilities.sourceIds],
+        status: "ready",
+      });
+    }
+
+    const currentAssets = dataset.values.find((value) => value.field === "current_assets" && value.displayYear === period.displayYear);
+    const currentLiabilities = dataset.values.find((value) => value.field === "current_liabilities" && value.displayYear === period.displayYear);
+    if (currentAssets && currentLiabilities) {
+      dataset.values.push({
+        id: `value:working_capital:${period.displayYear}:calculated`,
+        field: "working_capital",
+        displayYear: period.displayYear,
+        value: currentAssets.value - currentLiabilities.value,
+        currency: review.statement.currency,
+        unitScale: review.statement.unitScale,
+        reportedValue: null,
+        calculatedValue: currentAssets.value - currentLiabilities.value,
+        difference: null,
+        provenance: "CALCULATED",
+        sourceIds: [...currentAssets.sourceIds, ...currentLiabilities.sourceIds],
+        calculationFormula: "Current Assets − Current Liabilities",
+        operandSourceIds: [...currentAssets.sourceIds, ...currentLiabilities.sourceIds],
+        status: currentAssets.status === "ready" && currentLiabilities.status === "ready" ? "ready" : "extraction-problem",
+        problemType: currentAssets.status === "ready" && currentLiabilities.status === "ready" ? undefined : "extraction-problem",
+      });
+    }
+  }
+}
+
+function addUserValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
+  if (input.role !== "USER_INPUT") return;
+  for (const [index, supplied] of (input.userValues ?? []).entries()) {
+    const provenance = supplied.provenance ?? "USER_INPUT";
+    if (provenance === "ESTIMATED" && !supplied.estimationExplicitlyPermitted) {
+      pushIssue(dataset, {
+        id: `issue:estimate:${input.documentId}:${index}`,
+        type: "mapping-problem",
+        field: supplied.field,
+        displayYear: supplied.period,
+        message: `An estimated ${supplied.field} value was excluded because estimation was not explicitly permitted.`,
+        action: "Provide a sourced or explicitly permitted value",
+      });
+      continue;
+    }
+    const displayYear = yearFrom(supplied.period);
+    if (!displayYear) {
+      pushIssue(dataset, {
+        id: `issue:user-period:${input.documentId}:${index}`,
+        type: "mapping-problem",
+        field: supplied.field,
+        message: `The user-supplied period “${supplied.period}” is not a valid FIN year.`,
+        action: "Review period mapping",
+      });
+      continue;
+    }
+    const sourceId = `source:user:${input.documentId}:${index}`;
+    dataset.sources.push({
+      sourceId,
+      documentId: input.documentId,
+      fileName: input.fileName,
+      documentRole: input.role,
+      page: null,
+      originalLabel: supplied.sourceLabel,
+      originalPeriod: supplied.period,
+      displayYear,
+      provenance,
+      eligibleForCanonicalFinancialDataset: true,
+      eligibleForGeneratedFinValues: true,
+    });
+    dataset.periodMappings.push({
+      id: periodId(input.documentId, supplied.period),
+      sourceDocumentId: input.documentId,
+      originalPeriod: supplied.period,
+      displayYear,
+      status: "direct",
+      rationale: "Explicit user input identifies the financial year.",
+      confidence: "high",
+      eligibleForFin: true,
+    });
+    dataset.values.push({
+      id: supplied.id ?? `value:user:${supplied.field}:${displayYear}:${index}`,
+      field: supplied.field,
+      displayYear,
+      value: supplied.value * (supplied.unitScale ?? 1),
+      currency: supplied.currency,
+      unitScale: supplied.unitScale ?? 1,
+      reportedValue: supplied.value * (supplied.unitScale ?? 1),
+      calculatedValue: null,
+      difference: null,
+      provenance,
+      sourceIds: [sourceId],
+      status: "ready",
+    });
+  }
+}
+
+export function financialInputFromBalanceReview(review: BalanceSheetReview, role: FinancialDocumentRole = "FINANCIAL_SOURCE"): FinancialDatasetInput {
+  return {
+    documentId: review.source.documentId,
+    fileName: review.source.fileName,
+    role,
+    review,
+  };
+}
+
+export function buildCanonicalFinancialDataset(inputs: FinancialDatasetInput[]): CanonicalFinancialDataset {
+  const eligibleReview = inputs.find((input) => input.role === "FINANCIAL_SOURCE" && input.review)?.review;
+  const dataset: CanonicalFinancialDataset = {
+    schemaVersion: FIN_FORMS_SCHEMA_VERSION,
+    entity: eligibleReview?.statement.reportingEntity ?? "Unconfirmed reporting entity",
+    currency: eligibleReview?.statement.currency ?? inputs.flatMap((input) => input.userValues ?? [])[0]?.currency ?? "UNSPECIFIED",
+    unitLabel: eligibleReview?.statement.unitLabel ?? "units",
+    unitScale: eligibleReview?.statement.unitScale ?? 1,
+    documents: inputs.map(roleRegistration),
+    periodMappings: [],
+    availableYears: [],
+    sources: [],
+    values: [],
+    issues: [],
+  };
+
+  for (const input of inputs) {
+    if (input.role === "TEMPLATE" && input.review?.lineItems.length) {
+      pushIssue(dataset, {
+        id: `issue:template-blocked:${input.documentId}`,
+        type: "mapping-problem",
+        message: `${input.fileName} contains populated TEMPLATE EXAMPLE content. Its years and values were rejected from client financial data.`,
+        action: "Use the template for structure only",
+      });
+    }
+    addBalanceSourceValues(dataset, input);
+    addUserValues(dataset, input);
+  }
+
+  dataset.periodMappings = dataset.periodMappings.filter((period, index, periods) =>
+    periods.findIndex((candidate) => candidate.id === period.id) === index
+  );
+  dataset.availableYears = Array.from(new Set(dataset.periodMappings
+    .filter((period) => period.eligibleForFin && period.displayYear)
+    .map((period) => period.displayYear as string)))
+    .sort((left, right) => Number(left) - Number(right));
+  dataset.values = dataset.values.filter((value, index, values) =>
+    values.findIndex((candidate) => candidate.field === value.field && candidate.displayYear === value.displayYear) === index
+  );
+  return dataset;
+}
+
+function missingAction(field: Fin1FieldId) {
+  return ["total_revenue", "profit_before_tax", "profit_after_tax"].includes(field)
+    ? "Add Income Statement"
+    : "Add financial statement or review mapping";
+}
+
+export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCount?: number): Fin1Form {
+  const mappings: Fin1Mapping[] = [];
+  for (const fieldDefinition of FIN1_FIELDS) {
+    for (const displayYear of dataset.availableYears) {
+      const value = dataset.values.find((candidate) => candidate.field === fieldDefinition.id && candidate.displayYear === displayYear);
+      const sources = value ? dataset.sources.filter((source) => value.sourceIds.includes(source.sourceId)) : [];
+      const missing = !value;
+      mappings.push({
+        id: `fin1:${fieldDefinition.id}:${displayYear}`,
+        field: fieldDefinition.id,
+        label: fieldDefinition.label,
+        displayYear,
+        value: value?.value ?? null,
+        currency: value?.currency ?? dataset.currency,
+        unitScale: value?.unitScale ?? dataset.unitScale,
+        provenance: value?.provenance ?? null,
+        sourceIds: value?.sourceIds ?? [],
+        sourceSummary: value?.calculationFormula ?? (sources.map((source) => `${source.fileName} · ${source.originalLabel}`).join("; ") || (fieldDefinition.sourceType === "income-statement" ? "Income Statement unavailable" : "Required source value unavailable")),
+        originalPeriods: Array.from(new Set(sources.map((source) => source.originalPeriod))),
+        calculationFormula: value?.calculationFormula,
+        operandSourceIds: value?.operandSourceIds,
+        reportedValue: value?.reportedValue ?? null,
+        calculatedValue: value?.calculatedValue ?? null,
+        difference: value?.difference ?? null,
+        status: missing ? "missing" : value.status,
+        problemType: missing ? "source-data-gap" : value.problemType,
+        action: missing ? missingAction(fieldDefinition.id) : value.status === "source-inconsistency" ? "Review reported and calculated values" : value.status === "extraction-problem" ? "Review extraction" : value.status === "mapping-problem" ? "Review mapping" : undefined,
+      });
+    }
+  }
+
+  const readyFields = mappings.filter((mapping) => mapping.status === "ready").length;
+  const missingFields = mappings.filter((mapping) => mapping.status === "missing").length;
+  const problemFields = mappings.filter((mapping) => ["extraction-problem", "mapping-problem", "source-inconsistency"].includes(mapping.status)).length;
+  const canGenerate = dataset.availableYears.length > 0 && mappings.some((mapping) => mapping.value !== null);
+  const status: Fin1Form["readiness"]["status"] = !canGenerate ? "not-ready" : missingFields || problemFields ? "partial" : "ready";
+  const requiredYears = requiredYearCount && requiredYearCount > 0 ? requiredYearCount : null;
+  const coverageStatus: Fin1Form["coverage"]["status"] = requiredYears === null
+    ? "not-specified"
+    : dataset.availableYears.length >= requiredYears ? "sufficient" : "insufficient";
+
+  return {
+    schemaVersion: FIN_FORMS_SCHEMA_VERSION,
+    templateId: "FIN-1",
+    title: "Historical Financial Performance",
+    entity: dataset.entity,
+    currency: dataset.currency,
+    unitLabel: dataset.unitLabel,
+    unitScale: dataset.unitScale,
+    years: dataset.availableYears,
+    mappings,
+    readiness: {
+      status,
+      canGenerate,
+      readyFields,
+      missingFields,
+      problemFields,
+      message: status === "ready"
+        ? "All FIN-1 fields are available for the legitimate source-driven periods."
+        : status === "partial"
+          ? "FIN-1 is partially ready. Available values can be reviewed and generated while genuine source-data gaps remain explicit."
+          : "A reliable FIN year and at least one eligible financial value are required before generation.",
+    },
+    coverage: {
+      availableYears: dataset.availableYears.length,
+      requiredYears,
+      status: coverageStatus,
+      message: coverageStatus === "not-specified"
+        ? `${dataset.availableYears.length} source-driven year${dataset.availableYears.length === 1 ? " is" : "s are"} available; no tender-specific requirement is set.`
+        : coverageStatus === "sufficient"
+          ? `Historical coverage: ${dataset.availableYears.length} of ${requiredYears} required years available.`
+          : `Historical coverage: ${dataset.availableYears.length} of ${requiredYears} required years available.`,
+    },
+  };
+}
+
+export function prepareFin1FromBalanceReview(review: BalanceSheetReview, requiredYearCount?: number) {
+  const dataset = buildCanonicalFinancialDataset([financialInputFromBalanceReview(review)]);
+  return { dataset, form: generateFin1(dataset, requiredYearCount) };
+}
+
+export function fin1ToCsv(form: Fin1Form) {
+  const rows = [
+    ["Financial Indicator", ...form.years],
+    ...FIN1_FIELDS.map((field) => [
+      field.label,
+      ...form.years.map((year) => form.mappings.find((mapping) => mapping.field === field.id && mapping.displayYear === year)?.value ?? "MISSING"),
+    ]),
+  ];
+  const escape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+  return rows.map((row) => row.map(escape).join(",")).join("\n");
+}

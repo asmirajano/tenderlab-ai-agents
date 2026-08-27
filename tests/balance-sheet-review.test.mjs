@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { File } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -13,10 +14,30 @@ import {
   reviewToCsv,
 } from "../packages/tender-balance/src/model.ts";
 import { syntheticBalanceSheetReviews } from "../packages/tender-balance/src/fixtures.ts";
-import { readPdfPages } from "../packages/tender-balance/src/file-reader.ts";
+import { readBalanceSheetFile, readPdfPages } from "../packages/tender-balance/src/file-reader.ts";
+import { balanceSheetExcelFileName, reviewToExcel } from "../packages/tender-balance/src/excel.ts";
 import { agentDatasetContributions } from "../packages/catalog-data/src/agent-dataset-relations.ts";
 
 const [clean, lowConfidence, negative, missingPage, comparativeConflict] = syntheticBalanceSheetReviews;
+
+function readStoredZipEntries(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const decoder = new TextDecoder();
+  const entries = new Map();
+  let offset = 0;
+  while (offset + 30 <= bytes.length && view.getUint32(offset, true) === 0x04034b50) {
+    assert.equal(view.getUint16(offset + 8, true), 0, "Excel test expects uncompressed OpenXML entries");
+    const size = view.getUint32(offset + 18, true);
+    const nameLength = view.getUint16(offset + 26, true);
+    const extraLength = view.getUint16(offset + 28, true);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const name = decoder.decode(bytes.subarray(nameStart, nameStart + nameLength));
+    entries.set(name, decoder.decode(bytes.subarray(dataStart, dataStart + size)));
+    offset = dataStart + size;
+  }
+  return entries;
+}
 
 function createSyntheticTextPdf(lines) {
   const escapedLines = lines.map((line) => line.replace(/([\\()])/g, "\\$1"));
@@ -70,7 +91,7 @@ test("extracts and normalizes the required balance-sheet concepts with complete 
 });
 
 test("validates the accounting equation, net assets, and substantiated subtotals", () => {
-  assert.equal(clean.arithmeticChecks.length, 8);
+  assert.equal(clean.arithmeticChecks.length, 12);
   assert.ok(clean.arithmeticChecks.every((check) => check.status === "passed"));
   assert.equal(clean.issues.filter((issue) => issue.severity === "blocking").length, 0);
 });
@@ -183,6 +204,80 @@ test("reads text from a real synthetic digital PDF without external services", a
   assert.match(pages[0].text, /Total assets/);
 });
 
+test("runs the supplied clean balance-sheet image through OCR, structure, normalization, traceability, and genuine discrepancy checks", { timeout: 30_000 }, async () => {
+  const bytes = await readFile(new URL("./fixtures/BALANCE_SHEET_IMAGE_REGRESSION.jpg", import.meta.url));
+  const progress = [];
+  const review = await readBalanceSheetFile(
+    new File([bytes], "BALANCE_SHEET_IMAGE_REGRESSION.jpg", { type: "image/jpeg" }),
+    (event) => progress.push(event),
+  );
+
+  assert.deepEqual(review.statement.periods, ["Month 1", "Month 2"]);
+  assert.equal(review.statement.reportingEntity, "Unconfirmed reporting entity");
+  assert.equal(review.statement.reportingDate, "Unconfirmed");
+  assert.equal(review.statement.currency, "USD");
+  assert.equal(review.lineItems.length, 23);
+  assert.equal(review.pages[0].extractionMethod, "ocr");
+  assert.equal(review.pages[0].imageOnly, false);
+  assert.ok(review.pages[0].confidence >= 0.9);
+  assert.ok(progress.some((event) => event.stage === "ocr"));
+  assert.ok(progress.some((event) => event.stage === "structuring"));
+  assert.equal(review.issues.some((issue) => issue.code === "OCR_REQUIRED" || issue.code === "STATEMENT_PAGE_NOT_FOUND"), false);
+
+  const expected = new Map([
+    ["cash_and_cash_equivalents", [89_000, 120]],
+    ["current_assets", [111_000, 32_120]],
+    ["total_assets", [174_000, 99_120]],
+    ["current_liabilities", [159_500, 167_400]],
+    ["total_liabilities", [243_500, 258_400]],
+    ["owners_equity", [25_000, 102_000]],
+    ["total_liabilities_and_equity", [293_500, 462_400]],
+  ]);
+  for (const [concept, values] of expected) {
+    const item = review.lineItems.find((candidate) => candidate.normalizedConcept === concept);
+    assert.ok(item, concept);
+    assert.deepEqual(item.values.map((value) => value.reportedValue), values, concept);
+    assert.ok(item.values.every((value) => value.source.fileName === "BALANCE_SHEET_IMAGE_REGRESSION.jpg" && value.source.page === 1 && value.source.extractionMethod === "ocr"));
+  }
+
+  const checks = new Map(review.arithmeticChecks.map((check) => [check.id, check]));
+  assert.equal(checks.get("check:subtotal:current_assets:Month 1").status, "passed");
+  assert.equal(checks.get("check:subtotal:current_liabilities:Month 2").status, "passed");
+  assert.equal(checks.get("check:subtotal:total_assets:Month 1").status, "passed");
+  assert.equal(checks.get("check:subtotal:total_liabilities:Month 2").status, "passed");
+  assert.equal(checks.get("check:equation:Month 1").difference, -94_500);
+  assert.equal(checks.get("check:equation:Month 2").difference, -261_280);
+  assert.equal(checks.get("check:reported-liabilities-equity:Month 1").difference, 25_000);
+  assert.equal(checks.get("check:reported-liabilities-equity:Month 2").difference, 102_000);
+  assert.ok(review.issues.some((issue) => issue.code === "ACCOUNTING_EQUATION_MISMATCH" && issue.difference === -94_500));
+  assert.ok(review.issues.some((issue) => issue.code === "NET_ASSETS_MISMATCH" && issue.difference === 261_280));
+});
+
+test("digitizes the supplied MF291 benchmark as one automatic 35-row, 105-value result", async (context) => {
+  const benchmarkPath = "C:/Users/Cowork 2/OneDrive/Desktop/balance-sheet-a-financial-management-tool_MF291.pdf";
+  let bytes;
+  try {
+    bytes = await readFile(benchmarkPath);
+  } catch {
+    context.skip("The explicitly supplied benchmark PDF is not available on this machine.");
+    return;
+  }
+
+  const review = await readBalanceSheetFile(new File([bytes], "balance-sheet-a-financial-management-tool_MF291.pdf", { type: "application/pdf" }));
+  assert.equal(review.statement.reportingEntity, "Joe and Jean Farmer");
+  assert.equal(review.statement.reportingDate, "2017");
+  assert.deepEqual(review.statement.periods, ["January 1", "December 31", "Average"]);
+  assert.equal(review.lineItems.length, 35);
+  assert.equal(review.lineItems.reduce((sum, item) => sum + item.values.length, 0), 105);
+  assert.deepEqual([...new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page)))], [3]);
+  assert.ok(review.lineItems.some((item) => item.originalLabel === "TOTAL FARM AND PERSONAL LIABILITIES" && item.normalizedConcept === "total_liabilities_including_personal"));
+  assert.ok(review.lineItems.some((item) => item.originalLabel === "TOTAL FARM AND PERSONAL NET WORTH" && item.normalizedConcept === "total_net_worth_including_personal"));
+  assert.equal(review.issues.some((issue) => issue.code === "CLASSIFICATION_ANOMALY" || issue.severity === "blocking"), false);
+  assert.equal(review.issues.filter((issue) => issue.code === "ROUNDING_DIFFERENCE").length, 8);
+  assert.ok(review.issues.every((issue) => issue.code === "ROUNDING_DIFFERENCE"));
+  assert.ok(review.lineItems.every((item) => item.values.every((value) => value.source.fileName === "balance-sheet-a-financial-management-tool_MF291.pdf")));
+});
+
 test("normalizes common number formats without changing their raw representation", () => {
   assert.equal(parseReportedNumber("(1,250)"), -1_250);
   assert.equal(parseReportedNumber("1 250"), 1_250);
@@ -197,6 +292,25 @@ test("exports a stable flat CSV with provenance-preserving columns", () => {
   assert.match(csv, /normalized_value/);
   assert.match(csv, /corrected_reported_value/);
   assert.match(csv, /SYNTHETIC_Northstar_Balance_Sheet_2025\.pdf/);
+});
+
+test("exports a valid multi-sheet Excel package with typed figures and traceability", () => {
+  const bytes = reviewToExcel(clean);
+  const entries = readStoredZipEntries(bytes);
+
+  assert.equal(String.fromCharCode(bytes[0], bytes[1]), "PK");
+  assert.equal(balanceSheetExcelFileName(clean), "SYNTHETIC_Northstar_Balance_Sheet_2025-digitized.xlsx");
+  assert.ok(entries.has("[Content_Types].xml"));
+  assert.ok(entries.has("xl/workbook.xml"));
+  assert.ok(entries.has("xl/styles.xml"));
+  assert.match(entries.get("xl/workbook.xml"), /Balance Sheet/);
+  assert.match(entries.get("xl/workbook.xml"), /Arithmetic Checks/);
+  assert.match(entries.get("xl/workbook.xml"), /Findings/);
+  assert.match(entries.get("xl/workbook.xml"), /Source Trace/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Cash and cash equivalents/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /<v>8500000<\/v>/);
+  assert.match(entries.get("xl/worksheets/sheet4.xml"), /rawReportedValue|Raw reported value/);
+  assert.match(entries.get("xl/worksheets/sheet4.xml"), /digital-text/);
 });
 
 test("publishes a machine-readable schema and TL-A008 dataset lineage", async () => {

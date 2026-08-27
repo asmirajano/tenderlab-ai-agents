@@ -5,7 +5,13 @@
   "type": "module",
   "exports": {
     "./model": "./src/model.ts",
+    "./fin-forms": "./src/fin-forms.ts",
     "./file-reader": "./src/file-reader.ts",
+    "./ocr": "./src/ocr.ts",
+    "./excel": "./src/excel.ts",
     "./fixtures": "./src/fixtures.ts"
+  },
+  "dependencies": {
+    "tesseract.js": "7.0.0"
   }
 }

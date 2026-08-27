@@ -31,7 +31,9 @@
         "sha256": { "type": "string", "minLength": 1 },
         "pageCount": { "type": "integer", "minimum": 1 },
         "expectedPageCount": { "type": "integer", "minimum": 1 },
-        "synthetic": { "type": "boolean" }
+        "synthetic": { "type": "boolean" },
+        "processedAt": { "type": "string" },
+        "processingVersion": { "type": "string" }
       }
     },
     "pages": {
@@ -76,7 +78,7 @@
         "properties": {
           "id": { "type": "string" },
           "period": { "type": "string" },
-          "formula": { "enum": ["assets = liabilities + equity", "net assets = assets - liabilities", "subtotal = underlying lines"] },
+          "formula": { "enum": ["assets = liabilities + equity", "net assets = assets - liabilities", "reported liabilities + equity total = liabilities + equity", "subtotal = underlying lines"] },
           "leftValue": { "type": ["number", "null"] },
           "rightValue": { "type": ["number", "null"] },
           "difference": { "type": ["number", "null"] },
