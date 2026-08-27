@@ -1,0 +1,19 @@
+{
+  "name": "@tenderlab/tender-apps",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite --port 4174",
+    "preview": "vite preview --port 4174"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "6.0.2",
+    "vite": "8.0.13",
+    "typescript": "5.9.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {}
+}

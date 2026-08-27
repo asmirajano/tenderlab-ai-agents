@@ -117,6 +117,7 @@ main { min-height: 100vh; overflow: hidden; }
 }
 
 .atlas-jump,
+.tender-apps-jump,
 .glossary-jump {
   border-radius: 9px;
   color: var(--muted);
@@ -130,12 +131,20 @@ main { min-height: 100vh; overflow: hidden; }
 
 .atlas-jump:hover,
 .atlas-jump:focus-visible,
+.tender-apps-jump:hover,
+.tender-apps-jump:focus-visible,
 .glossary-jump:hover,
 .glossary-jump:focus-visible { background: var(--green-soft); color: var(--green); }
 
 .atlas-jump span,
+.tender-apps-jump i,
 .glossary-jump span { color: var(--green); }
 .atlas-jump .atlas-short { display: none; }
+.tender-apps-jump { align-items: center; display: inline-flex; gap: 4px; }
+.tender-apps-jump i { font-style: normal; }
+.tender-apps-jump .product-short { display: none; }
+.tender-apps-jump.is-unconfigured { cursor: not-allowed; opacity: .62; }
+.tender-apps-jump.is-unconfigured i { font-size: 9px; text-transform: uppercase; }
 
 .core-jump {
   align-items: center;
@@ -1131,8 +1140,11 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
   .topbar .product-jumps { grid-column: 2; grid-row: 1; }
   .topbar .glossary-jump { display: none; }
   .topbar .atlas-jump { background: var(--green-soft); display: inline-flex; font-size: 10px; gap: 3px; padding: 9px 8px; }
+  .topbar .tender-apps-jump { background: var(--green-soft); font-size: 10px; padding: 9px 8px; }
   .topbar .atlas-jump .atlas-long { display: none; }
   .topbar .atlas-jump .atlas-short { display: inline; }
+  .topbar .tender-apps-jump .product-long { display: none; }
+  .topbar .tender-apps-jump .product-short { display: inline; }
   .topbar nav { align-self: stretch; display: flex; grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .topbar nav::-webkit-scrollbar { display: none; }
   .topbar nav a { flex: 0 0 auto; font-size: 10px; padding: 8px 10px; white-space: nowrap; }
@@ -1168,6 +1180,7 @@ footer > span { color: #98a39c; font-family: var(--font-geist-mono), monospace; 
 @media (max-width: 560px) {
   .product-jumps { gap: 3px; }
   .topbar .atlas-jump { font-size: 9px; padding: 8px 6px; }
+  .topbar .tender-apps-jump { font-size: 9px; padding: 8px 6px; }
   .core-jump { padding: 9px 10px; }
   .command-titlebar h1 { font-size: 48px; }
   .command-metrics { gap: 8px; }

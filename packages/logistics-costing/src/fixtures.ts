@@ -1,0 +1,92 @@
+import type { CalculationInput, ContractLine, CostLine, PackingItem } from "./types.ts";
+
+export const regressionCostLines: CostLine[] = [
+  { id: "cost-export-packing", component: "export_packing", label: "Export packing / crating already in EXW basis", amount: 0, currency: "USD", evidenceKind: "assumption", confidence: "provisional", note: "Enter a separately identifiable source-included amount only when the quotation supports it." },
+  { id: "cost-origin-loading", component: "origin_loading", label: "Factory loading and securement", amount: 800, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-origin-pickup", component: "origin_pickup", label: "Guangzhou pickup to rail terminal", amount: 1_400, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-origin-terminal", component: "origin_terminal", label: "Origin rail terminal charges", amount: 1_200, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-vessel-loading", component: "vessel_loading", label: "Vessel loading / on-board handling", amount: 0, currency: "USD", evidenceKind: "assumption", confidence: "provisional", note: "Applicable to FAS → FOB and other sea-carriage scenarios when separately quoted." },
+  { id: "cost-export-clearance", component: "export_clearance", label: "China export clearance and documents", amount: 500, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-main-freight", component: "main_freight", label: "2 × 40HC rail containers Guangzhou–Tashkent", amount: 12_600, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-transit", component: "transit_handling", label: "Transit and border handling", amount: 700, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-transshipment", component: "transshipment", label: "Gauge / terminal transfer allowance", amount: 400, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-insurance", component: "insurance", label: "Explicit cargo-insurance quotation", amount: 0, currency: "USD", evidenceKind: "assumption", confidence: "provisional", note: "Leave at zero to use the editable premium model when the selected rule or scope requires insurance." },
+  { id: "cost-destination-terminal", component: "destination_terminal", label: "Tashkent destination terminal handling", amount: 600, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-cold-chain", component: "cold_chain", label: "Provisional cold-chain parcel", amount: 700, currency: "USD", targetIncluded: true, evidenceKind: "assumption", confidence: "provisional", note: "Separate routing and carrier acceptance remain unresolved." },
+  { id: "cost-import-clearance", component: "import_clearance", label: "Buyer-side import clearance", amount: 0, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-duty", component: "duty", label: "Import duty", amount: 0, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-vat", component: "vat_tax", label: "Import VAT / taxes", amount: 0, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-final-delivery", component: "final_delivery", label: "Tashkent terminal to final door", amount: 1_100, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-unloading", component: "destination_unloading", label: "Destination unloading", amount: 450, currency: "USD", evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-dangerous-goods", component: "dangerous_goods", label: "Dangerous-goods handling", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-battery-refrigerant", component: "battery_refrigerant", label: "Battery / refrigerant declarations", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-oversized", component: "oversized_nonstackable", label: "Oversized / non-stackable cargo treatment", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-inspection", component: "inspection_permit", label: "Inspections and permits", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-storage", component: "storage", label: "Storage allowance", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-demurrage", component: "demurrage_detention", label: "Demurrage / detention allowance", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+  { id: "cost-contingency", component: "contingency", label: "Rate-validity / explicit contingency allowance", amount: 0, currency: "USD", targetIncluded: false, evidenceKind: "assumption", confidence: "provisional" },
+];
+
+export const exwGuangzhouToCipTashkent: CalculationInput = {
+  id: "regression:EXW-GUANGZHOU-CIP-TASHKENT-2026-08-26",
+  mode: "incoterm-conversion",
+  sourceContractTotal: 1_587_164,
+  currency: "USD",
+  sourceTerm: "EXW",
+  sourceNamedPlace: "Supplier premises, Guangzhou, China",
+  targetTerm: "CIP",
+  targetNamedPlace: "Rail terminal, Tashkent, Uzbekistan",
+  incotermsVersion: "2020",
+  transportMode: "rail",
+  costLines: regressionCostLines,
+  insurance: {
+    enabled: true,
+    premiumRate: 0.0035,
+    coverageFactor: 1.1,
+    basis: "final-contract-value",
+    clauses: "A",
+    note: "Budgetary premium rate from the originating calculation; not a binding insurance quotation.",
+  },
+  assumptions: [
+    "165 quotation lines and source total are validated regression targets supplied by the user; line descriptions in this fixture are synthetic and are not extracted from the protected source PDF.",
+    "Packing and logistics rates are provisional and editable.",
+    "Duties, VAT and buyer-side import clearance are excluded from CIP.",
+  ],
+};
+
+export const regressionPackingItems: PackingItem[] = [
+  {
+    id: "packing-general",
+    description: "General laboratory equipment — aggregated planning proxy",
+    quantity: 1,
+    proxyPackedVolumeM3: 116.7,
+    proxyGrossWeightKg: 16_500,
+    packages: 160,
+    stackable: true,
+    evidenceKind: "assumption",
+    confidence: "provisional",
+  },
+  {
+    id: "packing-cold-chain",
+    description: "Cold-chain items — separate provisional parcel",
+    quantity: 1,
+    proxyPackedVolumeM3: 2.2,
+    proxyGrossWeightKg: 667.8,
+    packages: 5,
+    stackable: false,
+    temperatureControlled: true,
+    segregated: true,
+    evidenceKind: "assumption",
+    confidence: "provisional",
+  },
+];
+
+export const regressionQuotationLines: ContractLine[] = Array.from({ length: 165 }, (_, index) => ({
+  id: `quote-line-${String(index + 1).padStart(3, "0")}`,
+  description: `Regression quotation line ${String(index + 1).padStart(3, "0")} — synthetic allocation placeholder`,
+  quantity: 1,
+  unit: "line",
+  sourcePrice: index < 164 ? 9_600 : 12_764,
+  currency: "USD",
+  sourceRef: "User-supplied validated aggregate; protected quotation not accessed",
+}));

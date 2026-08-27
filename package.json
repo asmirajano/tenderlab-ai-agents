@@ -8,9 +8,10 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "npm run build:tenderlab && npm run build:atlas && npm run generate:agent-specs",
+    "build": "npm run build:tenderlab && npm run build:atlas && npm run build:tender-apps && npm run generate:agent-specs",
     "build:tenderlab": "vinext build && node scripts/export-firebase.mjs",
     "build:atlas": "npm --prefix apps/ecosystem-atlas run build",
+    "build:tender-apps": "npm --prefix apps/tender-apps run build",
     "generate:agent-specs": "node --experimental-strip-types scripts/generate-agent-specifications.mjs",
     "start": "vinext start",
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",

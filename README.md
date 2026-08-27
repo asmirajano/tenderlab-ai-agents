@@ -1,11 +1,19 @@
-# TenderLab.ai + Tender Ecosystem Atlas
+# TenderLab.ai + Tender Ecosystem Atlas + TenderApps
 
-Two deliberately separate products share design tokens, stable catalogue IDs,
+Three deliberately separate products share design tokens, stable catalogue IDs,
 and a canonical glossary without merging their domain models:
 
-- **TenderLab.ai** explains and validates the working 64-agent architecture.
+- **TenderLab.ai Command Center** explains and validates the working 64-agent architecture for the internal team and administrators.
 - **Tender Ecosystem Atlas** catalogues procurement Sides, Actor Types,
   datasets, providers, terminology, and methodology.
+- **TenderApps** is the separate client-facing product suite. Its first module,
+  **Landed Cost Studio**, implements Agent 50 logistics and Incoterms costing
+  without exposing Command Center navigation or bundling its route tree.
+
+The product boundary is implemented, but the current static TenderLab and Atlas
+hosts do not yet enforce staff roles. Treat them as non-confidential validation
+surfaces until a trusted identity/tenant authorization layer is added. Separate
+origins and hidden links are not authentication.
 
 Agent ↔ Actor ↔ Dataset relationships are intentionally deferred until the
 independent catalogues have been validated.
@@ -35,7 +43,7 @@ artifact storage, approvals, observability/recovery and security governance.
 - \`/\` — strategic TenderLab.ai overview
 - \`/architecture\` — orchestration, agent tiers, platform sides, layers, and handoffs
 - \`/agents\` — canonical 64-agent hierarchy and catalog
-- \`/case-simulation\` — Validation / Case Audit, currently limited to Case 1
+- \`/case-simulation\` — Validation / Case Audit across the current case portfolio
 
 Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 \`/main-agents-run\` resolves to Validation.
@@ -49,9 +57,19 @@ Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 - \`/glossary\` — shared terminology with contextual scopes
 - \`/methodology\` — identity, maturity and governance rules
 
+### TenderApps
+
+TenderApps is an independent Vite application under \`apps/tender-apps\`. Its
+root opens **Landed Cost Studio** with Incoterms conversion, standalone
+logistics costing, packing/unit planning, scenario comparison, and auditable
+exports. It has no link back to the Command Center. The internal header can
+open a separately deployed TenderApps origin only when
+\`NEXT_PUBLIC_TENDER_APPS_URL\` is configured with an absolute HTTPS URL (or a
+localhost URL during development).
+
 Shared packages live under \`packages/\`: \`catalog-schema\`, \`catalog-data\`,
-and \`design-system\`. The Atlas is an independent Vite application under
-\`apps/ecosystem-atlas\`.
+\`design-system\`, and the reusable \`logistics-costing\` calculation kernel. The
+Atlas and TenderApps are independent Vite applications under \`apps/\`.
 
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
@@ -63,6 +81,7 @@ Requires Node.js 22.13 or later and pnpm 11.19.
 \`\`\`bash
 pnpm install --frozen-lockfile
 pnpm dev
+pnpm --dir apps/tender-apps dev
 \`\`\`
 
 ## Validation
@@ -72,22 +91,24 @@ pnpm lint
 pnpm test
 \`\`\`
 
-\`pnpm test\` builds both products, exports the TenderLab strategic pages and
+\`pnpm test\` builds all three products, exports the TenderLab strategic pages and
 compatibility routes, and verifies published assets, catalogue boundaries,
-canonical registries, Case 1 methodology, and semantic search.
+the client-product boundary, canonical registries, Case methodology, and
+semantic search.
 
 ## Deployment
 
-Firebase Hosting uses two free Hosting sites in the existing Firebase project.
-Pushes to \`main\` are linted, built, and tested once before both live sites are
-updated through named deploy targets.
+Firebase Hosting currently uses two live sites in the existing Firebase
+project. Pushes to \`main\` are linted, built, and tested once before those two
+sites are updated through named deploy targets.
 
 - TenderLab.ai: https://tenderlab-ai-agents.web.app
 - Tender Ecosystem Atlas: https://tender-ecosystem-atlas.web.app
+- TenderApps: separate \`tender-apps\` target prepared, **not mapped or deployed**
 - Firebase project: \`tenderlab-ai-agents\`
-- Deploy targets: \`tenderlab\`, \`ecosystem-atlas\`
+- Live deploy targets: \`tenderlab\`, \`ecosystem-atlas\`
 
-Both products are static front-end applications. No paid Firebase services,
+All current products are static front-end applications. No paid Firebase services,
 Cloud Functions, databases, or server-side compute are enabled.
 
 The original \`.openai/hosting.json\` remains in the repository so the previous
