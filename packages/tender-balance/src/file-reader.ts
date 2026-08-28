@@ -1,5 +1,5 @@
-import { buildBalanceSheetReview, type BalanceSheetInput, type BalanceSheetReview, type SourcePageInput } from "./model.ts";
-import { recognizeBalanceSheetImage } from "./ocr.ts";
+import { buildBalanceSheetReview, parseStatementLine, type BalanceSheetInput, type BalanceSheetReview, type SourcePageInput } from "./model.ts";
+import { recognizeBalanceSheetImage, type OcrLayoutMode } from "./ocr.ts";
 import type { PDFPageProxy } from "pdfjs-dist/types/src/display/api";
 
 export type FileReadProgress = {
@@ -167,7 +167,7 @@ function replacePage(pages: SourcePageInput[], replacement: SourcePageInput) {
   if (index >= 0) pages[index] = replacement;
 }
 
-async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCount: number, scale: number, rotation: number, onProgress?: ProgressReporter) {
+async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCount: number, scale: number, rotation: number, onProgress?: ProgressReporter, layoutMode: OcrLayoutMode = "sparse") {
   const renderedPage = await renderPdfPageForOcr(page, scale, rotation);
   if (!renderedPage) return undefined;
   const recognized = await recognizeBalanceSheetImage(renderedPage, (progress) => onProgress?.({
@@ -175,7 +175,7 @@ async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCoun
     label: progress.status === "recognizing text" ? `Recognizing candidate page ${pageNumber} of ${pageCount}` : `Preparing OCR for candidate page ${pageNumber} of ${pageCount}`,
     progress: progress.progress,
     pageNumber,
-  }));
+  }), layoutMode);
   return {
     pageNumber,
     text: recognized.text,
@@ -189,10 +189,87 @@ async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCoun
 function strongerRecognition<T extends SourcePageInput & { rotation?: number }>(left: T | undefined, right: T | undefined) {
   if (!left) return right;
   if (!right) return left;
+  const leftStatutoryScore = statutoryRecognitionScore(left.text ?? "");
+  const rightStatutoryScore = statutoryRecognitionScore(right.text ?? "");
+  if (leftStatutoryScore !== rightStatutoryScore) return leftStatutoryScore > rightStatutoryScore ? left : right;
   const leftScore = financialStatementEvidenceScore(left.text ?? "");
   const rightScore = financialStatementEvidenceScore(right.text ?? "");
   if (leftScore !== rightScore) return leftScore > rightScore ? left : right;
   return (left.confidence ?? 0) >= (right.confidence ?? 0) ? left : right;
+}
+
+const STATUTORY_CORE_ROW_CODES = new Set(["390", "400", "480", "490", "600", "770", "780"]);
+const STATUTORY_SELECTION_ROW_CODES = new Set([...STATUTORY_CORE_ROW_CODES, "010", "240", "270"]);
+
+function isLiteralReportedDash(raw: string) {
+  return /^[—–-]$/.test(raw.trim());
+}
+
+export function isWellFormedFinancialToken(raw: string) {
+  const compact = raw
+    .trim()
+    .replace(/^(?:[$€£₾]\s*)/, "")
+    .replace(/^\(\s*|\s*\)$/g, "")
+    .replace(/^[-−]\s*/, "")
+    .trim();
+  if (!/\d/.test(compact)) return false;
+  return /^\d+$/.test(compact)
+    || /^\d+(?:[,.]\d{2})$/.test(compact)
+    || /^\d{1,3}(?:[ \u00a0]\d{3})+(?:[,.]\d{2})?$/.test(compact)
+    || /^\d{1,3}(?:,\d{3})+(?:\.\d{2})?$/.test(compact)
+    || /^\d{1,3}(?:\.\d{3})+(?:,\d{2})?$/.test(compact);
+}
+
+export function statutoryRecognitionScore(text: string) {
+  const codes = new Set<string>();
+  let validValues = 0;
+  let malformedValues = 0;
+  for (const sourceLine of text.split(/\r?\n/)) {
+    const parsed = parseStatementLine(sourceLine.trim());
+    if (!parsed?.sourceRowCode || !STATUTORY_SELECTION_ROW_CODES.has(parsed.sourceRowCode)) continue;
+    codes.add(parsed.sourceRowCode);
+    for (const raw of parsed.rawValues) {
+      if (!raw.trim()) continue;
+      if (isWellFormedFinancialToken(raw) || isLiteralReportedDash(raw)) validValues += 1;
+      else malformedValues += 1;
+    }
+  }
+  return codes.size * 30 + validValues * 4 - malformedValues * 8;
+}
+
+function uniqueStatutoryRows(text: string) {
+  const candidates = new Map<string, Array<{ lineIndex: number; parsed: NonNullable<ReturnType<typeof parseStatementLine>> }>>();
+  const lines = text.split(/\r?\n/);
+  for (const [lineIndex, sourceLine] of lines.entries()) {
+    const parsed = parseStatementLine(sourceLine.trim());
+    if (!parsed?.sourceRowCode || !STATUTORY_CORE_ROW_CODES.has(parsed.sourceRowCode)) continue;
+    const rows = candidates.get(parsed.sourceRowCode) ?? [];
+    rows.push({ lineIndex, parsed });
+    candidates.set(parsed.sourceRowCode, rows);
+  }
+  return { lines, rows: new Map([...candidates].filter(([, rows]) => rows.length === 1).map(([code, rows]) => [code, rows[0]])) };
+}
+
+export function fuseStatutoryRecognition(primaryText: string, digitalText: string) {
+  const primary = uniqueStatutoryRows(primaryText);
+  const digital = uniqueStatutoryRows(digitalText);
+  for (const [code, primaryRow] of primary.rows) {
+    const digitalRow = digital.rows.get(code);
+    if (!digitalRow) continue;
+    const values = [...primaryRow.parsed.rawValues];
+    let changed = false;
+    for (let index = 0; index < digitalRow.parsed.rawValues.length; index += 1) {
+      const primaryValue = values[index] ?? "";
+      const digitalValue = digitalRow.parsed.rawValues[index] ?? "";
+      const primaryIsSourceValue = isWellFormedFinancialToken(primaryValue) || isLiteralReportedDash(primaryValue);
+      if (!primaryIsSourceValue && isWellFormedFinancialToken(digitalValue)) {
+        values[index] = digitalValue;
+        changed = true;
+      }
+    }
+    if (changed) primary.lines[primaryRow.lineIndex] = [primaryRow.parsed.label, code, ...values].join("\t");
+  }
+  return primary.lines.join("\n");
 }
 
 export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressReporter): Promise<SourcePageInput[]> {
@@ -218,6 +295,8 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
     });
   }
 
+  const digitalPages = new Map(pages.map((page) => [page.pageNumber, { ...page }]));
+
   if (typeof document !== "undefined" && pages.some((page) => page.imageOnly || digitalTextNeedsOcr(page.text ?? ""))) {
     const attempted = new Set<number>();
     while (true) {
@@ -233,8 +312,26 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
           : undefined;
         const discovered = strongerRecognition(upright, rotated);
         if (!discovered || financialStatementEvidenceScore(discovered.text ?? "") < 6) continue;
-        const detailed = await recognizePdfPage(pdfPage, pageNumber, pdf.numPages, 4, discovered.rotation ?? 0, onProgress);
-        replacePage(pages, strongerRecognition(discovered, detailed) ?? discovered);
+        // Discovery decides whether a rotated sparse pass is needed, but it is
+        // not allowed to choose one universal table layout. Real statutory
+        // continuation pages can lack a title: dense AUTO preserves one page's
+        // row geometry while SPARSE preserves another page's core totals. Run
+        // both high-resolution candidates, then select by authoritative core
+        // row coverage and numeric-cell quality.
+        const detailedSparse = await recognizePdfPage(pdfPage, pageNumber, pdf.numPages, 4, discovered.rotation ?? 0, onProgress, "sparse");
+        const detailedAutoUpright = await recognizePdfPage(pdfPage, pageNumber, pdf.numPages, 4, 0, onProgress, "auto");
+        const detailedSelected = strongerRecognition(detailedSparse, detailedAutoUpright);
+        // Detailed statutory rows must win final client data. Context-only
+        // covers, however, may have no financial rows at all; keep discovery in
+        // contention there so reporting-year and statement-title evidence is
+        // not discarded by an unnecessarily dense pass.
+        const selected = detailedSelected && statutoryRecognitionScore(detailedSelected.text ?? "") > 0
+          ? detailedSelected
+          : strongerRecognition(discovered, detailedSelected) ?? discovered;
+        const digital = digitalPages.get(pageNumber);
+        replacePage(pages, digital?.text
+          ? { ...selected, text: fuseStatutoryRecognition(selected.text ?? "", digital.text) }
+          : selected);
       }
     }
   }

@@ -540,6 +540,17 @@ function detectLanguage(text: string): DocumentLanguage {
 }
 
 function detectCurrency(text: string) {
+  // Prefer an explicit statement-level measurement declaration over isolated
+  // symbols elsewhere on the page. OCR can turn table artefacts into "$", and
+  // a local-currency statement may legitimately mention foreign-currency cash.
+  const declaredCurrency = text.match(/\b(?:unit of measurement|currency(?:\s*\/\s*units?)?|amounts?(?:\s+are)?(?:\s+(?:reported|presented|stated))?\s+in)\b[^\r\n]{0,100}\b(USD|EUR|UZS|RUB|KZT|GBP|GEL|US dollars?|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)\b/iu)?.[1] ?? "";
+  if (/^(?:UZS|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)$/iu.test(declaredCurrency)) return "UZS";
+  if (/^(?:USD|US dollars?)$/i.test(declaredCurrency)) return "USD";
+  if (/^EUR$/i.test(declaredCurrency)) return "EUR";
+  if (/^RUB$/i.test(declaredCurrency)) return "RUB";
+  if (/^KZT$/i.test(declaredCurrency)) return "KZT";
+  if (/^GBP$/i.test(declaredCurrency)) return "GBP";
+  if (/^GEL$/i.test(declaredCurrency)) return "GEL";
   if (/\b(?:USD|US dollars?)\b|\$/i.test(text)) return "USD";
   if (/\bEUR\b|€/i.test(text)) return "EUR";
   if (/\bUZS\b|с[ўу]м|\b(?:sou?ms?|so['’]?m)\b/i.test(text)) return "UZS";
@@ -573,8 +584,9 @@ function reportingYearFromText(text: string) {
     /\bbalance sheet\D{0,40}((?:19|20)\d{2})\b/iu,
     /\baccounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\b[^\n]{0,100}\b((?:19|20)\d{2})\b/iu,
     /\breports? on financial results?\b[^\n]{0,100}\b((?:19|20)\d{2})\b/iu,
-    /\bfinancial statements?\b[^\n]{0,120}\bfor\s+((?:19|20)\d{2})\b/iu,
+    /\bfinancial statements?\b[\s\S]{0,240}\bfor\s+((?:19|20)\d{2})\b/iu,
     /\b(?:first|second|third|fourth|[1-4](?:st|nd|rd|th))\s+quarter\s+(?:of\s+)?((?:19|20)\d{2})\b/iu,
+    /\bon\s+((?:19|20)\d{2})\s+year\s+(?:[1-4]|first|second|third|fourth)\s+quarter\b/iu,
   ];
   for (const pattern of highConfidencePatterns) {
     const match = text.match(pattern);
@@ -586,6 +598,15 @@ function reportingYearFromText(text: string) {
 export function detectPeriods(text: string, reportingYear?: string | null) {
   const periods: string[] = [];
   const reliableReportingYear = reportingYear ?? reportingYearFromText(text);
+  const headerLines = text.split(/\r?\n/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 24);
+  const headerText = headerLines.join(" ");
+  const statutoryForm = /(?:accounting balance(?: sheet)?\s*[-–]?\s*form\s+(?:no\.?|n[eo])?\s*1|reports? on financial results?\s*[-–]?\s*form\s+(?:no\.?|n[eo])?\s*2)/i.test(headerText);
+  const statutoryRowsWithComparatives = text.split(/\r?\n/)
+    .map((line) => parseStatementLine(line))
+    .filter((row) => (row?.rawValues.length ?? 0) >= 2).length;
+  if (reliableReportingYear && statutoryForm && statutoryRowsWithComparatives >= 2) {
+    return [String(Number(reliableReportingYear) - 1), reliableReportingYear];
+  }
   if (/Ҳисобот даври\s*бошига/i.test(text) && /Ҳисобот даври\s*охирига/i.test(text)) {
     return reliableReportingYear
       ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
@@ -596,22 +617,23 @@ export function detectPeriods(text: string, reportingYear?: string | null) {
       ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
       : ["Prior-year comparable period", "Reporting period"];
   }
-  const hasEnglishOpening = /\bat the beginning of (?:the )?reporting period\b/i.test(text);
-  const hasEnglishClosing = /\bat the end of (?:the )?reporting period\b/i.test(text);
-  if (hasEnglishOpening && hasEnglishClosing) {
+  const hasEnglishOpening = /\bat\s*the beginning of\b/i.test(headerText);
+  const hasEnglishClosing = /\b(?:at|by)\s+the end of\b/i.test(headerText);
+  const hasEnglishReportingPeriod = /\breporting period\b/i.test(headerText);
+  if (hasEnglishOpening && hasEnglishClosing && hasEnglishReportingPeriod) {
     return reliableReportingYear
       ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
       : ["Beginning of reporting period", "End of reporting period"];
   }
-  const hasEnglishComparable = /\b(?:for (?:the )?)?corresponding period (?:of (?:the )?)?(?:last|previous) year\b/i.test(text);
-  const hasEnglishReporting = /\bfor (?:the )?(?:accounting|reporting) period\b/i.test(text);
+  const hasEnglishComparable = /\b(?:(?:for (?:the )?)?corresponding period (?:of (?:the )?)?(?:last|previous) year|at this time last year)\b/i.test(headerText);
+  const hasEnglishReporting = /\b(?:for (?:the )?(?:accounting|reporting) period|during the reporting period)\b/i.test(headerText);
   if (hasEnglishComparable && hasEnglishReporting) {
     return reliableReportingYear
       ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
       : ["Prior-year comparable period", "Reporting period"];
   }
   const namedDatePattern = /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:,?\s+(?:19|20)\d{2})?\b/gi;
-  const namedDates = Array.from(text.matchAll(namedDatePattern), (match) => match[0].replace(/\s+/g, " "));
+  const namedDates = Array.from(headerText.matchAll(namedDatePattern), (match) => match[0].replace(/\s+/g, " "));
   for (const period of namedDates) {
     if (!periods.some((candidate) => candidate.toLocaleLowerCase() === period.toLocaleLowerCase())) periods.push(period);
   }
@@ -621,18 +643,23 @@ export function detectPeriods(text: string, reportingYear?: string | null) {
   }
   if (periods.length === 1) {
     const namedYear = periods[0].match(/\b(?:19|20)\d{2}\b/)?.[0];
-    for (const match of text.matchAll(/\b(?:19|20)\d{2}\b/g)) {
+    for (const match of headerText.matchAll(/\b(?:19|20)\d{2}\b/g)) {
       if (match[0] !== namedYear && !periods.includes(match[0])) periods.push(match[0]);
     }
     if (periods.length >= 2) return periods.slice(0, 4);
   }
-  for (const match of text.matchAll(/\b(?:month|period|quarter|qtr|column)\s*[-:]?\s*\d+\b/gi)) {
-    const [kind, number] = match[0].replace(/[-:]/g, " ").trim().split(/\s+/);
-    const normalized = `${kind[0].toUpperCase()}${kind.slice(1).toLowerCase()} ${number}`;
-    if (!periods.includes(normalized)) periods.push(normalized);
+  const ordinalPeriods = Array.from(headerText.matchAll(/\b(?:month|period|quarter|qtr|column)\s*[-:]?\s*\d+\b/gi));
+  if (ordinalPeriods.length >= 2) {
+    for (const match of ordinalPeriods) {
+      const [kind, number] = match[0].replace(/[-:]/g, " ").trim().split(/\s+/);
+      const normalized = `${kind[0].toUpperCase()}${kind.slice(1).toLowerCase()} ${number}`;
+      if (!periods.includes(normalized)) periods.push(normalized);
+    }
   }
   if (periods.length >= 2) return periods.slice(0, 4);
-  for (const match of text.matchAll(/\b(?:19|20)\d{2}\b/g)) {
+  const yearHeaderText = headerLines.filter((line) => /\b(?:as of|year|period|ended|date)\b/i.test(line)
+    || /^(?:(?:19|20)\d{2}[\s|,;]*){1,4}$/.test(line)).join(" ");
+  for (const match of yearHeaderText.matchAll(/\b(?:19|20)\d{2}\b/g)) {
     if (!periods.includes(match[0])) periods.push(match[0]);
   }
   return periods.slice(0, 4);
@@ -645,9 +672,11 @@ function repairEntityOcr(value: string) {
 function detectEntity(text: string) {
   const uzbekCompany = text.match(/["“«]([^"”»\r\n]{2,100})["”»]\s+MAS[`'’]?ULIYATI\s+CHEKLANGAN\s+JAMIYAT/iu);
   if (uzbekCompany?.[1]) return `${repairEntityOcr(uzbekCompany[1].trim())} LLC`;
+  const reportAddressee = text.match(/(?:auditor(?:'s)?\s+report\s+is\s+addressed\s+to|founders?\s+and\s+management)\s*:\s*(?:OOO|ООО)\s+[«"“]?([A-Z][A-Z0-9 &'().-]{2,80}?)(?=[»"”]?\s*(?:\r?\n|$))/imu);
+  if (reportAddressee?.[1]) return `${repairEntityOcr(reportAddressee[1].trim())} LLC`;
   const russianCompany = text.match(/\bООО\s+[«"“]([^»"”\r\n]{2,100})[»"”]/iu);
   if (russianCompany?.[1]) return `${repairEntityOcr(russianCompany[1].trim())} LLC`;
-  const prefixedCompany = text.match(/\b(?:OOO|ООО)\s+[«"“]?([A-Z][A-Z0-9 &'().-]{2,80}?)(?=[»"”]?\s*(?:\r?\n|$))/imu);
+  const prefixedCompany = text.match(/(?:^|[\s:])(?:OOO|ООО)\s+[«"“]?([A-Z][A-Z0-9 &'().-]{2,80}?)(?=[»"”]?\s*(?:\r?\n|$))/imu);
   if (prefixedCompany?.[1]) return `${repairEntityOcr(prefixedCompany[1].trim())} LLC`;
   if (detectLanguage(text) === "uz") return "Unconfirmed reporting entity";
   const candidates = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 80);
@@ -677,18 +706,20 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
   const tabParts = line.split("\t").map((part) => part.trim());
   if (tabParts.length >= 2) {
     const rowCodeIndex = tabParts.findIndex((part) => /^\d{3}$/.test(part));
-    if (rowCodeIndex > 0 && (/[а-яёўқғҳ]/i.test(line) || expectedValueCount === 0 || tabParts.length - rowCodeIndex - 1 >= expectedValueCount)) {
-      const label = tabParts.slice(0, rowCodeIndex).filter(Boolean).join(" ");
-      const sourceRowCode = tabParts[rowCodeIndex];
-      const valueCells = tabParts.slice(rowCodeIndex + 1);
+    const collapsedRowCode = rowCodeIndex < 0 ? tabParts[0]?.match(/^(.*?)\s+(\d{3})$/) : undefined;
+    if (rowCodeIndex > 0 || collapsedRowCode) {
+      const label = collapsedRowCode?.[1]?.trim() ?? tabParts.slice(0, rowCodeIndex).filter(Boolean).join(" ");
+      const sourceRowCode = collapsedRowCode?.[2] ?? tabParts[rowCodeIndex];
+      const valueCells = collapsedRowCode ? tabParts.slice(1) : tabParts.slice(rowCodeIndex + 1);
       const rawValues = valueCells.map((part) => /^(?:[-−]?\d[\d .'’,]*[,.]\d{2}|—|–|-)$/.test(part) ? part : "");
       const lastValueIndex = rawValues.findLastIndex(Boolean);
       if (label && lastValueIndex >= 0) {
         const selected = rawValues.slice(0, Math.max(expectedValueCount, lastValueIndex + 1));
         while (expectedValueCount > 0 && selected.length < expectedValueCount) selected.push("");
-        return { label, sourceRowCode, rawValues: selected.slice(0, expectedValueCount || selected.length).map((value) => value || "—") };
+        return { label, sourceRowCode, rawValues: selected.slice(0, expectedValueCount || selected.length) };
       }
-      if (label && expectedValueCount > 0) return { label, sourceRowCode, rawValues: Array.from({ length: expectedValueCount }, () => "—") };
+      if (label && expectedValueCount > 0) return { label, sourceRowCode, rawValues: Array.from({ length: expectedValueCount }, () => "") };
+      if (label) return { label, sourceRowCode, rawValues: [] };
       return undefined;
     }
   }
@@ -704,7 +735,7 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
     }
     const codeOnly = line.match(/^(.*?)\s+(\d{3})\s*$/u);
     if (codeOnly) return expectedValueCount > 0
-      ? { label: codeOnly[1].trim(), sourceRowCode: codeOnly[2], rawValues: Array.from({ length: expectedValueCount }, () => "—") }
+      ? { label: codeOnly[1].trim(), sourceRowCode: codeOnly[2], rawValues: Array.from({ length: expectedValueCount }, () => "") }
       : undefined;
   }
 
@@ -795,8 +826,12 @@ export function selectStatementPages(pages: SourcePageInput[]) {
 
 function balanceStatementLines(text: string) {
   const lines = text.split(/\r?\n/);
-  const titleIndex = lines.findIndex((line) => isStatementTitleLine(line)
-    || (!isIncomeStatementTitleLine(line) && statementPatterns.some((pattern) => pattern.test(line))));
+  // A continuation page may begin with valid rows before a major total such as
+  // "Total balance sheet asset". Treating any generic “balance” phrase as a
+  // title silently discarded those preceding rows. Only an actual statement
+  // title may advance the start boundary; untitled continuation pages start at
+  // their first line.
+  const titleIndex = lines.findIndex((line) => isStatementTitleLine(line));
   const start = titleIndex >= 0 ? titleIndex : 0;
   const nextStatementIndex = lines.findIndex((line, index) => index > start && isIncomeStatementTitleLine(line));
   return lines.slice(start, nextStatementIndex >= 0 ? nextStatementIndex : undefined);
@@ -808,7 +843,13 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
     if (page.missing || page.imageOnly || !page.text) continue;
     const reportingYear = page.reportingYear ?? periods.findLast((period) => /^(?:19|20)\d{2}$/.test(period));
     const pagePeriods = detectPeriods(page.text, reportingYear);
-    const usedPeriods = pagePeriods.length ? pagePeriods : periods;
+    const observedColumnCount = Math.max(0, ...balanceStatementLines(page.text)
+      .map((line) => parseStatementLine(line)?.rawValues.length ?? 0)
+      .filter((count) => count <= 4));
+    const contextualPeriods = reportingYear
+      ? observedColumnCount >= 2 ? [String(Number(reportingYear) - 1), reportingYear] : [reportingYear]
+      : [];
+    const usedPeriods = pagePeriods.length ? pagePeriods : (contextualPeriods.length ? contextualPeriods : periods);
     let pendingLabel = "";
     for (const sourceLine of balanceStatementLines(page.text)) {
       const line = sourceLine.trim();
@@ -1145,14 +1186,11 @@ function lineItemFromInput(input: LineItemInput, source: SourceDocumentInput, un
 
 function pagesWithReportingContext(pages: SourcePageInput[]) {
   const directYears = new Map(pages.map((page) => [page.pageNumber, reportingYearFromText(page.text ?? "")]));
-  return pages.map((page) => {
+  let activeReportingYear: string | undefined;
+  return [...pages].sort((left, right) => left.pageNumber - right.pageNumber).map((page) => {
     const direct = page.reportingYear ?? directYears.get(page.pageNumber) ?? undefined;
-    if (direct) return { ...page, reportingYear: direct };
-    for (let distance = 1; distance <= 3; distance += 1) {
-      const nearby = directYears.get(page.pageNumber - distance);
-      if (nearby) return { ...page, reportingYear: nearby };
-    }
-    return page;
+    if (direct) activeReportingYear = direct;
+    return activeReportingYear ? { ...page, reportingYear: activeReportingYear } : page;
   });
 }
 

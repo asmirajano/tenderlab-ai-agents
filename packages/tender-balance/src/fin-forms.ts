@@ -547,22 +547,33 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
-  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
-  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /^net (?:revenue|income) from (?:the )?sales\b/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
+  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?\b/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^net profit(?: \(loss\))?(?: for the reporting period)?\b/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];
+
+const STATUTORY_INCOME_ROW_FIELDS: Partial<Record<string, Fin1FieldId>> = {
+  "010": "total_revenue",
+  "240": "profit_before_tax",
+  "270": "profit_after_tax",
+};
 
 const TURNOVER_REVIEW_PATTERNS = [/^(?:total )?sales$/i, /^(?:total )?receipts$/i, /^(?:total )?income$/i, /^gross income$/i];
 
 function incomeStatementPages(review: BalanceSheetReview) {
-  const titled = review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
+  const hasIncomeTitle = (page: BalanceSheetReview["pages"][number]) => page.text?.split(/\r?\n/).some((line) => {
     const normalized = line.replace(/\s+/g, " ").trim();
     return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?$/i.test(normalized)
       || /^(?:consolidated\s+)?income statements?$/i.test(normalized)
-      || /^report on financial results\s*[-–—]\s*form no\.?\s*2$/i.test(normalized)
+      || /^report on financial results\s*[-–—]?\s*form n(?:o|e)\.?\s*(?:2\b)?/i.test(normalized)
       || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
+  });
+  const titled = review.pages.filter(hasIncomeTitle);
+  const withTargetRows = titled.filter((page) => (page.text ?? "").split(/\r?\n/).some((sourceLine) => {
+    const parsed = parseStatementLine(sourceLine.trim());
+    if (parsed?.sourceRowCode && STATUTORY_INCOME_ROW_FIELDS[parsed.sourceRowCode]) return true;
+    return Boolean(incomeDefinitionForLine(sourceLine));
   }));
-  const withTargetRows = titled.filter((page) => INCOME_FIELD_PATTERNS.some((definition) => definition.patterns.some((pattern) => pattern.test(page.text ?? ""))));
   return withTargetRows.length ? withTargetRows : titled;
 }
 
@@ -610,6 +621,35 @@ function incomeDefinitionForLine(sourceLine: string) {
 
 function parseIncomeReportedNumber(raw: string) {
   return isExplicitReportedZero(raw) ? 0 : parseReportedNumber(raw);
+}
+
+function parseStatutoryIncomeRows(text: string, expectedPeriodCount: number) {
+  const rows: Array<{ label: string; rawValues: string[]; field: Fin1FieldId }> = [];
+  for (const sourceLine of text.split(/\r?\n/)) {
+    // Preserve TSV column boundaries until the statutory row code and paired
+    // income/expense cells have been recovered. Label normalization collapses
+    // whitespace and would otherwise erase those boundaries.
+    let parsed = parseStatementLine(sourceLine.trim());
+    if (!parsed?.sourceRowCode && sourceLine.includes("\t")) {
+      const cells = sourceLine.split("\t").map((cell) => cell.trim());
+      const codeCellIndex = cells.findIndex((cell, index) => index > 0 && /(?:^|\s)(?:010|240|270)$/.test(cell));
+      if (codeCellIndex > 0) {
+        const codeMatch = cells[codeCellIndex].match(/(?:^|\s)(010|240|270)$/);
+        if (codeMatch) {
+          const codePrefix = cells[codeCellIndex].slice(0, Math.max(0, (codeMatch.index ?? 0))).trim();
+          const reconstructedLabel = [...cells.slice(0, codeCellIndex), codePrefix].filter(Boolean).join(" ");
+          parsed = parseStatementLine([reconstructedLabel, codeMatch[1], ...cells.slice(codeCellIndex + 1)].join("\t"));
+        }
+      }
+    }
+    const field = parsed?.sourceRowCode ? STATUTORY_INCOME_ROW_FIELDS[parsed.sourceRowCode] : undefined;
+    if (!parsed || !field || !parsed.rawValues.length) continue;
+    const rawValues = parsed.rawValues.length >= expectedPeriodCount * 2 - 1
+      ? Array.from({ length: expectedPeriodCount }, (_, index) => parsed.rawValues[index * 2] ?? "—")
+      : parsed.rawValues.slice(-expectedPeriodCount);
+    if (rawValues.length === expectedPeriodCount) rows.push({ label: normalizeIncomeLabel(parsed.label), rawValues, field });
+  }
+  return rows;
 }
 
 function parseUzbekIncomeRows(text: string) {
@@ -675,6 +715,8 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
       const located = incomeDefinitionForLine(sourceLine);
       if (located) locatedFields.add(located.field);
     }
+    const statutoryRows = parseStatutoryIncomeRows(page.text ?? "", periods.length);
+    for (const row of statutoryRows) locatedFields.add(row.field);
 
     for (const sourceLine of (page.text ?? "").split(/\r?\n/)) {
       const parsedCandidate = parseStatementLine(normalizeIncomeLabel(sourceLine), periods.length);
@@ -712,13 +754,23 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
       }
     }
 
-    const sourceRows = /[ўқғҳ]/i.test(page.text ?? "")
+    const labelRows = /[ўқғҳ]/i.test(page.text ?? "")
       ? parseUzbekIncomeRows(page.text ?? "")
       : (page.text ?? "").split(/\r?\n/).map((sourceLine) => parseIncomeStatementLine(sourceLine.trim(), periods.length)).filter((parsed): parsed is NonNullable<typeof parsed> => Boolean(parsed));
+    const statutoryFields = new Set(statutoryRows.map((row) => row.field));
+    const sourceRows = [
+      ...statutoryRows,
+      ...labelRows.filter((row) => {
+        const definition = incomeDefinitionForLabel(row.label);
+        return !definition || !statutoryFields.has(definition.field);
+      }),
+    ];
     for (const parsed of sourceRows) {
       if (!parsed) continue;
       const label = normalizeIncomeLabel(parsed.label);
-      const definition = INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(label)));
+      const definition = "field" in parsed
+        ? INCOME_FIELD_PATTERNS.find((candidate) => candidate.field === parsed.field)
+        : INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(label)));
       if (!definition) continue;
       const rawValues = parsed.rawValues.slice(-periods.length);
       for (let index = 0; index < periods.length; index += 1) {

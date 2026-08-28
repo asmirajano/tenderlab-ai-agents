@@ -148,6 +148,35 @@ test("maps adjacent statutory statement sets across all years and corroborates t
   assert.equal(dataset.issues.some((issue) => issue.type === "source-inconsistency"), false);
 });
 
+test("uses authoritative Form No.2 row codes with paired income and expense columns", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:english-form2-row-codes", fileName: "SYNTHETIC_ENGLISH_FORM2_ROW_CODES.pdf", sha256: "synthetic-row-codes", synthetic: true },
+    pages: [
+      { pageNumber: 1, extractionMethod: "ocr", confidence: 0.95, text: [
+        "SYNTHETIC COMPANY LLC", "Accounting balance sheet - Form No.1", "Fourth quarter of 2022", "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period", "At the end of the reporting period",
+        "Total current assets\t390\t2 877 316,00\t4 461 811,00", "Total balance sheet asset\t400\t6 237 204,00\t7 179 997,00",
+        "Total for section I\t480\t1 933 327,00\t2 195 806,00", "Current liabilities, total\t600\t553 879,00\t4 955 393,00",
+        "Total liabilities\t770\t4 303 879,00\t4 984 192,00",
+      ].join("\n") },
+      { pageNumber: 2, extractionMethod: "ocr", confidence: 0.95, text: [
+        "Report on financial results-form Ne2", "Fourth quarter of 2022", "Unit of measurement, thousand soums",
+        "For corresponding period last year", "For accounting period",
+        "Net revenue from sales of products (goods, works and services)\t010\t5 558 561,00\tx\t6 133 512,00\tx",
+        "Profit (loss) before income tax (p. 220+/-230)\t240\t336 488,00\t0,00\t310 442,00\t0,00",
+        "Net profit (loss) for the reporting period (p. 240-250-260)\t260 270\t286 015,00\t0,00\t263 872,00\t0,00",
+      ].join("\n") },
+    ],
+  });
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2021")?.value, 5_558_561_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2022")?.value, 6_133_512_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2021")?.value, 336_488_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2022")?.value, 263_872_000);
+  assert.equal(dataset.sources.find((source) => source.sourceId.includes("income:total_revenue:2021"))?.originalLabel.startsWith("Net revenue from sales"), true);
+});
+
 test("digitizes a synthetic Uzbek Form 1 into English canonical labels and generates FIN-1", () => {
   const review = buildBalanceSheetReview({
     source: {

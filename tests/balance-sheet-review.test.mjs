@@ -16,7 +16,8 @@ import {
   reviewToCsv,
 } from "../packages/tender-balance/src/model.ts";
 import { syntheticBalanceSheetReviews } from "../packages/tender-balance/src/fixtures.ts";
-import { readBalanceSheetFile, readPdfPages, reconstructPdfPageText } from "../packages/tender-balance/src/file-reader.ts";
+import { fuseStatutoryRecognition, readBalanceSheetFile, readPdfPages, reconstructPdfPageText, statutoryRecognitionScore } from "../packages/tender-balance/src/file-reader.ts";
+import { clusterOcrRows, mergeWrappedOcrRows } from "../packages/tender-balance/src/ocr.ts";
 import { balanceSheetExcelFileName, reviewToExcel } from "../packages/tender-balance/src/excel.ts";
 import { agentDatasetContributions } from "../packages/catalog-data/src/agent-dataset-relations.ts";
 
@@ -56,7 +57,111 @@ test("preserves wide PDF table-cell gaps and does not shift a single Uzbek value
   const text = reconstructPdfPageText(items);
   const parsed = parseStatementLine(text, 2);
   assert.equal(parsed.sourceRowCode, "280");
-  assert.deepEqual(parsed.rawValues, ["1,00", "—"]);
+  assert.deepEqual(parsed.rawValues, ["1,00", ""]);
+});
+
+test("keeps blank statutory rows structural and recovers a collapsed trailing row code", () => {
+  assert.deepEqual(parseStatementLine("The initial cost (0400)\t020", 2), {
+    label: "The initial cost (0400)", sourceRowCode: "020", rawValues: ["", ""],
+  });
+  assert.deepEqual(parseStatementLine("Debtors, total (line 220+240+250) 210\t1 022 964,00\t534 995,00", 2), {
+    label: "Debtors, total (line 220+240+250)", sourceRowCode: "210", rawValues: ["1 022 964,00", "534 995,00"],
+  });
+
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:blank-statutory-row", fileName: "SYNTHETIC_BLANK_STATUTORY_ROW.pdf", mimeType: "application/pdf", sha256: "synthetic", pageCount: 1, synthetic: true },
+    pages: [{ pageNumber: 1, text: [
+      "Accounting balance sheet - form No.1", "Fourth quarter of 2023", "Unit of measurement, thousand soums",
+      "At the beginning of the reporting period", "At the end of the reporting period",
+      "The initial cost (0400)\t020",
+      "Total balance sheet asset\t400\t1 000,00\t1 400,00",
+    ].join("\n") }],
+  });
+  const blank = review.lineItems.find((item) => item.sourceRowCode === "020");
+  assert.ok(blank);
+  assert.deepEqual(blank.values.map((value) => value.reportedValue), [null, null]);
+  assert.equal(blank.values.some((value) => value.reportedValue === -400 || value.reportedValue === 20), false);
+});
+
+test("selects statutory OCR by core-row coverage and recovers only malformed numeric cells from digital text", () => {
+  const sparse = [
+    "Total current assets\t390\t2 877 316,00\t4 461 811,00",
+    "Total assets\t400\t6 237 204,00\t7179 99",
+    "Equity, total\t480\t1 933 327,00\t2 195 806,00",
+    "Long-term liabilities, total\t490\t3 750 000,00\t28 799,00",
+    "Current liabilities, total\t600\t5563 879,00\t4 955 393,00",
+    "Total liabilities\t770\t4 303 879,00\t4 984 192,00",
+    "Total liabilities and equity\t780\t6 237 206,00\t7 179 998,00",
+  ].join("\n");
+  const autoWithDroppedRows = [
+    "Total current assets\t390\t2 877 316,00\t4 461 811,00",
+    "Total assets\t400\t6 237 204,00\t7 179 997,00",
+    "Total liabilities\t770\t4 303 879,00\t4 984 192,00",
+  ].join("\n");
+  const digital = [
+    "Total current assets\t390\t2 877 3,16,00\t4 461 811,00",
+    "Total assets\t400\t6 237 204,00\t7 179 997,00",
+    "Current liabilities, total\t600\t553 879,00\t4 955 393,00",
+  ].join("\n");
+
+  assert.ok(statutoryRecognitionScore(sparse) > statutoryRecognitionScore(autoWithDroppedRows));
+  assert.ok(statutoryRecognitionScore([
+    "Net revenue\t010\t5 558 561,00\tx\t6 133 512,00\tx",
+    "Profit before tax\t240\t336 488,00\t0,00\t310 442,00\t0,00",
+    "Net profit\t270\t286 015,00\t0,00\t263 872,00\t0,00",
+  ].join("\n")) > 0);
+  const fused = fuseStatutoryRecognition(sparse, digital);
+  assert.match(fused, /390\t2 877 316,00\t4 461 811,00/);
+  assert.match(fused, /400\t6 237 204,00\t7 179 997,00/);
+  assert.match(fused, /600\t553 879,00\t4 955 393,00/);
+  assert.doesNotMatch(fused, /2 877 3,16,00/);
+  assert.doesNotMatch(fused, /5563 879,00/);
+});
+
+test("reattaches spatially displaced statutory total cells without stealing the preceding row", () => {
+  assert.deepEqual(mergeWrappedOcrRows([
+    "Provisions for future expenses\t470\t0,00\t0,00\t480\t2 195 806,00\t3 407 722,00",
+    "Total for section I",
+  ]), [
+    "Provisions for future expenses\t470\t0,00\t0,00",
+    "Total for section I\t480\t2 195 806,00\t3 407 722,00",
+  ]);
+});
+
+test("repairs cascading statutory total cells while preserving each original label", () => {
+  assert.deepEqual(mergeWrappedOcrRows([
+    "Other current assets\t380\t10,00\t20,00\t390\t700,00\t1 000,00",
+    "Total for part II\t400\t1 000,00\t1 400,00",
+    "Total on balance sheet assets",
+  ]), [
+    "Other current assets\t380\t10,00\t20,00",
+    "Total for part II\t390\t700,00\t1 000,00",
+    "Total on balance sheet assets\t400\t1 000,00\t1 400,00",
+  ]);
+});
+
+test("deskews a statutory table row before clustering its distant value columns", () => {
+  const word = (text, left, top, width, blockNumber, lineNumber = 1) => ({
+    text, left, top, width, height: 20, confidence: 95, blockNumber, paragraphNumber: 1, lineNumber,
+  });
+  const words = [
+    word("1", 102, 291, 18, 20), word("2", 1660, 310, 18, 21), word("3", 1935, 313, 18, 22),
+    word("4", 2393, 319, 18, 23), word("5", 2753, 323, 18, 24), word("6", 3220, 328, 18, 25),
+    word("Net", 102, 416, 40, 1), word("revenue", 160, 417, 80, 1), word("from", 260, 419, 45, 1),
+    word("sales", 325, 420, 55, 1), word("of", 400, 421, 25, 1), word("products", 445, 422, 90, 1),
+    word("010", 1660, 431, 45, 2), word("5,558,561", 1935, 434, 120, 3), word("x", 2393, 448, 20, 4),
+    word("6,133,512", 2753, 444, 120, 5), word("x", 3220, 458, 20, 6),
+    word("Cost", 100, 466, 45, 7), word("of", 165, 467, 25, 7), word("products", 210, 468, 90, 7),
+    word("020", 1660, 481, 45, 8), word("4,817,184", 1935, 484, 120, 9),
+  ];
+
+  const rows = clusterOcrRows(words, 3400);
+  const revenueRow = rows.find((row) => row.words.some((candidate) => candidate.text === "010"));
+  assert.ok(revenueRow);
+  assert.deepEqual(revenueRow.words.map((candidate) => candidate.text), [
+    "Net", "revenue", "from", "sales", "of", "products", "010", "5,558,561", "x", "6,133,512", "x",
+  ]);
+  assert.equal(revenueRow.words.some((candidate) => candidate.text === "Cost"), false);
 });
 
 function readStoredZipEntries(bytes) {
@@ -224,13 +329,24 @@ test("parses a clean text-layer extraction envelope and image-only failure safel
 
 test("normalizes English statutory comparative columns with page-specific years across statement sets", () => {
   assert.deepEqual(detectPeriods(
-    "At the beginning of the reporting period\nAt the end of the reporting period",
+    "At the beginning of\nIndicator name  the reporting  At the end of the\ncode  reporting period\nperiod",
     "2023",
   ), ["2022", "2023"]);
   assert.deepEqual(detectPeriods(
     "For corresponding period last year\nFor accounting period",
     "2023",
   ), ["2022", "2023"]);
+  assert.deepEqual(detectPeriods(
+    "Work in progress (2000, 2100)\nAdvances made to staff 1 975,00\nRetained earnings 1 933 327,00",
+    null,
+  ), []);
+  assert.deepEqual(detectPeriods([
+    "Accounting balance form No. 1",
+    "Indicator name String code Begg the reporting period By the end of the reporting period",
+    "Initial value (0100, 0300)\t010\t4 726 926,00\t4 839 764,00",
+    "Work in progress (2000, 2100)\t160",
+    "Total for part II\t390\t4 461 811,00\t7 610 621,00",
+  ].join("\n"), "2023"), ["2022", "2023"]);
 
   const review = buildBalanceSheetReview({
     source: { documentId: "synthetic:statutory-comparatives", fileName: "SYNTHETIC_STATUTORY_COMPARATIVES.pdf", mimeType: "application/pdf", sha256: "synthetic", pageCount: 6, synthetic: true },
@@ -271,6 +387,93 @@ test("normalizes English statutory comparative columns with page-specific years 
   assert.equal(review.pages.find((page) => page.pageNumber === 6)?.reportingYear, "2023");
   const equationChecks = review.arithmeticChecks.filter((check) => check.formula === "assets = liabilities + equity");
   assert.deepEqual(equationChecks.map((check) => [check.period, check.status]), [["2021", "passed"], ["2022", "passed"], ["2023", "passed"]]);
+});
+
+test("prefers an explicit statement currency declaration over an isolated OCR symbol", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:currency-declaration", fileName: "SYNTHETIC_CURRENCY_DECLARATION.pdf", mimeType: "application/pdf", sha256: "synthetic", pageCount: 1, synthetic: true },
+    pages: [{ pageNumber: 1, text: [
+      "Accounting balance sheet - form No.1",
+      "Fourth quarter of 2023",
+      "Unit of measurement, thousand soums",
+      "At the beginning of the reporting period\nAt the end of the reporting period",
+      "Total balance sheet asset\t400\t1 000,00\t1 400,00",
+      "OCR footer artefact: a $4",
+    ].join("\n") }],
+  });
+
+  assert.equal(review.statement.currency, "UZS");
+  assert.equal(review.statement.unitScale, 1_000);
+});
+
+test("propagates an English statutory quarter-cover year through its adjacent Form No.1 and Form No.2 pages", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:quarter-cover-context", fileName: "SYNTHETIC_QUARTER_COVER_CONTEXT.pdf", mimeType: "application/pdf", sha256: "synthetic", pageCount: 6, synthetic: true },
+    pages: [
+      { pageNumber: 1, text: "AUDITOR'S REPORT\nThe report is addressed to: OOO PREMIER UNITED\nFinancial statements on 2022 year 4 quarter" },
+      { pageNumber: 2, text: [
+        "ACCOUNTING BALANCE SHEET - Form No.1",
+        "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period\nAt the end of the reporting period",
+        "Total current assets\t390\t700,00\t1 000,00",
+        "Total balance sheet asset\t400\t1 000,00\t1 400,00",
+        "Owners' equity\t480\t400,00\t600,00",
+        "Total current liabilities\t600\t500,00\t700,00",
+        "Total liabilities\t770\t600,00\t800,00",
+      ].join("\n") },
+      { pageNumber: 3, text: [
+        "REPORT ON FINANCIAL RESULTS - Form No.2",
+        "For corresponding period last year\nFor accounting period",
+        "Net sales revenue\t010\t5 508 561,00\t6 133 512,00",
+      ].join("\n") },
+      { pageNumber: 4, text: "AUDITOR'S REPORT\nFinancial statements on 2023 year 4 quarter" },
+      { pageNumber: 5, text: [
+        "ACCOUNTING BALANCE SHEET - Form No.1",
+        "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period\nAt the end of the reporting period",
+        "Total current assets\t390\t1 000,00\t1 300,00",
+        "Total balance sheet asset\t400\t1 400,00\t1 800,00",
+        "Owners' equity\t480\t600,00\t800,00",
+        "Total current liabilities\t600\t700,00\t900,00",
+        "Total liabilities\t770\t800,00\t1 000,00",
+      ].join("\n") },
+      { pageNumber: 6, text: [
+        "Report on financial results - form No.2",
+        "For corresponding period last year\nFor reporting period",
+        "Net sales revenue\t010\t6 133 512,00\t23 763 193,00",
+      ].join("\n") },
+    ],
+  });
+
+  assert.equal(review.statement.reportingEntity, "PREMIER UNITED LLC");
+  assert.equal(review.statement.reportingDate, "2023");
+  assert.deepEqual(review.statement.periods, ["2021", "2022", "2023"]);
+  assert.deepEqual(review.pages.map((page) => [page.pageNumber, page.reportingYear]), [
+    [1, "2022"], [2, "2022"], [3, "2022"],
+    [4, "2023"], [5, "2023"], [6, "2023"],
+  ]);
+});
+
+test("retains continuation-page rows that precede a balance-sheet total", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:balance-continuation", fileName: "SYNTHETIC_BALANCE_CONTINUATION.pdf", mimeType: "application/pdf", sha256: "synthetic", pageCount: 2, synthetic: true },
+    pages: [
+      { pageNumber: 1, text: [
+        "Accounting balance sheet - form No.1", "Fourth quarter of 2022", "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period", "At the end of the reporting period",
+      ].join("\n") },
+      { pageNumber: 2, text: [
+        "Other current assets\t380\t10,00\t20,00",
+        "Total for section II\t390\t2 877 316,00\t4 461 811,00",
+        "Total balance sheet asset\t400\t6 237 204,00\t7 179 997,00",
+      ].join("\n") },
+    ],
+  });
+
+  const currentAssets = review.lineItems.find((item) => item.sourceRowCode === "390");
+  assert.ok(currentAssets);
+  assert.equal(currentAssets.normalizedConcept, "current_assets");
+  assert.deepEqual(currentAssets.values.map((value) => value.reportedValue), [2_877_316, 4_461_811]);
 });
 
 test("reads text from a real synthetic digital PDF without external services", async () => {
