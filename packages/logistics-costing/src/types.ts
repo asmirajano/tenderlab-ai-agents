@@ -38,6 +38,32 @@ export type CostComponentCode = typeof costComponentCodes[number];
 export type EvidenceKind = "sourced-fact" | "user-input" | "assumption" | "calculation";
 export type Confidence = "confirmed" | "high" | "medium" | "low" | "provisional";
 
+export type CalculationOperand = {
+  label: string;
+  value: number | string;
+  unit?: string;
+  sourceRef: string;
+  evidenceKind: EvidenceKind;
+  confidence: Confidence;
+};
+
+export type CalculationDerivation = {
+  id: string;
+  engineVersion: string;
+  formula: string;
+  inputs: CalculationOperand[];
+  resultValue: number;
+  resultUnit: string;
+  confidence: Confidence;
+  assumptions: string[];
+  benchmark?: {
+    id: string;
+    label: string;
+    asOf: string;
+    sourceRef: string;
+  };
+};
+
 export type IncotermProfile = {
   code: IncotermCode;
   name: string;
@@ -70,6 +96,19 @@ export type CostLine = {
   startIncluded?: boolean;
   targetIncluded?: boolean;
   note?: string;
+  /** The deterministic/benchmark derivation that produced the Agent's original estimate. */
+  calculation?: CalculationDerivation;
+  /** Preserved when a client replaces an Agent estimate with a reviewed amount. */
+  agentEstimate?: {
+    amount: number;
+    currency: string;
+    calculation?: CalculationDerivation;
+  };
+  userOverride?: {
+    amount: number;
+    currency: string;
+    sourceRef: string;
+  };
 };
 
 export type ContractOverride = {

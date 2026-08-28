@@ -234,6 +234,25 @@ test("approved production fixture produces one reconciled road estimate and dyna
   assert.equal(roundMoney(result.sourceContractTotal + result.incrementalCost), result.revisedContractTotal);
 });
 
+test("canonical cargo and cost derivations expose the exact operands used by the production model", async () => {
+  const { buildProductionLogisticsEstimate, roundMoney } = await load("packages/logistics-costing/src/index.ts");
+  const estimate = buildProductionLogisticsEstimate({ sourceValue: 1_586_386, currency: "USD", cargoDescription: "Medical laboratory equipment", sourceLineCount: 167, origin: "Guangzhou, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
+  assert.equal(estimate.cargo.calculationRows.length, 1);
+  assert.equal(estimate.cargo.calculationRows[0].quantity, 167);
+  assert.equal(estimate.cargo.calculationRows[0].estimatedVolumeM3, estimate.cargo.packedVolumeM3.value);
+  assert.equal(estimate.cargo.calculationRows[0].estimatedGrossWeightKg, estimate.cargo.grossWeightKg.value);
+  assert.ok(estimate.cargo.confidenceFactors.some((factor) => /confirmed packing dimensions are unavailable/i.test(factor)));
+  const freight = estimate.costLines.find((line) => line.component === "main_freight");
+  assert.equal(freight.calculation.formula, "required transport units × benchmark freight rate per unit");
+  assert.equal(freight.calculation.inputs.find((input) => input.label === "Required transport units").value, 2);
+  assert.equal(freight.calculation.inputs.find((input) => input.label === "Freight rate per unit").value, 7_400);
+  assert.equal(freight.calculation.resultValue, 14_800);
+  const contingency = estimate.costLines.find((line) => line.component === "contingency");
+  assert.equal(roundMoney(contingency.calculation.resultValue), roundMoney(contingency.amount));
+  const insurance = estimate.costLines.find((line) => line.component === "insurance");
+  assert.equal(roundMoney(insurance.calculation.resultValue), roundMoney(estimate.estimatedInsurance));
+});
+
 test("transport model distinguishes volume, weight and genuinely joint constraints", async () => {
   const { buildProductionLogisticsEstimate } = await load("packages/logistics-costing/src/index.ts");
   const base = { sourceValue: 100_000, currency: "USD", cargoDescription: "Mixed equipment", origin: "City A, China", destination: "City B, Uzbekistan", transportMode: "road", preferredUnitId: "road-enclosed-136" };
@@ -524,4 +543,53 @@ test("production result UI separates exact and approximate values and exposes th
   assert.match(css, /\.truck-free \{ opacity:/);
   assert.match(css, /\.cargo-fill/);
   assert.match(css, /@media \(max-width: 620px\)/);
+});
+
+test("saved Cases persist the composite result and reopen Result separately from Inputs and Audit", async () => {
+  const page = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8");
+  assert.match(page, /schemaVersion:\s*"2\.0"/);
+  assert.match(page, /productionEstimate,/);
+  assert.match(page, /effectiveCostLines:\s*preparedCostLines/);
+  assert.match(page, /primaryWarnings:\s*currentPrimaryWarnings/);
+  assert.match(page, /sourceDocuments:/);
+  assert.match(page, /saved-case-view-tabs/);
+  assert.match(page, />Result<\/button>/);
+  assert.match(page, />Inputs<\/button>/);
+  assert.match(page, />Calculation details \/ audit<\/button>/);
+  assert.match(page, /selectedCaseView === "result"[\s\S]*<ResultDashboard/);
+  assert.match(page, /DURABLE SNAPSHOT/);
+  assert.match(page, /original saved record predates durable Result snapshots/i);
+});
+
+test("default target Incoterm has a non-missing provenance state and estimates are explainable on demand", async () => {
+  const page = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8");
+  assert.match(page, /field === "targetTerm" && targetTermSelected/);
+  assert.match(page, /Recommended default selected · TenderApps target-Incoterm policy/);
+  assert.match(page, /How calculated\?/);
+  assert.match(page, /Agent estimate:/);
+  assert.match(page, /User-adjusted value:/);
+  assert.match(page, /startIncluded:\s*line\.startIncluded/);
+  assert.match(page, /targetIncluded:\s*line\.targetIncluded/);
+  assert.match(page, /updateGuidedCostSource\(line, event\.target\.value\)/);
+  assert.match(page, /CANONICAL CARGO MODEL/);
+  assert.match(page, /Export calculations to Excel/);
+});
+
+test("Excel export carries canonical formulas, cargo rows, provenance and a reconciliable cost total", async () => {
+  const { buildProductionLogisticsEstimate, calculateScenario } = await load("packages/logistics-costing/src/index.ts");
+  const { logisticsCalculationToExcel } = await load("apps/tender-apps/src/logistics-calculation-excel.ts");
+  const XLSX = await import(pathToFileURL(path.join(projectRoot, "apps", "tender-apps", "node_modules", "xlsx", "xlsx.mjs")).href);
+  const estimate = buildProductionLogisticsEstimate({ sourceValue: 100_000, currency: "USD", cargoDescription: "Laboratory equipment", sourceLineCount: 13, origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
+  const input = { id: "excel-regression", mode: "incoterm-conversion", sourceContractTotal: 100_000, currency: "USD", sourceTerm: "EXW", sourceNamedPlace: "Shandong, China", targetTerm: "CIP", targetNamedPlace: "Tashkent, Uzbekistan", incotermsVersion: "2020", transportMode: "road", costLines: estimate.costLines, insurance: { enabled: true, premiumRate: estimate.insuranceRate, coverageFactor: estimate.insuranceCoverageFactor, basis: "final-contract-value", clauses: "A" } };
+  const result = calculateScenario(input);
+  const bytes = await logisticsCalculationToExcel({ caseId: "excel-regression", caseName: "Excel regression", cargo: "Laboratory equipment", quantity: "13 lines", origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road", specialCargoDeclaration: "", input, result, productionEstimate: estimate, effectiveCostLines: estimate.costLines, warnings: estimate.warnings, sourceDocuments: [] });
+  assert.equal(bytes[0], 0x50);
+  assert.equal(bytes[1], 0x4b);
+  const workbook = XLSX.read(bytes, { type: "array", cellFormula: true });
+  assert.deepEqual(workbook.SheetNames, ["Cost Model", "Cargo Model", "Summary", "Assumptions & Sources"]);
+  const costTotalCell = `G${estimate.costLines.length + 2}`;
+  assert.equal(workbook.Sheets["Cost Model"][costTotalCell].f, `SUM(G2:G${estimate.costLines.length + 1})`);
+  assert.equal(workbook.Sheets.Summary.B25.f, `'Cost Model'!${costTotalCell}`);
+  assert.equal(workbook.Sheets["Cargo Model"].G2.v, estimate.cargo.packedVolumeM3.value);
+  assert.match(workbook.Sheets["Cost Model"].H2.v, /benchmark allowance/i);
 });

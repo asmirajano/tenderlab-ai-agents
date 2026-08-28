@@ -274,6 +274,7 @@
 .empty-cases,
 .saved-case-grid,
 .case-detail,
+.saved-case-workspace,
 .intake-heading,
 .consultation-progress,
 .intake-card,
@@ -486,6 +487,24 @@
 .case-detail-grid p { color: #64736b; font-size: var(--type-small); line-height: 1.5; }
 .case-detail footer { border-top: 1px solid var(--costing-line); padding: 16px 20px; }
 .case-detail footer button { margin: 0; }
+.saved-case-workspace { margin: 28px 0 18px; }
+.saved-case-workspace-heading { align-items: flex-start; background: white; border: 1px solid var(--costing-line); border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; padding: 24px; }
+.saved-case-workspace-heading span { color: var(--costing-green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; }
+.saved-case-workspace-heading h2 { font-size: clamp(26px, 3vw, 42px); letter-spacing: -.04em; margin: 7px 0; }
+.saved-case-workspace-heading p { color: #6d7b73; margin: 0; }
+.saved-case-workspace-heading > button { background: #edf2ef; border: 0; border-radius: 50%; cursor: pointer; font-size: 23px; height: 38px; width: 38px; }
+.saved-case-view-tabs { background: white; border: 1px solid var(--costing-line); border-top: 0; display: flex; gap: 8px; margin-bottom: 18px; padding: 12px 18px; }
+.saved-case-view-tabs button { background: white; border: 1px solid #c6d4cc; border-radius: 8px; color: var(--costing-green); cursor: pointer; font-weight: 800; min-height: 42px; padding: 8px 15px; }
+.saved-case-view-tabs button[aria-current="page"] { background: var(--costing-ink); border-color: var(--costing-ink); color: white; }
+.saved-case-result-view .production-result-hero { margin-top: 0; }
+.saved-result-actions { align-items: center; background: white; border: 1px solid var(--costing-line); border-radius: 15px; display: grid; gap: 24px; grid-template-columns: 1fr 1.4fr; margin-bottom: 18px; padding: 20px; }
+.saved-result-actions span { color: var(--costing-green); display: block; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; margin-bottom: 5px; }
+.saved-result-actions > div:last-child { display: grid; gap: 8px; grid-template-columns: repeat(3, 1fr); }
+.saved-result-actions button, .saved-case-audit button, .legacy-case-notice button { background: white; border: 1px solid var(--costing-green); border-radius: 8px; color: var(--costing-green); cursor: pointer; font-weight: 800; min-height: 44px; padding: 8px 12px; }
+.saved-case-inputs, .saved-case-audit { background: white; border: 1px solid var(--costing-line); border-radius: 0 0 16px 16px; margin-bottom: 18px; overflow: hidden; }
+.legacy-case-notice { background: #fff8ea; border: 1px solid #e5c983; border-radius: 14px; margin-bottom: 18px; padding: 24px; }
+.legacy-case-notice span { color: #8e6417; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; }
+.legacy-case-notice h3 { font-size: 28px; margin: 8px 0; }
 
 .intake-heading { align-items: center; display: flex; justify-content: space-between; padding-block: 56px 24px; }
 .intake-heading > div > span, .intake-step > header > span, .guided-document-intake > span, .review-summary-grid header > span, .review-findings section > span, .result-next-actions > div > span, .result-explanation-grid header > span, .client-result-details section > span { color: var(--costing-green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; letter-spacing: .08em; }
@@ -539,6 +558,8 @@
 .input-evidence.needs-confirmation { color: var(--costing-amber); }
 .input-evidence.needs-confirmation em { color: #876928; }
 .input-evidence.client-adjusted { color: var(--costing-blue); }
+.input-evidence.calculated-default { color: var(--costing-green); }
+.input-evidence.calculated-default em { color: #64776d; }
 .input-evidence.not-found { color: #9a3f31; }
 .packing-empty-guidance { color: #765f2b; display: block; font-size: var(--type-micro); line-height: 1.4; margin-top: 6px; }
 .planning-default-button { align-self: flex-start; background: transparent; border: 0; color: var(--costing-green); cursor: pointer; font-size: var(--type-micro); font-weight: 780; margin-top: 6px; padding: 0; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
@@ -686,6 +707,34 @@
 .provisional-continuation-note strong { color: #7a5717; font-size: var(--type-label); }
 .provisional-continuation-note p { color: #705f3d; font-size: var(--type-small); margin: 5px 0 0; }
 .guided-cost-list input:disabled, .guided-cost-list select:disabled { background: #eef1ef; color: #8d9892; }
+.cost-calculation-access { grid-column: 1 / -1; }
+.calculation-details { background: #f4f8f5; border: 1px solid #cbdad1; border-radius: 10px; color: var(--costing-ink); overflow: hidden; }
+.calculation-details > summary { align-items: center; color: var(--costing-green); cursor: pointer; display: inline-flex; font-size: var(--type-label); font-weight: 800; gap: 7px; padding: 10px 13px; }
+.calculation-details > div { background: white; border-top: 1px solid var(--costing-line); padding: 16px; }
+.calculation-details header span, .calculation-details footer { color: var(--costing-green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 800; letter-spacing: .06em; }
+.calculation-details header strong { display: block; font-size: var(--type-card-title); margin-top: 5px; }
+.calculation-details header p, .calculation-details > div > p, .calculation-details li { color: #617169; font-size: var(--type-small); line-height: 1.5; }
+.calculation-details dl { border: 1px solid var(--costing-line); border-radius: 8px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 14px 0; overflow: hidden; }
+.calculation-details dl div { border-bottom: 1px solid var(--costing-line); padding: 11px; }
+.calculation-details dl div:nth-child(odd) { border-right: 1px solid var(--costing-line); }
+.calculation-details dt { color: #728078; font-size: var(--type-micro); font-weight: 800; }
+.calculation-details dd { font-size: var(--type-label); font-weight: 760; margin: 4px 0 0; }
+.calculation-details dd small, .calculation-details p small { color: #7b8981; display: block; font-size: var(--type-micro); font-weight: 500; line-height: 1.45; margin-top: 4px; }
+.calculation-details .override-trace { background: #fff7e6; border-left: 3px solid var(--costing-amber); padding: 10px 12px; }
+.cargo-formula-grid { display: grid; gap: 9px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cargo-formula-grid p { background: #f3f7f4; border-radius: 8px; margin: 0; padding: 10px; }
+.cargo-formula-grid b, .cargo-formula-grid span { display: block; }
+.cargo-formula-grid span { color: #68776e; font-size: var(--type-micro); line-height: 1.45; margin-top: 5px; }
+.cargo-calculation-table-wrap { margin: 14px 0; overflow-x: auto; }
+.cargo-calculation-table-wrap table { border-collapse: collapse; min-width: 1000px; width: 100%; }
+.cargo-calculation-table-wrap th, .cargo-calculation-table-wrap td { border: 1px solid var(--costing-line); font-size: var(--type-micro); line-height: 1.4; padding: 9px; text-align: left; vertical-align: top; }
+.cargo-calculation-table-wrap th small { color: #718078; display: block; font-weight: 500; margin-top: 4px; }
+.confidence-explanation { background: #f4f8f5; border-radius: 8px; padding: 12px; }
+.confidence-explanation ul { margin-bottom: 0; }
+.cargo-review-card .calculation-details { margin-top: 12px; }
+.cargo-review-card .calculation-details > div { width: min(980px, calc(100vw - 100px)); }
+.result-cargo-calculation { margin: 12px 0 18px; }
+.result-cargo-calculation .calculation-details > summary { padding-inline: 18px; }
 .insurance-guidance { align-items: end; background: #eaf4f8; border-bottom: 1px solid #c8e0eb; display: grid; gap: 16px; grid-template-columns: 1fr 200px 200px; padding: 20px 30px; }
 .insurance-guidance > div > span { color: var(--costing-blue); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; }
 .insurance-guidance > div > strong { display: block; font-size: var(--type-control); margin-top: 5px; }
@@ -784,6 +833,7 @@
 
 .production-result-hero,
 .production-kpis,
+.result-cargo-calculation,
 .truck-utilization-section,
 .why-transport-section,
 .cost-and-commercial-grid,
@@ -981,7 +1031,7 @@
   .responsibility-grid { grid-template-columns: 1fr; }
   .responsibility-card + .responsibility-card { border-left: 0; border-top: 1px solid var(--costing-line); }
   .costing-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .client-workspace-nav, .cost-product-manifesto, .overview-support, .client-welcome-hero, .client-capabilities, .client-trust-note, .cases-heading, .empty-cases, .saved-case-grid, .case-detail, .intake-heading, .consultation-progress, .intake-card, .intake-actions, .demo-banner, .client-result-hero, .client-result-metrics, .result-explanation-grid, .result-next-actions, .client-result-details, .audit-mode-banner { width: calc(100% - 28px); }
+  .client-workspace-nav, .cost-product-manifesto, .overview-support, .client-welcome-hero, .client-capabilities, .client-trust-note, .cases-heading, .empty-cases, .saved-case-grid, .case-detail, .saved-case-workspace, .intake-heading, .consultation-progress, .intake-card, .intake-actions, .demo-banner, .client-result-hero, .client-result-metrics, .result-explanation-grid, .result-next-actions, .client-result-details, .audit-mode-banner { width: calc(100% - 28px); }
   .client-workspace-nav { overflow-x: auto; padding-top: 146px; }
   .client-workspace-nav button { flex: 0 0 auto; }
   .client-welcome-hero { gap: 32px; padding-block: 55px 40px; }
@@ -1030,6 +1080,12 @@
   .result-explanation-grid { grid-template-columns: 1fr; }
   .result-explanation-grid > article:last-child { grid-column: auto; }
   .result-next-actions { grid-template-columns: 1fr; }
+  .saved-result-actions { grid-template-columns: 1fr; }
+  .saved-result-actions > div:last-child { grid-template-columns: 1fr; }
+  .saved-case-view-tabs { overflow-x: auto; }
+  .saved-case-view-tabs button { flex: 0 0 auto; }
+  .cargo-formula-grid { grid-template-columns: 1fr; }
+  .cargo-review-card .calculation-details > div { width: calc(100vw - 60px); }
   .demo-banner, .audit-mode-banner { align-items: flex-start; flex-direction: column; gap: 12px; }
 }
 

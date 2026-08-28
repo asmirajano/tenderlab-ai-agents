@@ -108,7 +108,7 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   assert.match(component, /Tender Logistics Cost · Reviewed Cost Evidence/);
   assert.match(component, /Estimated Logistics Cost/);
   assert.match(component, /required \+ 1 free capacity reference/);
-  assert.match(component, /productionEstimate\.transport\.allocations\.map/);
+  assert.match(component, /estimate\.transport\.allocations\.map/);
   assert.match(component, /Incoterms conversion/);
   assert.match(component, /Logistics only/);
   assert.doesNotMatch([clientBundle, component, shell].join("\n"), /Landed Cost Studio|Cost & Landed-Price Agent|Logistics Cost Agent/);

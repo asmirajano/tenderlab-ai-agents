@@ -1,4 +1,4 @@
-import type { Confidence, CostComponentCode, CostLine, TransportMode, TransportUnit } from "./types.ts";
+import type { CalculationDerivation, CalculationOperand, Confidence, CostComponentCode, CostLine, TransportMode, TransportUnit } from "./types.ts";
 import { transportUnits } from "./packing.ts";
 
 export type EstimateValue<T> = {
@@ -28,6 +28,20 @@ export type HsCandidate = {
   sourceRef: string;
 };
 
+export type CargoCalculationRow = {
+  id: string;
+  description: string;
+  quantity: number;
+  sourceMetric: string;
+  estimationMethod: string;
+  unitVolumeM3: number;
+  estimatedVolumeM3: number;
+  unitGrossWeightKg: number;
+  estimatedGrossWeightKg: number;
+  sourceRef: string;
+  confidence: Confidence;
+};
+
 export type ProductionEstimateInput = {
   sourceValue: number;
   currency: string;
@@ -53,6 +67,8 @@ export type ProductionLogisticsEstimate = {
     loadabilityFactor: EstimateValue<number>;
     planningVolumeM3: number;
     sourceLineCount?: number;
+    calculationRows: CargoCalculationRow[];
+    confidenceFactors: string[];
   };
   transport: {
     unit: TransportUnit;
@@ -271,7 +287,26 @@ function allocateUnits(planningVolumeM3: number, grossWeightKg: number, unit: Tr
   return allocations;
 }
 
-function makeCostLine(component: CostComponentCode, label: string, amount: number, benchmark: RouteBenchmark, note: string, targetIncluded?: boolean): CostLine {
+function operand(label: string, value: number | string, unit: string | undefined, sourceRef: string, evidenceKind: CalculationOperand["evidenceKind"], confidence: Confidence): CalculationOperand {
+  return { label, value, ...(unit ? { unit } : {}), sourceRef, evidenceKind, confidence };
+}
+
+function derivation(id: string, formula: string, inputs: CalculationOperand[], resultValue: number, resultUnit: string, benchmark: RouteBenchmark, assumptions: string[] = []): CalculationDerivation {
+  const confidence: Confidence = benchmark.id.startsWith("generic-") ? "low" : "medium";
+  return {
+    id,
+    engineVersion: "production-logistics-estimate:0.2.0",
+    formula,
+    inputs,
+    resultValue,
+    resultUnit,
+    confidence,
+    assumptions,
+    benchmark: { id: benchmark.id, label: benchmark.label, asOf: benchmark.asOf, sourceRef: benchmark.sourceRef },
+  };
+}
+
+function makeCostLine(component: CostComponentCode, label: string, amount: number, benchmark: RouteBenchmark, note: string, calculation: CalculationDerivation, targetIncluded?: boolean): CostLine {
   return {
     id: `estimate-${component}`,
     component,
@@ -284,6 +319,8 @@ function makeCostLine(component: CostComponentCode, label: string, amount: numbe
     confidence: benchmark.id.startsWith("generic-") ? "low" : "medium",
     ...(targetIncluded === undefined ? {} : { targetIncluded }),
     note,
+    calculation,
+    agentEstimate: { amount, currency: benchmark.currency, calculation },
   };
 }
 
@@ -308,6 +345,19 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     : { value: proxy.weightPerLineKg * lineCount, kind: "evidence-estimate", confidence: proxy.confidence, sourceRef: proxy.sourceRef, method: `${lineCount} source lines × ${proxy.weightPerLineKg.toFixed(1)} kg category proxy.` };
   const loadabilityFactor: EstimateValue<number> = { value: proxy.loadabilityFactor, kind: "benchmark-assumption", confidence: "low", sourceRef: proxy.sourceRef, method: "Practical usable-space factor for mixed, fragile and partly non-stackable cargo." };
   const planningVolumeM3 = packedVolumeM3.value / loadabilityFactor.value;
+  const cargoCalculationRows: CargoCalculationRow[] = [{
+    id: volumeFromSource || weightFromSource ? "shipment-source-input" : `proxy-group:${proxy.id}`,
+    description: volumeFromSource || weightFromSource ? "Shipment-level cargo input" : `${input.cargoDescription || "Cargo"} · quotation-line proxy group`,
+    quantity: lineCount,
+    sourceMetric: volumeFromSource || weightFromSource ? "Shipment-level packed volume / gross weight" : `${lineCount} source commercial line(s); no confirmed packing list dimensions or gross weights were available to this model`,
+    estimationMethod: volumeFromSource && weightFromSource ? "Used confirmed shipment-level values without estimation." : `Category proxy ${proxy.id}; product-line specifications are not silently treated as packed shipment dimensions.`,
+    unitVolumeM3: volumeFromSource ? packedVolumeM3.value / lineCount : proxy.volumePerLineM3,
+    estimatedVolumeM3: packedVolumeM3.value,
+    unitGrossWeightKg: weightFromSource ? grossWeightKg.value / lineCount : proxy.weightPerLineKg,
+    estimatedGrossWeightKg: grossWeightKg.value,
+    sourceRef: volumeFromSource || weightFromSource ? "Shipment-level client/document input" : proxy.sourceRef,
+    confidence: volumeFromSource && weightFromSource ? "high" : proxy.confidence,
+  }];
   const benchmark = selectBenchmark(input.origin, input.destination, input.transportMode);
   const unit = selectedUnit(benchmark, input.transportMode, input.preferredUnitId);
   const volumeRequiredCount = Math.max(1, Math.ceil(planningVolumeM3 / unit.usableVolumeM3));
@@ -328,18 +378,64 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
   const insuranceFactor = benchmark.insuranceRate * benchmark.insuranceCoverageFactor;
   const estimatedInsurance = (input.sourceValue + nonInsuranceCost) * insuranceFactor / (1 - insuranceFactor);
   const estimatedLogisticsCost = nonInsuranceCost + estimatedInsurance;
+  const benchmarkSource = `${benchmark.id} · ${benchmark.sourceRef}`;
+  const benchmarkConfidence: Confidence = benchmark.id.startsWith("generic-") ? "low" : "medium";
+  const packingCalculation = derivation("cost:export_packing", "packing benchmark allowance per shipment", [
+    operand("Packing allowance", benchmark.packingBase, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+    operand("Cargo category", proxy.id, undefined, proxy.sourceRef, "assumption", proxy.confidence),
+  ], benchmark.packingBase, benchmark.currency, benchmark, ["The current maintained benchmark is a shipment-level planning allowance, not a supplier packing quotation."]);
+  const originLoadingCalculation = derivation("cost:origin_loading", "origin handling benchmark × 34% loading allocation", [
+    operand("Origin handling benchmark", benchmark.originHandling, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+    operand("Loading allocation", 34, "%", "Production logistics cost allocation policy v0.2", "calculation", "medium"),
+  ], originLoading, benchmark.currency, benchmark);
+  const originPickupCalculation = derivation("cost:origin_pickup", "origin handling benchmark × 50% pickup allocation", [
+    operand("Origin handling benchmark", benchmark.originHandling, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+    operand("Pickup allocation", 50, "%", "Production logistics cost allocation policy v0.2", "calculation", "medium"),
+  ], originPickup, benchmark.currency, benchmark, [input.pickupConfirmed ? "Pickup location confirmed." : "Pickup location uses the best supplier-side location reference and remains subject to confirmation."]);
+  const originDispatchCalculation = derivation("cost:origin_terminal", "origin handling benchmark − loading allocation − pickup allocation", [
+    operand("Origin handling benchmark", benchmark.originHandling, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+    operand("Loading allocation", originLoading, benchmark.currency, "Canonical origin-loading calculation", "calculation", benchmarkConfidence),
+    operand("Pickup allocation", originPickup, benchmark.currency, "Canonical origin-pickup calculation", "calculation", benchmarkConfidence),
+  ], originTerminal, benchmark.currency, benchmark);
+  const exportDocumentsCalculation = derivation("cost:export_clearance", "export-document benchmark allowance per shipment", [
+    operand("Export document allowance", benchmark.exportDocuments, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+  ], benchmark.exportDocuments, benchmark.currency, benchmark);
+  const mainFreightCalculation = derivation("cost:main_freight", "required transport units × benchmark freight rate per unit", [
+    operand("Required transport units", requiredTruckCount, unit.label, "Canonical transport capacity model", "calculation", factor === "BOTH" ? "medium" : packedVolumeM3.confidence),
+    operand("Freight rate per unit", benchmark.freightPerUnit, `${benchmark.currency}/${unit.label}`, benchmarkSource, "assumption", benchmarkConfidence),
+  ], mainFreight, benchmark.currency, benchmark, ["Benchmark planning rate; not a live carrier quotation."]);
+  const transitCalculation = derivation("cost:transit_handling", "transit and border benchmark allowance per shipment", [
+    operand("Transit / border allowance", benchmark.transitBorder, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+  ], benchmark.transitBorder, benchmark.currency, benchmark);
+  const transshipmentCalculation = derivation("cost:transshipment", "direct-service benchmark contains no separate transshipment allowance", [
+    operand("Separate transshipment allowance", 0, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+  ], 0, benchmark.currency, benchmark);
+  const destinationCalculation = derivation("cost:destination_terminal", "destination carriage benchmark allowance per shipment", [
+    operand("Destination carriage allowance", benchmark.destinationCarriage, benchmark.currency, benchmarkSource, "assumption", benchmarkConfidence),
+    operand("Named destination", input.destination, undefined, "Client/document case input", "user-input", "medium"),
+  ], benchmark.destinationCarriage, benchmark.currency, benchmark);
+  const contingencyCalculation = derivation("cost:contingency", "subtotal before contingency × contingency rate", [
+    operand("Subtotal before contingency", beforeContingency, benchmark.currency, "Sum of canonical non-insurance cost derivations", "calculation", benchmarkConfidence),
+    operand("Contingency rate", benchmark.contingencyRate * 100, "%", benchmarkSource, "assumption", benchmarkConfidence),
+  ], contingency, benchmark.currency, benchmark);
+  const insuranceCalculation = derivation("cost:insurance", "(source value + non-insurance logistics) × premium factor ÷ (1 − premium factor)", [
+    operand("Source commercial value", input.sourceValue, input.currency, "Source quotation / client case input", "sourced-fact", "high"),
+    operand("Non-insurance logistics", nonInsuranceCost, benchmark.currency, "Sum of canonical non-insurance cost derivations", "calculation", benchmarkConfidence),
+    operand("Premium rate", benchmark.insuranceRate * 100, "%", benchmarkSource, "assumption", benchmarkConfidence),
+    operand("Insured-value factor", benchmark.insuranceCoverageFactor * 100, "%", benchmarkSource, "assumption", benchmarkConfidence),
+  ], estimatedInsurance, benchmark.currency, benchmark, ["Self-inclusive CIP insurance estimate; replace with an insurer quotation when available."]);
   const costLines: CostLine[] = [
-    { ...makeCostLine("export_packing", "Packing reinforcement", benchmark.packingBase, benchmark, "Preliminary reinforcement/crating allowance derived from cargo category and shipment scale."), startIncluded: false, targetIncluded: true },
-    makeCostLine("origin_loading", "Origin handling · loading", originLoading, benchmark, "Allocated share of the origin-handling benchmark."),
-    makeCostLine("origin_pickup", "Origin handling · pickup", originPickup, benchmark, "Allocated share of the origin-handling benchmark; pickup point remains subject to confirmation."),
-    makeCostLine("origin_terminal", "Origin handling · dispatch", originTerminal, benchmark, "Allocated share of the origin-handling benchmark."),
-    makeCostLine("export_clearance", "Export documents", benchmark.exportDocuments, benchmark, "Budgetary export documentation and clearance allowance."),
-    makeCostLine("main_freight", `Main ${input.transportMode} freight`, mainFreight, benchmark, `${requiredTruckCount} × ${benchmark.currency} ${benchmark.freightPerUnit.toFixed(0)} per ${unit.label}.`),
-    makeCostLine("transit_handling", "Transit / border", benchmark.transitBorder, benchmark, "Budgetary transit and border-handling allowance."),
-    makeCostLine("transshipment", "Transshipment", 0, benchmark, "No separate transshipment amount in the selected direct-service benchmark."),
-    makeCostLine("destination_terminal", "Destination carriage", benchmark.destinationCarriage, benchmark, "Carriage/handling to the named CIP destination; final site delivery is excluded unless the selected rule requires it."),
-    makeCostLine("contingency", "Contingency", contingency, benchmark, `${(benchmark.contingencyRate * 100).toFixed(0)}% benchmark-validity allowance applied before insurance.`, true),
-    makeCostLine("insurance", "Estimated insurance basis", 0, benchmark, `${(benchmark.insuranceRate * 100).toFixed(2)}% premium benchmark on ${(benchmark.insuranceCoverageFactor * 100).toFixed(0)}% of the insured value; the calculation engine computes the self-inclusive premium.`),
+    { ...makeCostLine("export_packing", "Packing reinforcement", benchmark.packingBase, benchmark, "Shipment-level packing reinforcement benchmark allowance.", packingCalculation), startIncluded: false, targetIncluded: true },
+    makeCostLine("origin_loading", "Origin handling · loading", originLoading, benchmark, "34% allocated share of the origin-handling benchmark.", originLoadingCalculation),
+    makeCostLine("origin_pickup", "Origin handling · pickup", originPickup, benchmark, "50% allocated share of the origin-handling benchmark; pickup point remains subject to confirmation.", originPickupCalculation),
+    makeCostLine("origin_terminal", "Origin handling · dispatch", originTerminal, benchmark, "Residual 16% allocated share of the origin-handling benchmark.", originDispatchCalculation),
+    makeCostLine("export_clearance", "Export documents", benchmark.exportDocuments, benchmark, "Budgetary export documentation and clearance allowance.", exportDocumentsCalculation),
+    makeCostLine("main_freight", `Main ${input.transportMode} freight`, mainFreight, benchmark, `${requiredTruckCount} × ${benchmark.currency} ${benchmark.freightPerUnit.toFixed(0)} per ${unit.label}.`, mainFreightCalculation),
+    makeCostLine("transit_handling", "Transit / border", benchmark.transitBorder, benchmark, "Budgetary transit and border-handling allowance.", transitCalculation),
+    makeCostLine("transshipment", "Transshipment", 0, benchmark, "No separate transshipment amount in the selected direct-service benchmark.", transshipmentCalculation),
+    makeCostLine("destination_terminal", "Destination carriage", benchmark.destinationCarriage, benchmark, "Carriage/handling to the named CIP destination; final site delivery is excluded unless the selected rule requires it.", destinationCalculation),
+    makeCostLine("contingency", "Contingency", contingency, benchmark, `${(benchmark.contingencyRate * 100).toFixed(0)}% benchmark-validity allowance applied before insurance.`, contingencyCalculation, true),
+    makeCostLine("insurance", "Estimated insurance basis", 0, benchmark, `${(benchmark.insuranceRate * 100).toFixed(2)}% premium benchmark on ${(benchmark.insuranceCoverageFactor * 100).toFixed(0)}% of the insured value; the calculation engine computes the self-inclusive premium.`, insuranceCalculation),
   ];
 
   const specialHints = [/battery|lithium/i, /refrigerant|freezer|refrigerator/i, /cryogenic|liquid nitrogen/i, /gas cylinder|compressed gas/i, /dangerous goods|\bDG\b/i, /temperature[- ]sensitive|cold chain/i].filter((pattern) => pattern.test(evidenceText));
@@ -371,7 +467,21 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
   const mainUncertainty = !volumeFromSource ? "Packing & loadability" : benchmark.id.startsWith("generic-") ? "Freight benchmark" : !input.pickupConfirmed ? "Pickup location" : !input.specialCargoConfirmed ? "Special-cargo status" : "Rate validity";
 
   return {
-    cargo: { packedVolumeM3, grossWeightKg, loadabilityFactor, planningVolumeM3, sourceLineCount: lineCount },
+    cargo: {
+      packedVolumeM3,
+      grossWeightKg,
+      loadabilityFactor,
+      planningVolumeM3,
+      sourceLineCount: lineCount,
+      calculationRows: cargoCalculationRows,
+      confidenceFactors: [
+        volumeFromSource ? "Shipment-level packed volume is provided." : `${lineCount} source line(s) use the ${proxy.id} volume proxy because confirmed packing dimensions are unavailable.`,
+        weightFromSource ? "Shipment-level gross weight is provided." : `${lineCount} source line(s) use the ${proxy.id} gross-weight proxy because confirmed shipment gross weights are unavailable.`,
+        `Loadability uses a ${(loadabilityFactor.value * 100).toFixed(0)}% category assumption.`,
+        input.pickupConfirmed ? "Pickup location is confirmed." : "Pickup location is assumed from supplier-side evidence.",
+        input.specialCargoConfirmed ? "Special-cargo status is confirmed for this estimate." : "Special-cargo status is not confirmed.",
+      ],
+    },
     transport: { unit, requiredTruckCount, displayedTruckCount: requiredTruckCount + 1, volumeRequiredCount, weightRequiredCount, limitingFactor: factor, allocations, transitDays: benchmark.transitDays },
     costLines,
     nonInsuranceCost,
