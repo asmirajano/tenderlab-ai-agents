@@ -133,10 +133,13 @@
     "lineItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "originalLabel", "normalizedConcept", "classification", "isTotal", "values", "confidence", "reviewStatus"],
+      "required": ["id", "originalLabel", "englishLabel", "translationStatus", "normalizedConcept", "classification", "isTotal", "values", "confidence", "reviewStatus"],
       "properties": {
         "id": { "type": "string" },
         "originalLabel": { "type": "string" },
+        "englishLabel": { "type": "string", "minLength": 1 },
+        "translationStatus": { "enum": ["source-english", "canonical", "review-required"] },
+        "sourceRowCode": { "type": "string" },
         "normalizedConcept": { "type": "string" },
         "classification": { "type": "string" },
         "isTotal": { "type": "boolean" },

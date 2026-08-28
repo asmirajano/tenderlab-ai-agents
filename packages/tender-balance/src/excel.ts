@@ -145,22 +145,24 @@ export function balanceSheetExcelFileName(review: BalanceSheetReview) {
 
 export function reviewToExcel(review: BalanceSheetReview) {
   const periods = review.statement.periods;
-  const mainHeaders = ["Section", "Original balance item", "Normalized concept", ...periods.map((period) => `${period} — reported`), "Source page", "Confidence", "Review status"];
+  const mainHeaders = ["Section", "English balance item", "Original source label", "Source row", "Normalized concept", ...periods.map((period) => `${period} — reported`), "Source page", "Text confidence", "Review status"];
   const mainRows: CellSpec[][] = [
     [text("TenderBalance — Digitized Balance Sheet", 1)],
     [text("Entity", 2), text(review.statement.reportingEntity), text("Reporting date", 2), text(review.statement.reportingDate)],
     [text("Source file", 2), text(review.source.fileName), text("Currency / units", 2), text(`${review.statement.currency} · ${review.statement.unitLabel}`)],
     [text("Source identity", 2), text(review.source.sha256), text("Processing version", 2), text(review.source.processingVersion ?? "tender-balance/1.0.0")],
-    [text("Result status", 2), text(review.issues.some((issue) => issue.severity !== "info") ? "Completed with findings" : "Completed"), text("Rows / values", 2), text(`${review.lineItems.length} / ${review.lineItems.reduce((sum, item) => sum + item.values.length, 0)}`)],
+    [text("Result status", 2), text(review.issues.some((issue) => issue.severity !== "info") ? "Completed with findings" : "Completed"), text("Rows / reported values", 2), text(`${review.lineItems.length} / ${review.lineItems.reduce((sum, item) => sum + item.values.filter((value) => value.reportedValue !== null).length, 0)}`)],
     [],
     mainHeaders.map((header) => text(header, 3)),
     ...review.lineItems.map((item) => {
       const pages = Array.from(new Set(item.values.map((value) => value.source.page))).join(", ");
       return [
         text(item.classification.replaceAll("_", " "), item.isTotal ? 5 : 0),
+        text(item.englishLabel, item.isTotal ? 5 : 0),
         text(item.originalLabel, item.isTotal ? 5 : 0),
+        text(item.sourceRowCode ?? "", item.isTotal ? 5 : 0),
         text(item.normalizedConcept, item.isTotal ? 5 : 0),
-        ...periods.map((period) => number(item.values.find((value) => value.period === period)?.normalizedValue, item.isTotal ? 6 : 4)),
+        ...periods.map((period) => number(item.values.find((value) => value.period === period)?.reportedValue, item.isTotal ? 6 : 4)),
         text(pages, item.isTotal ? 5 : 0),
         number(item.confidence, 7),
         text(item.reviewStatus, item.isTotal ? 5 : 0),
@@ -182,18 +184,18 @@ export function reviewToExcel(review: BalanceSheetReview) {
 
   const traceRows: CellSpec[][] = [
     [text("TenderBalance — Source Trace", 1)],
-    ["Line ID", "Section", "Original label", "Normalized concept", "Period", "Raw reported value", "Numeric reported value", "Normalized value", "Corrected value", "Page", "Extraction method", "Confidence", "Review status"].map((header) => text(header, 3)),
+    ["Line ID", "Section", "English label", "Original label", "Translation status", "Source row", "Normalized concept", "Period", "Raw reported value", "Numeric reported value", "Normalized value", "Corrected value", "Page", "Extraction method", "Text confidence", "Review status"].map((header) => text(header, 3)),
     ...review.lineItems.flatMap((item) => item.values.map((value) => [
-      text(item.id), text(item.classification), text(item.originalLabel), text(item.normalizedConcept), text(value.period), text(value.rawReportedValue),
+      text(item.id), text(item.classification), text(item.englishLabel), text(item.originalLabel), text(item.translationStatus), text(item.sourceRowCode ?? ""), text(item.normalizedConcept), text(value.period), text(value.rawReportedValue),
       number(value.reportedValue), number(value.normalizedValue), number(value.correction?.correctedNormalizedValue), number(value.source.page, 0), text(value.source.extractionMethod), number(value.source.confidence, 7), text(item.reviewStatus),
     ])),
   ];
 
   const sheets = [
-    { name: "Balance Sheet", xml: worksheetXml({ rows: mainRows, widths: [22, 48, 30, ...periods.map(() => 18), 12, 13, 16], freezeRow: 7, autoFilterRow: 7, mergeTitle: true }) },
+    { name: "Balance Sheet", xml: worksheetXml({ rows: mainRows, widths: [22, 38, 48, 12, 30, ...periods.map(() => 18), 12, 13, 16], freezeRow: 7, autoFilterRow: 7, mergeTitle: true }) },
     { name: "Arithmetic Checks", xml: worksheetXml({ rows: checkRows, widths: [18, 46, 19, 19, 16, 16], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
     { name: "Findings", xml: worksheetXml({ rows: findingRows, widths: [14, 34, 18, 90, 16, 16], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
-    { name: "Source Trace", xml: worksheetXml({ rows: traceRows, widths: [40, 22, 34, 30, 18, 22, 20, 18, 18, 10, 18, 13, 16], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
+    { name: "Source Trace", xml: worksheetXml({ rows: traceRows, widths: [40, 22, 38, 44, 18, 12, 30, 18, 22, 20, 18, 18, 10, 18, 13, 16], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
   ];
 
   return workbookZip(sheets);
@@ -216,7 +218,7 @@ export function fin1ToExcel(form: Fin1Form) {
       text(field.sourceType === "calculated" ? `${field.label} (calculated)` : field.label),
       ...form.years.map((year) => {
         const mapping = form.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
-        return mapping?.value === null || mapping?.value === undefined ? text("MISSING", 8) : number(mapping.value);
+        return mapping?.value === null || mapping?.value === undefined ? text("MISSING", 8) : number(mapping.value / mapping.unitScale);
       }),
     ]),
   ];

@@ -67,6 +67,10 @@ const conceptLabels: Record<string, string> = {
   unmapped: "Unmapped",
 };
 
+function englishItemLabel(item: BalanceSheetReview["lineItems"][number]) {
+  return item.englishLabel || conceptLabels[item.normalizedConcept] || "Translation review required";
+}
+
 const severityRank: Record<IssueSeverity, number> = { blocking: 4, error: 3, warning: 2, info: 1 };
 const CLIENT_CASES_STORAGE_KEY = "tenderapps:tenderbalance:client-cases:v1";
 const CLIENT_CONTEXTS_STORAGE_KEY = "tenderapps:tenderbalance:case-contexts:v1";
@@ -844,7 +848,7 @@ function BalanceSheetWorkspace() {
   }
 
   if (surface === "review") {
-    const valueCount = review.lineItems.reduce((sum, item) => sum + item.values.length, 0);
+    const valueCount = review.lineItems.reduce((sum, item) => sum + item.values.filter((value) => value.reportedValue !== null).length, 0);
     const passedChecks = review.arithmeticChecks.filter((check) => check.status === "passed").length;
     const roundingFindings = review.issues.filter((issue) => issue.code === "ROUNDING_DIFFERENCE");
     const arithmeticFindingCount = review.issues.filter((issue) => ["ROUNDING_DIFFERENCE", "ACCOUNTING_EQUATION_MISMATCH", "NET_ASSETS_MISMATCH", "SUBTOTAL_MISMATCH"].includes(issue.code)).length;
@@ -907,7 +911,7 @@ function BalanceSheetWorkspace() {
         </section>
 
         <section className="bs-product-health" aria-label="Automatic extraction and validation summary">
-          <article><span>EXTRACTION</span><strong>{review.lineItems.length} rows · {valueCount} values</strong><p>{Math.round(averageConfidence * 100)}% average extraction confidence</p></article>
+          <article><span>EXTRACTION</span><strong>{review.lineItems.length} rows · {valueCount} values</strong><p>{Math.round(averageConfidence * 100)}% average text-recognition confidence</p></article>
           <article><span>STRUCTURE</span><strong>{["total_assets", "current_assets", "non_current_assets", "total_liabilities", "owners_equity"].filter(hasConcept).length}/5 core groups</strong><p>Assets · liabilities · net worth preserved</p></article>
           <article><span>ARITHMETIC</span><strong>{passedChecks} passed · {arithmeticFindingCount} finding{arithmeticFindingCount === 1 ? "" : "s"}</strong><p>{roundingFindings.length ? `${roundingFindings.length} small reported difference${roundingFindings.length === 1 ? "" : "s"} identified` : "Reported totals checked automatically"}</p></article>
           <article><span>CASE</span><strong>{demoMode ? "Demo only" : "Saved automatically"}</strong><p>{review.source.processingVersion ?? "tender-balance/1.0.0"} · {latestActivity(review) ? new Date(latestActivity(review)).toLocaleDateString("en-GB") : "current session"}</p></article>
@@ -933,7 +937,7 @@ function BalanceSheetWorkspace() {
                   {review.lineItems.map((item) => (
                     <tr className={item.isTotal ? "is-total" : ""} key={item.id}>
                       <td><span>{item.classification.replaceAll("_", " ")}</span></td>
-                      <td><b>{item.originalLabel}</b>{item.values.some((value) => value.correction) && <small>Correction retained separately</small>}</td>
+                      <td><b>{englishItemLabel(item)}</b>{item.originalLabel !== englishItemLabel(item) && <small>Source: {item.originalLabel}</small>}{item.values.some((value) => value.correction) && <small>Correction retained separately</small>}</td>
                       {review.statement.periods.map((period) => {
                         const value = item.values.find((candidate) => candidate.period === period);
                         return <td className={value?.correction ? "is-corrected" : ""} key={period}><b>{value?.rawReportedValue ?? "—"}</b>{value?.correction && <small>corrected: {value.correction.correctedReportedValue.toLocaleString("en-US")}</small>}</td>;
@@ -1004,13 +1008,13 @@ function BalanceSheetWorkspace() {
 
             <section className="bs-line-section">
               <div className="bs-section-title"><div><span>EXTRACTION DETAIL</span><h3>Original and normalized rows</h3></div></div>
-              <div className="bs-table-scroll"><table className="bs-line-table"><thead><tr><th>Original source label</th><th>Normalized concept</th><th>Confidence / trace</th><th>Professional status</th></tr></thead><tbody>{review.lineItems.map((item) => <tr className={`${item.id === selectedLine?.id ? "is-selected" : ""} ${item.isTotal ? "is-total" : ""}`} key={item.id} onClick={() => { setSelectedLineId(item.id); setActivePeriod(item.values[0]?.period ?? ""); }}><td><button type="button">{item.originalLabel}</button><small>{item.classification.replaceAll("_", " ")}</small></td><td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td><td><b>{Math.round(item.confidence * 100)}%</b><small>p.{item.values[0]?.source.page ?? "—"}</small></td><td><StatusBadge status={item.reviewStatus} /></td></tr>)}</tbody></table></div>
+              <div className="bs-table-scroll"><table className="bs-line-table"><thead><tr><th>English item / source label</th><th>Normalized concept</th><th>Text confidence / trace</th><th>Professional status</th></tr></thead><tbody>{review.lineItems.map((item) => <tr className={`${item.id === selectedLine?.id ? "is-selected" : ""} ${item.isTotal ? "is-total" : ""}`} key={item.id} onClick={() => { setSelectedLineId(item.id); setActivePeriod(item.values[0]?.period ?? ""); }}><td><button type="button">{englishItemLabel(item)}</button><small>{item.originalLabel} · {item.classification.replaceAll("_", " ")}</small></td><td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td><td><b>{Math.round(item.confidence * 100)}%</b><small>p.{item.values[0]?.source.page ?? "—"}</small></td><td><StatusBadge status={item.reviewStatus} /></td></tr>)}</tbody></table></div>
             </section>
 
             <section className="bs-review-grid">
               <article className="bs-line-inspector" ref={inspectorRef} tabIndex={-1}>
                 <div className="bs-section-title"><div><span>OPTIONAL CORRECTION</span><h3>Inspect or correct selected row</h3></div></div>
-                {selectedLine ? <><div className="bs-inspector-head"><div><span>ORIGINAL LABEL</span><b>{selectedLine.originalLabel}</b></div><StatusBadge status={selectedLine.reviewStatus} /></div><div className="bs-value-pair">{selectedLine.values.map((value) => <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button"><span>{value.period}</span><b>{value.rawReportedValue}</b><small>normalized: {formatAmount(value.normalizedValue, review.statement.currency)}</small></button>)}</div><div className="bs-provenance-card"><span>SOURCE TRACE</span><code>{review.source.fileName} · p.{selectedLine.values.find((value) => value.period === activePeriod)?.source.page ?? selectedLine.values[0]?.source.page}</code><p>“{selectedLine.originalLabel}” · {selectedLine.values[0]?.source.extractionMethod} · {Math.round(selectedLine.confidence * 100)}% confidence</p></div><div className="bs-correction-form"><label><span>Corrected value in reported units</span><input inputMode="decimal" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label><label><span>Reason — required</span><input value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="What was wrong in extraction?" /></label><button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button><p>The reported source remains immutable; a correction is stored separately and revalidates the result.</p></div></> : <p className="bs-empty-state">No line item is available.</p>}
+                {selectedLine ? <><div className="bs-inspector-head"><div><span>ENGLISH / ORIGINAL LABEL</span><b>{englishItemLabel(selectedLine)}</b><small>{selectedLine.originalLabel}</small></div><StatusBadge status={selectedLine.reviewStatus} /></div><div className="bs-value-pair">{selectedLine.values.map((value) => <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button"><span>{value.period}</span><b>{value.rawReportedValue}</b><small>normalized: {formatAmount(value.normalizedValue, review.statement.currency)}</small></button>)}</div><div className="bs-provenance-card"><span>SOURCE TRACE</span><code>{review.source.fileName} · p.{selectedLine.values.find((value) => value.period === activePeriod)?.source.page ?? selectedLine.values[0]?.source.page}</code><p>“{selectedLine.originalLabel}” · {selectedLine.values[0]?.source.extractionMethod} · {Math.round(selectedLine.confidence * 100)}% text confidence</p></div><div className="bs-correction-form"><label><span>Corrected value in reported units</span><input inputMode="decimal" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label><label><span>Reason — required</span><input value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="What was wrong in extraction?" /></label><button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button><p>The reported source remains immutable; a correction is stored separately and revalidates the result.</p></div></> : <p className="bs-empty-state">No line item is available.</p>}
               </article>
               <article className="bs-checks-card"><div className="bs-section-title"><div><span>ARITHMETIC EVIDENCE</span><h3>Reported vs calculated</h3></div></div><div className="bs-check-list">{review.arithmeticChecks.map((check) => <div className={`check-${check.status}`} key={check.id}><span>{check.status === "passed" ? "✓" : check.status === "failed" ? "!" : "—"}</span><div><b>{check.formula}</b><small>{check.period}</small><p>{formatAmount(check.leftValue, review.statement.currency)} <i>vs</i> {formatAmount(check.rightValue, review.statement.currency)}</p></div></div>)}</div></article>
             </section>
@@ -1172,7 +1176,7 @@ function BalanceSheetWorkspace() {
               <table className="bs-line-table">
                 <thead>
                   <tr>
-                    <th>Original source label</th>
+                    <th>English item / original source label</th>
                     <th>Normalized concept</th>
                     {review.statement.periods.map((period) => <th key={period}>{period}<small>reported units</small></th>)}
                     <th>Trace</th>
@@ -1182,7 +1186,7 @@ function BalanceSheetWorkspace() {
                 <tbody>
                   {review.lineItems.map((item) => (
                     <tr className={`${item.id === selectedLine?.id ? "is-selected" : ""} ${item.isTotal ? "is-total" : ""}`} key={item.id} onClick={() => { setSelectedLineId(item.id); setCorrectionValue(""); setCorrectionReason(""); }}>
-                      <td><button type="button">{item.originalLabel}</button><small>{item.classification.replaceAll("_", " ")}</small></td>
+                      <td><button type="button">{englishItemLabel(item)}</button><small>{item.originalLabel} · {item.classification.replaceAll("_", " ")}</small></td>
                       <td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td>
                       {review.statement.periods.map((period) => {
                         const value = item.values.find((candidate) => candidate.period === period);
@@ -1207,7 +1211,7 @@ function BalanceSheetWorkspace() {
                     <b>{unreviewedItems.length ? `Item ${Math.min(reviewedCount + 1, review.lineItems.length)} of ${review.lineItems.length}` : `${review.lineItems.length} of ${review.lineItems.length} reviewed`}</b>
                     <i><span style={{ width: `${review.lineItems.length ? (reviewedCount / review.lineItems.length) * 100 : 0}%` }} /></i>
                   </div>
-                  <div className="bs-inspector-head"><div><span>ORIGINAL LABEL</span><b>{selectedLine.originalLabel}</b></div><StatusBadge status={selectedLine.reviewStatus} /></div>
+                  <div className="bs-inspector-head"><div><span>ENGLISH / ORIGINAL LABEL</span><b>{englishItemLabel(selectedLine)}</b><small>{selectedLine.originalLabel}</small></div><StatusBadge status={selectedLine.reviewStatus} /></div>
                   <div className="bs-value-pair">
                     {selectedLine.values.map((value) => (
                       <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button">

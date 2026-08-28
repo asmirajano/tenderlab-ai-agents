@@ -108,6 +108,91 @@ test("isolates statement-local periods and reconstructs FIN-1 from balance and i
   assert.equal(dataset.sources.find((source) => revenue2023.sourceIds.includes(source.sourceId)).page, 3);
 });
 
+test("digitizes a synthetic Uzbek Form 1 into English canonical labels and generates FIN-1", () => {
+  const review = buildBalanceSheetReview({
+    source: {
+      documentId: "synthetic:uzbek-form-1-fin1",
+      fileName: "SYNTHETIC_UZBEK_FORM_1_FIN1.pdf",
+      mimeType: "application/pdf",
+      sha256: "synthetic-uzbek-form-1-fin1",
+      pageCount: 4,
+      expectedPageCount: 4,
+      synthetic: true,
+      processingVersion: "tender-balance/regression",
+    },
+    pages: [
+      {
+        pageNumber: 1,
+        extractionMethod: "digital-text",
+        confidence: 0.98,
+        text: [
+          "2024 йил 4",
+          "\"SYNTHETIC EXPORTER\" MAS`ULIYATI CHEKLANGAN JAMIYAT",
+          "Бухгалтерия баланси №1-сонли шакл",
+          "Ўлчов бирлиги, минг сўм",
+        ].join("\n"),
+      },
+      {
+        pageNumber: 2,
+        extractionMethod: "digital-text",
+        confidence: 0.98,
+        text: [
+          "Бухгалтерия баланси №1-сонли шакл",
+          "Кўрсаткичлар номи Сатр коди",
+          "Ҳисобот даври бошига",
+          "Ҳисобот даври охирига",
+          "қолдиқ (баланс) қиймати (сатр. 010 - 011) 012 400,00 500,00",
+          "I бўлим бўйича жами (сатр.012+022+030+090+100+110+120) 130 400,00 500,00",
+          "II бўлим бўйича жами (сатр. 140+190+200+210+320+370+380) 390 600,00 800,00",
+          "Баланс активи бўйича жами (сатр.130+390) 400 1 000,00 1 300,00",
+          "Устав капитали (8300) 410 100,00 100,00",
+          "Тақсимланмаган фойда (қопланмаган зарар) (8700) 450 300,00 500,00",
+          "I бўлим бўйича жами (сатр.410+420+430-440+450+460+470) 480 400,00 600,00",
+          "Узоқ муддатли мажбуриятлар, жами (сатр.500+520+530+540+550+560+570+580+590) 490 100,00 150,00",
+          "Жорий мажбуриятлар, жами (сатр.610+630+640+650+660+670+680+690+700+710+720+730+740+750+760) 600 500,00 550,00",
+          "II бўлим бўйича жами (сатр.490+600) 770 600,00 700,00",
+          "Баланс пассиви бўйича жами (сатр.480+770) 780 1 000,00 1 300,00",
+        ].join("\n"),
+      },
+      { pageNumber: 3, extractionMethod: "digital-text", confidence: 0.98, text: "SYNTHETIC SUPPORTING PAGE — NOT FINANCIAL DATA" },
+      {
+        pageNumber: 4,
+        extractionMethod: "digital-text",
+        confidence: 0.98,
+        text: [
+          "Маҳсулот (товар, иш ва хизмат) ларни сотишдан соф тушум 010 2 000,00 x 2 500,00 x",
+          "Фойда солиғини тўлагунга қадар фойда (зарар) (сатр.220+/-230) 240 300,00 0,00 400,00 0,00",
+          "Ҳисобот даврининг соф фойдаси (зарари) (сатр.240-250-260) 270 240,00 0,00 320,00 0,00",
+          "Ўтган йилнинг шу даврида Ҳисобот даврида",
+          "МОЛИЯВИЙ НАТИЖАЛАР ТУГРИСИДА ХИСОБОТ - 2-сонли шакл Ўлчов бирлиги, минг сўм",
+        ].join("\n"),
+      },
+    ],
+  });
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+
+  assert.equal(review.statement.reportingEntity, "SYNTHETIC EXPORTER LLC");
+  assert.equal(review.statement.reportingDate, "2024");
+  assert.deepEqual(review.statement.periods, ["2023", "2024"]);
+  assert.equal(review.statement.currency, "UZS");
+  assert.equal(review.statement.unitLabel, "thousands");
+  assert.equal(review.statement.unitScale, 1_000);
+  assert.deepEqual([...new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page)))], [2]);
+  assert.equal(review.lineItems.some((item) => item.originalLabel.startsWith("Баланс активи") && item.englishLabel === "Total assets" && item.normalizedConcept === "total_assets"), true);
+  assert.equal(review.lineItems.every((item) => item.translationStatus !== "review-required"), true);
+  assert.equal(review.issues.some((issue) => issue.severity === "blocking"), false);
+  assert.equal(dataset.incomeStatementDetected, true);
+  assert.deepEqual(form.years, ["2023", "2024"]);
+  assert.equal(form.readiness.status, "ready");
+  assert.equal(form.readiness.readyFields, 18);
+  assert.equal(form.readiness.missingFields, 0);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_assets" && mapping.displayYear === "2024")?.value, 1_300_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "working_capital" && mapping.displayYear === "2023")?.value, 100_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2024")?.value, 2_500_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2023")?.value, 240_000);
+  assert.equal(dataset.sources.find((source) => source.originalLabel.includes("соф тушум"))?.page, 4);
+});
+
 test("keeps note tables out of the primary balance sheet and accepts comprehensive-income statement titles", () => {
   const review = buildBalanceSheetReview({
     source: { documentId: "synthetic:notes-page-isolation", fileName: "SYNTHETIC_NOTES_PAGE_ISOLATION.pdf", sha256: "synthetic-notes-page-isolation", synthetic: true },

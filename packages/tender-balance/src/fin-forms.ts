@@ -493,21 +493,54 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i] },
-  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i] },
-  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /маҳсулот.*сотишдан соф тушум/iu] },
+  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];
 
 function incomeStatementPages(review: BalanceSheetReview) {
-  return review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
+  const titled = review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
     const normalized = line.replace(/\s+/g, " ").trim();
     return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?$/i.test(normalized)
-      || /^(?:consolidated\s+)?income statements?$/i.test(normalized);
+      || /^(?:consolidated\s+)?income statements?$/i.test(normalized)
+      || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
   }));
+  const withTargetRows = titled.filter((page) => INCOME_FIELD_PATTERNS.some((definition) => definition.patterns.some((pattern) => pattern.test(page.text ?? ""))));
+  return withTargetRows.length ? withTargetRows : titled;
 }
 
 function normalizeIncomeLabel(label: string) {
   return label.replace(/[{}]/g, (token) => token === "{" ? "(" : ")").replace(/\s+/g, " ").trim();
+}
+
+function parseUzbekIncomeRows(text: string) {
+  const rows: Array<{ label: string; rawValues: string[] }> = [];
+  let pending = "";
+  const moneyToken = /(?:x|[-−]?\d{1,3}(?:[ \u00a0]\d{3})*(?:[,.]\d{2}))/giu;
+  for (const sourceLine of text.split(/\r?\n/)) {
+    const line = normalizeIncomeLabel(sourceLine);
+    if (!line) continue;
+    const row = line.match(/\b(\d{3})\s+((?:x|[-−]?\d)[\s\S]*)$/iu);
+    if (row) {
+      const beforeCode = line.slice(0, row.index).trim();
+      const label = normalizeIncomeLabel(`${pending} ${beforeCode}`);
+      const tokens = Array.from(row[2].matchAll(moneyToken), (match) => match[0]);
+      const rawValues = tokens.length >= 4 ? [tokens[0], tokens[2]] : tokens.filter((token) => !/^x$/i.test(token)).slice(0, 2);
+      if (label && rawValues.length) rows.push({ label, rawValues });
+      pending = "";
+      continue;
+    }
+    if (/^(?:lc=|даромадлар|харажатлар|\(фойда\)|\(зарарлар\)|[1-6](?:\s+[1-6])+)$/iu.test(line)
+      || /^(?:сатр|коди|кўрсаткичлар номи|ўтган йилнинг)/iu.test(line)
+      || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(line)) {
+      pending = "";
+      continue;
+    }
+    pending = INCOME_FIELD_PATTERNS.some((definition) => definition.patterns.some((pattern) => pattern.test(line)))
+      ? line
+      : normalizeIncomeLabel(`${pending} ${line}`).split(" ").slice(-32).join(" ");
+  }
+  return rows;
 }
 
 function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
@@ -519,7 +552,7 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
   const discovered = new Set<string>();
 
   for (const page of pages) {
-    const periods = detectPeriods(page.text ?? "").filter((period) => Boolean(yearFrom(period)));
+    const periods = detectPeriods(page.text ?? "", yearFrom(review.statement.reportingDate)).filter((period) => Boolean(yearFrom(period)));
     if (!periods.length) {
       pushIssue(dataset, {
         id: `issue:income-period:${review.source.documentId}:${page.pageNumber}`,
@@ -530,8 +563,10 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
       continue;
     }
 
-    for (const sourceLine of (page.text ?? "").split(/\r?\n/)) {
-      const parsed = parseStatementLine(sourceLine.trim(), periods.length);
+    const sourceRows = /[ўқғҳ]/i.test(page.text ?? "")
+      ? parseUzbekIncomeRows(page.text ?? "")
+      : (page.text ?? "").split(/\r?\n/).map((sourceLine) => parseStatementLine(sourceLine.trim(), periods.length)).filter((parsed): parsed is NonNullable<typeof parsed> => Boolean(parsed));
+    for (const parsed of sourceRows) {
       if (!parsed) continue;
       const label = normalizeIncomeLabel(parsed.label);
       const definition = INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(label)));

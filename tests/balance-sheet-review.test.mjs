@@ -10,6 +10,7 @@ import {
   canApproveStatement,
   compareBalanceSheetReviews,
   correctLineItemValue,
+  parseStatementLine,
   parseReportedNumber,
   reviewToCsv,
 } from "../packages/tender-balance/src/model.ts";
@@ -40,6 +41,21 @@ test("reconstructs adjacent PDF number fragments without collapsing reporting co
   const text = reconstructPdfPageText(items);
   assert.match(text, /December 31,\n2024\t2023/);
   assert.match(text, /Prepaid expenses and other current assets\t101\t175/);
+});
+
+test("preserves wide PDF table-cell gaps and does not shift a single Uzbek value into another period", () => {
+  const items = [
+    { str: "Мақсадли давлат жамғармалари ва суғурталар бўйича бўнак тўловлари (4500)", width: 230, transform: [1, 0, 0, 1, 42, 480] },
+    { str: " ", width: 139, transform: [1, 0, 0, 1, 272, 480] },
+    { str: "280", width: 10, transform: [1, 0, 0, 1, 411, 480] },
+    { str: " ", width: 52, transform: [1, 0, 0, 1, 421, 480] },
+    { str: "1,00", width: 12, transform: [1, 0, 0, 1, 473, 480] },
+  ];
+
+  const text = reconstructPdfPageText(items);
+  const parsed = parseStatementLine(text, 2);
+  assert.equal(parsed.sourceRowCode, "280");
+  assert.deepEqual(parsed.rawValues, ["1,00", "—"]);
 });
 
 function readStoredZipEntries(bytes) {
@@ -330,7 +346,8 @@ test("exports a valid multi-sheet Excel package with typed figures and traceabil
   assert.match(entries.get("xl/workbook.xml"), /Findings/);
   assert.match(entries.get("xl/workbook.xml"), /Source Trace/);
   assert.match(entries.get("xl/worksheets/sheet1.xml"), /Cash and cash equivalents/);
-  assert.match(entries.get("xl/worksheets/sheet1.xml"), /<v>8500000<\/v>/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /<v>8500<\/v>/);
+  assert.match(entries.get("xl/worksheets/sheet4.xml"), /<v>8500000<\/v>/);
   assert.match(entries.get("xl/worksheets/sheet4.xml"), /rawReportedValue|Raw reported value/);
   assert.match(entries.get("xl/worksheets/sheet4.xml"), /digital-text/);
 });
