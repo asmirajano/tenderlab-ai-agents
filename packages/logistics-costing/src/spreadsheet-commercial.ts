@@ -1,4 +1,4 @@
-import type { CalculationWarning } from "./types.ts";
+import type { CalculationWarning, CommercialItemEvidence } from "./types.ts";
 
 function normalizedKey(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
@@ -27,6 +27,7 @@ export type SpreadsheetCommercialSummary = {
   row: Record<string, unknown>;
   fieldSources: Record<string, string>;
   warnings: CalculationWarning[];
+  commercialItems: CommercialItemEvidence[];
   lineItemCount?: number;
   calculatedLineItemTotal?: number;
   printedCommercialTotal?: number;
@@ -44,17 +45,23 @@ export function extractSpreadsheetCommercialSummary(arrayRows: unknown[][], file
       && headings.some((heading) => /unit.*price|price.*unit/.test(heading))
       && headings.some((heading) => /^(amount|total)(_|$)|amount.*usd|total.*usd/.test(heading));
   });
-  if (headerIndex < 0) return { row, fieldSources, warnings };
+  if (headerIndex < 0) return { row, fieldSources, warnings, commercialItems: [] };
 
   const headings = cells[headerIndex].map(normalizedKey);
+  const itemCodeColumn = headings.findIndex((heading) => /^(item_?code|code|sku|product_?code)$/.test(heading));
+  const itemDescriptionColumn = headings.findIndex((heading) => /^(item|description|item_?description)$/.test(heading));
+  const productNameColumn = headings.findIndex((heading) => /product.*name|name.*product/.test(heading));
+  const modelColumn = headings.findIndex((heading) => /^(model|model_?no|model_?number)$/.test(heading));
   const quantityColumn = headings.findIndex((heading) => /^(qty|quantity)$/.test(heading));
   const unitPriceColumn = headings.findIndex((heading) => /unit.*price|price.*unit/.test(heading));
   const amountColumn = headings.findIndex((heading) => /^(amount|total)(_|$)|amount.*usd|total.*usd/.test(heading));
   const currencyMatch = cells[headerIndex].join(" ").toUpperCase().match(/\b(USD|EUR|GBP|CNY|RMB|UZS|JPY|CHF|AED)\b/);
   const itemAmounts: number[] = [];
+  const commercialItems: CommercialItemEvidence[] = [];
   let printedCommercialTotal: number | undefined;
   let printedTotalRow = -1;
   let sourceIncoterm: string | undefined;
+  let carriedItemCode = "";
 
   for (let index = headerIndex + 1; index < cells.length; index += 1) {
     const candidate = cells[index];
@@ -70,10 +77,32 @@ export function extractSpreadsheetCommercialSummary(arrayRows: unknown[][], file
     const quantity = spreadsheetNumber(candidate[quantityColumn]);
     const unitPrice = spreadsheetNumber(candidate[unitPriceColumn]);
     const amount = spreadsheetNumber(candidate[amountColumn]);
-    if (quantity !== undefined && quantity > 0 && (amount !== undefined || unitPrice !== undefined)) itemAmounts.push(amount ?? quantity * (unitPrice ?? 0));
+    if (quantity !== undefined && quantity > 0 && (amount !== undefined || unitPrice !== undefined)) {
+      const lineTotal = amount ?? quantity * (unitPrice ?? 0);
+      itemAmounts.push(lineTotal);
+      const explicitCode = itemCodeColumn >= 0 ? candidate[itemCodeColumn]?.trim() : "";
+      if (explicitCode) carriedItemCode = explicitCode;
+      const itemDescription = itemDescriptionColumn >= 0 ? candidate[itemDescriptionColumn]?.trim() : "";
+      const productName = productNameColumn >= 0 ? candidate[productNameColumn]?.trim() : "";
+      const model = modelColumn >= 0 ? candidate[modelColumn]?.trim() : "";
+      const description = [itemDescription, productName, model].filter((value) => value && !/^\d+(?:\.\d+)?$/.test(value)).join(" · ") || carriedItemCode || `Commercial line ${commercialItems.length + 1}`;
+      commercialItems.push({
+        id: `${normalizedKey(sheetName) || "sheet"}-line-${index + 1}`,
+        ...(carriedItemCode ? { itemCode: carriedItemCode } : {}),
+        description,
+        ...(productName ? { productName } : {}),
+        ...(model ? { model } : {}),
+        quantity,
+        ...(unitPrice !== undefined ? { unitPrice } : {}),
+        lineTotal,
+        ...(currencyMatch?.[1] ? { currency: currencyMatch[1] === "RMB" ? "CNY" : currencyMatch[1] } : {}),
+        sourceRef: `${fileName} · ${sheetName} · row ${index + 1}`,
+        workingBaselineIncluded: true,
+      });
+    }
   }
 
-  if (!itemAmounts.length && printedCommercialTotal === undefined) return { row, fieldSources, warnings };
+  if (!itemAmounts.length && printedCommercialTotal === undefined) return { row, fieldSources, warnings, commercialItems };
   const calculatedLineItemTotal = itemAmounts.length ? Math.round((itemAmounts.reduce((sum, value) => sum + value, 0) + Number.EPSILON) * 100) / 100 : undefined;
   const workingTotal = calculatedLineItemTotal ?? printedCommercialTotal;
   const totalSourceRow = printedTotalRow >= 0 ? printedTotalRow + 1 : headerIndex + 1;
@@ -85,5 +114,5 @@ export function extractSpreadsheetCommercialSummary(arrayRows: unknown[][], file
     const discrepancy = Math.round((calculatedLineItemTotal - printedCommercialTotal + Number.EPSILON) * 100) / 100;
     if (Math.abs(discrepancy) > 0.01) warnings.push({ code: "COMMERCIAL_TOTAL_DISCREPANCY", severity: "warning", message: `Calculated line-item value ${calculatedLineItemTotal.toFixed(2)} differs from the labelled quotation total ${printedCommercialTotal.toFixed(2)} by ${discrepancy.toFixed(2)}. The calculated line-item total is used as the working commercial baseline.` });
   }
-  return { row, fieldSources, warnings, lineItemCount: itemAmounts.length || undefined, calculatedLineItemTotal, printedCommercialTotal };
+  return { row, fieldSources, warnings, commercialItems, lineItemCount: itemAmounts.length || undefined, calculatedLineItemTotal, printedCommercialTotal };
 }

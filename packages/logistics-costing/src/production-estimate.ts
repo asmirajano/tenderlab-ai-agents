@@ -1,4 +1,4 @@
-import type { CalculationDerivation, CalculationOperand, Confidence, CostComponentCode, CostLine, TransportMode, TransportUnit } from "./types.ts";
+import type { CalculationDerivation, CalculationOperand, CommercialItemEvidence, Confidence, CostComponentCode, CostLine, TransportMode, TransportUnit } from "./types.ts";
 import { transportUnits } from "./packing.ts";
 
 export type EstimateValue<T> = {
@@ -32,6 +32,9 @@ export type CargoCalculationRow = {
   id: string;
   description: string;
   quantity: number;
+  planningQuantity: number;
+  itemCode?: string;
+  sourceLineTotal?: number;
   sourceMetric: string;
   estimationMethod: string;
   unitVolumeM3: number;
@@ -48,6 +51,7 @@ export type ProductionEstimateInput = {
   cargoDescription: string;
   quantityDescription?: string;
   sourceLineCount?: number;
+  commercialItems?: CommercialItemEvidence[];
   sourcePackedVolumeM3?: number;
   sourceGrossWeightKg?: number;
   origin: string;
@@ -334,7 +338,8 @@ function matchHsCandidates(text: string): HsCandidate[] {
 export function buildProductionLogisticsEstimate(input: ProductionEstimateInput): ProductionLogisticsEstimate {
   const evidenceText = `${input.cargoDescription}\n${input.quantityDescription ?? ""}\n${input.evidenceText ?? ""}`;
   const proxy = selectCargoProxy(evidenceText);
-  const lineCount = input.sourceLineCount ?? parsedCount(input.quantityDescription) ?? 1;
+  const commercialItems = input.commercialItems?.filter((item) => item.workingBaselineIncluded) ?? [];
+  const lineCount = input.sourceLineCount ?? (commercialItems.length || undefined) ?? parsedCount(input.quantityDescription) ?? 1;
   const volumeFromSource = Number.isFinite(input.sourcePackedVolumeM3) && (input.sourcePackedVolumeM3 ?? 0) > 0;
   const weightFromSource = Number.isFinite(input.sourceGrossWeightKg) && (input.sourceGrossWeightKg ?? 0) > 0;
   const packedVolumeM3: EstimateValue<number> = volumeFromSource
@@ -345,19 +350,68 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     : { value: proxy.weightPerLineKg * lineCount, kind: "evidence-estimate", confidence: proxy.confidence, sourceRef: proxy.sourceRef, method: `${lineCount} source lines × ${proxy.weightPerLineKg.toFixed(1)} kg category proxy.` };
   const loadabilityFactor: EstimateValue<number> = { value: proxy.loadabilityFactor, kind: "benchmark-assumption", confidence: "low", sourceRef: proxy.sourceRef, method: "Practical usable-space factor for mixed, fragile and partly non-stackable cargo." };
   const planningVolumeM3 = packedVolumeM3.value / loadabilityFactor.value;
-  const cargoCalculationRows: CargoCalculationRow[] = [{
-    id: volumeFromSource || weightFromSource ? "shipment-source-input" : `proxy-group:${proxy.id}`,
-    description: volumeFromSource || weightFromSource ? "Shipment-level cargo input" : `${input.cargoDescription || "Cargo"} · quotation-line proxy group`,
-    quantity: lineCount,
-    sourceMetric: volumeFromSource || weightFromSource ? "Shipment-level packed volume / gross weight" : `${lineCount} source commercial line(s); no confirmed packing list dimensions or gross weights were available to this model`,
-    estimationMethod: volumeFromSource && weightFromSource ? "Used confirmed shipment-level values without estimation." : `Category proxy ${proxy.id}; product-line specifications are not silently treated as packed shipment dimensions.`,
-    unitVolumeM3: volumeFromSource ? packedVolumeM3.value / lineCount : proxy.volumePerLineM3,
-    estimatedVolumeM3: packedVolumeM3.value,
-    unitGrossWeightKg: weightFromSource ? grossWeightKg.value / lineCount : proxy.weightPerLineKg,
-    estimatedGrossWeightKg: grossWeightKg.value,
-    sourceRef: volumeFromSource || weightFromSource ? "Shipment-level client/document input" : proxy.sourceRef,
-    confidence: volumeFromSource && weightFromSource ? "high" : proxy.confidence,
-  }];
+  const cargoCalculationRows: CargoCalculationRow[] = volumeFromSource || weightFromSource
+    ? [{
+      id: "shipment-source-input",
+      description: "Shipment-level cargo input",
+      quantity: lineCount,
+      planningQuantity: lineCount,
+      sourceMetric: "Shipment-level packed volume / gross weight",
+      estimationMethod: volumeFromSource && weightFromSource ? "Used confirmed shipment-level values without estimation." : "Used the available shipment-level value and retained the category proxy only for the missing metric.",
+      unitVolumeM3: packedVolumeM3.value / lineCount,
+      estimatedVolumeM3: packedVolumeM3.value,
+      unitGrossWeightKg: grossWeightKg.value / lineCount,
+      estimatedGrossWeightKg: grossWeightKg.value,
+      sourceRef: "Shipment-level client/document input",
+      confidence: volumeFromSource && weightFromSource ? "high" : proxy.confidence,
+    }]
+    : commercialItems.length
+      ? [
+        ...commercialItems.map((item) => ({
+          id: item.id,
+          description: item.description,
+          quantity: item.quantity ?? 1,
+          planningQuantity: 1,
+          ...(item.itemCode ? { itemCode: item.itemCode } : {}),
+          ...(item.lineTotal !== undefined ? { sourceLineTotal: item.lineTotal } : {}),
+          sourceMetric: "Commercial quantity is sourced; confirmed per-unit packed dimensions and gross weight are unavailable.",
+          estimationMethod: `One quotation-line planning unit × ${proxy.id} category proxy. Commercial quantity remains visible but is not treated as a packing quantity without supplier packing evidence.`,
+          unitVolumeM3: proxy.volumePerLineM3,
+          estimatedVolumeM3: proxy.volumePerLineM3,
+          unitGrossWeightKg: proxy.weightPerLineKg,
+          estimatedGrossWeightKg: proxy.weightPerLineKg,
+          sourceRef: item.sourceRef,
+          confidence: proxy.confidence,
+        })),
+        ...(commercialItems.length < lineCount ? [{
+          id: `proxy-unidentified-lines:${proxy.id}`,
+          description: `${lineCount - commercialItems.length} source line(s) without preserved item detail`,
+          quantity: lineCount - commercialItems.length,
+          planningQuantity: lineCount - commercialItems.length,
+          sourceMetric: "Source-line count is preserved, but item-level content is unavailable in this legacy Case snapshot.",
+          estimationMethod: `Remaining quotation lines × ${proxy.id} category proxy.`,
+          unitVolumeM3: proxy.volumePerLineM3,
+          estimatedVolumeM3: proxy.volumePerLineM3 * (lineCount - commercialItems.length),
+          unitGrossWeightKg: proxy.weightPerLineKg,
+          estimatedGrossWeightKg: proxy.weightPerLineKg * (lineCount - commercialItems.length),
+          sourceRef: proxy.sourceRef,
+          confidence: proxy.confidence,
+        }] : []),
+      ]
+      : [{
+        id: `proxy-group:${proxy.id}`,
+        description: `${input.cargoDescription || "Cargo"} · quotation-line proxy group`,
+        quantity: lineCount,
+        planningQuantity: lineCount,
+        sourceMetric: `${lineCount} source commercial line(s); no confirmed packing list dimensions or gross weights were available to this model`,
+        estimationMethod: `Category proxy ${proxy.id}; product-line specifications are not silently treated as packed shipment dimensions.`,
+        unitVolumeM3: proxy.volumePerLineM3,
+        estimatedVolumeM3: packedVolumeM3.value,
+        unitGrossWeightKg: proxy.weightPerLineKg,
+        estimatedGrossWeightKg: grossWeightKg.value,
+        sourceRef: proxy.sourceRef,
+        confidence: proxy.confidence,
+      }];
   const benchmark = selectBenchmark(input.origin, input.destination, input.transportMode);
   const unit = selectedUnit(benchmark, input.transportMode, input.preferredUnitId);
   const volumeRequiredCount = Math.max(1, Math.ceil(planningVolumeM3 / unit.usableVolumeM3));

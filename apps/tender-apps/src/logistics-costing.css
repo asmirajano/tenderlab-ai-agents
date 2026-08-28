@@ -347,10 +347,11 @@
 
 .cost-transformation-bridge { align-items: center; display: flex; flex-direction: column; justify-content: center; min-width: 0; text-align: center; }
 .story-arrow { color: var(--costing-green); display: block; font-size: 29px; line-height: 1; }
-.cost-agent-medallion { align-items: center; aspect-ratio: 1; background: var(--costing-ink); border: 6px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #b8c9bf, 0 18px 36px rgba(16,39,31,.12); color: white; display: flex; flex-direction: column; justify-content: center; margin: 13px auto; width: min(126px, 100%); }
-.cost-agent-medallion small { color: var(--costing-signal); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; }
-.cost-agent-medallion strong { font-size: 14px; line-height: 1; margin-top: 8px; }
-.cost-agent-medallion b { font-size: 17px; line-height: 1; }
+.cost-agent-medallion { align-items: center; aspect-ratio: 1; background: var(--costing-ink); border: 6px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #b8c9bf, 0 18px 36px rgba(16,39,31,.12); box-sizing: border-box; color: white; display: flex; flex-direction: column; justify-content: center; margin: 13px auto; overflow: hidden; padding: 12px 9px; width: min(126px, 100%); }
+.cost-agent-medallion > * { box-sizing: border-box; max-width: 100%; text-align: center; }
+.cost-agent-medallion small { color: var(--costing-signal); display: block; font-family: var(--font-geist-mono), monospace; font-size: clamp(8px, .65vw, 10px); font-weight: 850; letter-spacing: -.02em; line-height: 1.05; white-space: normal; }
+.cost-agent-medallion strong { font-size: 13px; line-height: 1; margin-top: 7px; }
+.cost-agent-medallion b { display: block; font-size: 15px; line-height: 1.04; margin-top: 3px; max-width: 86px; }
 .cost-transformation-bridge ol { color: #4f6a5e; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 820; letter-spacing: .05em; line-height: 1.65; list-style: none; margin: 10px 0; padding: 0; }
 
 .finished-cost-preview { background: var(--costing-ink); border: 8px solid #183f32; border-radius: 21px; box-shadow: 0 28px 55px rgba(16,39,31,.14); color: white; min-width: 0; overflow: hidden; padding: 22px; }
@@ -451,7 +452,17 @@
 .client-trust-note { align-items: center; background: #e8f3ec; border: 1px solid #c9dfd1; border-radius: 14px; display: grid; gap: 10px 24px; grid-template-columns: auto 1fr auto; margin-bottom: 22px; padding: 20px 22px; }
 .client-trust-note strong { font-size: var(--type-control); }
 .client-trust-note p { color: #557064; font-size: var(--type-small); line-height: 1.5; margin: 0; }
-.client-trust-note button { background: white; border: 1px solid var(--costing-green); border-radius: 9px; color: var(--costing-green); cursor: pointer; font-size: var(--type-label); font-weight: 780; min-height: 42px; padding: 8px 12px; }
+.calculation-architecture-overview { justify-self: end; }
+.calculation-architecture-overview summary { align-items: center; background: white; border: 1px solid var(--costing-green); border-radius: 9px; color: var(--costing-green); cursor: pointer; display: inline-flex; font-size: var(--type-label); font-weight: 780; justify-content: center; list-style: none; min-height: 42px; padding: 8px 12px; }
+.calculation-architecture-overview summary::-webkit-details-marker { display: none; }
+.calculation-architecture-overview summary:hover, .calculation-architecture-overview summary:focus-visible { background: var(--costing-signal); color: var(--costing-ink); outline: 3px solid rgba(20,116,84,.12); }
+.calculation-architecture-overview[open] { grid-column: 1 / -1; justify-self: stretch; }
+.calculation-architecture-overview[open] summary { margin-left: auto; }
+.architecture-overview-grid { border-top: 1px solid #c9dfd1; display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 17px; padding-top: 17px; }
+.architecture-overview-grid article { background: rgba(255,255,255,.7); border: 1px solid #c9dfd1; border-radius: 10px; padding: 16px; }
+.architecture-overview-grid span { color: var(--costing-green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; }
+.architecture-overview-grid strong { display: block; font-size: var(--type-control); line-height: 1.25; margin-top: 9px; }
+.architecture-overview-grid p { font-size: var(--type-micro); margin-top: 8px; }
 
 .cases-heading { align-items: end; display: flex; gap: 30px; justify-content: space-between; padding-block: 70px 42px; }
 .cases-heading h1 { font-size: clamp(48px, 5.7vw, 86px); }
@@ -990,6 +1001,7 @@
   .client-capabilities, .saved-case-grid { grid-template-columns: repeat(2, 1fr); }
   .client-trust-note { grid-template-columns: 1fr auto; }
   .client-trust-note strong { grid-column: 1 / -1; }
+  .architecture-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .consultation-progress { overflow-x: auto; }
   .consultation-progress li { flex: 0 0 160px; }
   .client-field-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1050,6 +1062,8 @@
   .client-welcome-hero h1, .cases-heading h1 { font-size: clamp(43px, 11vw, 68px); }
   .client-capabilities { grid-template-columns: 1fr; }
   .client-trust-note { align-items: start; grid-template-columns: 1fr; }
+  .calculation-architecture-overview { justify-self: stretch; }
+  .calculation-architecture-overview summary, .calculation-architecture-overview[open] summary { margin-left: 0; width: 100%; }
   .cases-heading { align-items: flex-start; flex-direction: column; padding-block: 48px 30px; }
   .saved-case-grid { grid-template-columns: 1fr; }
   .intake-heading { align-items: flex-start; flex-direction: column; gap: 16px; padding-block: 42px 20px; }
@@ -1133,6 +1147,7 @@
   .guided-consultation-card ol { grid-template-columns: 1fr; }
   .guided-consultation-card li:nth-child(even) { border-left: 0; }
   .welcome-actions { align-items: stretch; flex-direction: column; }
+  .architecture-overview-grid { grid-template-columns: 1fr; }
   .primary-client-action, .secondary-client-action { width: 100%; }
   .consultation-preview { border-radius: 15px; padding: 22px 18px; }
   .cases-heading .primary-client-action { width: 100%; }

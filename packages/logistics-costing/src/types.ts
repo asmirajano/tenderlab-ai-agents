@@ -360,6 +360,20 @@ export type DocumentProfile = {
   suppressedLineItemMetricCount?: number;
 };
 
+export type CommercialItemEvidence = {
+  id: string;
+  itemCode?: string;
+  description: string;
+  productName?: string;
+  model?: string;
+  quantity?: number;
+  unitPrice?: number;
+  lineTotal?: number;
+  currency?: string;
+  sourceRef: string;
+  workingBaselineIncluded: boolean;
+};
+
 export type DocumentIntakeRecord = {
   id: string;
   fileName: string;
@@ -374,4 +388,5 @@ export type DocumentIntakeRecord = {
   documentProfile?: DocumentProfile;
   extractionMethod?: "structured-data" | "spreadsheet-cells" | "pdf-text" | "manual-review";
   extractedTextLength?: number;
+  commercialItems?: CommercialItemEvidence[];
 };

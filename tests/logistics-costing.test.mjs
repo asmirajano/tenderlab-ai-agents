@@ -521,6 +521,11 @@ test("spreadsheet quotation extraction calculates the commercial total from pric
   assert.equal(extraction.lineItemCount, 2);
   assert.equal(extraction.calculatedLineItemTotal, 350);
   assert.equal(extraction.printedCommercialTotal, 350);
+  assert.equal(extraction.commercialItems.length, 2);
+  assert.deepEqual(extraction.commercialItems.map((item) => ({ itemCode: item.itemCode, description: item.description, quantity: item.quantity, unitPrice: item.unitPrice, lineTotal: item.lineTotal })), [
+    { itemCode: "A", description: "Analyzer · M1", quantity: 2, unitPrice: 100, lineTotal: 200 },
+    { itemCode: "B", description: "Centrifuge · M2", quantity: 3, unitPrice: 50, lineTotal: 150 },
+  ]);
 });
 
 test("production result UI separates exact and approximate values and exposes the approved dashboard sections", async () => {
@@ -547,7 +552,7 @@ test("production result UI separates exact and approximate values and exposes th
 
 test("saved Cases persist the composite result and reopen Result separately from Inputs and Audit", async () => {
   const page = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8");
-  assert.match(page, /schemaVersion:\s*"2\.0"/);
+  assert.match(page, /schemaVersion:\s*"2\.1"/);
   assert.match(page, /productionEstimate,/);
   assert.match(page, /effectiveCostLines:\s*preparedCostLines/);
   assert.match(page, /primaryWarnings:\s*currentPrimaryWarnings/);
@@ -559,6 +564,20 @@ test("saved Cases persist the composite result and reopen Result separately from
   assert.match(page, /selectedCaseView === "result"[\s\S]*<ResultDashboard/);
   assert.match(page, /DURABLE SNAPSHOT/);
   assert.match(page, /original saved record predates durable Result snapshots/i);
+});
+
+test("overview architecture stays usable without exposing a redundant global audit destination", async () => {
+  const [page, css] = await Promise.all([
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8"),
+    readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing.css"), "utf8"),
+  ]);
+  const workspaceNav = page.match(/<nav className="client-workspace-nav"[\s\S]*?<\/nav>/)?.[0] ?? "";
+  assert.doesNotMatch(workspaceNav, /Calculation details \/ audit/);
+  assert.match(page, /<details className="calculation-architecture-overview">/);
+  assert.match(page, /The dashboard, saved Case, quick explanations and Excel export use the same result and provenance/);
+  assert.match(page, /<small>TENDER APPS<\/small><strong>TENDER<\/strong><b>LOGISTICS<br \/>COST<\/b>/);
+  assert.match(css, /\.cost-agent-medallion \{[^}]*overflow: hidden/);
+  assert.match(css, /\.architecture-overview-grid \{/);
 });
 
 test("default target Incoterm has a non-missing provenance state and estimates are explainable on demand", async () => {
@@ -578,18 +597,37 @@ test("default target Incoterm has a non-missing provenance state and estimates a
 test("Excel export carries canonical formulas, cargo rows, provenance and a reconciliable cost total", async () => {
   const { buildProductionLogisticsEstimate, calculateScenario } = await load("packages/logistics-costing/src/index.ts");
   const { logisticsCalculationToExcel } = await load("apps/tender-apps/src/logistics-calculation-excel.ts");
-  const XLSX = await import(pathToFileURL(path.join(projectRoot, "apps", "tender-apps", "node_modules", "xlsx", "xlsx.mjs")).href);
-  const estimate = buildProductionLogisticsEstimate({ sourceValue: 100_000, currency: "USD", cargoDescription: "Laboratory equipment", sourceLineCount: 13, origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
+  const ExcelJS = (await import(pathToFileURL(path.join(projectRoot, "apps", "tender-apps", "node_modules", "exceljs", "excel.js")).href)).default;
+  const commercialItems = Array.from({ length: 13 }, (_, index) => ({ id: `line-${index + 1}`, itemCode: `LAB-${index + 1}`, description: `Laboratory equipment line ${index + 1}`, quantity: index + 1, unitPrice: 1_000, lineTotal: (index + 1) * 1_000, currency: "USD", sourceRef: `quotation.xlsx · row ${index + 8}`, workingBaselineIncluded: true }));
+  const estimate = buildProductionLogisticsEstimate({ sourceValue: 100_000, currency: "USD", cargoDescription: "Laboratory equipment", sourceLineCount: 13, commercialItems, origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
   const input = { id: "excel-regression", mode: "incoterm-conversion", sourceContractTotal: 100_000, currency: "USD", sourceTerm: "EXW", sourceNamedPlace: "Shandong, China", targetTerm: "CIP", targetNamedPlace: "Tashkent, Uzbekistan", incotermsVersion: "2020", transportMode: "road", costLines: estimate.costLines, insurance: { enabled: true, premiumRate: estimate.insuranceRate, coverageFactor: estimate.insuranceCoverageFactor, basis: "final-contract-value", clauses: "A" } };
   const result = calculateScenario(input);
-  const bytes = await logisticsCalculationToExcel({ caseId: "excel-regression", caseName: "Excel regression", cargo: "Laboratory equipment", quantity: "13 lines", origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road", specialCargoDeclaration: "", input, result, productionEstimate: estimate, effectiveCostLines: estimate.costLines, warnings: estimate.warnings, sourceDocuments: [] });
+  const bytes = await logisticsCalculationToExcel({ caseId: "excel-regression", caseName: "Excel regression", cargo: "Laboratory equipment", quantity: "13 lines", origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road", specialCargoDeclaration: "", input, result, productionEstimate: estimate, effectiveCostLines: estimate.costLines, warnings: estimate.warnings, sourceDocuments: [{ fileName: "quotation.xlsx", status: "parsed", facts: [], warnings: [], extractionMethod: "spreadsheet-cells", commercialItems }] });
   assert.equal(bytes[0], 0x50);
   assert.equal(bytes[1], 0x4b);
-  const workbook = XLSX.read(bytes, { type: "array", cellFormula: true });
-  assert.deepEqual(workbook.SheetNames, ["Cost Model", "Cargo Model", "Summary", "Assumptions & Sources"]);
-  const costTotalCell = `G${estimate.costLines.length + 2}`;
-  assert.equal(workbook.Sheets["Cost Model"][costTotalCell].f, `SUM(G2:G${estimate.costLines.length + 1})`);
-  assert.equal(workbook.Sheets.Summary.B25.f, `'Cost Model'!${costTotalCell}`);
-  assert.equal(workbook.Sheets["Cargo Model"].G2.v, estimate.cargo.packedVolumeM3.value);
-  assert.match(workbook.Sheets["Cost Model"].H2.v, /benchmark allowance/i);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(bytes);
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ["Executive Summary", "Cost Calculation", "Cargo Calculation", "Source & Inputs", "Audit & Checks"]);
+  const cargo = workbook.getWorksheet("Cargo Calculation");
+  const costs = workbook.getWorksheet("Cost Calculation");
+  const summary = workbook.getWorksheet("Executive Summary");
+  const audit = workbook.getWorksheet("Audit & Checks");
+  assert.equal(cargo.getCell("H5").value.formula, "E5*G5");
+  assert.equal(cargo.getCell("H18").value.formula, "SUM(H5:H17)");
+  assert.equal(cargo.getCell("B26").value.formula, "B23/B25");
+  assert.equal(cargo.getCell("B31").value.formula, "MAX(B29,B30)");
+  assert.equal(costs.getCell("F10").value.formula, "'Cargo Calculation'!B31*E10");
+  assert.match(costs.getCell("F15").value.formula, /Source & Inputs.*SUM/);
+  assert.equal(costs.getCell("H17").value.formula, "SUM(H5:H15)");
+  assert.equal(summary.getCell("A8").value.formula, "ROUND('Cost Calculation'!H17,-3)");
+  assert.equal(summary.pageSetup.orientation, "portrait");
+  assert.equal(summary.pageSetup.fitToWidth, 1);
+  assert.equal(costs.pageSetup.orientation, "landscape");
+  assert.equal(costs.getCell("G5").fill.fgColor.argb, "FFF2CC");
+  assert.equal(audit.getCell("E6").value.result, "PASS");
+  const formulaCount = workbook.worksheets.reduce((count, sheet) => {
+    sheet.eachRow((row) => row.eachCell((cell) => { if (cell.value && typeof cell.value === "object" && "formula" in cell.value) count += 1; }));
+    return count;
+  }, 0);
+  assert.ok(formulaCount >= 45, `expected at least 45 formulas, received ${formulaCount}`);
 });

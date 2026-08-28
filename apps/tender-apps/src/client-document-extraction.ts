@@ -69,6 +69,17 @@ async function parsePdf(file: File): Promise<DocumentIntakeRecord> {
   const warnings: CalculationWarning[] = [...extracted.warnings, ...(recognizedCount ? [] : [{ code: "NO_RECOGNIZED_FIELDS", severity: "warning" as const, message: `${file.name} was read successfully, but no document-level commercial or shipment values matched the current schema. Review the document and enter the missing fields manually.` }])];
   const ignoredInstructions = findUntrustedInstructions(sections);
   if (ignoredInstructions.length) warnings.push({ code: "UNTRUSTED_DOCUMENT_INSTRUCTION", severity: "warning", message: `${ignoredInstructions.length} instruction-like value(s) were quarantined as document content and were not executed.` });
+  const commercialItems = Array.isArray(extracted.row.commercial_items)
+    ? extracted.row.commercial_items.flatMap((candidate, index) => candidate && typeof candidate === "object"
+      ? [{
+        id: String((candidate as { id?: unknown }).id ?? `document-line-${index + 1}`),
+        description: String((candidate as { rawLine?: unknown }).rawLine ?? "Commercial line"),
+        lineTotal: Number((candidate as { lineTotal?: unknown }).lineTotal) || undefined,
+        sourceRef: String((candidate as { sourceRef?: unknown }).sourceRef ?? file.name),
+        workingBaselineIncluded: Boolean((candidate as { workingBaselineIncluded?: unknown }).workingBaselineIncluded),
+      }]
+      : [])
+    : [];
   return {
     id: `document:${file.name}:${file.size}`,
     fileName: file.name,
@@ -83,6 +94,7 @@ async function parsePdf(file: File): Promise<DocumentIntakeRecord> {
     documentProfile: extracted.profile,
     extractionMethod: "pdf-text",
     extractedTextLength,
+    commercialItems,
   };
 }
 
@@ -94,6 +106,7 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
   const fieldSources: Record<string, string> = {};
   const spreadsheetFieldEvidence: NonNullable<DocumentIntakeRecord["fieldEvidence"]> = {};
   const spreadsheetWarnings: CalculationWarning[] = [];
+  const commercialItems: NonNullable<DocumentIntakeRecord["commercialItems"]> = [];
   let spreadsheetLineItemCount = 0;
   let spreadsheetCalculatedTotal: number | undefined;
   let spreadsheetPrintedTotal: number | undefined;
@@ -110,6 +123,7 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
       spreadsheetFieldEvidence[key] = { sourceRef, confidence: "high", scope: "document", basis: key === "contract_value" ? "Independently summed from priced quotation rows and reconciled against any labelled total." : "Read from the quotation table or labelled commercial-total row." };
     });
     spreadsheetWarnings.push(...commercialSummary.warnings);
+    commercialItems.push(...commercialSummary.commercialItems);
     spreadsheetLineItemCount = Math.max(spreadsheetLineItemCount, commercialSummary.lineItemCount ?? 0);
     if (commercialSummary.calculatedLineItemTotal !== undefined) spreadsheetCalculatedTotal = commercialSummary.calculatedLineItemTotal;
     if (commercialSummary.printedCommercialTotal !== undefined) spreadsheetPrintedTotal = commercialSummary.printedCommercialTotal;
@@ -137,6 +151,7 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
   Object.entries(textExtraction.fieldSources).forEach(([key, value]) => {
     if (!fieldSources[key]) fieldSources[key] = value;
   });
+  if (commercialItems.length) summaryRow.commercial_items = commercialItems;
   if (Object.keys(summaryRow).length) rows.unshift(summaryRow);
   const recognizedCount = Object.keys(textExtraction.row).length + Object.keys(summaryRow).filter((key) => !key.startsWith("__")).length;
   const warnings: CalculationWarning[] = rows.length ? [...textExtraction.warnings, ...spreadsheetWarnings] : [{ code: "EMPTY_SPREADSHEET", severity: "blocking", message: `${file.name} contains no readable worksheet cells. Upload a populated workbook or another supported format.` }];
@@ -164,6 +179,7 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
       commercialTotalReconciled: spreadsheetCalculatedTotal !== undefined && spreadsheetPrintedTotal !== undefined ? Math.abs(spreadsheetCalculatedTotal - spreadsheetPrintedTotal) <= 0.01 : textExtraction.profile.commercialTotalReconciled,
     },
     extractionMethod: "spreadsheet-cells",
+    commercialItems,
   };
 }
 

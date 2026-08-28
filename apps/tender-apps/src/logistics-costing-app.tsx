@@ -83,7 +83,7 @@ type SavedCase = {
   input: CalculationInput;
   result: CalculationResult;
   snapshot?: {
-    schemaVersion: "2.0";
+    schemaVersion: "2.0" | "2.1";
     productionEstimate: ProductionLogisticsEstimate;
     effectiveCostLines: CostLine[];
     costInputStates: Record<string, CostInputState>;
@@ -92,7 +92,7 @@ type SavedCase = {
     workspaceMode: WorkspaceMode;
     transportMode: TransportMode;
     primaryWarnings: string[];
-    sourceDocuments: Array<Pick<DocumentIntakeRecord, "fileName" | "status" | "facts" | "warnings" | "documentProfile" | "extractionMethod">>;
+    sourceDocuments: Array<Pick<DocumentIntakeRecord, "fileName" | "status" | "facts" | "warnings" | "documentProfile" | "extractionMethod" | "commercialItems" | "fieldSources" | "fieldEvidence">>;
   };
 };
 
@@ -384,9 +384,9 @@ function CargoCalculationDetails({ estimate, compact = false }: { estimate: Prod
     <div>
       <header><span>CANONICAL CARGO MODEL</span><strong>{approximateNumber(estimate.cargo.packedVolumeM3.value, "m³")} · {approximateNumber(estimate.cargo.grossWeightKg.value, "kg")}</strong><p>{estimate.cargo.packedVolumeM3.method} {estimate.cargo.grossWeightKg.method}</p></header>
       <div className="cargo-formula-grid"><p><b>Packed volume</b><span>{estimate.cargo.packedVolumeM3.kind} · {estimate.cargo.packedVolumeM3.sourceRef}</span></p><p><b>Gross weight</b><span>{estimate.cargo.grossWeightKg.kind} · {estimate.cargo.grossWeightKg.sourceRef}</span></p><p><b>Planning volume</b><span>{number(estimate.cargo.packedVolumeM3.value, 3)} m³ ÷ {(estimate.cargo.loadabilityFactor.value * 100).toFixed(0)}% = {number(estimate.cargo.planningVolumeM3, 3)} m³</span></p></div>
-      <div className="cargo-calculation-table-wrap"><table><thead><tr><th>Item / calculation group</th><th>Qty</th><th>Source metric</th><th>Method</th><th>Volume</th><th>Gross weight</th><th>Confidence</th></tr></thead><tbody>{estimate.cargo.calculationRows.map((row) => <tr key={row.id}><th>{row.description}<small>{row.sourceRef}</small></th><td>{row.quantity}</td><td>{row.sourceMetric}</td><td>{row.estimationMethod}</td><td>{number(row.estimatedVolumeM3, 3)} m³</td><td>{number(row.estimatedGrossWeightKg, 1)} kg</td><td>{row.confidence}</td></tr>)}</tbody></table></div>
+      <div className="cargo-calculation-table-wrap"><table><thead><tr><th>Item / calculation group</th><th>Commercial qty</th><th>Planning units</th><th>Source metric</th><th>Method</th><th>Volume</th><th>Gross weight</th><th>Confidence</th></tr></thead><tbody>{estimate.cargo.calculationRows.map((row) => <tr key={row.id}><th>{row.itemCode && <b>{row.itemCode} · </b>}{row.description}<small>{row.sourceRef}</small></th><td>{row.quantity}</td><td>{row.planningQuantity}</td><td>{row.sourceMetric}</td><td>{row.estimationMethod}</td><td>{number(row.estimatedVolumeM3, 3)} m³</td><td>{number(row.estimatedGrossWeightKg, 1)} kg</td><td>{row.confidence}</td></tr>)}</tbody></table></div>
       <section className="confidence-explanation"><strong>Why confidence is {estimate.confidence.score}% · {estimate.confidence.label}</strong><ul>{estimate.cargo.confidenceFactors.map((factor) => <li key={factor}>{factor}</li>)}</ul></section>
-      <footer>These rows are the actual operands used by the transport and cost models. Missing item-level packing data is disclosed as a proxy group rather than invented as individual measurements.</footer>
+      <footer>These rows are the actual operands used by the transport and cost models. Commercial quantity remains sourced evidence; planning units are shown separately whenever confirmed per-unit packing data is unavailable.</footer>
     </div>
   </details>;
 }
@@ -534,6 +534,7 @@ export default function LogisticsCostingApp() {
   const [newLineIncluded, setNewLineIncluded] = useState(false);
 
   const sourceLineCount = useMemo(() => documents.reduce((highest, document) => Math.max(highest, document.documentProfile?.lineItemCount ?? 0), 0) || undefined, [documents]);
+  const commercialItems = useMemo(() => documents.flatMap((document) => document.commercialItems ?? []), [documents]);
   const documentEvidenceText = useMemo(() => documents.flatMap((document) => document.rows).map((row) => JSON.stringify(row)).join("\n"), [documents]);
   const productionEstimate = useMemo<ProductionLogisticsEstimate>(() => buildProductionLogisticsEstimate({
     sourceValue: sourceTotal,
@@ -541,6 +542,7 @@ export default function LogisticsCostingApp() {
     cargoDescription,
     quantityDescription,
     sourceLineCount,
+    commercialItems,
     sourcePackedVolumeM3: packedVolumeM3 || undefined,
     sourceGrossWeightKg: grossWeightKg || undefined,
     origin: sourcePlace,
@@ -550,7 +552,7 @@ export default function LogisticsCostingApp() {
     pickupConfirmed: inputFieldEvidence.sourcePlace?.status === "client-adjusted",
     specialCargoConfirmed: specialCargoDeclaration === "standard-confirmed" || specialCargoDeclaration === "declared-special",
     evidenceText: documentEvidenceText,
-  }), [sourceTotal, currency, cargoDescription, quantityDescription, sourceLineCount, packedVolumeM3, grossWeightKg, sourcePlace, targetPlace, transportMode, preferredUnitId, inputFieldEvidence.sourcePlace?.status, specialCargoDeclaration, documentEvidenceText]);
+  }), [sourceTotal, currency, cargoDescription, quantityDescription, sourceLineCount, commercialItems, packedVolumeM3, grossWeightKg, sourcePlace, targetPlace, transportMode, preferredUnitId, inputFieldEvidence.sourcePlace?.status, specialCargoDeclaration, documentEvidenceText]);
 
   const preparedCostLines = useMemo(() => {
     const benchmarkByComponent = new Map(productionEstimate.costLines.map((line) => [line.component, line]));
@@ -1141,7 +1143,7 @@ export default function LogisticsCostingApp() {
       input: calculationInput,
       result,
       snapshot: {
-        schemaVersion: "2.0",
+        schemaVersion: "2.1",
         productionEstimate,
         effectiveCostLines: preparedCostLines,
         costInputStates,
@@ -1150,7 +1152,7 @@ export default function LogisticsCostingApp() {
         workspaceMode,
         transportMode,
         primaryWarnings: currentPrimaryWarnings,
-        sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod })),
+        sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence })),
       },
     };
     persistSavedCases([savedCase, ...savedCases]);
@@ -1177,7 +1179,7 @@ export default function LogisticsCostingApp() {
       productionEstimate,
       effectiveCostLines: preparedCostLines,
       warnings: currentPrimaryWarnings,
-      sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod })),
+      sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence })),
     };
   }
 
@@ -1207,7 +1209,6 @@ export default function LogisticsCostingApp() {
       <button aria-current={clientSurface === "welcome" ? "page" : undefined} onClick={() => setClientSurface("welcome")} type="button">Overview</button>
       <button aria-current={clientSurface === "intake" || clientSurface === "result" ? "page" : undefined} onClick={startNewCalculation} type="button">New calculation</button>
       <button aria-current={clientSurface === "cases" ? "page" : undefined} onClick={() => { setSelectedCaseId(null); setSelectedCaseView("result"); setClientSurface("cases"); }} type="button">Saved cases <span>{savedCases.length}</span></button>
-      <button aria-current={clientSurface === "audit" ? "page" : undefined} onClick={() => setClientSurface("audit")} type="button">Calculation details / audit</button>
     </nav>
   );
 
@@ -1265,7 +1266,7 @@ export default function LogisticsCostingApp() {
 
             <div className="cost-transformation-bridge" aria-label="Tender Logistics Cost transformation">
               <span className="story-arrow" aria-hidden="true">→</span>
-              <div className="cost-agent-medallion"><small>TENDER APPS</small><strong>TENDER</strong><b>LOGISTICS COST</b></div>
+              <div className="cost-agent-medallion"><small>TENDER APPS</small><strong>TENDER</strong><b>LOGISTICS<br />COST</b></div>
               <ol>
                 <li>READ</li><li>STRUCTURE</li><li>ESTIMATE CARGO</li><li>SIZE TRANSPORT</li><li>PRICE LOGISTICS</li><li>EXPLAIN</li>
               </ol>
@@ -1326,7 +1327,19 @@ export default function LogisticsCostingApp() {
             <article><span>03</span><strong>Commercial summary</strong><p>Keep the logistics addition primary and the revised commercial total secondary.</p></article>
           </div>
         </section>
-        <section className="client-trust-note"><strong>How it works</strong><p>The calculation is deterministic and runs locally in your browser. No AI tokens are used. Missing cargo and rate values may be estimated only from visible, versioned proxies and benchmarks; they are never presented as source facts or live quotations.</p><button onClick={() => setClientSurface("audit")} type="button">Review calculation architecture</button></section>
+        <section className="client-trust-note">
+          <strong>How it works</strong>
+          <p>The calculation is deterministic and runs locally in your browser. No AI tokens are used. Missing cargo and rate values may be estimated only from visible, versioned proxies and benchmarks; they are never presented as source facts or live quotations.</p>
+          <details className="calculation-architecture-overview">
+            <summary>Review calculation architecture</summary>
+            <div className="architecture-overview-grid">
+              <article><span>01 · INPUTS</span><strong>Evidence and explicit client inputs</strong><p>Quotation facts, client corrections and named assumptions remain separately identified.</p></article>
+              <article><span>02 · MODELS</span><strong>Deterministic rules and versioned references</strong><p>Incoterms, cargo estimation, transport capacity, freight benchmarks and insurance are calculated without an AI call.</p></article>
+              <article><span>03 · RESULT</span><strong>One canonical calculation</strong><p>The dashboard, saved Case, quick explanations and Excel export use the same result and provenance.</p></article>
+              <article><span>04 · REVIEW</span><strong>Client control remains explicit</strong><p>Estimated values stay editable; missing or uncertain inputs remain visible and approval is a separate action.</p></article>
+            </div>
+          </details>
+        </section>
         <footer className="costing-footer"><div><strong>TenderApps</strong><span>Tender Logistics Cost · guided and auditable</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
       </main>
     );
