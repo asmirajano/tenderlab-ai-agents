@@ -8,6 +8,7 @@ import {
   layerById,
   platformSideLabels,
   projectAgentCaseEvidence,
+  realAgentImplementationsForAgent,
   tenderDatasets,
   tierLabels,
   datasetImpactOperationByRelationship,
@@ -71,6 +72,7 @@ function FullSpecification({ agent }: { agent: AgentSpecification }) {
   const gaps = agentDatasetGaps.filter((item) => item.agentId === agent.registryId);
   const evidence = caseEvidence.filter((item) => item.agentId === agent.registryId);
   const revisions = agentRevisions.filter((item) => item.agentId === agent.registryId);
+  const implementations = realAgentImplementationsForAgent(agent.registryId);
   const layer = layerById[agent.layer];
 
   return <article className="agent-specification" style={{ "--item-color": layer.color } as CSSProperties}>
@@ -127,7 +129,11 @@ function FullSpecification({ agent }: { agent: AgentSpecification }) {
         <section className="spec-section"><span>CHANGE HISTORY</span><div className="spec-revision-list">{revisions.map((revision) => <article key={revision.id}><div><b>V{revision.toVersion}</b><i>{revision.date} · {revision.status}</i></div><strong>{revision.summary}</strong><p>{revision.rationale}</p><small>{revision.changedFields.join(" · ")}</small></article>)}</div></section>
       </SpecificationBlock>
 
-      <SpecificationBlock number="08" title="Realistic Example" description="A simulated case showing the specification in practical use.">
+      {implementations.length > 0 && <SpecificationBlock number="08" title="Real Implementations" description="Client-facing products that implement this canonical capability without redefining the Agent.">
+        <section className="spec-section"><span>IMPLEMENTATION REGISTRY</span><div className="spec-implementation-list">{implementations.map((implementation) => <article key={implementation.id}><div><b>{implementation.maturity.replaceAll("-", " ")}</b><i>{implementation.deploymentStatus.replaceAll("-", " ")}</i></div><h3>{implementation.name}</h3><p>{implementation.primaryOutput}</p><footer><small>{implementation.id}</small><a href={`/real-agents/implementations#${implementation.slug}`}>Open implementation dossier →</a></footer></article>)}</div></section>
+      </SpecificationBlock>}
+
+      <SpecificationBlock number={implementations.length > 0 ? "09" : "08"} title="Realistic Example" description="A simulated case showing the specification in practical use.">
         <section className="spec-section spec-example"><span>DEMO · SIMULATED</span><h3>{agent.example.company}</h3><strong>{agent.example.item}</strong><p>{agent.example.result}</p></section>
       </SpecificationBlock>
     </div>

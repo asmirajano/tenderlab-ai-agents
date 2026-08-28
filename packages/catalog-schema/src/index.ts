@@ -1,6 +1,7 @@
 export type CatalogueStatus = "draft" | "validated" | "deprecated";
 
-export * from "./agent-specification";
+export * from "./agent-specification.ts";
+export * from "./real-agent-development.ts";
 
 export type LocalizedText = {
   en: string;

@@ -1,6 +1,6 @@
 # Real Tender Agent Development Methodology
 
-Status: initial methodology distilled from the 2026-08-27 TenderBalance and TENDER LOGISTICS COST production-development cycles.
+Status: approved consolidated methodology, revised 2026-08-28 after independent audits of the shared development cycle, TenderBalance, and TENDER LOGISTICS COST.
 
 Machine-readable contract: [`real-tender-agent-development-policy.json`](./real-tender-agent-development-policy.json)
 
@@ -18,6 +18,20 @@ The layers remain deliberately separate:
 
 “Production” in this document means the approved real client-facing workflow and release surface. It does not imply an enterprise runtime. Authentication, tenant isolation, durable Process Instances and Artifacts, server-side approval enforcement, and governed live data remain separate readiness questions.
 
+## Consolidated conclusion
+
+An approved Agent concept becomes a reliable practical Agent only through an evidence-governed, Case-scoped, and versioned transformation process. A polished interface, a passing synthetic fixture, or a successful deployment does not prove that uncertain intelligence works on real evidence.
+
+The development method therefore keeps five identities aligned:
+
+1. **source identity** — what input is authoritative, structural, supporting, or asserted;
+2. **value identity** — what is reported, calculated, estimated, assumed, or missing;
+3. **result identity** — which complete canonical result and Case every view, export, and handoff represents;
+4. **workflow identity** — whether that result is draft, preliminary, reviewed, approved, or released; and
+5. **release identity** — which input, code/model version, output artifact, and validation verdict were actually verified.
+
+Client comprehension is part of correctness. The product must explain what the client provides, what the Agent does, what finished product is returned, why it is or is not ready, and the next permitted action.
+
 ## Core principle
 
 When the intelligence itself is uncertain—document understanding, semantic extraction, classification, estimation, or recommendation—**experiment first**. Do not put the proposed intelligence directly into the production path and then use the client interface as the experiment.
@@ -28,21 +42,25 @@ The experiment must use authorized realistic evidence, preserve inspectable inte
 
 | Stage | Work | Exit evidence |
 |---|---|---|
-| 1. Approved concept | Confirm canonical placement, TOR, negative scope, human authority, and product boundary. | Placement decision, TOR, owner, authority boundary. |
-| 2. Real input/output contract | Define what the client provides, what the Agent must return, the primary finished product, consumer, and handoff. | Versioned input and output contract with stable identity and trace fields. |
-| 3. Realistic evidence set | Select permitted real/anonymized examples and clearly labelled synthetic edge cases. | Evidence manifest, confidentiality decision, expected outputs or review rubric. |
-| 4. Isolated experiment | Exercise uncertain intelligence outside the production workflow. | Reproducible input, raw/intermediate/final outputs, timings, failure state. |
-| 5. Inspect actual output | Compare every expected field, value, source reference, calculation, exception, and user-visible state. | Field-level observation record and product-purpose assessment. |
-| 6. Diagnose failures | Record each material issue as What happened → Root cause → Correction → Reusable rule. | Cause supported by code/data evidence rather than a symptom guess. |
-| 7. Refine and repeat | Apply the smallest general correction and re-run the evidence set. | Improved output without file-specific names, pages, amounts, or answer keys in production logic. |
-| 8. Approve methodology | Obtain approval for the method, accepted limitations, and production move. | Explicit methodology acceptance and bounded implementation scope. |
-| 9. Implement production Agent | Connect the approved method to the canonical result, client workflow, saved Case, export, and downstream handoff. | One end-to-end production result with truthful readiness and recovery. |
-| 10. Verify realistic production cases | Replay authorized realistic cases through the actual build, including failures and recovery. | Observed output comparison, browser evidence, and known limitations. |
-| 11. Add regression safeguards | Encode observed failure shapes and contract invariants. | Focused negative/positive tests, production build, proportionate full suite. |
-| 12. Authorized release | Publish only after explicit release authorization and verify the deployed revision. | Release record, revision identity, live route/result verification. |
-| 13. Feed lessons back | Update the general method only for reusable rules and the Agent package for domain-specific learning. | Updated skill/instructions/knowledge, limitations, and next experiment. |
+| 1. Knowledge-layer and placement gate | Confirm the approved canonical Agent placement and identify which of the three knowledge layers may change. | Placement decision, preserved strategy boundary, named Agent-specific owner. |
+| 2. Purpose and authority contract | Define TOR, primary client purpose, negative scope, human authority, and prohibited autonomous decisions. | Approved TOR, owner, authority boundary, unsupported-decision list. |
+| 3. Real input/output contract | Define what the client provides, what the Agent must return, the primary finished product, consumer, and handoff. | Versioned input/output contract with stable identity and trace fields. |
+| 4. Canonical data contract | Define source roles, value classes, provenance, trust dimensions, Case identity, workflow states, and artifact identity. | Versioned schema/policy with normalization and derivation rules. |
+| 5. Evidence plan | Select permitted realistic examples and clearly labelled synthetic edge cases; define comparison criteria and confidentiality handling. | Evidence manifest, evidence-strength labels, expected outputs or review rubric. |
+| 6. Isolated experiment | Exercise uncertain intelligence outside the production workflow. | Reproducible input, raw/intermediate/final outputs, timings, and failure state. |
+| 7. Actual-output audit | Compare every expected field, source reference, transformation, calculation, exception, artifact, and user-visible state. | Field-level observations, purpose assessment, and artifact inspection. |
+| 8. Failure-layer diagnosis | Locate the failing phase and record What happened → Root cause → Correction → Reusable rule → Regression evidence. | Evidence-supported diagnosis at the asset, decoding, perception, structure, mapping, validation, review, persistence, or export layer. |
+| 9. Correct and repeat | Apply the smallest general correction and re-run the representative evidence set. | Improved outputs without filename, page, amount, or answer-key shortcuts. |
+| 10. Methodology approval | Approve the method, acceptance thresholds, limitations, and bounded production move. | Explicit acceptance, confidence criteria, and production scope. |
+| 11. Production integration | Connect the approved method to one complete canonical result, explicit Case, exports, and downstream handoffs. | One versioned composite result drives every consumer. |
+| 12. Human-workflow integration | Implement actionable blockers and distinct persistence, review, approval, and release transitions. | Truthful `draft → preliminary → reviewed → approved → released` behavior and recovery routes. |
+| 13. Production verification | Replay realistic and failure cases through the actual build and inspect generated artifacts. | Focused/full tests, build, browser/accessibility evidence, and output comparison. |
+| 14. Release-evidence gate | Bind the candidate to code/model version, evidence, outputs, validation verdict, limitations, and current documentation. | Fresh release ledger with no stale test count, artifact, or revision claim. |
+| 15. Authorized deployment | Publish only after explicit release authorization and verify the deployed revision. | Deployment record, exact revision, routes, assets, and security posture. |
+| 16. Deployed-equivalent replay | Re-run authorized representative inputs against the released or exactly equivalent build. | Archived result identities, parity verdict, observations, and recovery evidence. |
+| 17. Knowledge feedback | Add only independently reusable learning to this methodology and retain domain rules in the owning Agent. | Separated general updates, Agent-specific regressions, limitations, and next experiment. |
 
-Stages 4–7 are a loop. A method moves to production because its outputs and limitations are understood, not because one sample happens to pass.
+Stages 6–9 are the empirical loop; stages 11–13 are the production-hardening loop. A method moves forward because representative outputs, failure boundaries, and limitations are understood—not because one sample, test suite, or deployment happens to pass.
 
 ## Canonical evidence and result contract
 
@@ -57,6 +75,19 @@ A document or input first receives a role:
 
 This role gate precedes field mapping. A form that visually resembles a client statement is not evidence that its populated examples belong to the client.
 
+User input is an origin, not automatically a value class. A user-entered value may be source-backed, calculated, estimated, assumed, or a correction; classify it from its evidence and derivation rather than from who typed it.
+
+### Preserve source structure before semantic mapping
+
+Format adapters should recover the strongest inspectable intermediate structure available before domain mapping:
+
+- PDF coordinates, lines, pages, reading order, and meaningful column gaps;
+- spreadsheet sheets, rows, columns, headers, merged regions, formulas, and printed totals;
+- OCR regions, page candidates, recognition alternatives, and confidence; and
+- document, statement, table, or section boundaries.
+
+Deterministic structural arithmetic and reconciliation should be attempted before declaring a required value `MISSING`, when the product contract permits that calculation. The calculation remains a separate `CALCULATED` record; it never overwrites the reported source value.
+
 ### Separate value meaning
 
 | Class | Meaning | Required trace |
@@ -68,6 +99,8 @@ This role gate precedes field mapping. A form that visually resembles a client s
 | `MISSING` | No supported value exists. It is not zero and has no invented number. | Required purpose/field, reason unavailable, requested recovery action, blocking effect. |
 
 Document role, value class, confidence, and review status are separate dimensions. Agent-specific vocabularies may be more detailed, but they must map to these meanings without collapsing user input, template content, estimates, and source facts into one provenance field.
+
+The classes are not a universal overwrite hierarchy. `SOURCE → CALCULATED → ESTIMATED → ASSUMED → MISSING` can describe a product-specific search for a usable value, but all supported values must remain inspectable when they coexist or disagree. A versioned product policy selects the effective value for a specific purpose.
 
 ### Block only when semantics require it
 
@@ -81,15 +114,29 @@ Document role, value class, confidence, and review status are separate dimension
 
 An unrequested year, optional enrichment, or unavailable income-statement field in a deliberately partial balance-derived form is not automatically a workflow blocker. Conversely, an unreadable required balance total cannot become ready merely because some other field was extracted.
 
-### One canonical result model
+### One complete canonical result model
 
-The same versioned model must drive:
+The same versioned composite model must drive:
 
 `intake → normalized evidence → validations/calculations → primary result → saved Case → export → downstream form or Agent handoff`
+
+Completeness includes the headline answer and its explanatory submodels: source facts, normalization, formulas, estimates, assumptions, exceptions, confidence/trust, human changes, workflow state, visuals, and artifact identities. Do not persist only the commercial or financial headline while a separate transient model drives explanation, packing, transport, validation, or exports.
 
 Do not reconstruct a second “display result” from raw UI state. Never silently replace a reported value with a calculated, corrected, estimated, or assumed value. Show reported versus calculated values and their difference when they disagree.
 
 Agent/global pages explain or initiate a reusable capability. A Case result is a versioned output for one explicit Case. Result and downstream-form URLs retain the Case ID and never fall back to “latest” when an ID is missing or stale.
+
+### Separate extraction confidence from overall trust
+
+A high recognition score does not make a semantically impossible result trustworthy. Evaluate at least these dimensions when relevant:
+
+1. **recognition** — were characters, cells, and figures read reliably;
+2. **structural** — were pages, tables, rows, columns, periods, and hierarchy reconstructed correctly;
+3. **semantic** — were source roles, entities, fields, classifications, and units mapped correctly;
+4. **arithmetic/domain** — do totals, formulas, and domain relationships reconcile without silent correction; and
+5. **review** — which uncertainties, corrections, or approvals remain under human authority.
+
+The displayed trust/readiness verdict must account for contradictions among these dimensions. Preserve the component evidence instead of reducing every dimension to one extraction percentage.
 
 ## Client product and workflow rules
 
@@ -98,10 +145,54 @@ Agent/global pages explain or initiate a reusable capability. A Case result is a
 - Visualizations explain the result. A truck/loading view must reconcile with cargo and capacity calculations; a financial preview must reflect the canonical statement. Decorative diagrams must not imply unsupported facts.
 - Precision must match provenance. Exact source/calculated values remain exact; estimates use approximation, confidence, basis, and vintage.
 - A disabled action must explain the exact blocker, the remaining count, the next action, and where it occurs. Readiness activates automatically when requirements are satisfied.
-- Approval and a saved Case are the workflow outcome. JSON/CSV/Excel are optional outputs, not substitutes for an inspectable persistent result.
+- Saving, reviewing, approving, and releasing are separate transitions. When the product contract allows a truthful partial result, let the client retain a clearly labelled preliminary Case without weakening formal approval or release gates.
+- Use explicit workflow states such as `draft → preliminary → reviewed → approved → released`. Do not present an incomplete or assumed result as approved merely because it was persisted.
+- The saved, inspectable Case is the primary workflow outcome. JSON/CSV/Excel are optional outputs, not substitutes for the Case history and canonical result.
 - A legacy or stale Case must receive an explicit recovery route. No client should reverse-engineer the state machine from disabled buttons.
 
-## Today’s failure audit
+## Failure-layer diagnosis
+
+Before correcting a symptom, identify which phase failed:
+
+1. asset or module loading;
+2. file decoding or format support;
+3. OCR or other perception;
+4. structural reconstruction;
+5. semantic mapping or classification;
+6. arithmetic/domain validation;
+7. human review/readiness;
+8. Case persistence/navigation; or
+9. export/downstream transformation.
+
+A failure in one layer must not be reported as another. For example, a stale browser chunk is not OCR failure, readable text with collapsed columns is not low recognition confidence, and an unmapped source value is not evidence that the source omitted it.
+
+## Evidence strength, artifact parity, and release
+
+Describe evidence strength explicitly. A useful minimum ladder is:
+
+1. unit or synthetic fixture;
+2. isolated authorized realistic document;
+3. local production-build replay;
+4. deployed smoke verification; and
+5. deployed or deployed-equivalent representative replay.
+
+Do not use a lower level as evidence for a higher claim. Every retained result or release candidate should bind:
+
+- input identity or safe hash;
+- explicit Case and result identity;
+- extraction/calculation/model and code version;
+- output artifact identity or hash;
+- validation and trust verdict;
+- workflow/release status; and
+- known limitations and authorization basis.
+
+Treat earlier artifacts as immutable historical evidence, not as proof of the current build. Validate release notes and test counts against current automated results so stale documentation cannot become release evidence.
+
+Post-deployment replay must respect confidentiality. Use public, synthetic, anonymized, or explicitly authorized inputs on the public surface. Test protected client material only in a secure authorized environment or locally against the exact released build, retaining safe hashes and observations rather than publishing the documents.
+
+## Consolidated failure audit
+
+The examples below are evidence for the general rules, not a domain-rule catalogue. FIN mappings, accounting equations, Incoterm logic, freight, insurance, OCR patterns, and benchmark amounts remain in their owning Agent documentation and tests.
 
 | What happened | Root cause | Correction | Reusable rule | Regression evidence |
 |---|---|---|---|---|
@@ -124,7 +215,7 @@ Agent/global pages explain or initiate a reusable capability. A Case result is a
 
 ## Automated safeguards and evidence map
 
-The policy manifest makes the lifecycle order, knowledge layers, provenance classes, blocking rule, failure-audit fields, and minimum test families machine-checkable. `tests/real-tender-agent-development-methodology.test.mjs` protects that contract and verifies that project instructions and this document remain discoverable.
+The policy manifest makes the lifecycle order, knowledge layers, provenance classes, trust dimensions, workflow states, failure layers, artifact-parity fields, blocking rule, failure-audit fields, and minimum test families machine-checkable. `tests/real-tender-agent-development-methodology.test.mjs` protects that contract and verifies that project instructions and this document remain discoverable.
 
 Concrete behavior remains protected in the owning suites rather than duplicated here:
 
@@ -142,6 +233,8 @@ Concrete behavior remains protected in the owning suites rather than duplicated 
 4. Browser-local Cases are not durable Artifacts. Authentication, tenant authorization, immutable versioning, approval enforcement, retention, and server-side audit remain production-runtime work.
 5. Several UI safeguards are source-level contract tests. A future test layer should add multi-browser, keyboard, tablet, mobile, stale-release, and persisted-Case end-to-end coverage.
 6. Every completed real-Agent cycle should append only genuinely general lessons here; extraction patterns, Incoterms rules, FIN fields, and benchmark amounts stay in the owning Agent’s files.
+7. Overall trust calibration still needs representative labelled corpora and empirically justified thresholds; extraction confidence alone must not be presented as result trust.
+8. Release evidence is not yet generated as one automated parity ledger across every practical Agent. Until it is, revision, artifact, test, documentation, and replay freshness require an explicit audit.
 
 ## End-of-cycle handoff template
 
@@ -151,7 +244,9 @@ Concrete behavior remains protected in the owning suites rather than duplicated 
 | Experiment evidence | Authorized realistic examples, actual outputs, and comparison observations are retained safely. |
 | Failure audit | Each important failure includes cause, general correction, reusable rule, and regression. |
 | Production result | One canonical result drives UI, Case, exports, and downstream handoffs. |
-| Verification | Focused tests, realistic replay, production build, and proportionate full suite pass. |
+| Trust and readiness | Recognition, structure, semantic mapping, arithmetic/domain checks, and human review are assessed without collapsing contradictions into one score. |
+| Persistence states | Draft/preliminary retention, review, approval, and release are distinct and truthful. |
+| Verification | Focused tests, realistic replay, production build, generated-artifact inspection, and proportionate full suite pass. |
 | Limitations | Unsupported formats, data sources, security/runtime gaps, and uncertainty are visible. |
-| Release status | Commit/revision, deployment authorization, live verification, or explicit not-deployed state is recorded. |
+| Release status | Input/result identities, code/model revision, artifact verdict, deployment authorization, replay evidence, or explicit not-deployed state are recorded. |
 | Methodology feedback | General lessons, Agent-specific updates, and the next experiment are separated. |

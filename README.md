@@ -57,6 +57,7 @@ Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 ### Tender Ecosystem Atlas
 
 - \`/\` — catalogue overview and product boundary
+- \`/real-agents\` — the human-facing bridge from approved Agent strategy to validated real implementations, reusable patterns, and lessons learned
 - \`/orchestration\` — admin Process registry, Agent executions, Artifacts and production-readiness gaps
 - \`/actors\` — Tender Sides and institutional Actor Types
 - \`/data\` — logical datasets, sources/providers, architecture and proprietary assets

@@ -19,8 +19,11 @@ Before implementing uncertain extraction, classification, estimation, or decisio
 - inspect actual outputs and record failures as `What happened → Root cause → Correction → Reusable rule → Regression evidence`;
 - separate source documents, structure-only templates, supporting material, and explicit user assertions before canonicalization;
 - preserve `SOURCE`, `CALCULATED`, `ESTIMATED`, `ASSUMED`, and `MISSING` semantics even when an Agent uses more specific local vocabulary;
-- drive the primary result, saved Case, exports, and downstream forms from one canonical result model;
+- recover format-aware structure before semantic mapping, and diagnose whether a failure belongs to loading, decoding, perception, structure, mapping, validation, review, persistence, or export;
+- drive the primary result, saved Case, exports, visuals, and downstream forms from one complete canonical composite result model;
 - keep Agent/global pages separate from Case-scoped outputs and retain explicit Case identity;
-- block only on semantically required information, and give the client an actionable next step for every blocker.
+- treat recognition, structural, semantic, arithmetic/domain, and human-review confidence as distinct dimensions rather than presenting extraction confidence as overall trust;
+- block only on semantically required information, and give the client an actionable next step for every blocker;
+- keep persistence, review, approval, and release as distinct truthful states, including preliminary Case retention when the product contract permits it.
 
-Use synthetic fixtures only when they are clearly labelled. Never commit or deploy confidential source documents for regression convenience. Run the relevant focused tests plus the production build and broader suite in proportion to the change. Deployment remains a separately authorized release gate.
+Use synthetic fixtures only when they are clearly labelled. Never commit or deploy confidential source documents for regression convenience. Run the relevant focused tests plus the production build and broader suite in proportion to the change. Bind release evidence to input/result identity, code or model version, generated artifacts, validation verdict, and current documentation. Deployment remains a separately authorized release gate and must be followed by an authorized deployed-equivalent representative replay when the claim requires it.

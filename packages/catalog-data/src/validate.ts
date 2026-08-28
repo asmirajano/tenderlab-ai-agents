@@ -1,11 +1,80 @@
-import { assertUniqueCatalogueRecords } from "../../catalog-schema/src";
-import { actorTypes, tenderSides } from "./actors";
-import { dataFamilies, dataSources, tenderDatasets } from "./datasets";
-import { glossaryTerms } from "./glossary";
-import { validateAgentDatasetRelationships } from "./agent-dataset-relations";
-import { agentRelationships } from "./agent-relationships";
-import { agentRevisions } from "./agent-revisions";
-import { agentSpecifications } from "./agents";
+import {
+  assertUniqueCatalogueRecords,
+  realAgentImplementationIdPattern,
+  realAgentLessonIdPattern,
+  realAgentPatternIdPattern,
+} from "../../catalog-schema/src/index.ts";
+import { actorTypes, tenderSides } from "./actors.ts";
+import { clientProducts } from "./client-products.ts";
+import { dataFamilies, dataSources, tenderDatasets } from "./datasets.ts";
+import { glossaryTerms } from "./glossary.ts";
+import { validateAgentDatasetRelationships } from "./agent-dataset-relations.ts";
+import { agentRelationships } from "./agent-relationships.ts";
+import { agentRevisions } from "./agent-revisions.ts";
+import { agentSpecifications } from "./agents.ts";
+import {
+  realAgentImplementations,
+  realAgentLessons,
+  realAgentReusablePatterns,
+} from "./real-agent-development.ts";
+
+function assertUniqueValues(values: string[], label: string) {
+  if (new Set(values).size !== values.length) throw new Error(`${label} must be unique.`);
+}
+
+export function validateRealAgentDevelopmentKnowledge() {
+  assertUniqueValues(realAgentImplementations.map((item) => item.id), "Real Agent implementation IDs");
+  assertUniqueValues(realAgentImplementations.map((item) => item.slug), "Real Agent implementation slugs");
+  assertUniqueValues(realAgentReusablePatterns.map((item) => item.id), "Real Agent pattern IDs");
+  assertUniqueValues(realAgentReusablePatterns.map((item) => item.slug), "Real Agent pattern slugs");
+  assertUniqueValues(realAgentLessons.map((item) => item.id), "Real Agent lesson IDs");
+
+  const agentIds = new Set(agentSpecifications.map((item) => item.registryId));
+  const productsById = new Map(clientProducts.map((item) => [item.id, item]));
+  const implementationIds = new Set(realAgentImplementations.map((item) => item.id));
+  const patternIds = new Set(realAgentReusablePatterns.map((item) => item.id));
+  const lessonIds = new Set(realAgentLessons.map((item) => item.id));
+
+  for (const item of realAgentImplementations) {
+    if (!realAgentImplementationIdPattern.test(item.id)) throw new Error(`Invalid Real Agent implementation ID ${item.id}`);
+    if (!agentIds.has(item.ownerAgentId)) throw new Error(`${item.id} references unknown Agent ${item.ownerAgentId}`);
+    const product = productsById.get(item.clientProductId);
+    if (!product) throw new Error(`${item.id} references unknown client product ${item.clientProductId}`);
+    if (product.ownerAgentId !== item.ownerAgentId) throw new Error(`${item.id} disagrees with its client product owner.`);
+    if (!item.methodRefs.length || !item.playbookRefs.length) throw new Error(`${item.id} needs methodology and playbook references.`);
+    if (!item.primaryInputs.length || !item.primaryOutput || !item.knownLimitations.length) throw new Error(`${item.id} needs an inspectable product contract and limitations.`);
+    for (const patternId of item.patternIds) if (!patternIds.has(patternId)) throw new Error(`${item.id} references unknown pattern ${patternId}`);
+    for (const lessonId of item.lessonIds) if (!lessonIds.has(lessonId)) throw new Error(`${item.id} references unknown lesson ${lessonId}`);
+    if (item.runtimeReadiness === "static-client-workflow" && item.maturity === "enterprise-runtime") throw new Error(`${item.id} inflates static workflow maturity.`);
+  }
+
+  for (const pattern of realAgentReusablePatterns) {
+    if (!realAgentPatternIdPattern.test(pattern.id)) throw new Error(`Invalid Real Agent pattern ID ${pattern.id}`);
+    if (!pattern.confirmedByImplementationIds.length || !pattern.methodologyGateIds.length) throw new Error(`${pattern.id} needs evidence and methodology gates.`);
+    for (const id of pattern.confirmedByImplementationIds) {
+      if (!implementationIds.has(id)) throw new Error(`${pattern.id} references unknown implementation ${id}`);
+      if (!realAgentImplementations.find((item) => item.id === id)?.patternIds.includes(pattern.id)) throw new Error(`${pattern.id} is missing its reverse implementation link.`);
+    }
+    for (const lessonId of pattern.lessonIds) if (!lessonIds.has(lessonId)) throw new Error(`${pattern.id} references unknown lesson ${lessonId}`);
+  }
+
+  for (const lesson of realAgentLessons) {
+    if (!realAgentLessonIdPattern.test(lesson.id)) throw new Error(`Invalid Real Agent lesson ID ${lesson.id}`);
+    if (!lesson.implementationIds.length || !lesson.regressionRefs.length) throw new Error(`${lesson.id} needs implementation and regression evidence.`);
+    if (lesson.evidenceScope === "multiple-implementations" && lesson.implementationIds.length < 2) throw new Error(`${lesson.id} overstates its evidence scope.`);
+    if (lesson.classification === "agent-specific" && !lesson.playbookRefs.length) throw new Error(`${lesson.id} needs an owning playbook.`);
+    for (const id of lesson.implementationIds) {
+      if (!implementationIds.has(id)) throw new Error(`${lesson.id} references unknown implementation ${id}`);
+      if (!realAgentImplementations.find((item) => item.id === id)?.lessonIds.includes(lesson.id)) throw new Error(`${lesson.id} is missing its reverse implementation link.`);
+    }
+  }
+
+  return {
+    implementations: realAgentImplementations.length,
+    patterns: realAgentReusablePatterns.length,
+    lessons: realAgentLessons.length,
+  };
+}
 
 export function validateAgentSpecifications() {
   if (agentSpecifications.length !== 64) throw new Error(`Expected 64 Agent Specifications, got ${agentSpecifications.length}`);
@@ -60,5 +129,6 @@ export function validateEcosystemCatalogues() {
     sources: dataSources.length,
     glossaryTerms: glossaryTerms.length,
     agentDatasetRelationships: validateAgentDatasetRelationships(),
+    realAgentDevelopment: validateRealAgentDevelopmentKnowledge(),
   };
 }
