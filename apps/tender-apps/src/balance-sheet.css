@@ -62,6 +62,7 @@ button, input, select { font: inherit; }
 .bs-case-context-identity > div { align-items: baseline; display: flex; flex-wrap: wrap; gap: 6px 10px; min-width: 0; }
 .bs-case-context-identity > div > span { color: var(--bs-green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; letter-spacing: .08em; }
 .bs-case-context-identity strong { font-size: var(--type-card-title); letter-spacing: -.025em; }
+.bs-case-context-identity strong { max-width: 100%; overflow-wrap: anywhere; }
 .bs-case-context-identity small { color: #6d7c74; font-size: var(--type-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bs-case-output-nav { align-items: center; background: #edf2ef; border: 1px solid #d7e0da; border-radius: 999px; display: flex; flex: 0 0 auto; gap: 3px; padding: 4px; }
 .bs-case-output-nav button { align-items: center; background: transparent; border: 0; border-radius: 999px; color: #607068; cursor: pointer; display: inline-flex; font-size: var(--type-control); font-weight: 820; gap: 7px; min-height: 40px; padding: 8px 14px; }

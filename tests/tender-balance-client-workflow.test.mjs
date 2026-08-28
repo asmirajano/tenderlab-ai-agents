@@ -7,6 +7,8 @@ const cssUrl = new URL("../apps/tender-apps/src/balance-sheet.css", import.meta.
 const manifestoUrl = new URL("../apps/tender-apps/src/client-product-manifesto.tsx", import.meta.url);
 const workspaceUrl = new URL("../apps/tender-apps/src/collapsible-workspace.tsx", import.meta.url);
 const finWorkspaceUrl = new URL("../apps/tender-apps/src/fin-forms-workspace.tsx", import.meta.url);
+const finSharedUrl = new URL("../apps/tender-apps/src/fin-form-shared.tsx", import.meta.url);
+const fin2WorkspaceUrl = new URL("../apps/tender-apps/src/fin2-workspace.tsx", import.meta.url);
 const finCssUrl = new URL("../apps/tender-apps/src/fin-forms.css", import.meta.url);
 
 test("TenderBalance starts with a clean client surface and keeps demos separate", async () => {
@@ -124,8 +126,8 @@ test("TenderBalance Focus Mode is keyboard accessible and restores page scrollin
   assert.match(css, /@media \(max-width: 650px\)[\s\S]+\.bs-workspace-controls/);
 });
 
-test("TenderBalance continues from the digitized result into the FIN-1 workflow", async () => {
-  const [source, finWorkspace] = await Promise.all([readFile(appUrl, "utf8"), readFile(finWorkspaceUrl, "utf8")]);
+test("TenderBalance continues from the digitized result into the shared FIN-1 and FIN-2 workflow", async () => {
+  const [source, finWorkspace, finShared, fin2Workspace] = await Promise.all([readFile(appUrl, "utf8"), readFile(finWorkspaceUrl, "utf8"), readFile(finSharedUrl, "utf8"), readFile(fin2WorkspaceUrl, "utf8")]);
 
   assert.match(source, /Prepare this Case’s FIN Forms/);
   assert.match(source, /navigateTo\(\{ surface: "fin", caseId: review\.reviewId/);
@@ -133,7 +135,14 @@ test("TenderBalance continues from the digitized result into the FIN-1 workflow"
   assert.match(finWorkspace, /FIN-1/);
   assert.match(finWorkspace, /Historical Financial Performance/);
   assert.match(finWorkspace, /Review FIN-1 mapping/);
-  assert.match(finWorkspace, /Generate FIN-1/);
+  assert.match(finWorkspace, /Generate \{targetCurrency\} FIN-1/);
+  assert.match(finWorkspace, /<FinCurrencySwitcher/);
+  assert.match(finShared, /FIN presentation currency/);
+  assert.match(finShared, /\["USD", "EUR"\]/);
+  assert.match(finWorkspace, /FORM FIN–2/);
+  assert.match(finWorkspace, /Review FIN-2 mapping/);
+  assert.match(fin2Workspace, /Average Annual Turnover/);
+  assert.match(fin2Workspace, /Single bidder · no JV logic/);
   assert.match(finWorkspace, /Source &amp; Mapping/);
   assert.match(finWorkspace, /Re-digitize source/);
   assert.match(finWorkspace, /Re-digitize or add source/);
@@ -154,7 +163,7 @@ test("TenderBalance separates Agent pages from selected-Case outputs", async () 
   assert.match(source, /aria-label={`Selected case: \$\{identity\}`}/);
   assert.match(source, /aria-label={`\$\{review\.statement\.reportingEntity\} case outputs`}/);
   assert.match(source, />Result<\/button>/);
-  assert.match(source, />FIN Forms <span>FIN-1<\/span>/);
+  assert.match(source, />FIN Forms <span>FIN-1 · FIN-2<\/span>/);
   assert.match(source, /resolveBalanceCase\(availableReviews, selectedReviewId\)/);
   assert.doesNotMatch(source, /resolveBalanceCase\(availableReviews, selectedReviewId\) \?\?/);
 });
@@ -165,7 +174,7 @@ test("FIN-1 UI exposes the source-role gate, truthful blockers, and dynamic peri
   assert.match(finWorkspace, /SOURCE-ROLE GATE/);
   assert.match(finWorkspace, /TEMPLATE/);
   assert.match(finWorkspace, /technically blocked from client financial data/);
-  assert.match(finWorkspace, /form\.years\.map/);
+  assert.match(finWorkspace, /presentedForm\.years\.map/);
   assert.match(finWorkspace, /mapping\.sourceSummary/);
   assert.match(finWorkspace, /Resolve the blocking source mappings/);
   assert.match(finWorkspace, /disabled=\{!canGenerate\}/);
@@ -179,8 +188,22 @@ test("FIN-1 UI exposes the source-role gate, truthful blockers, and dynamic peri
 test("FIN-1 offers a native Excel export alongside CSV and audit navigation", async () => {
   const finWorkspace = await readFile(finWorkspaceUrl, "utf8");
 
-  assert.match(finWorkspace, /Export FIN-1 Excel/);
+  assert.match(finWorkspace, /Export \{presentedForm\.currency\} FIN-1 Excel/);
   assert.match(finWorkspace, /Export CSV/);
   assert.match(finWorkspace, /fin1ToExcel/);
   assert.match(finWorkspace, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
+});
+
+test("FIN-2 UI exposes source turnover, year-end FX, calculated average, and case-scoped inputs", async () => {
+  const [fin2Workspace, finCss] = await Promise.all([readFile(fin2WorkspaceUrl, "utf8"), readFile(finCssUrl, "utf8")]);
+
+  assert.match(fin2Workspace, /tenderapps:fin2-case-input:\$\{review\.reviewId\}/);
+  assert.match(fin2Workspace, /Original turnover/);
+  assert.match(fin2Workspace, /Exchange rate/);
+  assert.match(fin2Workspace, /convertedProvenance/);
+  assert.match(fin2Workspace, /averageAnnualTurnover\.formula/);
+  assert.match(fin2Workspace, /Export \{comparisonCurrency\} FIN-2 Excel/);
+  assert.match(fin2Workspace, /Template examples and JV\/Consortium fields are excluded/);
+  assert.match(finCss, /\.fin2-mapping-table \{[^}]*min-width/);
+  assert.match(finCss, /\.fin2-admin-grid/);
 });

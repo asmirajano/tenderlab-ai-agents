@@ -1,6 +1,8 @@
 /* eslint-disable no-useless-escape -- XML attributes stay visually explicit inside template literals. */
 import type { BalanceSheetReview } from "./model.ts";
 import { FIN1_FIELDS, type Fin1Form } from "./fin-forms.ts";
+import type { PresentedFin1Form } from "./fin1-fx.ts";
+import type { Fin2Form } from "./fin2.ts";
 
 type CellValue = string | number | null | undefined;
 type CellSpec = { value: CellValue; style?: number };
@@ -201,12 +203,16 @@ export function reviewToExcel(review: BalanceSheetReview) {
   return workbookZip(sheets);
 }
 
-export function fin1ExcelFileName(review: BalanceSheetReview) {
+export function fin1ExcelFileName(review: BalanceSheetReview, presentationCurrency?: string) {
   const stem = review.source.fileName.replace(/\.[^.]+$/, "").replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "financial-source";
-  return `${stem}-FIN-1.xlsx`;
+  return `${stem}-FIN-1${presentationCurrency ? `-${presentationCurrency}` : ""}.xlsx`;
 }
 
-export function fin1ToExcel(form: Fin1Form) {
+function isPresentedFin1(form: Fin1Form | PresentedFin1Form): form is PresentedFin1Form {
+  return "presentationVersion" in form;
+}
+
+export function fin1ToExcel(form: Fin1Form | PresentedFin1Form) {
   const formRows: CellSpec[][] = [
     [text("FIN-1 — Historical Financial Performance", 1)],
     [text("Applicant", 2), text(form.entity), text("Generation status", 2), text(form.readiness.status)],
@@ -223,22 +229,125 @@ export function fin1ToExcel(form: Fin1Form) {
     ]),
   ];
 
-  const mappingRows: CellSpec[][] = [
-    [text("FIN-1 — Source & Mapping Audit", 1)],
-    ["Field", "Year", "Value", "Currency", "Unit scale", "Provenance", "Source summary", "Original periods", "Reported value", "Calculated value", "Difference", "Formula", "Status", "Source IDs"].map((header) => text(header, 3)),
+  const mappingRows: CellSpec[][] = isPresentedFin1(form)
+    ? [
+        [text("FIN-1 — Source & Mapping Audit", 1)],
+        ["Field", "Year", "Source value", "Source currency", "Source unit scale", "Source provenance", "Source reported", "Source calculated", "Source difference", "Presented value", "FIN currency", "FIN unit scale", "FIN provenance", "Presented reported", "Presented calculated", "Presented difference", "Source summary", "Original periods", "Status", "Source IDs"].map((header) => text(header, 3)),
+        ...form.mappings.map((mapping) => {
+          const issueStyle = mapping.status === "missing" || mapping.status === "source-inconsistency" ? 8 : 0;
+          return [
+            text(mapping.label, issueStyle), text(mapping.displayYear), number(mapping.sourceValue), text(mapping.sourceCurrency), number(mapping.sourceUnitScale, 0),
+            text(mapping.sourceProvenance ?? "MISSING", issueStyle), number(mapping.sourceReportedValue), number(mapping.sourceCalculatedValue), number(mapping.sourceDifference),
+            number(mapping.value), text(mapping.currency), number(mapping.unitScale, 0), text(mapping.provenance ?? "MISSING", issueStyle),
+            number(mapping.reportedValue), number(mapping.calculatedValue), number(mapping.difference), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
+            text(mapping.status, issueStyle), text(mapping.sourceIds.join(" | "), 9),
+          ];
+        }),
+      ]
+    : [
+        [text("FIN-1 — Source & Mapping Audit", 1)],
+        ["Field", "Year", "Value", "Currency", "Unit scale", "Provenance", "Source summary", "Original periods", "Reported value", "Calculated value", "Difference", "Formula", "Status", "Source IDs"].map((header) => text(header, 3)),
+        ...form.mappings.map((mapping) => {
+          const issueStyle = mapping.status === "missing" || mapping.status === "source-inconsistency" ? 8 : 0;
+          return [
+            text(mapping.label, issueStyle), text(mapping.displayYear), number(mapping.value), text(mapping.currency), number(mapping.unitScale, 0),
+            text(mapping.provenance ?? "MISSING", issueStyle), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
+            number(mapping.reportedValue), number(mapping.calculatedValue), number(mapping.difference), text(mapping.calculationFormula ?? ""),
+            text(mapping.status, issueStyle), text(mapping.sourceIds.join(" | "), 9),
+          ];
+        }),
+      ];
+
+  const mappingWidths = isPresentedFin1(form)
+    ? [28, 12, 16, 14, 13, 16, 17, 17, 16, 17, 14, 13, 16, 18, 18, 17, 48, 24, 20, 52]
+    : [28, 12, 16, 12, 12, 15, 48, 24, 18, 18, 16, 38, 22, 52];
+  const sheets = [
+    { name: "FIN-1 Form", xml: worksheetXml({ rows: formRows, widths: [34, ...form.years.map(() => 23), 24], freezeRow: 6, autoFilterRow: 6, mergeTitle: true }) },
+    { name: "Source & Mapping", xml: worksheetXml({ rows: mappingRows, widths: mappingWidths, freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
+  ];
+  if (isPresentedFin1(form)) {
+    const fxRows: CellSpec[][] = [
+      [text("FIN-1 — FX Conversion Audit", 1)],
+      [text("Provider", 2), text(form.fxDataset.provider), text("Dataset", 2), text(form.fxDataset.datasetId)],
+      [text("Source currency", 2), text(form.sourceCurrency), text("FIN currency", 2), text(form.currency)],
+      [text("Archive range", 2), text(`${form.fxDataset.range.from} — ${form.fxDataset.range.to}`), text("Observation hash", 2), text(form.fxDataset.normalizedObservationSha256, 9)],
+      [],
+      ["Field", "Year", "Source value", "Source currency", "Presented value", "FIN currency", "Rate type", "Target / source rate", "Closing date", "Observations", "Provider", "Dataset", "Formula", "Provenance"].map((header) => text(header, 3)),
+      ...form.mappings.map((mapping) => [
+        text(mapping.label), text(mapping.displayYear), number(mapping.sourceValue), text(mapping.sourceCurrency), number(mapping.value), text(mapping.currency),
+        text(mapping.fx?.rateType ?? "MISSING", mapping.fx ? 0 : 8), number(mapping.fx?.targetUnitsPerSourceUnit), text(mapping.fx?.closingDate ?? ""),
+        number(mapping.fx?.observationCount, 0), text(mapping.fx?.provider ?? ""), text(mapping.fx?.datasetId ?? ""), text(mapping.fx?.formula ?? "", 9),
+        text(mapping.fx?.provenance ?? "MISSING", mapping.fx ? 0 : 8),
+      ]),
+    ];
+    sheets.push({ name: "FX Conversion Audit", xml: worksheetXml({ rows: fxRows, widths: [28, 12, 18, 14, 18, 14, 14, 20, 14, 13, 38, 30, 48, 14], freezeRow: 6, autoFilterRow: 6, mergeTitle: true }) });
+  }
+  return workbookZip(sheets);
+}
+
+export function fin2ExcelFileName(review: BalanceSheetReview, comparisonCurrency: string) {
+  const stem = review.source.fileName.replace(/\.[^.]+$/, "").replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "financial-source";
+  return `${stem}-FIN-2-${comparisonCurrency}.xlsx`;
+}
+
+export function fin2ToExcel(form: Fin2Form) {
+  const formRows: CellSpec[][] = [
+    [text("FIN-2 — Size of Operation (Average Annual Turnover)", 1)],
+    [text("Bidder", 2), text(form.bidder.value ?? "MISSING"), text("Bidder model", 2), text("Single bidder")],
+    [text("Bidding process", 2), text(form.biddingProcess.value ?? "MISSING"), text("Invitation number", 2), text(form.invitationNumber.value ?? "MISSING")],
+    [text("Purchaser", 2), text(form.purchaser.value ?? "MISSING"), text("Comparison currency", 2), text(form.comparisonCurrency)],
+    [text("Historical coverage", 2), text(form.coverage.message), text("Exchange-rate basis", 2), text("Year-end closing rate")],
+    [],
+    ["Year", `Amount (${form.sourceCurrency} · ${form.sourceUnitLabel})`, `Exchange rate (${form.sourceCurrency} per ${form.comparisonCurrency})`, `${form.comparisonCurrency} equivalent`, "Status"].map((header) => text(header, 3)),
     ...form.mappings.map((mapping) => {
-      const issueStyle = mapping.status === "missing" || mapping.status === "source-inconsistency" ? 8 : 0;
+      const issueStyle = mapping.status === "ready" ? 0 : 8;
       return [
-        text(mapping.label, issueStyle), text(mapping.displayYear), number(mapping.value), text(mapping.currency), number(mapping.unitScale, 0),
-        text(mapping.provenance ?? "MISSING", issueStyle), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
-        number(mapping.reportedValue), number(mapping.calculatedValue), number(mapping.difference), text(mapping.calculationFormula ?? ""),
-        text(mapping.status, issueStyle), text(mapping.sourceIds.join(" | "), 9),
+        text(mapping.displayYear, issueStyle),
+        mapping.sourceValue === null ? text("MISSING", issueStyle) : number(mapping.sourceValue / mapping.sourceUnitScale),
+        mapping.sourceUnitsPerComparisonUnit === null ? text("MISSING", issueStyle) : number(mapping.sourceUnitsPerComparisonUnit),
+        mapping.convertedValue === null ? text("MISSING", issueStyle) : number(mapping.convertedValue),
+        text(mapping.status, issueStyle),
       ];
     }),
+    [],
+    [text("Average Annual Turnover", 4), text(""), text(""), form.averageAnnualTurnover.value === null ? text("MISSING", 8) : number(form.averageAnnualTurnover.value, 4), text(form.comparisonCurrency, 4)],
+    [text("Calculation", 2), text(form.averageAnnualTurnover.formula, 9), text("Years included", 2), text(form.averageAnnualTurnover.yearsIncluded.join(" · ") || "NONE")],
+  ];
+
+  const mappingRows: CellSpec[][] = [
+    [text("FIN-2 — Source & Mapping Audit", 1)],
+    ["Year", "FIN-2 field", "Original label", "Original period", "Raw reported value", "Source value", "Source currency", "Source unit scale", "Source provenance", "Source page", "Source summary", "Converted value", "Comparison currency", "Conversion formula", "Status", "Action", "Source IDs"].map((header) => text(header, 3)),
+    ...form.mappings.map((mapping) => {
+      const issueStyle = mapping.status === "ready" ? 0 : 8;
+      return [
+        text(mapping.displayYear, issueStyle), text(mapping.label, issueStyle), text(mapping.originalLabels.join(" / ")), text(mapping.originalPeriods.join(" / ")),
+        text(mapping.rawReportedValues.join(" / ")), number(mapping.sourceValue), text(mapping.sourceCurrency), number(mapping.sourceUnitScale, 0),
+        text(mapping.sourceProvenance, issueStyle), text(mapping.sourcePages.join(", ")), text(mapping.sourceSummary, 9), number(mapping.convertedValue),
+        text(mapping.comparisonCurrency), text(mapping.conversionFormula ?? "", 9), text(mapping.status, issueStyle), text(mapping.action ?? ""), text(mapping.sourceIds.join(" | "), 9),
+      ];
+    }),
+    [],
+    [text("Average Annual Turnover", 4), text(form.averageAnnualTurnover.value), text(form.averageAnnualTurnover.currency), text(form.averageAnnualTurnover.provenance), text(form.averageAnnualTurnover.formula, 9), text(form.averageAnnualTurnover.mappingIds.join(" | "), 9)],
+  ];
+
+  const fxRows: CellSpec[][] = [
+    [text("FIN-2 — FX Conversion Audit", 1)],
+    [text("Provider", 2), text(form.fxDataset.provider), text("Dataset", 2), text(form.fxDataset.datasetId)],
+    [text("Source currency", 2), text(form.sourceCurrency), text("Comparison currency", 2), text(form.comparisonCurrency)],
+    [text("Archive range", 2), text(`${form.fxDataset.range.from} — ${form.fxDataset.range.to}`), text("Observation hash", 2), text(form.fxDataset.normalizedObservationSha256, 9)],
+    [],
+    ["Year", "Rate basis", `Published quote (${form.sourceCurrency} per ${form.comparisonCurrency})`, "Applied target/source rate", "Closing date", "Observations", "Provider", "Dataset", "Formula", "Provenance"].map((header) => text(header, 3)),
+    ...form.mappings.map((mapping) => [
+      text(mapping.displayYear), text(mapping.exchangeRate?.rateType ?? "MISSING", mapping.exchangeRate ? 0 : 8), number(mapping.sourceUnitsPerComparisonUnit),
+      number(mapping.exchangeRate?.targetUnitsPerSourceUnit), text(mapping.exchangeRate?.closingDate ?? ""), number(mapping.exchangeRate?.observationCount, 0),
+      text(mapping.exchangeRate?.provider ?? ""), text(mapping.exchangeRate?.datasetId ?? ""), text(mapping.conversionFormula ?? "", 9),
+      text(mapping.exchangeRate?.provenance ?? "MISSING", mapping.exchangeRate ? 0 : 8),
+    ]),
   ];
 
   return workbookZip([
-    { name: "FIN-1 Form", xml: worksheetXml({ rows: formRows, widths: [34, ...form.years.map(() => 23), 24], freezeRow: 6, autoFilterRow: 6, mergeTitle: true }) },
-    { name: "Source & Mapping", xml: worksheetXml({ rows: mappingRows, widths: [28, 12, 16, 12, 12, 15, 48, 24, 18, 18, 16, 38, 22, 52], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
+    { name: "FIN-2 Form", xml: worksheetXml({ rows: formRows, widths: [24, 34, 28, 24, 24], freezeRow: 7, autoFilterRow: 7, mergeTitle: true }) },
+    { name: "Source & Mapping", xml: worksheetXml({ rows: mappingRows, widths: [12, 22, 32, 20, 20, 18, 14, 14, 20, 12, 48, 18, 16, 54, 24, 42, 54], freezeRow: 2, autoFilterRow: 2, mergeTitle: true }) },
+    { name: "FX Conversion Audit", xml: worksheetXml({ rows: fxRows, widths: [12, 16, 24, 24, 16, 14, 38, 30, 54, 16], freezeRow: 6, autoFilterRow: 6, mergeTitle: true }) },
   ]);
 }

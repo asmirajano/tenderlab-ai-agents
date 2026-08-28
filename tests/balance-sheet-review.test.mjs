@@ -10,6 +10,7 @@ import {
   canApproveStatement,
   compareBalanceSheetReviews,
   correctLineItemValue,
+  detectPeriods,
   parseStatementLine,
   parseReportedNumber,
   reviewToCsv,
@@ -219,6 +220,57 @@ test("parses a clean text-layer extraction envelope and image-only failure safel
   });
   assert.ok(imageOnly.issues.some((issue) => issue.code === "OCR_REQUIRED" && issue.severity === "blocking"));
   assert.equal(imageOnly.lineItems.length, 0);
+});
+
+test("normalizes English statutory comparative columns with page-specific years across statement sets", () => {
+  assert.deepEqual(detectPeriods(
+    "At the beginning of the reporting period\nAt the end of the reporting period",
+    "2023",
+  ), ["2022", "2023"]);
+  assert.deepEqual(detectPeriods(
+    "For corresponding period last year\nFor accounting period",
+    "2023",
+  ), ["2022", "2023"]);
+
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:statutory-comparatives", fileName: "SYNTHETIC_STATUTORY_COMPARATIVES.pdf", mimeType: "application/pdf", sha256: "synthetic", pageCount: 6, synthetic: true },
+    pages: [
+      { pageNumber: 1, text: "AUDIT REPORT\nThe report is addressed to: OOO ALPHA TRADING\nFinancial statements for 2022" },
+      { pageNumber: 2, text: "Accounting balance sheet - form No. 1\nFourth quarter of 2022" },
+      { pageNumber: 3, text: [
+        "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period\nAt the end of the reporting period",
+        "Total current assets\t390\t700,00\t1 000,00",
+        "Total balance sheet asset\t400\t1 000,00\t1 400,00",
+        "Owners' equity\t480\t400,00\t600,00",
+        "Total current liabilities\t600\t500,00\t700,00",
+        "Total liabilities\t770\t600,00\t800,00",
+      ].join("\n") },
+      { pageNumber: 4, text: "Report on financial results - Form No.2\nFourth quarter of 2022\nFor corresponding period last year\nFor accounting period" },
+      { pageNumber: 5, text: "AUDIT REPORT\nFinancial statements for 2023" },
+      { pageNumber: 6, text: [
+        "Accounting balance form No. 1",
+        "Fourth quarter of 2023",
+        "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period\nAt the end of the reporting period",
+        "Total current assets\t390\t1 000,00\t1 300,00",
+        "Total balance sheet asset\t400\t1 400,00\t1 800,00",
+        "Owners' equity\t480\t600,00\t800,00",
+        "Total current liabilities\t600\t700,00\t900,00",
+        "Total liabilities\t770\t800,00\t1 000,00",
+      ].join("\n") },
+    ],
+  });
+
+  assert.equal(review.statement.reportingEntity, "ALPHA TRADING LLC");
+  assert.equal(review.statement.reportingDate, "2023");
+  assert.deepEqual(review.statement.periods, ["2021", "2022", "2023"]);
+  assert.equal(review.statement.currency, "UZS");
+  assert.equal(review.statement.unitScale, 1_000);
+  assert.equal(review.pages.find((page) => page.pageNumber === 3)?.reportingYear, "2022");
+  assert.equal(review.pages.find((page) => page.pageNumber === 6)?.reportingYear, "2023");
+  const equationChecks = review.arithmeticChecks.filter((check) => check.formula === "assets = liabilities + equity");
+  assert.deepEqual(equationChecks.map((check) => [check.period, check.status]), [["2021", "passed"], ["2022", "passed"], ["2023", "passed"]]);
 });
 
 test("reads text from a real synthetic digital PDF without external services", async () => {

@@ -265,7 +265,7 @@ function CaseWorkspaceNav({ review, active, context, demoMode, onCases, onResult
       </div>
       <nav aria-label={`${review.statement.reportingEntity} case outputs`} className="bs-case-output-nav">
         <button aria-current={active === "review" ? "page" : undefined} onClick={onResult} type="button">Result</button>
-        <button aria-current={active === "fin" ? "page" : undefined} onClick={onFin} type="button">FIN Forms <span>FIN-1</span></button>
+        <button aria-current={active === "fin" ? "page" : undefined} onClick={onFin} type="button">FIN Forms <span>FIN-1 · FIN-2</span></button>
       </nav>
     </section>
   );
@@ -979,8 +979,8 @@ function BalanceSheetWorkspace() {
 
         {resultReady && (
           <section className="fin-next-stage">
-            <div><span>NEXT WORKFLOW STAGE</span><h3>Prepare IFI Financial Forms</h3><p>Use the canonical financial dataset to review mappings and generate FIN-1 — Historical Financial Performance.</p></div>
-            <div><b>{fin1.readiness.status === "ready" ? "FIN-1 ready" : fin1.readiness.status === "partial" ? "FIN-1 partially ready" : "Period review needed"}</b><small>{fin1.years.length ? `${fin1.years.join(" · ")} · ${fin1.readiness.missingFields} missing field${fin1.readiness.missingFields === 1 ? "" : "s"}` : "No reliable FIN year available"}</small><button className="bs-primary-action" onClick={() => navigateTo({ surface: "fin", caseId: review.reviewId, demo: demoMode })} type="button">Prepare this Case’s FIN Forms <span aria-hidden="true">→</span></button></div>
+            <div><span>NEXT WORKFLOW STAGE</span><h3>Prepare IFI Financial Forms</h3><p>Use the canonical financial dataset to review mappings and generate FIN-1 Historical Performance or FIN-2 Average Annual Turnover.</p></div>
+            <div><b>{fin1.readiness.status === "ready" ? "FIN forms ready" : fin1.readiness.status === "partial" ? "FIN forms partially ready" : "Period review needed"}</b><small>{fin1.years.length ? `${fin1.years.join(" · ")} · ${fin1.readiness.missingFields} missing FIN-1 field${fin1.readiness.missingFields === 1 ? "" : "s"}` : "No reliable FIN year available"}</small><button className="bs-primary-action" onClick={() => navigateTo({ surface: "fin", caseId: review.reviewId, demo: demoMode })} type="button">Prepare this Case’s FIN Forms <span aria-hidden="true">→</span></button></div>
           </section>
         )}
 

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tenderlab.ai/schemas/fin2-size-of-operation.schema.json",
+  "title": "TenderBalance FIN-2 Size of Operation (Average Annual Turnover)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "templateId", "title", "bidderModel", "bidder", "biddingProcess", "invitationNumber", "purchaser", "sourceCurrency", "sourceUnitLabel", "sourceUnitScale", "comparisonCurrency", "comparisonUnitLabel", "comparisonUnitScale", "exchangeRateBasis", "years", "mappings", "averageAnnualTurnover", "readiness", "coverage", "fxDataset"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "templateId": { "const": "FIN-2" },
+    "title": { "const": "Size of Operation (Average Annual Turnover)" },
+    "bidderModel": { "const": "SINGLE_BIDDER" },
+    "bidder": { "$ref": "#/$defs/administrativeField" },
+    "biddingProcess": { "$ref": "#/$defs/administrativeField" },
+    "invitationNumber": { "$ref": "#/$defs/administrativeField" },
+    "purchaser": { "$ref": "#/$defs/administrativeField" },
+    "sourceCurrency": { "type": "string", "minLength": 1 },
+    "sourceUnitLabel": { "type": "string", "minLength": 1 },
+    "sourceUnitScale": { "type": "number", "exclusiveMinimum": 0 },
+    "comparisonCurrency": { "enum": ["USD", "EUR"] },
+    "comparisonUnitLabel": { "const": "units" },
+    "comparisonUnitScale": { "const": 1 },
+    "exchangeRateBasis": { "const": "closing" },
+    "years": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(19|20)[0-9]{2}$" },
+      "uniqueItems": true
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "field", "label", "displayYear", "sourceValue", "sourceCurrency", "sourceUnitLabel", "sourceUnitScale", "sourceProvenance", "sourceIds", "sourceSummary", "originalLabels", "originalPeriods", "sourcePages", "rawReportedValues", "exchangeRate", "sourceUnitsPerComparisonUnit", "convertedValue", "comparisonCurrency", "comparisonUnitScale", "convertedProvenance", "conversionFormula", "status", "action"],
+        "properties": {
+          "id": { "type": "string" },
+          "field": { "const": "annual_turnover" },
+          "label": { "const": "Annual Turnover" },
+          "displayYear": { "type": "string", "pattern": "^(19|20)[0-9]{2}$" },
+          "sourceValue": { "type": ["number", "null"] },
+          "sourceCurrency": { "type": "string" },
+          "sourceUnitLabel": { "type": "string" },
+          "sourceUnitScale": { "type": "number", "exclusiveMinimum": 0 },
+          "sourceProvenance": { "enum": ["SOURCE", "CALCULATED", "USER_INPUT", "ESTIMATED", "TEMPLATE_EXAMPLE", "MISSING", "MAPPING_REVIEW_REQUIRED"] },
+          "sourceIds": { "type": "array", "items": { "type": "string" } },
+          "sourceSummary": { "type": "string" },
+          "originalLabels": { "type": "array", "items": { "type": "string" } },
+          "originalPeriods": { "type": "array", "items": { "type": "string" } },
+          "sourcePages": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+          "rawReportedValues": { "type": "array", "items": { "type": "string" } },
+          "exchangeRate": { "type": ["object", "null"] },
+          "sourceUnitsPerComparisonUnit": { "type": ["number", "null"] },
+          "convertedValue": { "type": ["number", "null"] },
+          "comparisonCurrency": { "enum": ["USD", "EUR"] },
+          "comparisonUnitScale": { "const": 1 },
+          "convertedProvenance": { "enum": ["CALCULATED", "MISSING"] },
+          "conversionFormula": { "type": ["string", "null"] },
+          "status": { "enum": ["ready", "missing", "mapping-review-required", "extraction-problem", "fx-rate-missing"] },
+          "action": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "averageAnnualTurnover": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "currency", "unitScale", "provenance", "yearsIncluded", "mappingIds", "formula"],
+      "properties": {
+        "value": { "type": ["number", "null"] },
+        "currency": { "enum": ["USD", "EUR"] },
+        "unitScale": { "const": 1 },
+        "provenance": { "enum": ["CALCULATED", "MISSING"] },
+        "yearsIncluded": { "type": "array", "items": { "type": "string", "pattern": "^(19|20)[0-9]{2}$" } },
+        "mappingIds": { "type": "array", "items": { "type": "string" } },
+        "formula": { "type": "string" }
+      }
+    },
+    "readiness": { "type": "object" },
+    "coverage": { "type": "object" },
+    "fxDataset": { "type": "object" }
+  },
+  "$defs": {
+    "administrativeField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "provenance"],
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "provenance": { "enum": ["SOURCE", "USER_INPUT", "MISSING"] }
+      }
+    }
+  }
+}

@@ -108,6 +108,46 @@ test("isolates statement-local periods and reconstructs FIN-1 from balance and i
   assert.equal(dataset.sources.find((source) => revenue2023.sourceIds.includes(source.sourceId)).page, 3);
 });
 
+test("maps adjacent statutory statement sets across all years and corroborates the overlapping year", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:adjacent-statutory-fin", fileName: "SYNTHETIC_ADJACENT_STATUTORY_FIN.pdf", sha256: "synthetic-adjacent", synthetic: true },
+    pages: [
+      { pageNumber: 1, extractionMethod: "digital-text", confidence: 0.99, text: [
+        "SYNTHETIC STATUTORY COMPANY LLC", "Accounting balance sheet - Form No.1", "Fourth quarter of 2022", "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period", "At the end of the reporting period",
+        "Total current assets\t390\t1 000,00\t1 200,00", "Total balance sheet asset\t400\t1 500,00\t1 800,00", "Owners' equity\t480\t900,00\t1 100,00",
+        "Total current liabilities\t600\t400,00\t500,00", "Total liabilities\t770\t600,00\t700,00",
+      ].join("\n") },
+      { pageNumber: 2, extractionMethod: "digital-text", confidence: 0.99, text: [
+        "SYNTHETIC STATUTORY COMPANY LLC", "REPORT ON FINANCIAL RESULTS - Form No.2", "Fourth quarter of 2022", "Unit of measurement, thousand soums",
+        "For corresponding period last year", "For accounting period",
+        "Total revenue\t010\t2 000,00\t2 500,00", "Profit before tax\t240\t200,00\t250,00", "Profit after tax\t270\t160,00\t200,00",
+      ].join("\n") },
+      { pageNumber: 3, extractionMethod: "digital-text", confidence: 0.99, text: [
+        "SYNTHETIC STATUTORY COMPANY LLC", "Accounting balance sheet - Form No.1", "Fourth quarter of 2023", "Unit of measurement, thousand soums",
+        "At the beginning of the reporting period", "At the end of the reporting period",
+        "Total current assets\t390\t1 200,00\t1 400,00", "Total balance sheet asset\t400\t1 800,00\t2 100,00", "Owners' equity\t480\t1 100,00\t1 300,00",
+        "Total current liabilities\t600\t500,00\t600,00", "Total liabilities\t770\t700,00\t800,00",
+      ].join("\n") },
+      { pageNumber: 4, extractionMethod: "digital-text", confidence: 0.99, text: [
+        "SYNTHETIC STATUTORY COMPANY LLC", "Report on financial results - form No.2", "Fourth quarter of 2023", "Unit of measurement, thousand soums",
+        "For corresponding period last year", "For reporting period",
+        "Total revenue\t010\t2 500,00\t3 000,00", "Profit before tax\t240\t250,00\t300,00", "Profit after tax\t270\t200,00\t240,00",
+      ].join("\n") },
+    ],
+  });
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+  assert.deepEqual(form.years, ["2021", "2022", "2023"]);
+  assert.equal(form.mappings.length, 27);
+  assert.equal(form.mappings.every((mapping) => mapping.status === "ready"), true, JSON.stringify(form.mappings.filter((mapping) => mapping.status !== "ready")));
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_assets" && mapping.displayYear === "2023")?.value, 2_100_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2021")?.value, 2_000_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2023")?.value, 240_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_assets" && mapping.displayYear === "2022")?.sourceIds.length, 2);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2022")?.sourceIds.length, 2);
+  assert.equal(dataset.issues.some((issue) => issue.type === "source-inconsistency"), false);
+});
+
 test("digitizes a synthetic Uzbek Form 1 into English canonical labels and generates FIN-1", () => {
   const review = buildBalanceSheetReview({
     source: {

@@ -6,6 +6,8 @@
   "exports": {
     "./model": "./src/model.ts",
     "./fin-forms": "./src/fin-forms.ts",
+    "./fin1-fx": "./src/fin1-fx.ts",
+    "./fin2": "./src/fin2.ts",
     "./file-reader": "./src/file-reader.ts",
     "./ocr": "./src/ocr.ts",
     "./excel": "./src/excel.ts",

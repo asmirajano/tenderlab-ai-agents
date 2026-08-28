@@ -1,0 +1,32 @@
+{
+  "evidence_level": "local-production-path-replay",
+  "source_file": "wor-ex991_2704.pdf",
+  "source_sha256": "f2541eae747e20cdbe424c924d48d6b9b02a19195926fb875c945fc2309e5770",
+  "source_committed": false,
+  "source_page_inspected": 5,
+  "independent_benchmark": {
+    "entity": "WORTHINGTON ARMSTRONG VENTURE",
+    "source_label": "Net sales",
+    "source_currency": "USD",
+    "source_units": "thousands",
+    "years": ["2018", "2019", "2020"],
+    "reported_turnover": [374973, 393246, 343318],
+    "expected_average_usd": 370512333.3333333
+  },
+  "generated_fin2": {
+    "years": ["2018", "2019", "2020"],
+    "ready_years": 3,
+    "missing_years": 0,
+    "problem_years": 0,
+    "historical_coverage": "3/3 sufficient",
+    "source_pages": [5],
+    "converted_turnover_usd": [374973000, 393246000, 343318000],
+    "average_annual_turnover_usd": 370512333.3333333,
+    "provenance": "SOURCE turnover + identity FX + CALCULATED average"
+  },
+  "comparison_verdict": "Exact field-level match",
+  "limitations": [
+    "Tender administrative fields were intentionally absent and remained explicit browser-local user-input gaps.",
+    "The authorized source PDF was read locally and was not copied into the repository."
+  ]
+}

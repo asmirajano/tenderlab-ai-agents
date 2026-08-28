@@ -1,0 +1,49 @@
+{
+  "fixture": "SYNTHETIC FIN-2 TEMPLATE CONTAMINATION REGRESSION — NOT CLIENT EVIDENCE",
+  "financialSource": {
+    "source": {
+      "documentId": "synthetic:fin2-financial-source",
+      "fileName": "SYNTHETIC_FIN2_FINANCIAL_SOURCE.pdf",
+      "mimeType": "application/pdf",
+      "sha256": "synthetic-fin2-financial-source",
+      "pageCount": 2,
+      "expectedPageCount": 2,
+      "synthetic": true,
+      "processingVersion": "tender-balance/fin2-regression"
+    },
+    "pages": [
+      {
+        "pageNumber": 1,
+        "extractionMethod": "digital-text",
+        "confidence": 0.99,
+        "text": "SYNTHETIC SOURCE COMPANY LLC\nBalance Sheets\nDecember 31, 2021 and 2020\nUSD units\nTotal current assets 80 70\nTotal assets 100 90\nTotal current liabilities 20 18\nTotal liabilities 60 55\nTotal partners' equity 40 35\nTotal liabilities and partners' equity 100 90"
+      },
+      {
+        "pageNumber": 2,
+        "extractionMethod": "digital-text",
+        "confidence": 0.99,
+        "text": "SYNTHETIC SOURCE COMPANY LLC\nStatements of Income\nYears ended December 31, 2021 and 2020\nNet revenue 720 600\nProfit before tax 90 75\nNet income 72 60"
+      }
+    ]
+  },
+  "populatedTemplate": {
+    "source": {
+      "documentId": "synthetic:populated-fin2-template",
+      "fileName": "SYNTHETIC_POPULATED_FIN2_TEMPLATE.pdf",
+      "mimeType": "application/pdf",
+      "sha256": "synthetic-populated-fin2-template",
+      "pageCount": 1,
+      "expectedPageCount": 1,
+      "synthetic": true,
+      "processingVersion": "tender-balance/fin2-regression"
+    },
+    "pages": [
+      {
+        "pageNumber": 1,
+        "extractionMethod": "digital-text",
+        "confidence": 0.99,
+        "text": "SYNTHETIC TEMPLATE EXAMPLE — STRUCTURE ONLY\nForm FIN-2: Size of Operation (Average Annual Turnover)\nBidder name: TEMPLATE EXAMPLE BIDDER\nPurchaser: TEMPLATE EXAMPLE PURCHASER\nAnnual Turnover Data for the Last 3 Years\n2022 6 133 512 11 225.46 546 393\n2023 23 763 193 12 338.77 1 925 896\n2024 9 386 124 12 920.48 726 453\nAverage Annual Turnover 1 066 248"
+      }
+    ]
+  }
+}

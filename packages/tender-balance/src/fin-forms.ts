@@ -133,6 +133,7 @@ export type CanonicalFinancialDataset = {
     action: string;
     field?: Fin1FieldId;
     displayYear?: string;
+    sourceIds?: string[];
   }>;
 };
 
@@ -330,10 +331,6 @@ function roleRegistration(input: FinancialDatasetInput): FinancialDocumentRegist
   };
 }
 
-function firstConcept(review: BalanceSheetReview, concept: BalanceSheetConcept) {
-  return review.lineItems.find((item) => item.normalizedConcept === concept);
-}
-
 function isExplicitReportedZero(raw: string) {
   return /^(?:[$€£₾]\s*)?[—–-]$/.test(raw.trim());
 }
@@ -373,30 +370,42 @@ function valueForConcept(
   role: FinancialDocumentRole,
   sources: CanonicalFinancialSource[],
 ): CanonicalFinancialValue | null {
-  const item = firstConcept(review, concept);
-  const lineValue = item?.values.find((candidate) => candidate.period === originalPeriod);
-  if (!item || !lineValue) return null;
-  const value = effectiveNormalizedValue(item, originalPeriod) ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null);
-  if (value === null) return null;
-  const provenance: FinancialProvenance = lineValue.correction ? "USER_INPUT" : "SOURCE";
-  const source = sourceFor(review, item, originalPeriod, displayYear, role, provenance);
-  if (!source) return null;
-  sources.push(source);
-  const extractionProblem = item.confidence < 0.8;
+  const candidates = review.lineItems.flatMap((item) => {
+    if (item.normalizedConcept !== concept) return [];
+    const lineValue = item.values.find((candidate) => candidate.period === originalPeriod);
+    if (!lineValue) return [];
+    const value = effectiveNormalizedValue(item, originalPeriod) ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null);
+    if (value === null) return [];
+    const provenance: FinancialProvenance = lineValue.correction ? "USER_INPUT" : "SOURCE";
+    const source = sourceFor(review, item, originalPeriod, displayYear, role, provenance);
+    return source ? [{ item, lineValue, value, provenance, source }] : [];
+  });
+  if (!candidates.length) return null;
+
+  for (const candidate of candidates) {
+    if (!sources.some((source) => source.sourceId === candidate.source.sourceId)) sources.push(candidate.source);
+  }
+
+  const primary = candidates[0];
+  const conflicting = candidates.some((candidate) =>
+    candidate.source.documentId !== primary.source.documentId
+      || Math.abs(candidate.value - primary.value) > tolerance(review.statement.unitScale));
+  const extractionProblem = candidates.some((candidate) => candidate.item.confidence < 0.8);
+  const provenance: FinancialProvenance = candidates.some((candidate) => candidate.provenance === "USER_INPUT") ? "USER_INPUT" : "SOURCE";
   return {
     id: `value:${field}:${displayYear}:${review.source.documentId}`,
     field,
     displayYear,
-    value,
+    value: primary.value,
     currency: review.statement.currency,
     unitScale: review.statement.unitScale,
-    reportedValue: lineValue.normalizedValue ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null),
+    reportedValue: primary.lineValue.normalizedValue ?? (isExplicitReportedZero(primary.lineValue.rawReportedValue) ? 0 : null),
     calculatedValue: null,
     difference: null,
     provenance,
-    sourceIds: [source.sourceId],
-    status: extractionProblem ? "extraction-problem" : "ready",
-    problemType: extractionProblem ? "extraction-problem" : undefined,
+    sourceIds: candidates.map((candidate) => candidate.source.sourceId),
+    status: conflicting ? "source-inconsistency" : extractionProblem ? "extraction-problem" : "ready",
+    problemType: conflicting ? "source-inconsistency" : extractionProblem ? "extraction-problem" : undefined,
   };
 }
 
@@ -428,7 +437,20 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
     }
     for (const [field, concept] of Object.entries(BALANCE_FIELD_CONCEPTS) as Array<[Fin1FieldId, BalanceSheetConcept]>) {
       const mapped = valueForConcept(review, concept, field, period.originalPeriod, period.displayYear, input.role, dataset.sources);
-      if (mapped) dataset.values.push(mapped);
+      if (mapped) {
+        dataset.values.push(mapped);
+        if (mapped.status === "source-inconsistency") {
+          pushIssue(dataset, {
+            id: `issue:balance-conflict:${review.source.documentId}:${field}:${period.displayYear}`,
+            type: "source-inconsistency",
+            field,
+            displayYear: period.displayYear,
+            sourceIds: [...mapped.sourceIds],
+            message: `Two eligible balance-statement rows report different ${FIN1_FIELDS.find((definition) => definition.id === field)?.label ?? field} values for ${period.displayYear}. Neither value was silently replaced.`,
+            action: "Review the conflicting source rows",
+          });
+        }
+      }
     }
 
     const totalLiabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
@@ -525,16 +547,19 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /маҳсулот.*сотишдан соф тушум/iu] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
   { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
   { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];
+
+const TURNOVER_REVIEW_PATTERNS = [/^(?:total )?sales$/i, /^(?:total )?receipts$/i, /^(?:total )?income$/i, /^gross income$/i];
 
 function incomeStatementPages(review: BalanceSheetReview) {
   const titled = review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
     const normalized = line.replace(/\s+/g, " ").trim();
     return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?$/i.test(normalized)
       || /^(?:consolidated\s+)?income statements?$/i.test(normalized)
+      || /^report on financial results\s*[-–—]\s*form no\.?\s*2$/i.test(normalized)
       || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
   }));
   const withTargetRows = titled.filter((page) => INCOME_FIELD_PATTERNS.some((definition) => definition.patterns.some((pattern) => pattern.test(page.text ?? ""))));
@@ -555,9 +580,17 @@ function incomeDefinitionForLabel(label: string) {
 }
 
 function parseIncomeStatementLine(sourceLine: string, expectedValueCount: number) {
+  const tabular = sourceLine.includes("\t") ? parseStatementLine(sourceLine, expectedValueCount) : undefined;
+  if (tabular) {
+    const label = normalizeIncomeLabel(tabular.label).replace(/\s+\d{3}$/, "");
+    if (incomeDefinitionForLabel(label)) return { ...tabular, label };
+  }
   const normalized = normalizeIncomeLabel(sourceLine);
   const parsed = parseStatementLine(normalized, expectedValueCount);
-  if (parsed) return parsed;
+  if (parsed) {
+    const label = normalizeIncomeLabel(parsed.label).replace(/\s+\d{3}$/, "");
+    if (incomeDefinitionForLabel(label)) return { ...parsed, label };
+  }
 
   const valueTokens = Array.from(normalized.matchAll(/(?:[$€£₾]\s*)?(?:[—–-]|\(\s*[-−]?\d[\d,.'’]*\s*\)|[-−]?\d[\d,.'’]*\d?)/g));
   if (valueTokens.length < expectedValueCount) return undefined;
@@ -617,9 +650,17 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
   dataset.incomeStatementDetected = true;
   const discovered = new Set<string>();
   const locatedFields = new Set<Fin1FieldId>();
+  const incomeStatementYears = new Set<string>();
 
   for (const page of pages) {
-    const periods = detectPeriods(page.text ?? "", yearFrom(review.statement.reportingDate)).filter((period) => Boolean(yearFrom(period)));
+    const pageReportingYear = "reportingYear" in page && typeof page.reportingYear === "string"
+      ? page.reportingYear
+      : yearFrom(review.statement.reportingDate);
+    const periods = detectPeriods(page.text ?? "", pageReportingYear).filter((period) => Boolean(yearFrom(period)));
+    for (const period of periods) {
+      const displayYear = yearFrom(period);
+      if (displayYear) incomeStatementYears.add(displayYear);
+    }
     if (!periods.length) {
       pushIssue(dataset, {
         id: `issue:income-period:${review.source.documentId}:${page.pageNumber}`,
@@ -633,6 +674,42 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
     for (const sourceLine of (page.text ?? "").split(/\r?\n/)) {
       const located = incomeDefinitionForLine(sourceLine);
       if (located) locatedFields.add(located.field);
+    }
+
+    for (const sourceLine of (page.text ?? "").split(/\r?\n/)) {
+      const parsedCandidate = parseStatementLine(normalizeIncomeLabel(sourceLine), periods.length);
+      const candidateLabel = normalizeIncomeLabel(parsedCandidate?.label ?? "").replace(/[:\s]+$/, "");
+      if (!candidateLabel || incomeDefinitionForLabel(candidateLabel) || !TURNOVER_REVIEW_PATTERNS.some((pattern) => pattern.test(candidateLabel))) continue;
+      const rawValues = (parsedCandidate?.rawValues ?? []).slice(-periods.length);
+      for (let index = 0; index < periods.length; index += 1) {
+        const displayYear = yearFrom(periods[index]);
+        const rawReportedValue = rawValues[index] ?? "";
+        if (!displayYear || parseIncomeReportedNumber(rawReportedValue) === null) continue;
+        const sourceId = `source:${review.reviewId}:turnover-candidate:${displayYear}:${page.pageNumber}`;
+        dataset.sources.push({
+          sourceId,
+          documentId: review.source.documentId,
+          fileName: review.source.fileName,
+          documentRole: input.role,
+          page: page.pageNumber,
+          originalLabel: candidateLabel,
+          rawReportedValue,
+          originalPeriod: periods[index],
+          displayYear,
+          provenance: "SOURCE",
+          eligibleForCanonicalFinancialDataset: true,
+          eligibleForGeneratedFinValues: false,
+        });
+        pushIssue(dataset, {
+          id: `issue:turnover-mapping:${review.source.documentId}:${displayYear}:${page.pageNumber}`,
+          type: "mapping-problem",
+          field: "total_revenue",
+          displayYear,
+          sourceIds: [sourceId],
+          message: `“${candidateLabel}” is reported for ${displayYear}, but its meaning is not specific enough to map automatically to Annual Turnover.`,
+          action: "Review whether the reported indicator is legitimate Annual Turnover evidence",
+        });
+      }
     }
 
     const sourceRows = /[ўқғҳ]/i.test(page.text ?? "")
@@ -665,7 +742,7 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
           eligibleForCanonicalFinancialDataset: true,
           eligibleForGeneratedFinValues: true,
         });
-        dataset.values.push({
+        const normalizedIncomeValue: CanonicalFinancialValue = {
           id: `value:${definition.field}:${displayYear}:${review.source.documentId}`,
           field: definition.field,
           displayYear,
@@ -679,14 +756,32 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
           sourceIds: [sourceId],
           status: confidence < 0.8 ? "extraction-problem" : "ready",
           problemType: confidence < 0.8 ? "extraction-problem" : undefined,
-        });
+        };
+        const existing = dataset.values.find((value) => value.field === definition.field && value.displayYear === displayYear);
+        if (!existing) {
+          dataset.values.push(normalizedIncomeValue);
+        } else if (existing.currency === normalizedIncomeValue.currency && Math.abs(existing.value - normalizedIncomeValue.value) <= tolerance(normalizedIncomeValue.unitScale)) {
+          if (!existing.sourceIds.includes(sourceId)) existing.sourceIds.push(sourceId);
+        } else {
+          existing.status = "source-inconsistency";
+          existing.problemType = "source-inconsistency";
+          if (!existing.sourceIds.includes(sourceId)) existing.sourceIds.push(sourceId);
+          pushIssue(dataset, {
+            id: `issue:income-conflict:${review.source.documentId}:${definition.field}:${displayYear}`,
+            type: "source-inconsistency",
+            field: definition.field,
+            displayYear,
+            sourceIds: [...existing.sourceIds],
+            message: `Two eligible income-statement pages report different ${FIN1_FIELDS.find((field) => field.id === definition.field)?.label ?? definition.field} values for ${displayYear}. Neither value was silently replaced.`,
+            action: "Review the conflicting source pages",
+          });
+        }
         discovered.add(`${definition.field}:${displayYear}`);
       }
     }
   }
 
-  const balanceYears = new Set(dataset.periodMappings.flatMap((period) => period.eligibleForFin && period.displayYear ? [period.displayYear] : []));
-  for (const displayYear of balanceYears) {
+  for (const displayYear of incomeStatementYears) {
     for (const definition of INCOME_FIELD_PATTERNS) {
       if (discovered.has(`${definition.field}:${displayYear}`)) continue;
       if (!locatedFields.has(definition.field)) continue;
@@ -918,10 +1013,13 @@ export function prepareFin1FromBalanceReview(review: BalanceSheetReview, require
 
 export function fin1ToCsv(form: Fin1Form) {
   const rows = [
-    ["Financial Indicator", ...form.years],
+    ["Financial Indicator", ...form.years.map((year) => `${year} — ${form.currency} · ${form.unitLabel}`)],
     ...FIN1_FIELDS.map((field) => [
       field.label,
-      ...form.years.map((year) => form.mappings.find((mapping) => mapping.field === field.id && mapping.displayYear === year)?.value ?? "MISSING"),
+      ...form.years.map((year) => {
+        const mapping = form.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
+        return mapping?.value === null || mapping?.value === undefined ? "MISSING" : mapping.value / mapping.unitScale;
+      }),
     ]),
   ];
   const escape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;

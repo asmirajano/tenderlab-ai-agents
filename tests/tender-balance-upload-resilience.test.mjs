@@ -5,6 +5,8 @@ import test from "node:test";
 import {
   balanceSheetEvidenceScore,
   chooseOcrCandidatePages,
+  digitalTextNeedsOcr,
+  financialStatementEvidenceScore,
   OCR_DISCOVERY_BATCH_SIZE,
 } from "../packages/tender-balance/src/file-reader.ts";
 import { shouldReloadAfterPreloadFailure } from "../apps/tender-apps/src/preload-recovery.ts";
@@ -44,4 +46,21 @@ test("requires balance-sheet semantics and tabular evidence before ending OCR di
   assert.ok(balanceSheetEvidenceScore("Consolidated Balance Sheet\nTotal assets 100 90\nTotal liabilities 70 60\nStockholders' equity 30 30") >= 11);
   assert.ok(balanceSheetEvidenceScore("Independent auditor report\nSigned April 30, 2024") < 11);
   assert.ok(balanceSheetEvidenceScore("Consolidated Statement of Profit and Loss\nRevenue 100 90\nExpenses 70 60") < 11);
+});
+
+test("routes a long but mixed-script corrupted financial text layer to OCR", () => {
+  const corrupted = "Accounting balance sheet - form No. 1\nNаmе of the indicаtor\nTotal аssеts\t400\t6 237 204,00\t7 179 997,00\nTotal liаbilities\t770\t4 303 879,00\t4 984 192,00";
+  assert.equal(digitalTextNeedsOcr(corrupted), true);
+  assert.equal(digitalTextNeedsOcr("Accounting balance sheet\nName of the indicator\nTotal assets 100 90\nTotal liabilities 70 60"), false);
+  assert.equal(digitalTextNeedsOcr("Бухгалтерия баланси\nКўрсаткичлар номи\nЖами активлар 100 90\nЖами мажбуриятлар 70 60"), false);
+  assert.ok(financialStatementEvidenceScore("Report on financial results - Form No.2\nRevenue 100 90\nProfit before tax 20 10\nNet income 15 8") >= 8);
+});
+
+test("targets corrupt statement tables without OCR-ing every mixed-script audit page", () => {
+  const pages = [
+    { pageNumber: 1, text: "AUDIT REPORT\nThe auditor's rероrt addrеssed the financial statеmеnts of PREMIER UNITED LLC\nRegistration date 2023", extractionMethod: "digital-text", imageOnly: false },
+    { pageNumber: 2, text: "Accounting balance sheet - form No. 1\nNаmе of the indicаtor\nTotal аssеts\t400\t100\t90\nTotal liаbilities\t770\t70\t60", extractionMethod: "digital-text", imageOnly: false },
+  ];
+  assert.equal(digitalTextNeedsOcr(pages[0].text), true);
+  assert.deepEqual(chooseOcrCandidatePages(pages), [2]);
 });

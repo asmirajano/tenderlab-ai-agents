@@ -126,7 +126,17 @@ function mergeWrappedTotals(lines: string[]) {
     const previous = merged.at(-1);
     const previousIsWrappedTotal = Boolean(previous && !previous.includes("\t") && /^total\b/i.test(previous));
     const currentCompletesTotal = line.includes("\t") && (/^(?:assets|liabilities|equity)\b/i.test(line) || /^[($€£₾\d−-]/.test(line));
-    if (previousIsWrappedTotal && currentCompletesTotal) {
+    const currentIsLabelOnlyTotal = /^total\b/i.test(line) && !line.includes("\t");
+    const previousRowCodes = previous?.match(/(?:^|\t)\d{3}(?=\t|$)/g) ?? [];
+    const misplacedCells = currentIsLabelOnlyTotal && previous && (previousRowCodes.length >= 2 || /^\d{3}\t/.test(previous))
+      ? previous.match(/(?:^|\t)(\d{3})\t((?:[-−]?\d[\d ,.']*|[—–-])(?:\t(?:[-−]?\d[\d ,.']*|[—–-]))+)\s*$/)
+      : null;
+    if (misplacedCells && previous) {
+      const prefix = previous.slice(0, misplacedCells.index).trim();
+      if (prefix) merged[merged.length - 1] = prefix;
+      else merged.pop();
+      merged.push(`${line}\t${misplacedCells[1]}\t${misplacedCells[2]}`);
+    } else if (previousIsWrappedTotal && currentCompletesTotal) {
       merged[merged.length - 1] = `${previous}${/^[($€£₾\d−-]/.test(line) ? "\t" : " "}${line}`;
     } else if (previous && /^total\b/i.test(previous) && /(?:&|and).*shareholder/i.test(previous.split("\t")[0]) && previous.includes("\t") && /^equity$/i.test(line)) {
       merged[merged.length - 1] = previous.replace("\t", ` ${line}\t`);

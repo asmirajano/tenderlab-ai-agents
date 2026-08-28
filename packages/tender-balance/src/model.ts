@@ -56,6 +56,8 @@ export type SourcePageInput = {
   confidence?: number;
   missing?: boolean;
   imageOnly?: boolean;
+  /** Reporting year established from this statement page or its nearby cover page. */
+  reportingYear?: string;
 };
 
 export type SourceDocumentInput = {
@@ -285,6 +287,7 @@ function isStatementTitleLine(line: string) {
   const normalized = line.replace(/\s+/g, " ").trim();
   return /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
     || /^statements? of financial position(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
+    || /^accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\s+(?:no\.?|n[eo])?\s*1\b/i.test(normalized)
     || /^бухгалтерия баланси(?:\s|№|$)/iu.test(normalized)
     || /^бухгалтерский баланс(?:\s|№|$)/iu.test(normalized);
 }
@@ -293,6 +296,7 @@ function isIncomeStatementTitleLine(line: string) {
   const normalized = line.replace(/\s+/g, " ").trim();
   return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?(?:\s*\(unaudited\))?$/i.test(normalized)
     || /^(?:consolidated\s+)?income statements?(?:\s*\(unaudited\))?$/i.test(normalized)
+    || /^reports? on financial results?\s*[-–]?\s*form\s+(?:no\.?|n[eo])?\s*2\b/i.test(normalized)
     || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
 }
 
@@ -466,7 +470,9 @@ function cleanLabel(label: string) {
 
 export function normalizeConcept(label: string, sourceRowCode?: string) {
   const cleaned = cleanLabel(label);
-  const rowConcept = /[а-яёўқғҳ]/i.test(cleaned) && sourceRowCode ? uzbekForm1Concept(sourceRowCode) : undefined;
+  // Uzbekistan Form No. 1 row codes retain the same meaning when the
+  // statutory statement is rendered in English, Russian, or Uzbek.
+  const rowConcept = sourceRowCode ? uzbekForm1Concept(sourceRowCode) : undefined;
   if (rowConcept) {
     return {
       concept: rowConcept,
@@ -536,7 +542,7 @@ function detectLanguage(text: string): DocumentLanguage {
 function detectCurrency(text: string) {
   if (/\b(?:USD|US dollars?)\b|\$/i.test(text)) return "USD";
   if (/\bEUR\b|€/i.test(text)) return "EUR";
-  if (/\bUZS\b|с[ўу]м|so['’]?m/i.test(text)) return "UZS";
+  if (/\bUZS\b|с[ўу]м|\b(?:sou?ms?|so['’]?m)\b/i.test(text)) return "UZS";
   if (/\bRUB\b|руб/i.test(text)) return "RUB";
   if (/\bKZT\b|тенге/i.test(text)) return "KZT";
   if (/\bGBP\b|£/i.test(text)) return "GBP";
@@ -565,6 +571,10 @@ function reportingYearFromText(text: string) {
     /\b(?:as of|year ended|for the year ended)\D{0,40}((?:19|20)\d{2})\b/iu,
     /\b((?:19|20)\d{2})\s+(?:consolidated\s+)?balance sheet\b/iu,
     /\bbalance sheet\D{0,40}((?:19|20)\d{2})\b/iu,
+    /\baccounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\b[^\n]{0,100}\b((?:19|20)\d{2})\b/iu,
+    /\breports? on financial results?\b[^\n]{0,100}\b((?:19|20)\d{2})\b/iu,
+    /\bfinancial statements?\b[^\n]{0,120}\bfor\s+((?:19|20)\d{2})\b/iu,
+    /\b(?:first|second|third|fourth|[1-4](?:st|nd|rd|th))\s+quarter\s+(?:of\s+)?((?:19|20)\d{2})\b/iu,
   ];
   for (const pattern of highConfidencePatterns) {
     const match = text.match(pattern);
@@ -582,6 +592,20 @@ export function detectPeriods(text: string, reportingYear?: string | null) {
       : ["Beginning of reporting period", "End of reporting period"];
   }
   if (/Ўтган йилнинг шу даврида/i.test(text) && /Ҳисобот даврида/i.test(text)) {
+    return reliableReportingYear
+      ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
+      : ["Prior-year comparable period", "Reporting period"];
+  }
+  const hasEnglishOpening = /\bat the beginning of (?:the )?reporting period\b/i.test(text);
+  const hasEnglishClosing = /\bat the end of (?:the )?reporting period\b/i.test(text);
+  if (hasEnglishOpening && hasEnglishClosing) {
+    return reliableReportingYear
+      ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
+      : ["Beginning of reporting period", "End of reporting period"];
+  }
+  const hasEnglishComparable = /\b(?:for (?:the )?)?corresponding period (?:of (?:the )?)?(?:last|previous) year\b/i.test(text);
+  const hasEnglishReporting = /\bfor (?:the )?(?:accounting|reporting) period\b/i.test(text);
+  if (hasEnglishComparable && hasEnglishReporting) {
     return reliableReportingYear
       ? [String(Number(reliableReportingYear) - 1), reliableReportingYear]
       : ["Prior-year comparable period", "Reporting period"];
@@ -623,13 +647,21 @@ function detectEntity(text: string) {
   if (uzbekCompany?.[1]) return `${repairEntityOcr(uzbekCompany[1].trim())} LLC`;
   const russianCompany = text.match(/\bООО\s+[«"“]([^»"”\r\n]{2,100})[»"”]/iu);
   if (russianCompany?.[1]) return `${repairEntityOcr(russianCompany[1].trim())} LLC`;
+  const prefixedCompany = text.match(/\b(?:OOO|ООО)\s+[«"“]?([A-Z][A-Z0-9 &'().-]{2,80}?)(?=[»"”]?\s*(?:\r?\n|$))/imu);
+  if (prefixedCompany?.[1]) return `${repairEntityOcr(prefixedCompany[1].trim())} LLC`;
   if (detectLanguage(text) === "uz") return "Unconfirmed reporting entity";
   const candidates = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 80);
   const titleLine = candidates.find((line) => statementPatterns.some((pattern) => pattern.test(line)) && /\b(?:for|of)\b/i.test(line));
   const titleMatch = titleLine?.match(/(?:balance sheet|statement of financial position)\s+(?:for|of)\s+(.+?)(?:\s+[—–-]\s*(?:19|20)\d{2}\b|$)/i);
   if (titleMatch?.[1]) return repairEntityOcr(titleMatch[1].trim());
-  return repairEntityOcr(candidates.find((line) => /\b(?:ltd|llc|jsc|inc|plc|company|corp|mchj|ооо|ао)\b/i.test(line))
-    ?? candidates.find((line) => !line.includes("\t") && normalizeConcept(line).concept === "unmapped" && !statementPatterns.some((pattern) => pattern.test(line)) && !/\b(?:19|20)\d{2}\b/.test(line) && !/^(?:description|assets?:?|liabilities:?|equity:?|notes?|average|month\s*\d+|period\s*\d+)$/i.test(line))
+  const credibleCandidate = (line: string) => !/[\t|]/.test(line)
+    && !/\d/.test(line)
+    && (line.match(/\p{L}/gu)?.length ?? 0) >= 3
+    && line.length <= 100;
+  const titleIndex = candidates.findIndex((line) => statementPatterns.some((pattern) => pattern.test(line)));
+  const preamble = candidates.slice(0, titleIndex >= 0 ? titleIndex : Math.min(3, candidates.length));
+  return repairEntityOcr(candidates.find((line) => credibleCandidate(line) && /\b(?:ltd|llc|jsc|inc|plc|company|corp|mchj|ооо|ао)\b/i.test(line))
+    ?? preamble.find((line) => credibleCandidate(line) && normalizeConcept(line).concept === "unmapped" && !/^(?:description|assets?:?|liabilities:?|equity:?|notes?|average|month\s*\d+|period\s*\d+)$/i.test(line))
     ?? "Unconfirmed reporting entity");
 }
 
@@ -643,9 +675,9 @@ function inferIsTotal(concept: BalanceSheetConcept) {
 
 export function parseStatementLine(line: string, expectedValueCount = 0) {
   const tabParts = line.split("\t").map((part) => part.trim());
-  if (/[а-яёўқғҳ]/i.test(line) && tabParts.length >= 2) {
+  if (tabParts.length >= 2) {
     const rowCodeIndex = tabParts.findIndex((part) => /^\d{3}$/.test(part));
-    if (rowCodeIndex > 0) {
+    if (rowCodeIndex > 0 && (/[а-яёўқғҳ]/i.test(line) || expectedValueCount === 0 || tabParts.length - rowCodeIndex - 1 >= expectedValueCount)) {
       const label = tabParts.slice(0, rowCodeIndex).filter(Boolean).join(" ");
       const sourceRowCode = tabParts[rowCodeIndex];
       const valueCells = tabParts.slice(rowCodeIndex + 1);
@@ -743,12 +775,16 @@ export function selectStatementPages(pages: SourcePageInput[]) {
     return leadingLines.some((line) =>
       /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\(continued\))?$/i.test(line)
         || /^statements? of financial position(?:\s*\(continued\))?$/i.test(line)
+        || /^accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\s+(?:no\.?|n[eo])?\s*1\b/i.test(line)
         || /^бухгалтерия баланси(?:\s|№|$)/iu.test(line)
     );
   });
   if (explicitlyTitled.length) {
-    const tabular = explicitlyTitled.filter((page) => statementPageScore(page).tabularRows >= 3);
-    return tabular.length ? tabular : explicitlyTitled;
+    const titledNumbers = new Set(explicitlyTitled.map((page) => page.pageNumber));
+    const candidates = pages.filter((page) => titledNumbers.has(page.pageNumber)
+      || (statementPageScore(page).tabularRows >= 3 && statementPageScore(page).score >= 38));
+    const tabular = candidates.filter((page) => statementPageScore(page).tabularRows >= 3);
+    return tabular.length ? tabular : candidates;
   }
   const scored = pages.map(statementPageScore);
   const strong = scored.filter((candidate) => candidate.tabularRows >= 3 && candidate.score >= 38);
@@ -770,7 +806,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
   const items: LineItemInput[] = [];
   for (const page of pages) {
     if (page.missing || page.imageOnly || !page.text) continue;
-    const reportingYear = periods.findLast((period) => /^(?:19|20)\d{2}$/.test(period));
+    const reportingYear = page.reportingYear ?? periods.findLast((period) => /^(?:19|20)\d{2}$/.test(period));
     const pagePeriods = detectPeriods(page.text, reportingYear);
     const usedPeriods = pagePeriods.length ? pagePeriods : periods;
     let pendingLabel = "";
@@ -842,6 +878,10 @@ function firstConcept(items: BalanceSheetLineItem[], concept: BalanceSheetConcep
   return items.find((item) => item.normalizedConcept === concept);
 }
 
+function conceptForPeriod(items: BalanceSheetLineItem[], concept: BalanceSheetConcept, period: string) {
+  return items.find((item) => item.normalizedConcept === concept && item.values.some((value) => value.period === period));
+}
+
 const UZBEK_FORM_1_SUBTOTAL_ROWS: Partial<Record<string, Array<[string, number]>>> = {
   "130": [["012", 1], ["022", 1], ["030", 1], ["090", 1], ["100", 1], ["110", 1], ["120", 1]],
   "390": [["140", 1], ["190", 1], ["200", 1], ["210", 1], ["320", 1], ["370", 1], ["380", 1]],
@@ -856,10 +896,10 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
   const checks: ArithmeticCheck[] = [];
   const tolerance = Math.max(0.000001, unitScale * 0.000001);
   for (const period of periods) {
-    const assetsItem = firstConcept(items, "total_assets");
-    const liabilitiesItem = firstConcept(items, "total_liabilities");
-    const equityItem = firstConcept(items, "owners_equity");
-    const netAssetsItem = firstConcept(items, "net_assets");
+    const assetsItem = conceptForPeriod(items, "total_assets", period);
+    const liabilitiesItem = conceptForPeriod(items, "total_liabilities", period);
+    const equityItem = conceptForPeriod(items, "owners_equity", period);
+    const netAssetsItem = conceptForPeriod(items, "net_assets", period);
     const assets = effectiveNormalizedValue(assetsItem, period);
     const liabilities = effectiveNormalizedValue(liabilitiesItem, period);
     const equity = effectiveNormalizedValue(equityItem, period);
@@ -897,7 +937,7 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
       ],
     });
 
-    const reportedLiabilitiesAndEquityItem = firstConcept(items, "total_liabilities_and_equity");
+    const reportedLiabilitiesAndEquityItem = conceptForPeriod(items, "total_liabilities_and_equity", period);
     if (reportedLiabilitiesAndEquityItem) {
       const reportedLiabilitiesAndEquity = effectiveNormalizedValue(reportedLiabilitiesAndEquityItem, period);
       const calculatedLiabilitiesAndEquity = liabilities === null || equity === null ? null : liabilities + equity;
@@ -920,10 +960,10 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
       });
     }
 
-    const currentAssetSubtotal = firstConcept(items, "current_assets");
-    const nonCurrentAssetSubtotal = firstConcept(items, "non_current_assets");
-    const currentLiabilitySubtotal = firstConcept(items, "current_liabilities");
-    const nonCurrentLiabilitySubtotal = firstConcept(items, "non_current_liabilities");
+    const currentAssetSubtotal = conceptForPeriod(items, "current_assets", period);
+    const nonCurrentAssetSubtotal = conceptForPeriod(items, "non_current_assets", period);
+    const currentLiabilitySubtotal = conceptForPeriod(items, "current_liabilities", period);
+    const nonCurrentLiabilitySubtotal = conceptForPeriod(items, "non_current_liabilities", period);
     const subtotalSpecs: Array<{ concept: BalanceSheetConcept; components: BalanceSheetLineItem[] }> = [
       { concept: "current_assets", components: items.filter((item) => item.classification === "current_asset" && !item.isTotal) },
       { concept: "non_current_assets", components: items.filter((item) => item.classification === "non_current_asset" && !item.isTotal) },
@@ -943,17 +983,19 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
           ...(nonCurrentLiabilitySubtotal ? [nonCurrentLiabilitySubtotal] : items.filter((item) => item.classification === "non_current_liability" && !item.isTotal)),
         ],
       },
-      { concept: "total_assets_including_personal", components: [assetsItem, firstConcept(items, "personal_assets")].filter((item): item is BalanceSheetLineItem => Boolean(item)) },
-      { concept: "total_liabilities_including_personal", components: [liabilitiesItem, firstConcept(items, "personal_liabilities")].filter((item): item is BalanceSheetLineItem => Boolean(item)) },
+      { concept: "total_assets_including_personal", components: [assetsItem, conceptForPeriod(items, "personal_assets", period)].filter((item): item is BalanceSheetLineItem => Boolean(item)) },
+      { concept: "total_liabilities_including_personal", components: [liabilitiesItem, conceptForPeriod(items, "personal_liabilities", period)].filter((item): item is BalanceSheetLineItem => Boolean(item)) },
     ];
     for (const { concept, components } of subtotalSpecs) {
-      const subtotalItem = firstConcept(items, concept);
+      const subtotalItem = conceptForPeriod(items, concept, period);
       if (!subtotalItem || !components.length) continue;
       const subtotal = effectiveNormalizedValue(subtotalItem, period);
+      const subtotalPage = subtotalItem.values.find((value) => value.period === period)?.source.page;
       const statutoryFormula = subtotalItem.sourceRowCode ? UZBEK_FORM_1_SUBTOTAL_ROWS[subtotalItem.sourceRowCode] : undefined;
       const componentTerms = statutoryFormula
-        ? statutoryFormula.map(([rowCode, sign]) => ({ item: items.find((candidate) => candidate.sourceRowCode === rowCode), sign })).filter((term): term is { item: BalanceSheetLineItem; sign: number } => Boolean(term.item))
-        : components.map((item) => ({ item, sign: 1 }));
+        ? statutoryFormula.map(([rowCode, sign]) => ({ item: items.find((candidate) => candidate.sourceRowCode === rowCode
+          && candidate.values.some((value) => value.period === period && (subtotalPage === undefined || value.source.page === subtotalPage))), sign })).filter((term): term is { item: BalanceSheetLineItem; sign: number } => Boolean(term.item))
+        : components.filter((item) => item.values.some((value) => value.period === period && (subtotalPage === undefined || value.source.page === subtotalPage))).map((item) => ({ item, sign: 1 }));
       const componentValues = componentTerms.map(({ item, sign }) => {
         const value = effectiveNormalizedValue(item, period);
         return value === null ? null : value * sign;
@@ -978,9 +1020,9 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
       });
     }
 
-    const totalIncludingPersonal = firstConcept(items, "total_assets_including_personal");
-    const liabilitiesIncludingPersonal = firstConcept(items, "total_liabilities_including_personal");
-    const netWorthIncludingPersonal = firstConcept(items, "total_net_worth_including_personal");
+    const totalIncludingPersonal = conceptForPeriod(items, "total_assets_including_personal", period);
+    const liabilitiesIncludingPersonal = conceptForPeriod(items, "total_liabilities_including_personal", period);
+    const netWorthIncludingPersonal = conceptForPeriod(items, "total_net_worth_including_personal", period);
     if (totalIncludingPersonal || liabilitiesIncludingPersonal || netWorthIncludingPersonal) {
       const personalAssets = effectiveNormalizedValue(totalIncludingPersonal, period);
       const personalLiabilities = effectiveNormalizedValue(liabilitiesIncludingPersonal, period);
@@ -1101,12 +1143,36 @@ function lineItemFromInput(input: LineItemInput, source: SourceDocumentInput, un
   };
 }
 
+function pagesWithReportingContext(pages: SourcePageInput[]) {
+  const directYears = new Map(pages.map((page) => [page.pageNumber, reportingYearFromText(page.text ?? "")]));
+  return pages.map((page) => {
+    const direct = page.reportingYear ?? directYears.get(page.pageNumber) ?? undefined;
+    if (direct) return { ...page, reportingYear: direct };
+    for (let distance = 1; distance <= 3; distance += 1) {
+      const nearby = directYears.get(page.pageNumber - distance);
+      if (nearby) return { ...page, reportingYear: nearby };
+    }
+    return page;
+  });
+}
+
+function orderedUniquePeriods(periods: string[]) {
+  const unique = [...new Set(periods)];
+  return unique.every((period) => /^(?:19|20)\d{2}$/.test(period))
+    ? unique.sort((left, right) => Number(left) - Number(right))
+    : unique;
+}
+
 export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetReview {
-  const statementPages = input.lineItems?.length ? input.pages : selectStatementPages(input.pages);
+  const contextualPages = pagesWithReportingContext(input.pages);
+  const statementPages = input.lineItems?.length ? contextualPages : selectStatementPages(contextualPages);
   const statementText = statementPages.map((page) => page.text ?? "").join("\n");
-  const documentText = input.pages.map((page) => page.text ?? "").join("\n");
-  const inferredReportingYear = reportingYearFromText(documentText);
-  const periods = input.periods?.length ? input.periods : detectPeriods(statementText, inferredReportingYear);
+  const documentText = contextualPages.map((page) => page.text ?? "").join("\n");
+  const contextualYears = contextualPages.map((page) => page.reportingYear).filter((year): year is string => Boolean(year));
+  const inferredReportingYear = contextualYears.sort((left, right) => Number(left) - Number(right)).at(-1)
+    ?? reportingYearFromText(documentText);
+  const detectedPeriods = orderedUniquePeriods(statementPages.flatMap((page) => detectPeriods(page.text ?? "", page.reportingYear)));
+  const periods = input.periods?.length ? input.periods : (detectedPeriods.length ? detectedPeriods : detectPeriods(statementText, inferredReportingYear));
   const periodYears = periods
     .flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
     .sort((left, right) => Number(left) - Number(right));
@@ -1133,9 +1199,9 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
       supportingAgentIds: ["agent:TL-A002", "agent:TL-A003", "agent:TL-A004", "agent:TL-A022"],
     },
     source: input.source,
-    pages: input.pages,
+    pages: contextualPages,
     statement: {
-      reportingEntity: input.reportingEntity ?? (statementEntity !== "Unconfirmed reporting entity" ? statementEntity : documentEntity),
+      reportingEntity: input.reportingEntity ?? (documentEntity !== "Unconfirmed reporting entity" ? documentEntity : statementEntity),
       reportingDate: input.reportingDate ?? inferredReportingDate,
       periods,
       currency: input.currency ?? (statementCurrency !== "UNSPECIFIED" ? statementCurrency : detectCurrency(documentText)),

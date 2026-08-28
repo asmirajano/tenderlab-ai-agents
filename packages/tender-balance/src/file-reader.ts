@@ -80,9 +80,9 @@ function pagesFromText(text: string): SourcePageInput[] {
   }));
 }
 
-async function renderPdfPageForOcr(page: PDFPageProxy, scale = 2) {
+async function renderPdfPageForOcr(page: PDFPageProxy, scale = 2, rotation = 0) {
   if (typeof document === "undefined") return undefined;
-  const viewport = page.getViewport({ scale });
+  const viewport = page.getViewport({ scale, rotation });
   const canvas = document.createElement("canvas");
   canvas.width = Math.ceil(viewport.width);
   canvas.height = Math.ceil(viewport.height);
@@ -92,9 +92,34 @@ async function renderPdfPageForOcr(page: PDFPageProxy, scale = 2) {
   return await new Promise<Blob | undefined>((resolve) => canvas.toBlob((blob) => resolve(blob ?? undefined), "image/png"));
 }
 
-const balanceSheetTitlePattern = /\b(?:balance sheets?|statement of financial position|statement of assets and liabilities|бухгалтерский баланс|moliyaviy holat)\b/i;
+const balanceSheetTitlePattern = /\b(?:balance sheets?|accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form|statement of financial position|statement of assets and liabilities|бухгалтерский баланс|moliyaviy holat)\b/i;
+const incomeStatementTitlePattern = /\b(?:reports? on financial results?|statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?|income statements?|молиявий натижалар)\b/i;
 const statementTotalPatterns = [/\btotal assets\b/i, /\btotal liabilities\b/i, /\b(?:stockholders.?|shareholders.?|owners.?) equity\b/i, /\bnet (?:assets|worth)\b/i];
 export const OCR_DISCOVERY_BATCH_SIZE = 12;
+
+/**
+ * Some PDFs expose a non-empty but unusable text layer because their embedded
+ * font maps Latin glyphs to Cyrillic code points (and vice versa). Length alone
+ * is therefore not evidence of reliable digital text. Keep this check script-
+ * aware so genuine English, Russian, or Uzbek text is not rejected merely for
+ * using one of those scripts.
+ */
+export function digitalTextNeedsOcr(text: string) {
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (compact.length < 24) return true;
+  const tokens = compact.match(/[\p{L}][\p{L}\p{M}'’`-]*/gu) ?? [];
+  const mixedScriptTokens = tokens.filter((token) => /[A-Za-z]/.test(token) && /[А-Яа-яЁёЎўҚқҒғҲҳ]/u.test(token));
+  if (mixedScriptTokens.length >= 3 && mixedScriptTokens.length / Math.max(tokens.length, 1) >= 0.06) return true;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const isolatedGlyphLines = lines.filter((line) => /^[\p{L}\p{N}\p{P}]{1,3}$/u.test(line)).length;
+  return lines.length >= 12 && isolatedGlyphLines / lines.length >= 0.3;
+}
+
+function isSeverelyFragmentedText(text: string) {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 12) return false;
+  return lines.filter((line) => /^[\p{L}\p{N}\p{P}]{1,3}$/u.test(line)).length / lines.length >= 0.3;
+}
 
 export function balanceSheetEvidenceScore(text: string) {
   const compact = text.replace(/\s+/g, " ").trim();
@@ -105,13 +130,36 @@ export function balanceSheetEvidenceScore(text: string) {
   return titleScore + totalScore + Math.min(6, tabularRows);
 }
 
+export function financialStatementEvidenceScore(text: string) {
+  const balanceScore = balanceSheetEvidenceScore(text);
+  const compact = text.replace(/\s+/g, " ").trim();
+  const incomeTitleScore = incomeStatementTitlePattern.test(compact) ? 8 : 0;
+  const incomeRows = [
+    /\b(?:net |total )?(?:revenue|sales|turnover)\b/i,
+    /\b(?:profit|income|loss) before (?:income )?tax/i,
+    /\b(?:net (?:income|loss)|profit after tax)\b/i,
+  ].filter((pattern) => pattern.test(compact)).length * 3;
+  const tabularRows = text.split(/\r?\n/).filter((line) => (line.match(/\(?[-−]?\d[\d,.'’ ]*\)?/g)?.length ?? 0) >= 2).length;
+  return Math.max(balanceScore, incomeTitleScore + incomeRows + Math.min(6, tabularRows));
+}
+
 export function chooseOcrCandidatePages(pages: SourcePageInput[], attempted = new Set<number>(), batchSize = OCR_DISCOVERY_BATCH_SIZE) {
-  const unread = pages.filter((page) => page.imageOnly && !attempted.has(page.pageNumber));
   const textSignals = pages
-    .filter((page) => !page.imageOnly && balanceSheetTitlePattern.test(page.text ?? ""))
+    .filter((page) => !page.imageOnly && (balanceSheetTitlePattern.test(page.text ?? "") || incomeStatementTitlePattern.test(page.text ?? "")))
     .map((page) => page.pageNumber);
+  const unread = pages.filter((page) => {
+    if (attempted.has(page.pageNumber)) return false;
+    if (page.imageOnly) return true;
+    if (!digitalTextNeedsOcr(page.text ?? "")) return false;
+    return isSeverelyFragmentedText(page.text ?? "")
+      || financialStatementEvidenceScore(page.text ?? "") >= 8
+      || textSignals.some((signal) => page.pageNumber > signal && page.pageNumber <= signal + 3);
+  });
   const adjacent = unread.filter((page) => textSignals.some((signal) => page.pageNumber > signal && page.pageNumber <= signal + 3));
-  return (adjacent.length ? adjacent : unread).slice(0, batchSize).map((page) => page.pageNumber);
+  const directEvidence = unread.filter((page) => financialStatementEvidenceScore(page.text ?? "") >= 8);
+  const signaled = [...new Set([...directEvidence, ...adjacent])];
+  const priority = signaled.length ? signaled : unread;
+  return priority.slice(0, batchSize).map((page) => page.pageNumber);
 }
 
 function replacePage(pages: SourcePageInput[], replacement: SourcePageInput) {
@@ -119,8 +167,8 @@ function replacePage(pages: SourcePageInput[], replacement: SourcePageInput) {
   if (index >= 0) pages[index] = replacement;
 }
 
-async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCount: number, scale: number, onProgress?: ProgressReporter) {
-  const renderedPage = await renderPdfPageForOcr(page, scale);
+async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCount: number, scale: number, rotation: number, onProgress?: ProgressReporter) {
+  const renderedPage = await renderPdfPageForOcr(page, scale, rotation);
   if (!renderedPage) return undefined;
   const recognized = await recognizeBalanceSheetImage(renderedPage, (progress) => onProgress?.({
     stage: "ocr",
@@ -134,7 +182,17 @@ async function recognizePdfPage(page: PDFPageProxy, pageNumber: number, pageCoun
     extractionMethod: "ocr" as const,
     confidence: recognized.text.length >= 24 ? recognized.confidence : undefined,
     imageOnly: recognized.text.length < 24,
+    rotation,
   };
+}
+
+function strongerRecognition<T extends SourcePageInput & { rotation?: number }>(left: T | undefined, right: T | undefined) {
+  if (!left) return right;
+  if (!right) return left;
+  const leftScore = financialStatementEvidenceScore(left.text ?? "");
+  const rightScore = financialStatementEvidenceScore(right.text ?? "");
+  if (leftScore !== rightScore) return leftScore > rightScore ? left : right;
+  return (left.confidence ?? 0) >= (right.confidence ?? 0) ? left : right;
 }
 
 export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressReporter): Promise<SourcePageInput[]> {
@@ -160,24 +218,23 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
     });
   }
 
-  if (typeof document !== "undefined" && pages.some((page) => page.imageOnly)) {
+  if (typeof document !== "undefined" && pages.some((page) => page.imageOnly || digitalTextNeedsOcr(page.text ?? ""))) {
     const attempted = new Set<number>();
-    let statementFound = pages.some((page) => balanceSheetEvidenceScore(page.text ?? "") >= 11);
-    while (!statementFound) {
+    while (true) {
       const candidates = chooseOcrCandidatePages(pages, attempted);
       if (!candidates.length) break;
-      onProgress?.({ stage: "triage", label: `Locating the balance sheet before detailed OCR · ${attempted.size}/${pdf.numPages} pages checked`, progress: attempted.size / pdf.numPages });
+      onProgress?.({ stage: "triage", label: `Locating financial-statement pages before detailed OCR · ${attempted.size}/${pdf.numPages} pages checked`, progress: attempted.size / pdf.numPages });
       for (const pageNumber of candidates) {
         attempted.add(pageNumber);
-        const recognized = await recognizePdfPage(await pdf.getPage(pageNumber), pageNumber, pdf.numPages, 1.25, onProgress);
-        if (!recognized) continue;
-        replacePage(pages, recognized);
-        if (balanceSheetEvidenceScore(recognized.text) >= 11) {
-          statementFound = true;
-          const detailed = await recognizePdfPage(await pdf.getPage(pageNumber), pageNumber, pdf.numPages, 2, onProgress);
-          if (detailed) replacePage(pages, detailed);
-          break;
-        }
+        const pdfPage = await pdf.getPage(pageNumber);
+        const upright = await recognizePdfPage(pdfPage, pageNumber, pdf.numPages, 1.5, 0, onProgress);
+        const rotated = financialStatementEvidenceScore(upright?.text ?? "") < 8
+          ? await recognizePdfPage(pdfPage, pageNumber, pdf.numPages, 1.5, 90, onProgress)
+          : undefined;
+        const discovered = strongerRecognition(upright, rotated);
+        if (!discovered || financialStatementEvidenceScore(discovered.text ?? "") < 6) continue;
+        const detailed = await recognizePdfPage(pdfPage, pageNumber, pdf.numPages, 4, discovered.rotation ?? 0, onProgress);
+        replacePage(pages, strongerRecognition(discovered, detailed) ?? discovered);
       }
     }
   }
