@@ -183,8 +183,7 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance, onStartNe
         <header><div><span>FORM FIN–1</span><h2>Historical Financial Performance</h2><p>{form.entity}</p></div><b>{form.readiness.status === "partial" ? "GENERATED WITH DECLARED GAPS" : "READY"}</b></header>
         <div className="fin-form-table-wrap"><table><thead><tr><th>Financial Indicator</th>{form.years.map((year) => <th key={year}>{year}<small>{form.currency} · {form.unitLabel}</small></th>)}</tr></thead><tbody>{FIN1_FIELDS.map((field) => <tr key={field.id}><td><b>{field.label}</b>{field.sourceType === "calculated" && <small>Calculated</small>}</td>{form.years.map((year) => {
           const mapping = form.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
-          const fieldDefinition = FIN1_FIELDS.find((candidate) => candidate.id === field.id);
-          const unavailableLabel = mapping?.status === "missing" ? (fieldDefinition?.sourceType === "income-statement" ? "Income Statement required" : "Balance-sheet source required") : mapping?.action ?? "Review extraction or mapping";
+          const unavailableLabel = mapping?.status === "missing" ? mapping.sourceSummary : mapping?.action ?? "Review extraction or mapping";
           return <td className={mapping?.status === "missing" ? "is-missing" : mapping?.status !== "ready" ? "is-finding" : ""} key={year}><b>{formatFigure(mapping?.value ?? null, mapping?.unitScale ?? form.unitScale)}</b>{mapping?.status !== "ready" ? <small>{unavailableLabel}</small> : mapping?.provenance === "CALCULATED" ? <small>{mapping.calculationFormula}</small> : <small>{mapping?.provenance}</small>}</td>;
         })}</tr>)}</tbody></table></div>
         <footer><p>Source-driven years only. Template example content is ineligible for client figures. Reported values remain distinct from calculated validation values.</p><span>{form.coverage.message}</span></footer>

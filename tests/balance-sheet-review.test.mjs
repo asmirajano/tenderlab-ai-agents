@@ -318,6 +318,7 @@ test("digitizes the supplied MF291 benchmark as one automatic 35-row, 105-value 
 
 test("normalizes common number formats without changing their raw representation", () => {
   assert.equal(parseReportedNumber("(1,250)"), -1_250);
+  assert.equal(parseReportedNumber("$(296.60)"), -296.6);
   assert.equal(parseReportedNumber("1 250"), 1_250);
   assert.equal(parseReportedNumber("1.250"), 1_250);
   assert.equal(parseReportedNumber("12,50"), 12.5);

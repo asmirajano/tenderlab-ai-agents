@@ -166,7 +166,7 @@ test("FIN-1 UI exposes the source-role gate, truthful blockers, and dynamic peri
   assert.match(finWorkspace, /TEMPLATE/);
   assert.match(finWorkspace, /technically blocked from client financial data/);
   assert.match(finWorkspace, /form\.years\.map/);
-  assert.match(finWorkspace, /Income Statement required/);
+  assert.match(finWorkspace, /mapping\.sourceSummary/);
   assert.match(finWorkspace, /Resolve the blocking source mappings/);
   assert.match(finWorkspace, /disabled=\{!canGenerate\}/);
   assert.match(finWorkspace, /No figures were estimated/);

@@ -314,6 +314,98 @@ test("allows a partial FIN-1 to be reviewed and generated without inventing inco
   assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2016").value, null);
 });
 
+test("treats reported income-statement dashes as zero and absent profit-before-tax as a nonblocking gap", () => {
+  const review = buildBalanceSheetReview({
+    source: {
+      documentId: "synthetic:income-zero-and-gap",
+      fileName: "SYNTHETIC_INCOME_ZERO_AND_GAP.pdf",
+      sha256: "synthetic-income-zero-and-gap",
+      synthetic: true,
+    },
+    pages: [
+      {
+        pageNumber: 1,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC ZERO REVENUE LLC",
+          "Balance Sheets",
+          "December 31, 2024 and 2023",
+          "USD units",
+          "Total current assets 80 70",
+          "Total assets 100 90",
+          "Total current liabilities 20 18",
+          "Total liabilities 60 55",
+          "Total partners' equity 40 35",
+          "Total liabilities and partners' equity 100 90",
+        ].join("\n"),
+      },
+      {
+        pageNumber: 2,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC ZERO REVENUE LLC",
+          "Statements of Operations",
+          "For the Years Ended December 31, 2024 and 2023",
+          "Revenue: $ - $ -",
+          "Net loss $ (30 ) $ (25 )",
+        ].join("\n"),
+      },
+    ],
+  });
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+
+  assert.equal(form.readiness.status, "partial");
+  assert.equal(form.readiness.canGenerate, true);
+  assert.equal(form.readiness.readyFields, 16);
+  assert.equal(form.readiness.missingFields, 2);
+  assert.equal(form.readiness.problemFields, 0);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2024")?.value, 0);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2023")?.value, -25);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2024")?.status, "missing");
+  assert.match(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2024")?.sourceSummary ?? "", /Not separately reported/);
+  assert.equal(dataset.issues.some((issue) => issue.field === "profit_before_tax"), false);
+  assert.equal(dataset.sources.find((source) => source.originalLabel === "Revenue" && source.displayYear === "2024")?.rawReportedValue, "$ -");
+});
+
+test("derives zero current liabilities when reported total liabilities are zero and no component contradicts it", () => {
+  const review = buildBalanceSheetReview({
+    source: {
+      documentId: "synthetic:zero-liabilities",
+      fileName: "SYNTHETIC_ZERO_LIABILITIES.pdf",
+      sha256: "synthetic-zero-liabilities",
+      synthetic: true,
+    },
+    pages: [{
+      pageNumber: 1,
+      extractionMethod: "digital-text",
+      confidence: 0.99,
+      text: [
+        "SYNTHETIC DEBT FREE LLC",
+        "Balance Sheets",
+        "December 31, 2024 and 2023",
+        "USD units",
+        "Total current assets 80 70",
+        "Total assets 100 90",
+        "Total liabilities 0 0",
+        "Total partners' equity 100 90",
+        "Total liabilities and partners' equity 100 90",
+      ].join("\n"),
+    }],
+  });
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+  const currentLiabilities2024 = dataset.values.find((value) => value.field === "current_liabilities" && value.displayYear === "2024");
+  const workingCapital2024 = dataset.values.find((value) => value.field === "working_capital" && value.displayYear === "2024");
+
+  assert.equal(currentLiabilities2024?.value, 0);
+  assert.equal(currentLiabilities2024?.provenance, "CALCULATED");
+  assert.match(currentLiabilities2024?.calculationFormula ?? "", /Total Liabilities are zero/);
+  assert.equal(workingCapital2024?.value, 80);
+  assert.equal(form.readiness.canGenerate, true);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "current_liabilities" && mapping.displayYear === "2024")?.provenance, "CALCULATED");
+});
+
 test("exports FIN-1 as a typed Excel workbook with a source mapping audit", () => {
   const form = generateFin1(buildRegressionDataset());
   const bytes = fin1ToExcel(form);

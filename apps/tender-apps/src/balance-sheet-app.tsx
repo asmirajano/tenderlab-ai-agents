@@ -159,7 +159,7 @@ function latestActivity(review: BalanceSheetReview) {
 }
 
 function hasExtractionPeriodProblem(review: BalanceSheetReview) {
-  return review.statement.reportingDate === "Unconfirmed" || prepareFin1FromBalanceReview(review).form.years.length === 0;
+  return prepareFin1FromBalanceReview(review).form.years.length === 0;
 }
 
 function resultStatus(review: BalanceSheetReview) {

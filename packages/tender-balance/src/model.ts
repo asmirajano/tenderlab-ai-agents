@@ -283,10 +283,17 @@ const statementPatterns = [/balance sheet/i, /statement of financial position/i,
 
 function isStatementTitleLine(line: string) {
   const normalized = line.replace(/\s+/g, " ").trim();
-  return /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\(continued\))?$/i.test(normalized)
-    || /^statements? of financial position(?:\s*\(continued\))?$/i.test(normalized)
+  return /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
+    || /^statements? of financial position(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
     || /^бухгалтерия баланси(?:\s|№|$)/iu.test(normalized)
     || /^бухгалтерский баланс(?:\s|№|$)/iu.test(normalized);
+}
+
+function isIncomeStatementTitleLine(line: string) {
+  const normalized = line.replace(/\s+/g, " ").trim();
+  return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?(?:\s*\(unaudited\))?$/i.test(normalized)
+    || /^(?:consolidated\s+)?income statements?(?:\s*\(unaudited\))?$/i.test(normalized)
+    || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
 }
 
 export const CONCEPT_ENGLISH_LABELS: Record<BalanceSheetConcept, string> = {
@@ -499,7 +506,7 @@ function englishLabelFor(originalLabel: string, concept: BalanceSheetConcept, so
 export function parseReportedNumber(raw: string): number | null {
   const trimmed = raw.trim();
   if (!trimmed || /^(?:—|–|-|n\/a)$/i.test(trimmed)) return null;
-  const negative = /^[({[].*[)}\]]$/.test(trimmed) || /^[-−]/.test(trimmed);
+  const negative = /^(?:(?:US|CA|AU|NZ|S)?[$€£₾])?\s*[({[].*[)}\]]$/.test(trimmed) || /^[-−]/.test(trimmed);
   let token = trimmed.replace(/[(){}[\]\s\u00a0'’]/g, "").replace(/^[-−]/, "").replace(/[^\d.,]/g, "");
   if (!token) return null;
   const lastComma = token.lastIndexOf(",");
@@ -541,6 +548,14 @@ function detectUnits(text: string) {
   if (/\b(?:million|millions|mln|млн)\b/i.test(text)) return { unitLabel: "millions", unitScale: 1_000_000 };
   if (/\b(?:thousand|thousands|тыс\.?|ming)\b/i.test(text) || /минг/iu.test(text)) return { unitLabel: "thousands", unitScale: 1_000 };
   return { unitLabel: "units", unitScale: 1 };
+}
+
+function hasExplicitUnitScale(text: string) {
+  return /\b(?:million|millions|mln|млн|thousand|thousands|тыс\.?|ming)\b/i.test(text) || /минг/iu.test(text);
+}
+
+function hasStatementCurrencyFigures(text: string) {
+  return /(?:\b(?:USD|EUR|RUB|KZT|GBP|GEL)\b|(?:US|CA|AU|NZ|S)?[$€£₾])\s*\(?[-−]?\d/i.test(text);
 }
 
 function reportingYearFromText(text: string) {
@@ -742,6 +757,15 @@ export function selectStatementPages(pages: SourcePageInput[]) {
   return best && best.score > 0 ? [best.page] : pages;
 }
 
+function balanceStatementLines(text: string) {
+  const lines = text.split(/\r?\n/);
+  const titleIndex = lines.findIndex((line) => isStatementTitleLine(line)
+    || (!isIncomeStatementTitleLine(line) && statementPatterns.some((pattern) => pattern.test(line))));
+  const start = titleIndex >= 0 ? titleIndex : 0;
+  const nextStatementIndex = lines.findIndex((line, index) => index > start && isIncomeStatementTitleLine(line));
+  return lines.slice(start, nextStatementIndex >= 0 ? nextStatementIndex : undefined);
+}
+
 function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemInput[] {
   const items: LineItemInput[] = [];
   for (const page of pages) {
@@ -750,7 +774,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
     const pagePeriods = detectPeriods(page.text, reportingYear);
     const usedPeriods = pagePeriods.length ? pagePeriods : periods;
     let pendingLabel = "";
-    for (const sourceLine of page.text.split(/\r?\n/)) {
+    for (const sourceLine of balanceStatementLines(page.text)) {
       const line = sourceLine.trim();
       if (!line) continue;
       const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?(?:\s+(?:(?:19|20)\d{2})(?:\s*(?:,|and)?\s*(?:19|20)\d{2})*)?\s*$/i.test(line)
@@ -1083,10 +1107,17 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
   const documentText = input.pages.map((page) => page.text ?? "").join("\n");
   const inferredReportingYear = reportingYearFromText(documentText);
   const periods = input.periods?.length ? input.periods : detectPeriods(statementText, inferredReportingYear);
+  const periodYears = periods
+    .flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
+    .sort((left, right) => Number(left) - Number(right));
   const inferredReportingDate = inferredReportingYear
-    ?? periods.findLast((period) => /^(?:19|20)\d{2}(?:[-/.]\d{1,2}){0,2}$/.test(period))
+    ?? periodYears.at(-1)
     ?? "Unconfirmed";
-  const units = detectUnits(documentText);
+  const statementUnits = detectUnits(statementText);
+  const units = hasExplicitUnitScale(statementText) || hasStatementCurrencyFigures(statementText)
+    ? statementUnits
+    : detectUnits(documentText);
+  const statementCurrency = detectCurrency(statementText);
   const unitScale = input.unitScale ?? units.unitScale;
   const parsedItems = input.lineItems?.length ? input.lineItems : parseLineItems(statementPages, periods);
   const lineItems = parsedItems.map((item, index) => lineItemFromInput(item, input.source, unitScale, index));
@@ -1107,7 +1138,7 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
       reportingEntity: input.reportingEntity ?? (statementEntity !== "Unconfirmed reporting entity" ? statementEntity : documentEntity),
       reportingDate: input.reportingDate ?? inferredReportingDate,
       periods,
-      currency: input.currency ?? detectCurrency(documentText),
+      currency: input.currency ?? (statementCurrency !== "UNSPECIFIED" ? statementCurrency : detectCurrency(documentText)),
       unitLabel: input.unitLabel ?? units.unitLabel,
       unitScale,
       language: input.language ?? detectLanguage(documentText),
