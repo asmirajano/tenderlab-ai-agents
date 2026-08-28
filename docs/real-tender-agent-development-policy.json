@@ -1,0 +1,199 @@
+{
+  "schemaVersion": "2.0.0",
+  "name": "Real Tender Agent Development",
+  "status": "approved-consolidated-methodology",
+  "knowledgeLayers": [
+    {
+      "id": "agent-strategy-and-simulation",
+      "purpose": "Canonical Agent identity, architecture, Case orchestration, and deterministic demonstrations",
+      "defaultChangePolicy": "preserve"
+    },
+    {
+      "id": "real-agent-development-methodology",
+      "purpose": "Empirical lifecycle from approved capability to validated practical Agent",
+      "defaultChangePolicy": "primary-target"
+    },
+    {
+      "id": "agent-specific-knowledge",
+      "purpose": "Domain rules, schemas, fixtures, limitations, and regressions owned by one Agent capability",
+      "defaultChangePolicy": "change-only-when-agent-is-in-scope"
+    }
+  ],
+  "maturityLevels": [
+    "CONCEPT_OR_SIMULATION",
+    "ISOLATED_METHOD_VALIDATED",
+    "VALIDATED_CLIENT_WORKFLOW",
+    "CONTROLLED_PILOT",
+    "ENTERPRISE_RUNTIME"
+  ],
+  "lifecycle": [
+    { "id": "knowledge-layer-and-placement-gate", "exitEvidence": ["canonical placement", "preserved strategy boundary", "Agent-specific owner"] },
+    { "id": "purpose-and-authority-contract", "exitEvidence": ["TOR and negative scope", "primary client purpose", "human authority boundary"] },
+    { "id": "real-input-output-contract", "exitEvidence": ["real input contract", "primary finished product", "consumer and handoff"] },
+    { "id": "canonical-data-contract", "exitEvidence": ["source roles and value classes", "Case and result identities", "workflow and artifact states"] },
+    { "id": "evidence-plan", "exitEvidence": ["authorized realistic evidence", "clearly labelled synthetic edge cases", "comparison and confidentiality plan"] },
+    { "id": "isolated-experiment", "exitEvidence": ["production-independent experiment", "reproducible inputs", "inspectable outputs"] },
+    { "id": "actual-output-audit", "exitEvidence": ["field-level comparison", "source and transformation audit", "artifact and UX observations"] },
+    { "id": "failure-layer-diagnosis", "exitEvidence": ["identified failure phase", "root cause evidence", "reusable correction and regression target"] },
+    { "id": "correct-and-repeat", "exitEvidence": ["general correction", "representative evidence re-run", "no document-specific shortcut"] },
+    { "id": "methodology-approval", "exitEvidence": ["approved method", "accepted limitations and thresholds", "bounded production permission"] },
+    { "id": "production-integration", "exitEvidence": ["complete canonical result integration", "explicit Case identity", "exports and handoffs"] },
+    { "id": "human-workflow-integration", "exitEvidence": ["actionable blockers", "truthful workflow states", "persistence and recovery paths"] },
+    { "id": "production-verification", "exitEvidence": ["realistic case replay", "focused and proportionate full tests", "generated artifact inspection"] },
+    { "id": "release-evidence-gate", "exitEvidence": ["revision and artifact identities", "fresh validation and documentation", "authorization and limitations"] },
+    { "id": "authorized-deployment", "exitEvidence": ["deployment authorization", "exact deployed revision", "live route asset and security verification"] },
+    { "id": "deployed-equivalent-replay", "exitEvidence": ["authorized representative replay", "artifact parity verdict", "archived observations and recovery evidence"] },
+    { "id": "knowledge-feedback", "exitEvidence": ["general methodology update", "Agent-specific knowledge update", "open limitations and next experiment"] }
+  ],
+  "documentRoles": [
+    "AUTHORITATIVE_SOURCE",
+    "STRUCTURE_TEMPLATE",
+    "SUPPORTING_DOCUMENT",
+    "USER_ASSERTION"
+  ],
+  "valueClasses": [
+    { "id": "SOURCE", "meaning": "Directly reported and source-traceable", "numericValueAllowed": true },
+    { "id": "CALCULATED", "meaning": "Deterministic formula with versioned operands", "numericValueAllowed": true },
+    { "id": "ESTIMATED", "meaning": "Evidence-based model or benchmark with uncertainty", "numericValueAllowed": true },
+    { "id": "ASSUMED", "meaning": "Explicit unverified premise with owner and override path", "numericValueAllowed": true },
+    { "id": "MISSING", "meaning": "No supported value; never a zero, estimate, assumption, or template example", "numericValueAllowed": false }
+  ],
+  "valueResolutionPolicy": {
+    "dimensionsAreOrthogonal": ["input origin", "document role", "value class", "confidence", "review status"],
+    "preserveCoexistingValues": true,
+    "neverSilentlyOverwriteReportedValue": true,
+    "attemptBeforeMissingWhenPermitted": ["supported source or user value", "deterministic calculation", "explicitly permitted estimate or assumption"],
+    "effectiveValueRequiresVersionedProductPolicy": true
+  },
+  "formatAwareIntermediateStructure": [
+    "document and statement boundaries",
+    "PDF coordinates lines pages and columns",
+    "spreadsheet sheets rows columns headers formulas and printed totals",
+    "OCR regions candidates alternatives and confidence"
+  ],
+  "trustDimensions": [
+    "RECOGNITION",
+    "STRUCTURAL",
+    "SEMANTIC",
+    "ARITHMETIC_OR_DOMAIN",
+    "HUMAN_REVIEW"
+  ],
+  "trustPolicy": {
+    "extractionConfidenceIsNotOverallTrust": true,
+    "contradictionsMustDowngradeOrBlock": true,
+    "preserveComponentEvidence": true
+  },
+  "workflowStates": [
+    "DRAFT",
+    "PRELIMINARY",
+    "REVIEWED",
+    "APPROVED",
+    "RELEASED"
+  ],
+  "workflowPolicy": {
+    "persistenceApprovalAndReleaseAreSeparate": true,
+    "truthfulPartialPersistenceAllowedByProductContract": true,
+    "exportIsSecondaryToSavedCase": true
+  },
+  "failureLayers": [
+    "ASSET_OR_MODULE_LOADING",
+    "FILE_DECODING_OR_FORMAT_SUPPORT",
+    "OCR_OR_PERCEPTION",
+    "STRUCTURAL_RECONSTRUCTION",
+    "SEMANTIC_MAPPING_OR_CLASSIFICATION",
+    "ARITHMETIC_OR_DOMAIN_VALIDATION",
+    "HUMAN_REVIEW_OR_READINESS",
+    "CASE_PERSISTENCE_OR_NAVIGATION",
+    "EXPORT_OR_DOWNSTREAM_TRANSFORMATION"
+  ],
+  "failureAuditFields": [
+    "whatHappened",
+    "failureLayer",
+    "rootCause",
+    "correction",
+    "reusableRule",
+    "regressionEvidence"
+  ],
+  "canonicalResultContract": {
+    "completeCompositeRequired": true,
+    "drives": ["primary UI", "saved Case", "validation", "exports", "visuals", "downstream handoffs"],
+    "includes": ["source facts", "normalization", "derivations", "estimates and assumptions", "exceptions", "trust", "human changes", "workflow state", "artifact identities"],
+    "explicitCaseIdentityRequired": true,
+    "latestCaseFallbackAllowed": false
+  },
+  "evidenceStrengthLevels": [
+    "UNIT_OR_SYNTHETIC_FIXTURE",
+    "ISOLATED_AUTHORIZED_REALISTIC_DOCUMENT",
+    "LOCAL_PRODUCTION_BUILD_REPLAY",
+    "DEPLOYED_SMOKE_VERIFICATION",
+    "DEPLOYED_OR_EQUIVALENT_REPRESENTATIVE_REPLAY"
+  ],
+  "artifactParityFields": [
+    "inputIdentityOrSafeHash",
+    "caseIdentity",
+    "resultIdentity",
+    "codeModelOrEngineVersion",
+    "outputArtifactIdentityOrHash",
+    "validationAndTrustVerdict",
+    "workflowAndReleaseStatus",
+    "knownLimitationsAndAuthorization"
+  ],
+  "confidentialityPolicy": {
+    "neverCommitOrPubliclyDeployProtectedEvidenceForRegression": true,
+    "publicReplayInputs": ["public", "synthetic", "anonymized", "explicitly authorized"],
+    "protectedReplay": "secure authorized environment or local exact-release build with safe hashes and observations"
+  },
+  "semanticBlockingRule": {
+    "blocksWhenAllAreTrue": [
+      "field is required for the requested finished product",
+      "no supported source or user value exists",
+      "no permitted deterministic calculation exists",
+      "no explicitly permitted estimate or assumption exists",
+      "the product contract does not allow a truthful partial result"
+    ],
+    "neverTreatAsMissing": [
+      "unrequested historical year",
+      "available deterministic calculation",
+      "optional enrichment",
+      "structure-only template example"
+    ]
+  },
+  "invariants": [
+    "source-template-separation",
+    "source-role-value-class-orthogonality",
+    "format-aware-structure-before-semantic-mapping",
+    "one-complete-canonical-result-model",
+    "reported-derived-separation",
+    "no-silent-correction",
+    "semantic-blocking-only",
+    "experiment-first-for-uncertain-intelligence",
+    "purpose-led-primary-result",
+    "case-agent-page-separation",
+    "explicit-case-identity-no-latest-fallback",
+    "visualizations-explain-results",
+    "actionable-non-dead-end-workflow",
+    "persistence-approval-release-separation",
+    "multidimensional-trust",
+    "truthful-readiness",
+    "artifact-parity-and-release-freshness",
+    "deployed-equivalent-replay",
+    "methodology-feedback-loop"
+  ],
+  "minimumTestFamilies": [
+    "authorized-realistic-happy-path",
+    "source-template-contamination",
+    "missing-required-versus-optional",
+    "calculated-versus-reported-discrepancy",
+    "negative-and-zero-values",
+    "ambiguous-or-low-confidence-input",
+    "structural-reconstruction-and-format-adapter",
+    "multi-period-and-multi-document",
+    "confidence-contradiction-and-trust-verdict",
+    "case-identity-and-navigation",
+    "preliminary-approval-release-transitions",
+    "recovery-and-truthful-terminal-state",
+    "artifact-identity-and-stale-release-evidence",
+    "deployed-equivalent-replay",
+    "responsive-and-accessible-result"
+  ]
+}

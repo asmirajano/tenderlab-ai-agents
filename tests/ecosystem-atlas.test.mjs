@@ -20,10 +20,10 @@ test("builds the independent Tender Ecosystem Atlas SPA", async () => {
     assetFiles.filter((file) => file.endsWith(".js")).map((file) => readFile(path.join(atlasRoot, "assets", file), "utf8")),
   );
   const bundle = javascript.join("\n");
-  for (const label of ["Agent Specifications", "Process Operations", "Sides & Actors", "Data & Sources", "Glossary", "Methodology", "Open TenderLab.ai"]) {
+  for (const label of ["Agent Specifications", "Real Agents", "Process Operations", "Sides & Actors", "Data & Sources", "Glossary", "Methodology", "Open TenderLab.ai"]) {
     assert.match(bundle, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(bundle, /Independent catalogues now/);
+  assert.match(bundle, /Independent catalogues\. Validated connections only/);
   assert.match(bundle, /Relationship Registry/);
   assert.match(bundle, /Definition ≠ Instance ≠ Execution attempt/);
   assert.match(bundle, /Scheduler \+ Trigger Engine/);
@@ -45,7 +45,7 @@ test("keeps actors, datasets, sources, and glossary as independent canonical reg
   assert.equal([...datasets.matchAll(/^ {2}"?[A-Z][A-Z0-9-]*"?:\s*tableDemo\(/gm)].length, 102, "expected one structured demo for every dataset");
   assert.match(schema, /demo: DatasetDemo/);
   assert.equal([...datasets.matchAll(/^ {2}source\(/gm)].length, 17, "expected representative source/provider records");
-  assert.equal([...glossary.matchAll(/^ {2}term\(/gm)].length, 41, "expected the shared canonical glossary including Event, Process Definition, Process Instance, Agent Execution, and Artifact");
+  assert.equal([...glossary.matchAll(/^ {2}term\(/gm)].length, 45, "expected the shared canonical glossary including runtime and Real Agent Development concepts");
 
   assert.match(schema, /type CatalogueStatus = "draft" \| "validated" \| "deprecated"/);
   assert.match(schema, /catalogueIdPattern/);

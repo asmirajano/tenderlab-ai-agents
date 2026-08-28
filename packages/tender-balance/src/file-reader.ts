@@ -32,6 +32,19 @@ export function reconstructPdfPageText(items: PositionedPdfTextItem[]) {
     const x = Number(item.transform?.[4]);
     const width = Number(item.width ?? 0);
     if (value) {
+      if (/^\s+$/.test(value) && Number.isFinite(width)) {
+        // PDF generators commonly encode a table-cell gap as one space glyph
+        // whose width spans the empty cell. Preserve that geometry as one or
+        // two tab stops so an absent opening/closing value is not silently
+        // shifted into the wrong reporting period.
+        text += width > 60 ? "\t\t" : width > 18 ? "\t" : " ";
+        previousEndX = Number.isFinite(x) ? x + width : null;
+        if (item.hasEOL) {
+          text += "\n";
+          previousEndX = null;
+        }
+        continue;
+      }
       if (previousEndX !== null && Number.isFinite(x)) {
         const gap = x - previousEndX;
         if (gap > 24) text += "\t";
@@ -228,7 +241,7 @@ export async function readBalanceSheetFile(file: File, onProgress?: ProgressRepo
       expectedPageCount: pages.length,
       synthetic: false,
       processedAt: new Date().toISOString(),
-      processingVersion: "tender-balance/1.1.0",
+      processingVersion: "tender-balance/1.2.0",
     },
     pages,
   });

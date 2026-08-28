@@ -88,6 +88,7 @@ export type CanonicalFinancialSource = {
   documentRole: FinancialDocumentRole;
   page: number | null;
   originalLabel: string;
+  rawReportedValue?: string;
   originalPeriod: string;
   displayYear: string;
   provenance: FinancialProvenance;
@@ -333,6 +334,10 @@ function firstConcept(review: BalanceSheetReview, concept: BalanceSheetConcept) 
   return review.lineItems.find((item) => item.normalizedConcept === concept);
 }
 
+function isExplicitReportedZero(raw: string) {
+  return /^(?:[$€£₾]\s*)?[—–-]$/.test(raw.trim());
+}
+
 function sourceFor(
   review: BalanceSheetReview,
   item: BalanceSheetLineItem,
@@ -350,6 +355,7 @@ function sourceFor(
     documentRole: role,
     page: value.source.page,
     originalLabel: item.originalLabel,
+    rawReportedValue: value.rawReportedValue,
     originalPeriod,
     displayYear,
     provenance,
@@ -370,7 +376,7 @@ function valueForConcept(
   const item = firstConcept(review, concept);
   const lineValue = item?.values.find((candidate) => candidate.period === originalPeriod);
   if (!item || !lineValue) return null;
-  const value = effectiveNormalizedValue(item, originalPeriod);
+  const value = effectiveNormalizedValue(item, originalPeriod) ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null);
   if (value === null) return null;
   const provenance: FinancialProvenance = lineValue.correction ? "USER_INPUT" : "SOURCE";
   const source = sourceFor(review, item, originalPeriod, displayYear, role, provenance);
@@ -384,7 +390,7 @@ function valueForConcept(
     value,
     currency: review.statement.currency,
     unitScale: review.statement.unitScale,
-    reportedValue: lineValue.normalizedValue,
+    reportedValue: lineValue.normalizedValue ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null),
     calculatedValue: null,
     difference: null,
     provenance,
@@ -423,6 +429,32 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
     for (const [field, concept] of Object.entries(BALANCE_FIELD_CONCEPTS) as Array<[Fin1FieldId, BalanceSheetConcept]>) {
       const mapped = valueForConcept(review, concept, field, period.originalPeriod, period.displayYear, input.role, dataset.sources);
       if (mapped) dataset.values.push(mapped);
+    }
+
+    const totalLiabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
+    const mappedCurrentLiabilities = dataset.values.find((value) => value.field === "current_liabilities" && value.displayYear === period.displayYear);
+    const hasNonZeroLiabilityComponent = review.lineItems.some((item) => {
+      if (!["current_liability", "non_current_liability"].includes(item.classification) || item.normalizedConcept === "total_liabilities") return false;
+      const value = effectiveNormalizedValue(item, period.originalPeriod);
+      return value !== null && value !== 0;
+    });
+    if (!mappedCurrentLiabilities && totalLiabilities?.status === "ready" && totalLiabilities.value === 0 && !hasNonZeroLiabilityComponent) {
+      dataset.values.push({
+        id: `value:current_liabilities:${period.displayYear}:calculated-zero`,
+        field: "current_liabilities",
+        displayYear: period.displayYear,
+        value: 0,
+        currency: review.statement.currency,
+        unitScale: review.statement.unitScale,
+        reportedValue: null,
+        calculatedValue: 0,
+        difference: null,
+        provenance: "CALCULATED",
+        sourceIds: [...totalLiabilities.sourceIds],
+        calculationFormula: "Total Liabilities are zero; no non-zero liability component is reported",
+        operandSourceIds: [...totalLiabilities.sourceIds],
+        status: "ready",
+      });
     }
 
     const reportedNetWorth = valueForConcept(review, "owners_equity", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources)
@@ -493,21 +525,88 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i] },
-  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i] },
-  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /маҳсулот.*сотишдан соф тушум/iu] },
+  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?$/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];
 
 function incomeStatementPages(review: BalanceSheetReview) {
-  return review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
+  const titled = review.pages.filter((page) => page.text?.split(/\r?\n/).some((line) => {
     const normalized = line.replace(/\s+/g, " ").trim();
     return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?$/i.test(normalized)
-      || /^(?:consolidated\s+)?income statements?$/i.test(normalized);
+      || /^(?:consolidated\s+)?income statements?$/i.test(normalized)
+      || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
   }));
+  const withTargetRows = titled.filter((page) => INCOME_FIELD_PATTERNS.some((definition) => definition.patterns.some((pattern) => pattern.test(page.text ?? ""))));
+  return withTargetRows.length ? withTargetRows : titled;
 }
 
 function normalizeIncomeLabel(label: string) {
-  return label.replace(/[{}]/g, (token) => token === "{" ? "(" : ")").replace(/\s+/g, " ").trim();
+  return label
+    .replace(/[{}]/g, (token) => token === "{" ? "(" : ")")
+    .replace(/\s+([)}\]])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function incomeDefinitionForLabel(label: string) {
+  const normalized = normalizeIncomeLabel(label).replace(/[:\s]+$/, "");
+  return INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(normalized)));
+}
+
+function parseIncomeStatementLine(sourceLine: string, expectedValueCount: number) {
+  const normalized = normalizeIncomeLabel(sourceLine);
+  const parsed = parseStatementLine(normalized, expectedValueCount);
+  if (parsed) return parsed;
+
+  const valueTokens = Array.from(normalized.matchAll(/(?:[$€£₾]\s*)?(?:[—–-]|\(\s*[-−]?\d[\d,.'’]*\s*\)|[-−]?\d[\d,.'’]*\d?)/g));
+  if (valueTokens.length < expectedValueCount) return undefined;
+  const selected = valueTokens.slice(-expectedValueCount);
+  const firstIndex = selected[0]?.index ?? -1;
+  if (firstIndex < 0) return undefined;
+  const label = normalized.slice(0, firstIndex).replace(/[:\s]+$/, "");
+  if (!incomeDefinitionForLabel(label)) return undefined;
+  return { label, rawValues: selected.map((match) => match[0].trim()) };
+}
+
+function incomeDefinitionForLine(sourceLine: string) {
+  const normalized = normalizeIncomeLabel(sourceLine);
+  const parsed = parseIncomeStatementLine(normalized, 1);
+  return incomeDefinitionForLabel(parsed?.label ?? normalized);
+}
+
+function parseIncomeReportedNumber(raw: string) {
+  return isExplicitReportedZero(raw) ? 0 : parseReportedNumber(raw);
+}
+
+function parseUzbekIncomeRows(text: string) {
+  const rows: Array<{ label: string; rawValues: string[] }> = [];
+  let pending = "";
+  const moneyToken = /(?:x|[-−]?\d{1,3}(?:[ \u00a0]\d{3})*(?:[,.]\d{2}))/giu;
+  for (const sourceLine of text.split(/\r?\n/)) {
+    const line = normalizeIncomeLabel(sourceLine);
+    if (!line) continue;
+    const row = line.match(/\b(\d{3})\s+((?:x|[-−]?\d)[\s\S]*)$/iu);
+    if (row) {
+      const beforeCode = line.slice(0, row.index).trim();
+      const label = normalizeIncomeLabel(`${pending} ${beforeCode}`);
+      const tokens = Array.from(row[2].matchAll(moneyToken), (match) => match[0]);
+      const rawValues = tokens.length >= 4 ? [tokens[0], tokens[2]] : tokens.filter((token) => !/^x$/i.test(token)).slice(0, 2);
+      if (label && rawValues.length) rows.push({ label, rawValues });
+      pending = "";
+      continue;
+    }
+    if (/^(?:lc=|даромадлар|харажатлар|\(фойда\)|\(зарарлар\)|[1-6](?:\s+[1-6])+)$/iu.test(line)
+      || /^(?:сатр|коди|кўрсаткичлар номи|ўтган йилнинг)/iu.test(line)
+      || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(line)) {
+      pending = "";
+      continue;
+    }
+    pending = INCOME_FIELD_PATTERNS.some((definition) => definition.patterns.some((pattern) => pattern.test(line)))
+      ? line
+      : normalizeIncomeLabel(`${pending} ${line}`).split(" ").slice(-32).join(" ");
+  }
+  return rows;
 }
 
 function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
@@ -517,9 +616,10 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
   if (!pages.length) return;
   dataset.incomeStatementDetected = true;
   const discovered = new Set<string>();
+  const locatedFields = new Set<Fin1FieldId>();
 
   for (const page of pages) {
-    const periods = detectPeriods(page.text ?? "").filter((period) => Boolean(yearFrom(period)));
+    const periods = detectPeriods(page.text ?? "", yearFrom(review.statement.reportingDate)).filter((period) => Boolean(yearFrom(period)));
     if (!periods.length) {
       pushIssue(dataset, {
         id: `issue:income-period:${review.source.documentId}:${page.pageNumber}`,
@@ -531,7 +631,14 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
     }
 
     for (const sourceLine of (page.text ?? "").split(/\r?\n/)) {
-      const parsed = parseStatementLine(sourceLine.trim(), periods.length);
+      const located = incomeDefinitionForLine(sourceLine);
+      if (located) locatedFields.add(located.field);
+    }
+
+    const sourceRows = /[ўқғҳ]/i.test(page.text ?? "")
+      ? parseUzbekIncomeRows(page.text ?? "")
+      : (page.text ?? "").split(/\r?\n/).map((sourceLine) => parseIncomeStatementLine(sourceLine.trim(), periods.length)).filter((parsed): parsed is NonNullable<typeof parsed> => Boolean(parsed));
+    for (const parsed of sourceRows) {
       if (!parsed) continue;
       const label = normalizeIncomeLabel(parsed.label);
       const definition = INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(label)));
@@ -539,7 +646,8 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
       const rawValues = parsed.rawValues.slice(-periods.length);
       for (let index = 0; index < periods.length; index += 1) {
         const displayYear = yearFrom(periods[index]);
-        const reportedValue = parseReportedNumber(rawValues[index] ?? "");
+        const rawReportedValue = rawValues[index] ?? "";
+        const reportedValue = parseIncomeReportedNumber(rawReportedValue);
         if (!displayYear || reportedValue === null) continue;
         const sourceId = `source:${review.reviewId}:income:${definition.field}:${displayYear}:${page.pageNumber}`;
         const confidence = page.confidence ?? 0.65;
@@ -550,6 +658,7 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
           documentRole: input.role,
           page: page.pageNumber,
           originalLabel: label,
+          rawReportedValue,
           originalPeriod: periods[index],
           displayYear,
           provenance: "SOURCE",
@@ -580,6 +689,7 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
   for (const displayYear of balanceYears) {
     for (const definition of INCOME_FIELD_PATTERNS) {
       if (discovered.has(`${definition.field}:${displayYear}`)) continue;
+      if (!locatedFields.has(definition.field)) continue;
       pushIssue(dataset, {
         id: `issue:income-extraction:${review.source.documentId}:${definition.field}:${displayYear}`,
         type: "extraction-problem",
@@ -712,9 +822,9 @@ export function buildCanonicalFinancialDataset(inputs: FinancialDatasetInput[]):
   return dataset;
 }
 
-function missingAction(field: Fin1FieldId) {
+function missingAction(field: Fin1FieldId, incomeStatementDetected: boolean) {
   return ["total_revenue", "profit_before_tax", "profit_after_tax"].includes(field)
-    ? "Add Income Statement"
+    ? incomeStatementDetected ? "Provide a source that separately reports this field" : "Add Income Statement"
     : "Add financial statement or review mapping";
 }
 
@@ -737,7 +847,7 @@ export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCou
         unitScale: value?.unitScale ?? dataset.unitScale,
         provenance: value?.provenance ?? null,
         sourceIds: value?.sourceIds ?? [],
-        sourceSummary: value?.calculationFormula ?? (sources.map((source) => `${source.fileName} · ${source.originalLabel}`).join("; ") || (fieldDefinition.sourceType === "income-statement" ? "Income Statement unavailable" : "Required source value unavailable")),
+        sourceSummary: value?.calculationFormula ?? (sources.map((source) => `${source.fileName} · ${source.originalLabel}`).join("; ") || (fieldDefinition.sourceType === "income-statement" ? dataset.incomeStatementDetected ? "Not separately reported in the eligible Income Statement" : "Income Statement unavailable" : "Required source value unavailable")),
         originalPeriods: Array.from(new Set(sources.map((source) => source.originalPeriod))),
         calculationFormula: value?.calculationFormula,
         operandSourceIds: value?.operandSourceIds,
@@ -746,7 +856,7 @@ export function generateFin1(dataset: CanonicalFinancialDataset, requiredYearCou
         difference: value?.difference ?? null,
         status: missing ? missingStatus : value.status,
         problemType: missing ? (missingIssue?.type ?? "source-data-gap") : value.problemType,
-        action: missing ? (missingIssue?.action ?? missingAction(fieldDefinition.id)) : value.status === "source-inconsistency" ? "Review reported and calculated values" : value.status === "extraction-problem" ? "Review extraction" : value.status === "mapping-problem" ? "Review mapping" : undefined,
+        action: missing ? (missingIssue?.action ?? missingAction(fieldDefinition.id, dataset.incomeStatementDetected)) : value.status === "source-inconsistency" ? "Review reported and calculated values" : value.status === "extraction-problem" ? "Review extraction" : value.status === "mapping-problem" ? "Review mapping" : undefined,
       });
     }
   }

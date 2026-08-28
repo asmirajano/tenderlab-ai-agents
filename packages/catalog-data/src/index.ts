@@ -8,4 +8,5 @@ export * from "./agent-dataset-relations";
 export * from "./datasets";
 export * from "./glossary";
 export * from "./client-products";
+export * from "./real-agent-development";
 export * from "./validate";

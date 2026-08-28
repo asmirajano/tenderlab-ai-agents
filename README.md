@@ -57,6 +57,7 @@ Legacy routes remain compatible: \`/workflow\` resolves to Architecture and
 ### Tender Ecosystem Atlas
 
 - \`/\` — catalogue overview and product boundary
+- \`/real-agents\` — the human-facing bridge from approved Agent strategy to validated real implementations, reusable patterns, and lessons learned
 - \`/orchestration\` — admin Process registry, Agent executions, Artifacts and production-readiness gaps
 - \`/actors\` — Tender Sides and institutional Actor Types
 - \`/data\` — logical datasets, sources/providers, architecture and proprietary assets
@@ -85,6 +86,12 @@ rendered by the shared Tender Apps shell.
 
 The current architecture plan and teammate-proposal audit are recorded in
 \`AGENT_ARCHITECTURE_PLAN.md\`.
+
+The empirical lifecycle for turning an approved capability into a real,
+source-grounded practical Agent is recorded separately in
+[`docs/real-tender-agent-development-methodology.md`](docs/real-tender-agent-development-methodology.md).
+It preserves the distinction between strategy/simulation, general production
+methodology, and Agent-specific domain knowledge.
 
 ## Local development
 

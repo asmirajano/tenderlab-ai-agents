@@ -18,7 +18,8 @@ body::after { background: radial-gradient(circle at 12% 4%, rgba(109, 124, 228, 
 .shared-brand-copy strong { font-size: 18px; letter-spacing: -.05em; line-height: 1; }
 .shared-brand-copy strong span { color: var(--tl-atlas); }
 .shared-brand-copy small { color: #718079; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 8px; font-weight: 750; letter-spacing: .16em; }
-.atlas-nav { align-items: center; display: flex; gap: 3px; justify-content: center; }
+.atlas-nav { align-items: center; display: flex; gap: 3px; justify-content: center; scrollbar-width: none; }
+.atlas-nav::-webkit-scrollbar { display: none; }
 .atlas-nav a { border-radius: 9px; color: #718078; font-size: 13px; font-weight: 750; letter-spacing: .015em; padding: 12px 15px; transition: 160ms ease; white-space: nowrap; }
 .atlas-nav a:hover { background: #f0f3f1; color: var(--tl-ink); }
 .atlas-nav a[aria-current="page"] { background: var(--tl-atlas-soft); box-shadow: inset 0 0 0 1px #d8ddff; color: #3444ad; }
@@ -841,4 +842,203 @@ details.spec-block[open] .spec-block-heading > i { rotate: 45deg; background: #d
   .spec-governance { grid-template-columns: 1fr 1fr; }
   .spec-governance div:last-child { grid-column: 1 / -1; }
   .spec-block-heading p { display: none; }
+}
+
+/* Real Agent Development — human-facing projection of canonical implementation knowledge */
+.real-agent-entry { grid-column: 1 / -1; min-height: 360px; background: linear-gradient(125deg, #f0f8f4, #f4f3ff 74%); }
+.real-agent-entry::after { background: var(--tl-atlas); }
+.real-agent-development-page { min-width: 0; }
+.real-agent-view-nav { position: sticky; top: 94px; z-index: 20; display: flex; gap: 4px; width: max-content; max-width: 100%; margin: 56px auto 0; padding: 5px; overflow-x: auto; border: 1px solid var(--tl-line); border-radius: 12px; background: rgba(243, 247, 244, .94); box-shadow: 0 8px 24px rgba(18, 38, 30, .06); backdrop-filter: blur(12px); }
+.real-agent-view-nav a { padding: 11px 16px; border-radius: 8px; color: var(--tl-muted); font-size: var(--tl-type-control); font-weight: 780; white-space: nowrap; }
+.real-agent-view-nav a:hover { background: #fff; color: var(--tl-ink); }
+.real-agent-view-nav a[aria-current="page"] { background: var(--tl-ink); color: #fff; }
+.real-agent-view-nav a:focus-visible,
+.real-agent-implementation-card a:focus-visible,
+.real-agent-reference-list a:focus-visible,
+.method-real-agent-link:focus-visible { outline: 3px solid rgba(84, 101, 196, .35); outline-offset: 3px; }
+
+.real-agent-bridge { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 62px; border: 1px solid var(--tl-line); border-radius: 18px; background: rgba(255,255,255,.82); }
+.real-agent-bridge article { position: relative; min-width: 0; min-height: 260px; padding: clamp(24px, 2.7vw, 42px); }
+.real-agent-bridge article + article { border-left: 1px solid var(--tl-line); }
+.real-agent-bridge article > span { color: var(--tl-atlas); font: 800 var(--tl-type-meta)/1 var(--mono); }
+.real-agent-bridge h2 { margin: 52px 0 14px; font-size: clamp(1.45rem, 1.15rem + .65vw, 2.15rem); letter-spacing: -.05em; line-height: 1.08; }
+.real-agent-bridge p { margin: 0; color: var(--tl-muted); font-size: var(--tl-type-secondary); line-height: 1.55; }
+.real-agent-bridge article > i { position: absolute; z-index: 1; top: 50%; right: -16px; display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--tl-line); border-radius: 50%; background: #fff; color: var(--tl-atlas); font-style: normal; transform: translateY(-50%); }
+
+.real-agent-knowledge-roles,
+.real-agent-maturity,
+.real-agent-feedback-loop,
+.real-agent-implementation-view,
+.real-agent-pattern-view,
+.real-agent-lessons-view { margin-top: 72px; }
+.real-agent-knowledge-roles > div:last-child { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+.real-agent-knowledge-roles article { min-width: 0; padding: 30px; border: 1px solid var(--tl-line); border-radius: 15px; background: rgba(255,255,255,.84); }
+.real-agent-knowledge-roles article > span,
+.real-agent-tor > span,
+.real-agent-io span,
+.real-agent-limitations > span,
+.real-agent-pattern-card section > span,
+.real-agent-feedback-loop > span { color: var(--tl-green); font: 800 var(--tl-type-micro)/1.3 var(--mono); letter-spacing: .11em; }
+.real-agent-knowledge-roles h3 { margin: 34px 0 12px; font-size: clamp(1.45rem, 1.2rem + .55vw, 2rem); letter-spacing: -.04em; }
+.real-agent-knowledge-roles p { margin: 0; color: var(--tl-muted); line-height: 1.55; }
+
+.real-agent-maturity > div:last-child { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 28px; overflow: hidden; border: 1px solid var(--tl-line); border-radius: 16px; background: rgba(255,255,255,.82); }
+.real-agent-maturity article { min-width: 0; padding: 25px; }
+.real-agent-maturity article + article { border-left: 1px solid var(--tl-line); }
+.real-agent-maturity span { color: var(--tl-atlas); font: 800 var(--tl-type-meta)/1 var(--mono); }
+.real-agent-maturity strong { display: block; margin: 28px 0 10px; font-size: var(--tl-type-card-title); line-height: 1.25; }
+.real-agent-maturity p { margin: 0; color: var(--tl-muted); font-size: var(--tl-type-secondary); line-height: 1.5; }
+
+.real-agent-feedback-loop { padding: clamp(26px, 3vw, 46px); border-radius: 18px; background: var(--tl-ink); color: white; }
+.real-agent-feedback-loop > span { color: var(--tl-lime); }
+.real-agent-feedback-loop > div { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 26px; }
+.real-agent-feedback-loop article { position: relative; display: grid; gap: 12px; min-width: 0; padding: 16px; border-top: 1px solid #496057; }
+.real-agent-feedback-loop article b { color: var(--tl-lime); font: 800 var(--tl-type-meta)/1 var(--mono); }
+.real-agent-feedback-loop article strong { font-size: var(--tl-type-secondary); line-height: 1.35; }
+.real-agent-feedback-loop article i { position: absolute; top: 16px; right: -3px; color: #789087; font-style: normal; }
+.real-agent-feedback-loop > p { max-width: 1000px; margin: 24px 0 0; color: #b9c7c0; line-height: 1.55; }
+
+.real-agent-section-intro { max-width: 950px; color: var(--tl-muted); font-size: var(--tl-type-body); line-height: 1.6; }
+.real-agent-implementation-grid { display: grid; gap: 22px; margin-top: 30px; }
+.real-agent-implementation-card { scroll-margin-top: 180px; overflow: hidden; border: 1px solid var(--tl-line); border-radius: 18px; background: rgba(255,255,255,.9); }
+.real-agent-implementation-card > header { display: flex; justify-content: space-between; gap: 30px; padding: clamp(28px, 3vw, 48px); border-bottom: 1px solid var(--tl-line); background: linear-gradient(120deg, #f1f8f4, #fff 56%, #f4f3ff); }
+.real-agent-implementation-card > header span,
+.real-agent-implementation-meta span,
+.real-agent-lesson-card > header > span,
+.real-agent-pattern-card > header span { color: var(--tl-green); font: 800 var(--tl-type-micro)/1.35 var(--mono); letter-spacing: .08em; overflow-wrap: anywhere; }
+.real-agent-implementation-card h2 { margin: 14px 0 8px; font-size: clamp(2.1rem, 1.55rem + 1.4vw, 3.5rem); letter-spacing: -.06em; line-height: 1; }
+.real-agent-implementation-card > header p { margin: 0; color: var(--tl-muted); }
+.real-agent-badge-stack { display: grid; align-content: start; gap: 8px; min-width: 230px; text-align: right; }
+.real-agent-badge-stack b,
+.real-agent-badge-stack i { padding: 8px 10px; border-radius: 7px; font: 800 var(--tl-type-meta)/1.2 var(--mono); font-style: normal; text-transform: uppercase; }
+.real-agent-badge-stack b { background: #dff2e9; color: #116b4e; }
+.real-agent-badge-stack i { background: #eeecff; color: #505db3; }
+.real-agent-implementation-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--tl-line); }
+.real-agent-implementation-meta > div { display: grid; gap: 8px; min-width: 0; padding: 22px 26px; }
+.real-agent-implementation-meta > div + div { border-left: 1px solid var(--tl-line); }
+.real-agent-implementation-meta strong { font-size: var(--tl-type-secondary); line-height: 1.35; text-transform: capitalize; }
+.real-agent-implementation-meta small { color: var(--tl-muted); line-height: 1.35; }
+.real-agent-tor,
+.real-agent-limitations { padding: 24px 28px; border-bottom: 1px solid var(--tl-line); }
+.real-agent-tor p { margin: 10px 0 0; font-size: var(--tl-type-body); line-height: 1.6; }
+.real-agent-io { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--tl-line); background: #f8faf8; }
+.real-agent-io section { min-width: 0; padding: 28px; }
+.real-agent-io section + section { border-left: 1px solid var(--tl-line); }
+.real-agent-io ul,
+.real-agent-limitations ul { margin: 16px 0 0; padding-left: 21px; color: var(--tl-muted); line-height: 1.65; }
+.real-agent-io strong { display: block; margin-top: 16px; font-size: var(--tl-type-card-title); line-height: 1.45; }
+.real-agent-io p { color: var(--tl-muted); line-height: 1.55; }
+.real-agent-implementation-card > footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 20px 28px; }
+.real-agent-implementation-card > footer a { padding: 9px 12px; border: 1px solid var(--tl-line); border-radius: 8px; color: var(--tl-green); font-size: var(--tl-type-secondary); font-weight: 760; }
+.real-agent-implementation-card > footer a:hover { background: #edf7f2; }
+.real-agent-implementation-card > footer small { margin-left: auto; color: var(--tl-muted); }
+
+.real-agent-pattern-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 30px; }
+.real-agent-pattern-card { min-width: 0; overflow: hidden; border: 1px solid var(--tl-line); border-radius: 16px; background: rgba(255,255,255,.88); }
+.real-agent-pattern-card > header,
+.real-agent-lesson-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 20px 22px; border-bottom: 1px solid var(--tl-line); }
+.real-agent-pattern-card > header b { padding: 5px 7px; border-radius: 5px; background: #dff2e9; color: #116b4e; font: 800 var(--tl-type-micro)/1 var(--mono); text-transform: uppercase; }
+.real-agent-pattern-card h2 { margin: 0; padding: 28px 28px 18px; font-size: clamp(1.55rem, 1.3rem + .55vw, 2.1rem); letter-spacing: -.045em; line-height: 1.12; }
+.real-agent-pattern-card section { padding: 10px 28px 24px; }
+.real-agent-pattern-card section p { margin: 10px 0 0; color: var(--tl-muted); line-height: 1.55; }
+.real-agent-pattern-card .pattern-rule { margin: 0 20px 24px; padding: 20px; border: 1px solid #b9daca; border-radius: 11px; background: #eff8f4; }
+.real-agent-pattern-card .pattern-rule strong { display: block; margin-top: 10px; line-height: 1.5; }
+.real-agent-pattern-card > footer { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 20px 28px; border-top: 1px solid var(--tl-line); background: #f8faf8; }
+.real-agent-pattern-card footer small,
+.real-agent-lesson-card footer small { color: var(--tl-muted); font: 800 var(--tl-type-micro)/1.3 var(--mono); letter-spacing: .08em; }
+.real-agent-pattern-card footer p { margin: 8px 0 0; color: var(--tl-muted); font-size: var(--tl-type-meta); line-height: 1.5; }
+.real-agent-reference-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.real-agent-reference-list a,
+.real-agent-reference-list span { padding: 5px 7px; border-radius: 5px; background: #e8f0ec; color: var(--tl-green); font-size: var(--tl-type-micro); font-weight: 760; }
+
+.real-agent-lesson-group { margin-top: 30px; }
+.real-agent-lesson-group > header { display: flex; justify-content: space-between; gap: 18px; padding: 18px 22px; border-radius: 12px 12px 0 0; background: var(--tl-ink); color: #fff; }
+.real-agent-lesson-group > header span { color: var(--tl-lime); font: 800 var(--tl-type-meta)/1.2 var(--mono); letter-spacing: .1em; }
+.real-agent-lesson-group > header strong { font-size: var(--tl-type-secondary); }
+.real-agent-lesson-group > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-top: 14px; }
+.real-agent-lesson-group.agent-specific { margin-top: 56px; }
+.real-agent-lesson-group.agent-specific > header { background: #3343a6; }
+.real-agent-lesson-group.agent-specific > p { margin: 14px 0 0; padding: 15px 18px; border: 1px solid #d7d9f2; border-radius: 9px; background: #f4f3ff; color: #515b92; }
+.real-agent-lesson-card { min-width: 0; overflow: hidden; border: 1px solid var(--tl-line); border-radius: 14px; background: rgba(255,255,255,.9); }
+.real-agent-lesson-card > header > div { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.real-agent-lesson-card > header b,
+.real-agent-lesson-card > header i { padding: 5px 7px; border-radius: 5px; font: 800 var(--tl-type-micro)/1 var(--mono); font-style: normal; text-transform: uppercase; }
+.real-agent-lesson-card > header b { background: #dff2e9; color: #116b4e; }
+.real-agent-lesson-card > header i { background: #eeecff; color: #505db3; }
+.real-agent-lesson-card h3 { margin: 0; padding: 26px 26px 10px; font-size: clamp(1.35rem, 1.15rem + .45vw, 1.8rem); letter-spacing: -.04em; line-height: 1.18; }
+.real-agent-lesson-card dl { margin: 0; padding: 12px 26px 24px; }
+.real-agent-lesson-card dl > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 12px 0; border-top: 1px solid var(--tl-line); }
+.real-agent-lesson-card dt { color: var(--tl-green); font: 800 var(--tl-type-micro)/1.35 var(--mono); text-transform: uppercase; }
+.real-agent-lesson-card dd { margin: 0; color: var(--tl-muted); font-size: var(--tl-type-secondary); line-height: 1.5; }
+.real-agent-lesson-card > footer { display: grid; grid-template-columns: minmax(180px, .55fr) 1fr; gap: 18px; padding: 20px 26px; border-top: 1px solid var(--tl-line); background: #f8faf8; }
+.real-agent-lesson-card > footer p { margin: 0; color: var(--tl-muted); font-size: var(--tl-type-meta); line-height: 1.5; }
+
+.method-real-agent-link { display: grid; grid-template-columns: .7fr 1.25fr auto; gap: 24px; align-items: center; margin-top: 24px; padding: 24px 28px; border: 1px solid #d7d9f2; border-radius: 14px; background: #f4f3ff; }
+.method-real-agent-link span { color: var(--tl-atlas); font: 800 var(--tl-type-micro)/1.3 var(--mono); letter-spacing: .1em; }
+.method-real-agent-link strong { font-size: var(--tl-type-card-title); }
+.method-real-agent-link i { color: var(--tl-atlas); font-size: var(--tl-type-secondary); font-style: normal; font-weight: 760; white-space: nowrap; }
+
+.spec-implementation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.spec-implementation-list article { min-width: 0; padding: 20px; border: 1px solid #b9daca; border-radius: 12px; background: #eff8f4; }
+.spec-implementation-list article > div { display: flex; justify-content: space-between; gap: 10px; }
+.spec-implementation-list b,
+.spec-implementation-list i { color: var(--tl-green); font: 800 var(--tl-type-micro)/1.25 var(--mono); font-style: normal; text-transform: uppercase; }
+.spec-implementation-list h3 { margin: 20px 0 8px; font-size: var(--tl-type-card-title); }
+.spec-implementation-list p { min-height: 3em; }
+.spec-implementation-list footer { display: flex; justify-content: space-between; gap: 12px; align-items: end; margin-top: 18px; border-top: 1px solid #c9e1d6; padding-top: 14px; }
+.spec-implementation-list footer small { color: var(--tl-muted); overflow-wrap: anywhere; }
+.spec-implementation-list footer a { color: var(--tl-green); font-size: var(--tl-type-secondary); font-weight: 760; text-align: right; }
+
+@media (max-width: 1180px) {
+  .real-agent-bridge { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .real-agent-bridge article:nth-child(3) { border-left: 0; border-top: 1px solid var(--tl-line); }
+  .real-agent-bridge article:nth-child(4) { border-top: 1px solid var(--tl-line); }
+  .real-agent-bridge article:nth-child(2) > i { display: none; }
+  .real-agent-maturity > div:last-child { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .real-agent-maturity article:nth-child(4) { border-top: 1px solid var(--tl-line); border-left: 0; }
+  .real-agent-maturity article:nth-child(5) { border-top: 1px solid var(--tl-line); }
+  .real-agent-feedback-loop > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .real-agent-feedback-loop article:nth-child(3) i { display: none; }
+  .real-agent-implementation-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .real-agent-implementation-meta > div:nth-child(3) { border-top: 1px solid var(--tl-line); border-left: 0; }
+  .real-agent-implementation-meta > div:nth-child(4) { border-top: 1px solid var(--tl-line); }
+}
+
+@media (max-width: 900px) {
+  .real-agent-view-nav { top: 142px; margin-inline: 0; }
+  .real-agent-knowledge-roles > div:last-child,
+  .real-agent-pattern-grid,
+  .real-agent-lesson-group > div { grid-template-columns: 1fr; }
+  .real-agent-maturity > div:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .real-agent-maturity article:nth-child(odd) { border-left: 0; }
+  .real-agent-maturity article:nth-child(n+3) { border-top: 1px solid var(--tl-line); }
+  .real-agent-implementation-card > header { display: grid; }
+  .real-agent-badge-stack { min-width: 0; text-align: left; }
+  .real-agent-io { grid-template-columns: 1fr; }
+  .real-agent-io section + section { border-top: 1px solid var(--tl-line); border-left: 0; }
+  .method-real-agent-link { grid-template-columns: 1fr; }
+  .method-real-agent-link i { white-space: normal; }
+}
+
+@media (max-width: 620px) {
+  .real-agent-view-nav { top: 136px; width: 100%; border-radius: 9px; }
+  .real-agent-bridge { grid-template-columns: 1fr; }
+  .real-agent-bridge article { min-height: auto; }
+  .real-agent-bridge article + article { border-top: 1px solid var(--tl-line); border-left: 0; }
+  .real-agent-bridge article > i { display: none; }
+  .real-agent-maturity > div:last-child,
+  .real-agent-feedback-loop > div,
+  .real-agent-implementation-meta,
+  .real-agent-pattern-card > footer,
+  .real-agent-lesson-card > footer,
+  .spec-implementation-list { grid-template-columns: 1fr; }
+  .real-agent-maturity article { border-top: 1px solid var(--tl-line); border-left: 0 !important; }
+  .real-agent-maturity article:first-child { border-top: 0; }
+  .real-agent-feedback-loop article i { display: none; }
+  .real-agent-implementation-meta > div + div { border-top: 1px solid var(--tl-line); border-left: 0; }
+  .real-agent-implementation-card > footer small { width: 100%; margin-left: 0; }
+  .real-agent-lesson-card dl > div { grid-template-columns: 1fr; gap: 7px; }
+  .real-agent-lesson-group > header { display: grid; }
+  .spec-implementation-list footer { display: grid; align-items: start; }
+  .spec-implementation-list footer a { text-align: left; }
 }

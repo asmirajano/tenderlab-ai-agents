@@ -1,6 +1,6 @@
 import type { GlossaryScope, GlossaryTerm } from "../../catalog-schema/src";
 
-const updatedAt = "2026-08-22";
+const updatedAt = "2026-08-28";
 
 const term = (
   code: string,
@@ -29,6 +29,10 @@ const term = (
 
 export const glossaryTerms: GlossaryTerm[] = [
   term("AGENT", "Agent", "Агент", "Ограниченная capability с определёнными inputs, process, output и activation conditions.", ["tenderlab", "agents"], ["AI Agent"], ["Orchestration", "Handoff"]),
+  term("REAL_AGENT_IMPLEMENTATION", "Real Agent Implementation", "Реальная реализация агента", "Версионируемая client-facing реализация утверждённой Agent capability, связанная с каноническим Agent, продуктом, evidence, maturity, ограничениями и результатами проверки; не является новой Agent identity или отдельным execution attempt.", ["tenderlab", "agents"], ["Practical Agent", "Production Agent Implementation"], ["Agent", "Agent Execution", "Artifact"]),
+  term("REAL_AGENT_MATURITY", "Real Agent Maturity", "Зрелость реального агента", "Отдельная evidence-backed оценка стадии от concept/simulation до enterprise runtime, не равная product lifecycle, deployment status или runtime readiness.", ["tenderlab", "agents", "rules"], ["Implementation Maturity"], ["Real Agent Implementation"]),
+  term("REUSABLE_DEVELOPMENT_PATTERN", "Reusable Development Pattern", "Повторно используемый паттерн разработки", "Проверенное на implementation evidence общее правило, применимое к будущим real Agents и связанное с methodology gates, source implementations и lessons.", ["tenderlab", "agents", "rules"], ["Real Agent Pattern"], ["Implementation Lesson"]),
+  term("IMPLEMENTATION_LESSON", "Implementation Lesson", "Урок реализации", "Курируемая запись о фактическом сбое, root cause, принятом правиле, evidence scope и destination: general methodology либо Agent-specific playbook.", ["tenderlab", "agents", "rules"], ["Lesson Learned"], ["Reusable Development Pattern", "Data Provenance"]),
   term("ORCHESTRATION", "Orchestration", "Оркестрация", "Контекстное управление последовательностью, параллельностью, условиями, повторами и approvals.", ["tenderlab", "agents", "cases"], [], ["Workflow", "Handoff"]),
   term("WORKFLOW", "Workflow", "Рабочий процесс", "Набор связанных действий и состояний, ведущих к определённому outcome.", ["core", "tenderlab", "cases"], [], ["Orchestration"]),
   term("EVENT", "Event", "Событие", "Ограниченное происшествие или изменение состояния Case с Trigger, ответственным Actor, временем и Result.", ["tenderlab", "cases"], [], ["Process", "Artifact"]),

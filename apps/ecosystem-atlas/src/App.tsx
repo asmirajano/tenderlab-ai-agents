@@ -5,12 +5,16 @@ import {
   actorTypes,
   agents,
   authorityLabels,
+  clientProducts,
   dataFamilies,
   dataSources,
   directnessLabels,
   glossaryScopeLabels,
   glossaryTerms,
   priorityLabels,
+  realAgentImplementations,
+  realAgentLessons,
+  realAgentReusablePatterns,
   tenderDatasets,
   tenderSides,
 } from "../../../packages/catalog-data/src";
@@ -19,6 +23,9 @@ import type {
   ActorType,
   DatasetDemo,
   GlossaryScope,
+  RealAgentImplementation,
+  RealAgentLesson,
+  RealAgentReusablePattern,
   TenderDataset,
 } from "../../../packages/catalog-schema/src";
 import { AgentSpecificationsPage } from "./AgentSpecifications";
@@ -28,6 +35,7 @@ const mainAppUrl = "https://tenderlab-ai-agents.web.app";
 const navItems = [
   { href: "/", label: "Overview" },
   { href: "/agents", label: "Agent Specifications" },
+  { href: "/real-agents", label: "Real Agents" },
   { href: "/orchestration", label: "Process Operations" },
   { href: "/actors", label: "Sides & Actors" },
   { href: "/data", label: "Data & Sources" },
@@ -58,7 +66,7 @@ function AtlasFooter() {
   return (
     <footer className="atlas-footer">
       <ProductBrand atlas />
-      <p>Independent catalogues now. Canonical connections later.</p>
+      <p>Independent catalogues. Validated connections only.</p>
       <span>CATALOGUE VERSION · 1.0.0-DRAFT</span>
     </footer>
   );
@@ -144,6 +152,12 @@ function OverviewPage() {
           <h2>Process Operations</h2>
           <p>Какие Processes существуют, кто их выполняет, какие Artifacts они создают и чего ещё не хватает до production runtime.</p>
           <footer><span>Definition → Instance → Execution → Artifact</span><i>→</i></footer>
+        </a>
+        <a href="/real-agents" className="catalogue-entry real-agent-entry">
+          <div><span>KNOWLEDGE BRIDGE</span><b>{realAgentImplementations.length} IMPLEMENTATIONS · {realAgentReusablePatterns.length} VALIDATED PATTERNS</b></div>
+          <h2>Real Agent Development</h2>
+          <p>Как approved Agent concept проходит через real evidence, experiment, audit и production verification — и возвращает проверенные lessons в следующий Agent.</p>
+          <footer><span>Strategy → Method → Implementation → Learning</span><i>→</i></footer>
         </a>
       </section>
 
@@ -433,8 +447,168 @@ function GlossaryPage() {
   return <><PageIntro kicker="SHARED CANONICAL LANGUAGE" title="One Glossary." accent="Contextual subsets." text="Термин хранится один раз и может иметь contextual usage для TenderLab.ai или Atlas. Это предотвращает расхождение определений между приложениями." aside={<><StatusTag /><strong>{glossaryTerms.length} Terms</strong><p>English canonical term · Russian explanation · aliases · scopes.</p></>} /><section className="catalogue-controls"><label className="catalogue-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти термин, alias или определение" /></label><div className="segmented glossary-scopes"><button className={scope === "all" ? "active" : ""} onClick={() => setScope("all")}>All</button>{Object.entries(glossaryScopeLabels).map(([key, label]) => <button className={scope === key ? "active" : ""} onClick={() => setScope(key)} key={key}>{label}</button>)}</div><span className="result-count">{filtered.length}</span></section><section className="glossary-list">{filtered.map((item, index) => <article key={item.id}><div><span>{String(index + 1).padStart(2, "0")}</span><b>{item.id}</b></div><h2>{item.term}</h2><h3>{item.name.ru}</h3><p>{item.definition}</p><footer><div className="chip-list">{item.scopes.map((value) => <i key={value}>{glossaryScopeLabels[value]}</i>)}</div>{item.aliases.length > 0 && <small>Aliases: {item.aliases.join(" · ")}</small>}</footer></article>)}</section></>;
 }
 
+type RealAgentView = "overview" | "implementations" | "patterns" | "lessons";
+
+const realAgentViews: { id: RealAgentView; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "implementations", label: "Implementations" },
+  { id: "patterns", label: "Reusable Patterns" },
+  { id: "lessons", label: "Lessons Learned" },
+];
+
+const maturityLabels = {
+  "concept-or-simulation": "Concept / simulation",
+  "isolated-method-validated": "Isolated method validated",
+  "validated-client-workflow": "Validated client workflow",
+  "controlled-pilot": "Controlled pilot",
+  "enterprise-runtime": "Enterprise runtime",
+} as const;
+
+const evidenceStrengthLabels = {
+  "unit-or-synthetic-fixture": "Unit / synthetic fixture",
+  "isolated-authorized-realistic-document": "Isolated realistic evidence",
+  "local-production-build-replay": "Local production-build replay",
+  "deployed-smoke-verification": "Deployed smoke verification",
+  "deployed-or-equivalent-representative-replay": "Representative deployed replay",
+} as const;
+
+const implementationById = new Map(realAgentImplementations.map((item) => [item.id, item]));
+const clientProductById = new Map(clientProducts.map((item) => [item.id, item]));
+const agentByRegistryId = new Map(agents.map((item) => [item.registryId, item]));
+
+function ImplementationReferences({ ids }: { ids: RealAgentImplementation["id"][] }) {
+  return <div className="real-agent-reference-list">{ids.map((id) => {
+    const implementation = implementationById.get(id);
+    return implementation ? <a href={`/real-agents/implementations#${implementation.slug}`} key={id}>{implementation.name}</a> : <span key={id}>{id}</span>;
+  })}</div>;
+}
+
+function RealAgentImplementationCard({ implementation }: { implementation: RealAgentImplementation }) {
+  const agent = agentByRegistryId.get(implementation.ownerAgentId);
+  const product = clientProductById.get(implementation.clientProductId);
+  return <article className="real-agent-implementation-card" id={implementation.slug}>
+    <header>
+      <div><span>{implementation.id}</span><h2>{implementation.name}</h2><p>{implementation.descriptor}</p></div>
+      <div className="real-agent-badge-stack"><b>{maturityLabels[implementation.maturity]}</b><i>{implementation.deploymentStatus.replaceAll("-", " ")}</i></div>
+    </header>
+    <section className="real-agent-implementation-meta" aria-label={`${implementation.name} development status`}>
+      <div><span>CANONICAL AGENT</span><strong>{implementation.ownerAgentId}</strong><small>{agent?.name}</small></div>
+      <div><span>PRODUCT LIFECYCLE</span><strong>{product?.status.replaceAll("-", " ")}</strong><small>Separate from method maturity</small></div>
+      <div><span>EVIDENCE</span><strong>{evidenceStrengthLabels[implementation.evidenceStrength]}</strong><small>Method v{implementation.methodologyVersion}</small></div>
+      <div><span>RUNTIME</span><strong>{implementation.runtimeReadiness.replaceAll("-", " ")}</strong><small>Not enterprise runtime</small></div>
+    </section>
+    <section className="real-agent-tor"><span>TOR / AUTHORITY BOUNDARY</span><p>{implementation.tor}</p></section>
+    <div className="real-agent-io">
+      <section><span>WHAT CLIENT PROVIDES</span><ul>{implementation.primaryInputs.map((item) => <li key={item}>{item}</li>)}</ul></section>
+      <section><span>WHAT THE AGENT RETURNS</span><strong>{implementation.primaryOutput}</strong><p>{implementation.downstreamConsumer}</p></section>
+    </div>
+    <section className="real-agent-limitations"><span>KNOWN LIMITATIONS</span><ul>{implementation.knownLimitations.map((item) => <li key={item}>{item}</li>)}</ul></section>
+    <footer>
+      {agent && <a href={`/agents/${agent.slug}`}>Open Agent Specification →</a>}
+      {product && <a href={`https://tenderapps-ai.web.app${product.clientRoute}`} rel="noreferrer" target="_blank">Open test product ↗</a>}
+      <small>{implementation.patternIds.length} patterns · {implementation.lessonIds.length} lessons · updated {implementation.updatedAt}</small>
+    </footer>
+  </article>;
+}
+
+function RealAgentPatternCard({ pattern }: { pattern: RealAgentReusablePattern }) {
+  return <article className="real-agent-pattern-card">
+    <header><span>{pattern.id}</span><b>{pattern.status}</b></header>
+    <h2>{pattern.title}</h2>
+    <section><span>PROBLEM</span><p>{pattern.problem}</p></section>
+    <section className="pattern-rule"><span>REUSABLE RULE</span><strong>{pattern.rule}</strong></section>
+    <footer><div><small>CONFIRMED BY</small><ImplementationReferences ids={pattern.confirmedByImplementationIds} /></div><div><small>METHODOLOGY GATES</small><p>{pattern.methodologyGateIds.join(" · ")}</p></div></footer>
+  </article>;
+}
+
+function RealAgentLessonCard({ lesson }: { lesson: RealAgentLesson }) {
+  return <article className="real-agent-lesson-card">
+    <header><span>{lesson.id}</span><div><b>{lesson.classification}</b><i>{lesson.evidenceScope.replaceAll("-", " ")}</i></div></header>
+    <h3>{lesson.title}</h3>
+    <dl><div><dt>What happened</dt><dd>{lesson.whatHappened}</dd></div><div><dt>Root cause</dt><dd>{lesson.rootCause}</dd></div><div><dt>Retained rule</dt><dd>{lesson.reusableRule}</dd></div></dl>
+    <footer><div><small>SOURCE IMPLEMENTATIONS</small><ImplementationReferences ids={lesson.implementationIds} /></div><p>{lesson.methodologyImpact}</p></footer>
+  </article>;
+}
+
+function RealAgentDevelopmentPage({ requestedView }: { requestedView?: string }) {
+  const view: RealAgentView = realAgentViews.some((item) => item.id === requestedView) ? requestedView as RealAgentView : "overview";
+  const generalLessons = realAgentLessons.filter((item) => item.classification === "general");
+  const agentLessons = realAgentLessons.filter((item) => item.classification === "agent-specific");
+  const maturitySteps = [
+    ["01", "Concept / simulation", "Canonical purpose and deterministic demonstration"],
+    ["02", "Isolated method", "Uncertain intelligence validated on bounded real evidence"],
+    ["03", "Client workflow", "Case, review, artifacts, recovery, and outputs verified"],
+    ["04", "Controlled pilot", "Authorized users, monitored evidence, and operational controls"],
+    ["05", "Enterprise runtime", "Durable tenancy, authorization, audit, orchestration, and recovery"],
+  ];
+
+  return <div className="real-agent-development-page">
+    <PageIntro
+      kicker="STRATEGY → REAL IMPLEMENTATION → LEARNING"
+      title="From Agent Strategy"
+      accent="to Real Agent."
+      text="A human-facing knowledge map of how approved Tender Ecosystem capabilities become evidence-validated client products. Atlas explains the method and accumulated learning; Skills and playbooks remain the operational instructions."
+      aside={<><span className="status-tag"><i /> VALIDATED KNOWLEDGE LAYER</span><strong>{realAgentImplementations.length} real implementations</strong><p>{realAgentReusablePatterns.length} reusable patterns · {realAgentLessons.length} retained lessons · operational method v2.0.0.</p></>}
+    />
+
+    <nav className="real-agent-view-nav" aria-label="Real Agent Development views">
+      {realAgentViews.map((item) => <a aria-current={view === item.id ? "page" : undefined} href={`/real-agents/${item.id}`} key={item.id}>{item.label}</a>)}
+    </nav>
+
+    {view === "overview" && <>
+      <section className="real-agent-bridge" aria-label="Strategy to learning lifecycle">
+        {[
+          ["01", "Agent Strategy & Simulation", "Canonical identity, purpose, architecture, and simulated Case role."],
+          ["02", "Real Agent Development", "Contracts, authorized evidence, isolated experiment, audit, and method approval."],
+          ["03", "Real Implementations", "Client workflow, explicit Case result, artifacts, review, and bounded release."],
+          ["04", "Accumulated Learning", "Validated patterns feed the method; domain rules return to the owning playbook."],
+        ].map(([number, title, note], index) => <article key={number}><span>{number}</span><h2>{title}</h2><p>{note}</p>{index < 3 && <i aria-hidden="true">→</i>}</article>)}
+      </section>
+
+      <section className="real-agent-knowledge-roles">
+        <div className="section-title"><p>ONE CYCLE · THREE KNOWLEDGE HOMES</p><h2>Complementary, not duplicated.</h2></div>
+        <div>
+          <article><span>HUMAN-FACING</span><h3>Tender Ecosystem Atlas</h3><p>Strategic map, maturity, implementations, evidence-backed lessons, reusable patterns, and relationships.</p></article>
+          <article><span>CODEX-FACING</span><h3>Methodology / Skill</h3><p>Operational gates and invariants used when Codex builds, verifies, and releases the next real Agent.</p></article>
+          <article><span>DOMAIN-FACING</span><h3>Agent Playbooks</h3><p>Financial, logistics, OCR, Incoterm, pricing, and future domain rules with their own fixtures and regressions.</p></article>
+        </div>
+      </section>
+
+      <section className="real-agent-maturity">
+        <div className="section-title"><p>MATURITY WITHOUT INFLATION</p><h2>Deployment is not enterprise runtime.</h2></div>
+        <div>{maturitySteps.map(([number, title, note]) => <article key={number}><span>{number}</span><strong>{title}</strong><p>{note}</p></article>)}</div>
+      </section>
+
+      <section className="real-agent-feedback-loop">
+        <span>REPEATABLE FEEDBACK LOOP</span>
+        <div>{["Build Real Agent", "Audit actual output", "Classify lessons", "Update method / playbook", "Publish Atlas projection", "Use for next Agent"].map((item, index) => <article key={item}><b>{String(index + 1).padStart(2, "0")}</b><strong>{item}</strong>{index < 5 && <i aria-hidden="true">→</i>}</article>)}</div>
+        <p>Candidate lessons remain technical evidence until reviewed. General rules enter the method; Agent-specific rules remain in the owning playbook. Atlas publishes the curated relationship and history.</p>
+      </section>
+    </>}
+
+    {view === "implementations" && <section className="real-agent-implementation-view">
+      <div className="section-title"><p>CANONICAL IMPLEMENTATION REGISTRY</p><h2>Real products linked to strategic Agents.</h2></div>
+      <p className="real-agent-section-intro">Product lifecycle, method maturity, deployment, and runtime readiness are separate dimensions. A deployed test surface does not imply enterprise operation.</p>
+      <div className="real-agent-implementation-grid">{realAgentImplementations.map((item) => <RealAgentImplementationCard implementation={item} key={item.id} />)}</div>
+    </section>}
+
+    {view === "patterns" && <section className="real-agent-pattern-view">
+      <div className="section-title"><p>VALIDATED ACROSS IMPLEMENTATION EVIDENCE</p><h2>Reusable patterns, not copied debugging.</h2></div>
+      <p className="real-agent-section-intro">Patterns summarize repeatable architecture and development rules. Domain formulas and parsing details stay in Agent playbooks.</p>
+      <div className="real-agent-pattern-grid">{realAgentReusablePatterns.map((item) => <RealAgentPatternCard pattern={item} key={item.id} />)}</div>
+    </section>}
+
+    {view === "lessons" && <section className="real-agent-lessons-view">
+      <div className="section-title"><p>CURATED EVIDENCE REGISTER</p><h2>Learning with provenance and ownership.</h2></div>
+      <p className="real-agent-section-intro">Every lesson retains its source implementation, evidence scope, failure family, accepted rule, and operational destination.</p>
+      <section className="real-agent-lesson-group"><header><span>GENERAL METHODOLOGY</span><strong>{generalLessons.length} validated lessons</strong></header><div>{generalLessons.map((item) => <RealAgentLessonCard lesson={item} key={item.id} />)}</div></section>
+      <section className="real-agent-lesson-group agent-specific"><header><span>AGENT-SPECIFIC</span><strong>{agentLessons.length} playbook-owned lessons</strong></header><p>Atlas retains only the strategic summary. Operative details remain in the linked financial or logistics playbook.</p><div>{agentLessons.map((item) => <RealAgentLessonCard lesson={item} key={item.id} />)}</div></section>
+    </section>}
+  </div>;
+}
+
 function MethodologyPage() {
-  return <><PageIntro kicker="CATALOGUE GOVERNANCE" title="Independent first." accent="Connected only when mature." text="Atlas keeps each catalogue independently governed. Cross-catalogue links live in a separate typed relationship registry and never redefine Agent or Dataset identity." aside={<><StatusTag /><strong>Method V1.2</strong><p>Taxonomy → validation → canonical freeze → typed relationships → runtime evidence.</p></>} /><section className="method-grid"><article><span>01 · BOUNDARY</span><h2>Separate catalogues</h2><p>Agents describe capabilities. Actors describe participants. Datasets describe information. Ни один каталог не должен определяться через другой.</p></article><article><span>02 · IDENTITY</span><h2>Stable canonical IDs</h2><p>Labels и slugs могут уточняться. ID остаётся стабильным и становится точкой cross-application ссылки.</p></article><article><span>03 · MATURITY</span><h2>Explicit status</h2><p><b>Draft</b> — исследуется. <b>Validated</b> — принят. <b>Deprecated</b> — сохранён для compatibility.</p></article><article><span>04 · EVIDENCE</span><h2>Source-aware records</h2><p>Definitions, data coverage и access claims должны сохранять provenance и effective date.</p></article><article><span>05 · RUNTIME IDENTITY</span><h2>Definition is not execution</h2><p>Process Definition, Process Instance и Agent Execution получают разные identities. Admin UI управляет ими, но backend доказывает фактическое исполнение журналом и Artifacts.</p></article></section><section className="id-model"><div><span>CANONICAL NAMESPACES</span><h2>IDs survive UI and route changes</h2></div><code>agent:TL-A001</code><code>process-definition:TL-PD001</code><code>process-instance:CASE1-P01</code><code>agent-execution:CASE1-P01-A015-01</code><code>dataset:TEA-DS-TENDER-NOTICES</code><code>artifact:CASE1-ART-001</code></section><section className="deferred-banner"><span>CONTROLLED V1 · AGENT SIDE</span><strong>Agent → Deliverable → Dataset Relationship Registry</strong><p>Typed, versionable relations are stored separately from both catalogues. Dataset reverse-navigation remains intentionally deferred until the first relation set is validated.</p></section></>;
+  return <><PageIntro kicker="CATALOGUE GOVERNANCE" title="Independent first." accent="Connected only when mature." text="Atlas keeps each catalogue independently governed. Cross-catalogue links live in a separate typed relationship registry and never redefine Agent or Dataset identity." aside={<><StatusTag /><strong>Method V1.2</strong><p>Taxonomy → validation → canonical freeze → typed relationships → runtime evidence.</p></>} /><section className="method-grid"><article><span>01 · BOUNDARY</span><h2>Separate catalogues</h2><p>Agents describe capabilities. Actors describe participants. Datasets describe information. Ни один каталог не должен определяться через другой.</p></article><article><span>02 · IDENTITY</span><h2>Stable canonical IDs</h2><p>Labels и slugs могут уточняться. ID остаётся стабильным и становится точкой cross-application ссылки.</p></article><article><span>03 · MATURITY</span><h2>Explicit status</h2><p><b>Draft</b> — исследуется. <b>Validated</b> — принят. <b>Deprecated</b> — сохранён для compatibility.</p></article><article><span>04 · EVIDENCE</span><h2>Source-aware records</h2><p>Definitions, data coverage и access claims должны сохранять provenance и effective date.</p></article><article><span>05 · RUNTIME IDENTITY</span><h2>Definition is not execution</h2><p>Process Definition, Process Instance и Agent Execution получают разные identities. Admin UI управляет ими, но backend доказывает фактическое исполнение журналом и Artifacts.</p></article></section><section className="id-model"><div><span>CANONICAL NAMESPACES</span><h2>IDs survive UI and route changes</h2></div><code>agent:TL-A001</code><code>process-definition:TL-PD001</code><code>process-instance:CASE1-P01</code><code>agent-execution:CASE1-P01-A015-01</code><code>dataset:TEA-DS-TENDER-NOTICES</code><code>artifact:CASE1-ART-001</code></section><section className="deferred-banner"><span>CONTROLLED V1 · AGENT SIDE</span><strong>Agent → Deliverable → Dataset Relationship Registry</strong><p>Typed, versionable relations are stored separately from both catalogues. Dataset reverse-navigation remains intentionally deferred until the first relation set is validated.</p></section><a className="method-real-agent-link" href="/real-agents"><span>EMPIRICAL DEVELOPMENT METHOD</span><strong>See how approved Agent concepts become real implementations.</strong><i>Open Real Agent Development →</i></a></>;
 }
 
 function NotFoundPage() {
@@ -446,6 +620,7 @@ export default function App() {
   let page: ReactNode;
   if (path === "/") page = <OverviewPage />;
   else if (path === "/agents" || path.startsWith("/agents/")) page = <AgentSpecificationsPage requestedSlug={path.split("/")[2]} />;
+  else if (path === "/real-agents" || path.startsWith("/real-agents/")) page = <RealAgentDevelopmentPage requestedView={path.split("/")[2]} />;
   else if (path === "/orchestration") page = <ProcessOperationsPage />;
   else if (path === "/actors") page = <ActorsPage />;
   else if (path === "/data") page = <DataPage />;
