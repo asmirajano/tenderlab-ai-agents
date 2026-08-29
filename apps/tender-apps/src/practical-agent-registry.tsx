@@ -1,4 +1,6 @@
-export type PracticalAgentVisualKind = "balance" | "logistics";
+import { clientProducts, type ClientProduct } from "../../../packages/catalog-data/src/client-products";
+
+export type PracticalAgentVisualKind = "balance" | "logistics" | "tenderboost";
 
 export type PracticalAgentDisplay = {
   id: `agent:${string}`;
@@ -9,33 +11,67 @@ export type PracticalAgentDisplay = {
   href: `/${string}`;
   pageTitle: string;
   status: string;
+  surfaceStatus: string;
+  catalogOrder: number;
+  productId: string;
   visual: PracticalAgentVisualKind;
 };
 
-export const practicalAgents: readonly PracticalAgentDisplay[] = [
+type PracticalAgentDisplayMetadata = {
+  productId: string;
+  displayName: string;
+  functionalSubtitle: string;
+  description: string;
+  pageTitle: string;
+  visual: PracticalAgentVisualKind;
+};
+
+const displayMetadata: readonly PracticalAgentDisplayMetadata[] = [
   {
-    id: "agent:TL-A008",
-    canonicalName: "TenderBalance",
+    productId: "product:TA-BALANCE",
     displayName: "TenderBalance",
     functionalSubtitle: "Company Verification Agent",
     description: "Digitize, validate, review, approve, compare, and export balance-sheet evidence.",
-    href: "/balance-sheet-review",
     pageTitle: "Tender Apps — TenderBalance",
-    status: "MVP simulation",
     visual: "balance",
   },
   {
-    id: "agent:TL-A050",
-    canonicalName: "TENDER LOGISTICS COST",
+    productId: "product:TA-LANDED-COST",
     displayName: "Tender Logistics Cost",
     functionalSubtitle: "Transport, logistics and Incoterms cost estimation",
     description: "Estimate cargo, packing, transport requirements, freight, insurance and landed cost for tender shipments.",
-    href: "/landed-cost",
     pageTitle: "Tender Apps — Tender Logistics Cost",
-    status: "MVP simulation",
     visual: "logistics",
   },
+  {
+    productId: "product:TA-TENDERBOOST",
+    displayName: "TenderBoost AI",
+    functionalSubtitle: "Company × Tender Match Score · consultant-controlled campaigns",
+    description: "Review an evidence-linked Company × Tender fit, record the consultant decision, and prepare truthful campaign drafts without sending outreach.",
+    pageTitle: "Tender Apps — TenderBoost AI · Agent 03",
+    visual: "tenderboost",
+  },
 ] as const;
+
+function displayStatus(product: ClientProduct) {
+  return product.status === "mvp-simulation" ? "MVP simulation" : product.status.replaceAll("-", " ");
+}
+
+export const practicalAgents: readonly PracticalAgentDisplay[] = displayMetadata
+  .map((metadata) => {
+    const product = clientProducts.find((candidate) => candidate.id === metadata.productId);
+    if (!product) throw new Error(`Practical Agent display metadata references missing product ${metadata.productId}.`);
+    return {
+      ...metadata,
+      id: product.ownerAgentId as `agent:${string}`,
+      canonicalName: product.name,
+      href: product.clientRoute as `/${string}`,
+      status: displayStatus(product),
+      surfaceStatus: product.surfaceStatus,
+      catalogOrder: product.catalogOrder,
+    };
+  })
+  .sort((left, right) => left.catalogOrder - right.catalogOrder);
 
 export function PracticalAgentVisual({ kind }: { kind: PracticalAgentVisualKind }) {
   if (kind === "balance") {
@@ -56,7 +92,7 @@ export function PracticalAgentVisual({ kind }: { kind: PracticalAgentVisualKind 
     );
   }
 
-  return (
+  if (kind === "logistics") return (
     <div className="client-agent-visual" aria-hidden="true">
       <svg viewBox="0 0 260 170" focusable="false">
         <path className="agent-visual-route" d="M31 45h51c24 0 25-20 49-20h62" />
@@ -71,6 +107,23 @@ export function PracticalAgentVisual({ kind }: { kind: PracticalAgentVisualKind 
         <path className="agent-visual-cost" d="M214 49v32m10-25c-3-6-20-7-20 1 0 10 21 4 21 14 0 8-17 8-22 1" />
       </svg>
       <span>Cargo movement and cost</span>
+    </div>
+  );
+
+  return (
+    <div className="client-agent-visual" aria-hidden="true">
+      <svg viewBox="0 0 260 170" focusable="false">
+        <circle className="agent-visual-boost-ring" cx="78" cy="83" r="48" />
+        <circle className="agent-visual-boost-company" cx="78" cy="83" r="17" />
+        <path className="agent-visual-boost-link" d="M102 62 153 39M103 87l54 10M99 108l48 31" />
+        <circle className="agent-visual-boost-node" cx="166" cy="34" r="15" />
+        <circle className="agent-visual-boost-node" cx="174" cy="101" r="20" />
+        <circle className="agent-visual-boost-node" cx="159" cy="144" r="12" />
+        <path className="agent-visual-boost-arrow" d="m192 86 29-19m-7-4 7 4-2 8" />
+        <rect className="agent-visual-boost-brief" x="191" y="91" width="48" height="55" rx="8" />
+        <path className="agent-visual-boost-lines" d="M202 107h25m-25 10h25m-25 10h17" />
+      </svg>
+      <span>Evidence-linked match to campaign brief</span>
     </div>
   );
 }

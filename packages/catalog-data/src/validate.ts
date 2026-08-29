@@ -35,6 +35,16 @@ export function validateRealAgentDevelopmentKnowledge() {
   const patternIds = new Set(realAgentReusablePatterns.map((item) => item.id));
   const lessonIds = new Set(realAgentLessons.map((item) => item.id));
 
+  assertUniqueValues(clientProducts.map((item) => item.id), "Client product IDs");
+  assertUniqueValues(clientProducts.map((item) => item.clientRoute), "Client product routes");
+  assertUniqueValues(clientProducts.map((item) => String(item.catalogOrder)), "Client product catalog orders");
+  const orderedProducts = [...clientProducts].sort((left, right) => left.catalogOrder - right.catalogOrder);
+  if (orderedProducts.some((item, index) => item.catalogOrder !== index + 1)) throw new Error("Client product catalog order must be contiguous and one-based.");
+  for (const product of clientProducts) {
+    if (!agentIds.has(product.ownerAgentId)) throw new Error(`${product.id} references unknown Agent ${product.ownerAgentId}`);
+    if (!product.surfaceStatus || !product.dataNotice) throw new Error(`${product.id} needs truthful surface and data status metadata.`);
+  }
+
   for (const item of realAgentImplementations) {
     if (!realAgentImplementationIdPattern.test(item.id)) throw new Error(`Invalid Real Agent implementation ID ${item.id}`);
     if (!agentIds.has(item.ownerAgentId)) throw new Error(`${item.id} references unknown Agent ${item.ownerAgentId}`);

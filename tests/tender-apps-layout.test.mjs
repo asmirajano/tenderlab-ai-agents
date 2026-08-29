@@ -89,7 +89,9 @@ test("separates the platform catalog, scalable Agent navigation, and view contro
   assert.doesNotMatch(shell, /\.client-agent-nav \{[^}]*(?:background|border|border-radius|padding):/);
   assert.match(shell, /\.client-agent-nav a \{[^}]*background:\s*white;[^}]*border:\s*1px solid[^}]*border-radius:\s*11px/);
   assert.match(shell, /\.client-layout-options \{[^}]*border-radius:\s*999px/);
-  assert.match(registry, /canonicalName:\s*"TENDER LOGISTICS COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
+  assert.match(registry, /canonicalName:\s*product\.name/);
+  assert.match(registry, /productId:\s*"product:TA-LANDED-COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
+  assert.match(registry, /productId:\s*"product:TA-TENDERBOOST"[\s\S]+displayName:\s*"TenderBoost AI"/);
   assert.match(catalog, /PracticalAgentVisual/);
   assert.match(shell, /\.client-agent-card > header[\s\S]+\.client-agent-visual/);
 });

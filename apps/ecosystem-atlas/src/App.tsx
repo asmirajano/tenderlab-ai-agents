@@ -505,7 +505,9 @@ function RealAgentImplementationCard({ implementation }: { implementation: RealA
     <section className="real-agent-limitations"><span>KNOWN LIMITATIONS</span><ul>{implementation.knownLimitations.map((item) => <li key={item}>{item}</li>)}</ul></section>
     <footer>
       {agent && <a href={`/agents/${agent.slug}`}>Open Agent Specification →</a>}
-      {product && <a href={`https://tenderapps-ai.web.app${product.clientRoute}`} rel="noreferrer" target="_blank">Open test product ↗</a>}
+      {product && implementation.deploymentStatus !== "not-deployed"
+        ? <a href={`https://tenderapps-ai.web.app${product.clientRoute}`} rel="noreferrer" target="_blank">Open test product ↗</a>
+        : product && <span>{product.clientRoute} · local integration only</span>}
       <small>{implementation.patternIds.length} patterns · {implementation.lessonIds.length} lessons · updated {implementation.updatedAt}</small>
     </footer>
   </article>;

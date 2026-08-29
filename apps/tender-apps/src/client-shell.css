@@ -21,6 +21,7 @@ a { color: inherit; text-decoration: none; }
   --balance-content-max-width: 1580px;
   --catalog-content-max-width: 1500px;
   --costing-content-max-width: 1640px;
+  --boost-content-max-width: 1640px;
   --type-micro: clamp(.75rem, .7rem + .16vw, .9375rem);
   --type-label: clamp(.8125rem, .75rem + .2vw, 1rem);
   --type-small: clamp(.9rem, .82rem + .24vw, 1.125rem);
@@ -196,6 +197,7 @@ a { color: inherit; text-decoration: none; }
 .client-agent-catalog { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 auto; max-width: var(--catalog-content-max-width); }
 .client-agent-card { --agent-accent: var(--tl-green); --agent-visual-bg: #eaf4ee; background: white; border: 1px solid var(--tl-line); border-radius: 18px; display: flex; flex-direction: column; min-height: 390px; overflow: hidden; padding: 28px; }
 .client-agent-card--logistics { --agent-accent: #0d5847; --agent-visual-bg: #eef4e1; }
+.client-agent-card--tenderboost { --agent-accent: #176b51; --agent-visual-bg: #eef5ee; }
 .client-agent-card > header { align-items: stretch; display: grid; gap: 26px; grid-template-columns: minmax(0, 1fr) minmax(190px, .54fr); }
 .client-agent-card-identity { align-content: start; display: grid; }
 .client-agent-card-identity > span { color: var(--agent-accent); font-family: var(--font-geist-mono); font-size: var(--type-micro); font-weight: 850; letter-spacing: .1em; }
@@ -211,6 +213,13 @@ a { color: inherit; text-decoration: none; }
 .agent-visual-cell, .agent-visual-cargo { fill: var(--tl-lime); opacity: .82; stroke: var(--agent-accent); stroke-width: 1.5; }
 .agent-visual-seal, .agent-visual-node { fill: var(--agent-accent); }
 .agent-visual-check, .agent-visual-cost { fill: none; stroke: white; stroke-linecap: round; stroke-linejoin: round; stroke-width: 4; }
+.agent-visual-boost-ring { fill: #d9eadf; stroke: #176b51; stroke-width: 2; }
+.agent-visual-boost-company { fill: #176b51; }
+.agent-visual-boost-link { fill: none; stroke: #5f806f; stroke-dasharray: 5 5; stroke-width: 2; }
+.agent-visual-boost-node { fill: #c9ee63; stroke: #176b51; stroke-width: 2; }
+.agent-visual-boost-arrow { fill: none; stroke: #176b51; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+.agent-visual-boost-brief { fill: #fff; stroke: #176b51; stroke-width: 2; }
+.agent-visual-boost-lines { fill: none; stroke: #7b9788; stroke-linecap: round; stroke-width: 2; }
 .agent-visual-cab { fill: var(--agent-accent); }
 .agent-visual-wheel { fill: var(--tl-ink); stroke: var(--agent-visual-bg); stroke-width: 4; }
 .client-agent-catalog footer { align-items: center; border-top: 1px solid var(--tl-line); display: flex; justify-content: space-between; margin-top: auto; padding-top: 18px; }
@@ -259,6 +268,7 @@ a { color: inherit; text-decoration: none; }
     --balance-content-max-width: 2400px;
     --catalog-content-max-width: 2400px;
     --costing-content-max-width: 2400px;
+    --boost-content-max-width: 2400px;
   }
 }
 

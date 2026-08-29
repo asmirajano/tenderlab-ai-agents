@@ -1,0 +1,563 @@
+[
+{
+  "companyId": "yutong",
+  "legalEnglishName": "Zhengzhou Yutong Bus Co., Ltd.",
+  "legalChineseName": "郑州宇通客车股份有限公司",
+  "headquarters": {"city": "Zhengzhou", "province": "Henan", "country": "China"},
+  "yearEstablished": 1963,
+  "companyType": ["Manufacturer"],
+  "officialWebsite": "https://en.yutong.com/",
+  "marketplaceProfileUrl": "",
+  "categories": ["Buses", "Coaches", "Medical vehicles (ambulances)", "New energy vehicles", "Special vehicles"],
+  "capabilities": ["Ambulance mass production (incl. negative pressure)", "Medical vehicle customization", "Fleet delivery logistics", "Central Asia assembly and after-sales", "Electric/CNG bus supply"],
+  "products": ["ZK6738 ambulance", "ZK5043XJH negative-pressure ambulance", "ZK5045XJH medical vehicle", "ZK6122H coach", "E12 electric bus"],
+  "certifications": [
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": "Ongoing (reported)"},
+    {"name": "CCC", "number": "", "issuer": "China Quality Certification Centre", "scope": "Vehicle safety", "expiry": "Ongoing (reported)"},
+    {"name": "WVTA (EU)", "number": "", "issuer": "EU", "scope": "Whole vehicle type approval", "expiry": "Ongoing (reported)"}
+  ],
+  "exportMarkets": ["Uzbekistan", "Kazakhstan", "Russia", "Saudi Arabia", "Chile", "Norway", "France", "Pakistan", "United Kingdom"],
+  "projectReferences": [
+    {"name": "Tashkent public transport order", "location": "Uzbekistan", "details": "800 buses (300 E12 electric + 500 CNG), 2023; +200 e-buses 2025", "year": "2023-2025"},
+    {"name": "Central Asia export milestone", "location": "Central Asia", "details": "10,000th vehicle for Central Asia export", "year": "2025"}
+  ],
+  "services": {
+    "installation": "Medical equipment fit-out and local support teams",
+    "commissioning": "Local team support",
+    "training": "Technical staff training provided",
+    "warranty": "Standard 2-year / 100,000 km",
+    "afterSales": "Yutong service centre in Tashkent, Uzbekistan"
+  },
+  "publicContacts": {
+    "email": "sales@yutong.com",
+    "telephone": "+86-371-66718999",
+    "contactForm": "https://en.yutong.com/contact/contact/",
+    "linkedin": "https://www.linkedin.com/company/zhengzhou-yutong-bus-co-ltd-"
+  },
+  "languages": ["English", "Russian", "Spanish", "French", "Portuguese", "Arabic", "Chinese"],
+  "minOrder": "1 unit",
+  "leadTime": "60-90 days",
+  "incoterms": "FOB, CIF, CFR",
+  "turnover": {"value": "CNY 37.22bn (2024)", "year": "2024", "source": "2024 annual report (SSE 600066); corrected from 2023 figure"},
+  "evidence": [
+    {"field": "turnover", "value": "CNY 37.22bn (2024)", "status": "VERIFIED", "confidence": 98, "sourceUrl": "https://pdf.dfcfw.com/pdf/H2_AN202503311649673637_1.pdf", "sourceTitle": "Yutong Bus 2024 annual report summary", "retrievalDate": "2026-08-10", "notes": "Corrected: initial research cited CNY 27.04bn (2023)"},
+    {"field": "ambulanceLine", "value": "ZK-series medical vehicles (ZK5043XJH, ZK6738, ZK5045XJH)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://en.yutong.com/products/ASCLE.shtml", "sourceTitle": "Yutong medical vehicle page", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "uzbekistanPresence", "value": "800 buses to Tashkent 2023; 10,000th Central Asia vehicle 2025", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://en.people.cn/n3/2025/0627/c90000-20333497.html", "sourceTitle": "People's Daily Online", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "uzbekistanOrder2023", "value": "800 buses (300 E12 + 500 CNG) Tashkent", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://bus-news.com/yutong-to-deliver-800-electric-and-cng-buses-to-uzbekistan/", "sourceTitle": "Bus-News", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "uzbekistanOrder2025", "value": "+200 e-buses for Tashkent", "status": "VERIFIED", "confidence": 90, "sourceUrl": "https://tashkenttimes.uz/national/14682-yutong-awarded-contract-for-supply-200-more-e-buses-for-tashkent-public-transport", "sourceTitle": "Tashkent Times", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "yearEstablished", "value": "1963 roots; listed 1997 (SSE 600066)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://en.yutong.com/contact/about/", "sourceTitle": "Yutong official history", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "certifications", "value": "ISO 9001, CCC, WVTA", "status": "INFERRED", "confidence": 75, "sourceUrl": "", "sourceTitle": "Company materials", "retrievalDate": "2026-08-10", "notes": "Certificate numbers not published"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "514122", "score": 92, "verifiedStrengths": ["Direct Uzbekistan presence", "ZK ambulance series", "Tashkent after-sales centre"], "inferredStrengths": ["Local customs/logistics experience"], "unknowns": ["Specific equipment list matching tender scope"], "qualificationGaps": ["Diagnostic equipment element outside scope (covered by Mindray)"], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "UP/ICB/26/01", "score": 95, "verifiedStrengths": ["Proven large-fleet delivery in Uzbekistan", "Central Asia export hub", "33-unit supply capability"], "inferredStrengths": [], "unknowns": ["Current assembly-line backlog"], "qualificationGaps": [], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 95, "exportReadiness": 98, "internationalExperience": 96, "publicProcurementReadiness": 94, "evidenceCompleteness": 90, "serviceCapability": 95, "overallReadiness": 95},
+  "risks": ["Geopolitical/transit-route risk in Central Asia", "Currency volatility", "Ambulance medical-equipment brand integration needs specification confirmation"],
+  "verificationQuestions": ["Confirm ambulance specification and integrated medical equipment brands", "Confirm production backlog for Uzbekistan assembly line", "Confirm 33-unit delivery timeline for UP/ICB/26/01"]
+},
+{
+  "companyId": "cggc",
+  "legalEnglishName": "China Gezhouba Group Co., Ltd.",
+  "legalChineseName": "中国葛洲坝集团股份有限公司",
+  "headquarters": {"city": "Wuhan", "province": "Hubei", "country": "China"},
+  "yearEstablished": 1970,
+  "companyType": ["EPC contractor"],
+  "officialWebsite": "http://www.cggc.cn/",
+  "marketplaceProfileUrl": "",
+  "categories": ["Civil construction", "Roads and bridges", "Water conservancy and irrigation", "Hydropower", "Energy"],
+  "capabilities": ["Highway reconstruction and bridges", "Water-supply pipelines and civil works", "Irrigation rehabilitation", "Full EPC, installation and commissioning", "Central Asia operations"],
+  "products": ["Highways", "Bridges", "Water treatment plants", "Dams and hydropower stations", "Irrigation systems"],
+  "certifications": [
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": "Ongoing (reported)"},
+    {"name": "ISO 14001", "number": "", "issuer": "Not published", "scope": "Environmental management", "expiry": "Ongoing (reported)"},
+    {"name": "ISO 45001", "number": "", "issuer": "Not published", "scope": "Occupational health and safety", "expiry": "Ongoing (reported)"}
+  ],
+  "exportMarkets": ["Central Asia", "Southeast Asia", "Africa", "Middle East", "Latin America"],
+  "projectReferences": [
+    {"name": "Neelum-Jhelum HPP", "location": "Pakistan", "details": "EPC via CGGC-CMEC JV (awarded Dec 2007)", "year": "2007-2018"},
+    {"name": "Syrdarya 1500MW CCGT", "location": "Uzbekistan", "details": "CEEC group project; CGGC participation to confirm", "year": "2021+"},
+    {"name": "Domestic highways and bridges", "location": "China", "details": "Multiple provincial highway projects", "year": "Ongoing"}
+  ],
+  "services": {
+    "installation": "Full EPC installation in scope",
+    "commissioning": "Included in EPC scope",
+    "training": "Operational training for client staff",
+    "warranty": "Standard 1-2 year defect liability period",
+    "afterSales": "Global support via CEEC branch network"
+  },
+  "publicContacts": {
+    "email": "cggc@cggc.cn",
+    "telephone": "+86-27-83793012",
+    "contactForm": "http://www.cggc.cn/contact_us.html",
+    "linkedin": "https://www.linkedin.com/company/china-gezhouba-group-co-ltd-/"
+  },
+  "languages": ["Chinese", "English", "Russian"],
+  "minOrder": "N/A (project-based)",
+  "leadTime": "Project dependent",
+  "incoterms": "Standard ICC Incoterms",
+  "turnover": {"value": "CEEC group CNY 406bn (2024); CGGC standalone not published", "year": "2024", "source": "CEEC Annual Report 2024 (HKEX)"},
+  "evidence": [
+    {"field": "corporateStructure", "value": "Reorganized into CEEC (2021) as core subsidiary", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www1.hkexnews.hk/listedco/listconews/sehk/2021/0319/2021031900847.pdf", "sourceTitle": "HKEX filing", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "referenceNeelumJhelum", "value": "CGGC-CMEC EPC JV, Pakistan", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://en.wikipedia.org/wiki/Neelum%E2%80%93Jhelum_Hydropower_Plant", "sourceTitle": "Wikipedia / China AidData / NJHPC", "retrievalDate": "2026-08-10", "notes": "2022 reports of contractor work stoppage over payment dispute - review"},
+    {"field": "turnoverGroup", "value": "CEEC CNY 406bn (2024)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/0429/2025042903894.pdf", "sourceTitle": "CEEC Annual Report 2024", "retrievalDate": "2026-08-10", "notes": "CGGC standalone not published"},
+    {"field": "certifications", "value": "ISO 9001/14001/45001", "status": "INFERRED", "confidence": 75, "sourceUrl": "", "sourceTitle": "Corporate reports", "retrievalDate": "2026-08-10", "notes": "ISO 37001 not confirmed - verification question"},
+    {"field": "tajikistanReferences", "value": "Specific Tajikistan/Kazakhstan awards not corroborated", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Rogun/Kulyab attribution removed; Tajik road works by CRBC/Zhejiang Communications per public sources"},
+    {"field": "sanctionsHistory", "value": "Agent-reported 2015 WB debarment", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Could not be corroborated; not asserted"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "45376134", "score": 85, "verifiedStrengths": ["Water conservancy expertise", "Central Asia presence"], "inferredStrengths": ["IFI water-project experience"], "unknowns": ["Specific award for this contract"], "qualificationGaps": ["Water meter supply subcontracted"], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "44846993", "score": 90, "verifiedStrengths": ["Road reconstruction and bridge capability", "EPC scale"], "inferredStrengths": ["Large equipment fleet"], "unknowns": ["Tajikistan-specific road award evidence"], "qualificationGaps": [], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "SKIP_Z07.1", "score": 80, "verifiedStrengths": ["Irrigation background"], "inferredStrengths": ["Kazakhstan presence"], "unknowns": ["Kazakhstan irrigation references"], "qualificationGaps": ["Local registration/licensing"], "consultantDecision": "Review"},
+    {"tenderReference": "UZ-CTSIP-10002-CW", "score": 95, "verifiedStrengths": ["International highway EPC expert", "IFI procurement experience"], "inferredStrengths": ["CEEC group Uzbekistan success"], "unknowns": ["Award notice for this specific lot"], "qualificationGaps": [], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "SKIP_Z07.5", "score": 80, "verifiedStrengths": ["Water infrastructure experience"], "inferredStrengths": ["EBRD procurement readiness"], "unknowns": ["Kazakhstan-specific references"], "qualificationGaps": [], "consultantDecision": "Review"}
+  ],
+  "scores": {"technicalFit": 95, "exportReadiness": 95, "internationalExperience": 98, "publicProcurementReadiness": 90, "evidenceCompleteness": 85, "serviceCapability": 90, "overallReadiness": 92},
+  "risks": ["Unverified 2015 WB debarment claim - confirm status", "Neelum-Jhelum 2022 work-stoppage reports", "SOE responsiveness on smaller civil lots", "CEEC structure complexity"],
+  "verificationQuestions": ["Confirm sanctions/debarment status with WB/ADB", "Confirm ISO 37001 certificate", "Provide Tajikistan/Kazakhstan award notices", "Confirm Syrdarya CCGT role"]
+},
+{
+  "companyId": "mindray",
+  "legalEnglishName": "Shenzhen Mindray Bio-Medical Electronics Co., Ltd.",
+  "legalChineseName": "深圳迈瑞生物医疗电子股份有限公司",
+  "headquarters": {"city": "Shenzhen", "province": "Guangdong", "country": "China"},
+  "yearEstablished": 1991,
+  "companyType": ["Manufacturer"],
+  "officialWebsite": "https://www.mindray.com",
+  "marketplaceProfileUrl": "",
+  "categories": ["Patient monitoring and life support", "In-vitro diagnostics", "Medical imaging", "Anaesthesia"],
+  "capabilities": ["Diagnostic medical equipment supply", "Neonatal care equipment (monitors, ventilators, infusion)", "Cancer-screening diagnostics (ultrasound, IVD)", "Clinical training", "Global after-sales network"],
+  "products": ["BeneVision patient monitors", "Resona/MX/ME ultrasound", "BS/CL IVD analyzers", "SV-series ventilators", "BeneHeart defibrillators", "A-series anaesthesia systems"],
+  "certifications": [
+    {"name": "ISO 13485", "number": "", "issuer": "TUV SUD / BSI", "scope": "Medical device QMS", "expiry": ""},
+    {"name": "CE MDR", "number": "", "issuer": "TUV SUD", "scope": "Defibrillators, ultrasound, monitors", "expiry": ""},
+    {"name": "FDA 510(k)", "number": "", "issuer": "US FDA", "scope": "Various devices", "expiry": ""},
+    {"name": "MDSAP", "number": "", "issuer": "", "scope": "Global market access", "expiry": ""}
+  ],
+  "exportMarkets": ["Uzbekistan", "North Macedonia", "USA", "European Union", "Central Asia", "Africa"],
+  "projectReferences": [
+    {"name": "Uzbekistan MoH equipment supply", "location": "Uzbekistan", "details": "Regional hospital equipment supply (inferred; verify)", "year": "2023-2024"},
+    {"name": "KfW-funded health projects", "location": "Multiple", "details": "Donor-funded healthcare infrastructure supply (inferred)", "year": "Ongoing"}
+  ],
+  "services": {
+    "installation": "Certified engineers and local distributors",
+    "commissioning": "Included in standard procurement contracts",
+    "training": "Mindray Academy clinical application training",
+    "warranty": "Standard 1-2 years, extendable",
+    "afterSales": "24/7 hotlines; local spare-parts warehouses (e.g., Tashkent)"
+  },
+  "publicContacts": {
+    "email": "intl-market@mindray.com",
+    "telephone": "+86-755-81888998",
+    "contactForm": "https://www.mindray.com/en/contact",
+    "linkedin": "https://www.linkedin.com/company/mindray"
+  },
+  "languages": ["English", "Chinese", "Russian", "Spanish", "French", "German"],
+  "minOrder": "Varies by product",
+  "leadTime": "4-8 weeks (standard)",
+  "incoterms": "FOB, CIF, CIP, DDP",
+  "turnover": {"value": "CNY 36.7bn (2024)", "year": "2024", "source": "Annual report / CMB International research"},
+  "evidence": [
+    {"field": "turnover", "value": "CNY 36.7bn (2024)", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://hk-official.cmbi.info/upload/dd6e5bb7-6aa5-42db-8244-e1d6bb6e4d1e.pdf", "sourceTitle": "CMB International research", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "uzbekistanPresence", "value": "Mindray Medical CA, Tashkent office", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.mindray.com/en/contact", "sourceTitle": "Mindray contact page", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "certifications", "value": "ISO 13485, CE MDR, FDA, MDSAP", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.mindray.com/en/media-center/press/mindray-defibrillators-receive-ce-mdr", "sourceTitle": "Mindray press", "retrievalDate": "2026-08-10", "notes": "Numbers/expiries partially unpublished"},
+    {"field": "uzbekistanRef", "value": "MoH supply 2023-24", "status": "INFERRED", "confidence": 70, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "No direct source retrieved"},
+    {"field": "kfwRef", "value": "Frequent KfW-funded supplier", "status": "INFERRED", "confidence": 70, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verify specific contracts"},
+    {"field": "northMacedoniaRef", "value": "No direct reference retrieved", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verification question"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "514122", "score": 88, "verifiedStrengths": ["Tashkent office", "Broad diagnostic portfolio", "KfW project experience (inferred)"], "inferredStrengths": ["Scalable supply chain"], "unknowns": ["Ambulance bodywork partners (ambulance element covered by Yutong)"], "qualificationGaps": [], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "EC-ENEST/SKP/2026/EA-OP/0053", "score": 85, "verifiedStrengths": ["Neonatal care line", "Ultrasound screening portfolio", "CE MDR certified"], "inferredStrengths": ["European service hub"], "unknowns": ["Direct North Macedonia public-sector reference"], "qualificationGaps": ["Local service partner in Skopje to confirm"], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 90, "exportReadiness": 95, "internationalExperience": 92, "publicProcurementReadiness": 88, "evidenceCompleteness": 90, "serviceCapability": 94, "overallReadiness": 92},
+  "risks": ["Competition from GE/Philips in EU tenders", "Geopolitical scrutiny of Chinese medtech", "Lead time on customized suites"],
+  "verificationQuestions": ["North Macedonia service partner and references", "ISO 13485 current expiry", "Ambulance integration partner for 514122"]
+}
+,
+{
+  "companyId": "ncs_testing",
+  "legalEnglishName": "NCS Testing Technology Co., Ltd.",
+  "legalChineseName": "钢研纳克检测技术股份有限公司",
+  "headquarters": {"city": "Beijing", "province": "Beijing", "country": "China"},
+  "yearEstablished": 1952,
+  "companyType": ["Manufacturer"],
+  "officialWebsite": "https://www.ncschina.com",
+  "marketplaceProfileUrl": "",
+  "categories": ["Analytical instruments", "Testing and calibration services", "Certified reference materials", "Metrology", "NDT"],
+  "capabilities": ["Analytical laboratory equipment supply", "CRM production (largest in China)", "Metrology equipment", "Instrument installation and training", "CIS distribution network"],
+  "products": ["Spark OES spectrometers", "ICP-OES", "ICP-MS", "Carbon/sulfur analyzers", "XRF spectrometers", "NCS certified reference materials"],
+  "certifications": [
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": ""},
+    {"name": "CNAS ISO/IEC 17025", "number": "", "issuer": "CNAS", "scope": "Laboratory testing and calibration", "expiry": ""},
+    {"name": "ISO 17034", "number": "", "issuer": "Not published", "scope": "Reference material producer", "expiry": ""}
+  ],
+  "exportMarkets": ["Russia/CIS", "Germany", "Central Asia", "Southeast Asia", "North America"],
+  "projectReferences": [
+    {"name": "CIS lab supply via EnProTech", "location": "Russia/CIS", "details": "Exclusive distributor for Russia and CIS", "year": "Ongoing"},
+    {"name": "NCS Germany operations", "location": "Germany", "details": "CRM and instrument sales/support", "year": "Ongoing"},
+    {"name": "International PT programmes / IRMM", "location": "International", "details": "CRM supply for proficiency testing (inferred)", "year": "Ongoing"}
+  ],
+  "services": {
+    "installation": "Professional instrument installation",
+    "commissioning": "Standard part of delivery",
+    "training": "Technical training for laboratory staff",
+    "warranty": "Standard 1-year instrument warranty",
+    "afterSales": "NCS Germany and regional distributors"
+  },
+  "publicContacts": {
+    "email": "ncs@ncschina.com",
+    "telephone": "+86-10-62181160",
+    "contactForm": "https://www.ncschina.com/131/",
+    "linkedin": "https://www.linkedin.com/company/ncschina/"
+  },
+  "languages": ["Chinese", "English", "Russian", "German"],
+  "minOrder": "1 unit / 1 item (CRMs)",
+  "leadTime": "2-8 weeks",
+  "incoterms": "FOB, CIF, FCA",
+  "turnover": {"value": "RMB 1.178bn (2025)", "year": "2025", "source": "SZSE annual results"},
+  "evidence": [
+    {"field": "turnover", "value": "RMB 1.178bn (2025)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://news.futunn.com/post/72088864/ncs-testing-technology-300797-achieved-dual-growth-in-revenue-and", "sourceTitle": "NCS annual results (futunn)", "retrievalDate": "2026-08-10", "notes": "SZSE 300797"},
+    {"field": "parent", "value": "CISRI group subsidiary", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.ndtncs.com/company-profile/", "sourceTitle": "NDT division profile", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "cisDistribution", "value": "Exclusive distributor EnProTech (Russia/CIS)", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://enprotech.ru/en/blog-2/", "sourceTitle": "EnProTech news", "retrievalDate": "2026-08-10", "notes": "Relevant to Kyrgyzstan logistics"},
+    {"field": "crmCatalog", "value": "Largest Chinese CRM producer", "status": "VERIFIED", "confidence": 90, "sourceUrl": "https://labmix24.com/en/brands/ncs-testing-technology", "sourceTitle": "LabMix24 brand page", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "kyrgyzstanRef", "value": "No Kyrgyzstan-specific supply retrieved", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verification question"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "DPA14004203 / ICB 514062", "score": 92, "verifiedStrengths": ["Largest Chinese CRM producer", "Analytical instruments full range", "CIS distribution via EnProTech"], "inferredStrengths": ["IFI/World Bank technical compliance"], "unknowns": ["Kyrgyzstan procurement portal experience"], "qualificationGaps": [], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 95, "exportReadiness": 90, "internationalExperience": 85, "publicProcurementReadiness": 90, "evidenceCompleteness": 85, "serviceCapability": 90, "overallReadiness": 90},
+  "risks": ["CIS sanctions/logistics constraints", "Competition from EU/US instrument OEMs", "Sensitive equipment logistics to Central Asia"],
+  "verificationQuestions": ["Kyrgyzstan-specific supply examples", "CRM stock for ICB 514062 items", "Training facilities for Kyrgyz lab personnel"]
+},
+{
+  "companyId": "chery",
+  "legalEnglishName": "Chery Automobile Co., Ltd.",
+  "legalChineseName": "奇瑞汽车股份有限公司",
+  "headquarters": {"city": "Wuhu", "province": "Anhui", "country": "China"},
+  "yearEstablished": 1997,
+  "companyType": ["Manufacturer"],
+  "officialWebsite": "https://www.cheryinternational.com/",
+  "marketplaceProfileUrl": "",
+  "categories": ["Passenger vehicles", "SUVs", "Electric vehicles", "Commercial vehicles"],
+  "capabilities": ["SUV mass production", "Africa CKD/SKD assembly", "Public fleet supply", "Spare parts and distributor networks"],
+  "products": ["Tiggo 9", "Tiggo 8 Pro", "Tiggo 7 Pro", "Tiggo 4", "Arrizo 8"],
+  "certifications": [
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": ""},
+    {"name": "CCC", "number": "", "issuer": "CQC", "scope": "Vehicle safety", "expiry": ""}
+  ],
+  "exportMarkets": ["DRC (market presence)", "Egypt", "South Africa", "Algeria", "Australia", "Saudi Arabia", "Brazil", "Russia", "Chile"],
+  "projectReferences": [
+    {"name": "NSW Police Force fleet", "location": "Australia", "details": "Tiggo 7/9 SUVs for community engagement/patrol", "year": "2026"},
+    {"name": "Africa assembly", "location": "Egypt/Algeria", "details": "CKD/SKD plants (Ghabbour Auto Egypt)", "year": "Ongoing"},
+    {"name": "Serbia police fleet", "location": "Serbia", "details": "Tiggo/A3 supply (inferred; verify)", "year": "Unknown"}
+  ],
+  "services": {
+    "installation": "N/A (standard vehicles)",
+    "commissioning": "Dealer delivery",
+    "training": "Driver training via dealers",
+    "warranty": "5-10 years / 150,000 km by market",
+    "afterSales": "Distributor network; DRC coverage to confirm"
+  },
+  "publicContacts": {
+    "email": "cheryinternational@mychery.com",
+    "telephone": "+86-553-7526147",
+    "contactForm": "https://www.cheryinternational.com/pc/contactus/index.shtml",
+    "linkedin": "https://www.linkedin.com/company/chery-motors/"
+  },
+  "languages": ["English", "French", "Spanish", "Portuguese", "Russian", "Arabic", "Chinese"],
+  "minOrder": "1 unit",
+  "leadTime": "45-75 days",
+  "incoterms": "FOB, CIF",
+  "turnover": {"value": "USD 39.09bn (2024, Chery Holding, Fortune Global 500)", "year": "2024", "source": "Chery Fortune 500 announcement"},
+  "evidence": [
+    {"field": "turnover", "value": "USD 39.09bn (2024)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.cheryinternational.com/pc/news/news1/20250801/", "sourceTitle": "Chery Fortune 500 announcement", "retrievalDate": "2026-08-10", "notes": "Group-level"},
+    {"field": "fleetReference", "value": "NSW Police Force (Tiggo 7/9)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.carsales.com.au/editorial/details/chery-suvs-join-nsw-police-151300/", "sourceTitle": "carsales.com.au", "retrievalDate": "2026-08-10", "notes": "Independent media"},
+    {"field": "africaAssembly", "value": "Egypt and Algeria plants", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://africabusinesspartners.com/insights-news/insight-3/", "sourceTitle": "Africa Automotive Market Insight", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "drcPresence", "value": "Chery models listed on DRC auto marketplace", "status": "VERIFIED", "confidence": 75, "sourceUrl": "https://www.motukanayo.com/en/buy-car-Chery-B13", "sourceTitle": "motukanayo.com (DRC)", "retrievalDate": "2026-08-10", "notes": "Authorised DRC dealer network unverified"},
+    {"field": "serbiaRef", "value": "Police fleet supply", "status": "INFERRED", "confidence": 60, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "No direct source retrieved"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "ZR-SPACE-252528-GO-RFB", "score": 88, "verifiedStrengths": ["SUV product line", "Africa export/assembly footprint", "Public fleet reference (NSW Police)"], "inferredStrengths": ["Regional parts hub in South Africa"], "unknowns": ["Authorised DRC dealer for Tiggo models"], "qualificationGaps": ["11-unit delivery timeline to education sites"], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 90, "exportReadiness": 92, "internationalExperience": 89, "publicProcurementReadiness": 93, "evidenceCompleteness": 85, "serviceCapability": 86, "overallReadiness": 89},
+  "risks": ["DRC inland logistics costs", "DRC political/operating risk", "Rural service coverage"],
+  "verificationQuestions": ["Kinshasa authorised dealer for Tiggo series", "11-unit delivery timeline", "DRC government past performance"]
+},
+{
+  "companyId": "united_imaging",
+  "legalEnglishName": "Shanghai United Imaging Healthcare Co., Ltd.",
+  "legalChineseName": "上海联影医疗科技股份有限公司",
+  "headquarters": {"city": "Shanghai", "province": "Shanghai", "country": "China"},
+  "yearEstablished": 2011,
+  "companyType": ["Manufacturer"],
+  "officialWebsite": "https://www.united-imaging.com",
+  "marketplaceProfileUrl": "",
+  "categories": ["Magnetic resonance", "Computed tomography", "Molecular imaging", "X-ray imaging", "Angiography", "Radiotherapy"],
+  "capabilities": ["MRI and angiography systems (supply, install, train, maintain)", "Cancer-screening imaging (CT, mammography)", "AI-powered imaging platform", "Global service network"],
+  "products": ["uMR series (1.5T/3.0T/5.0T, incl. uMR 588, uMR Omega)", "uCT series", "uAngio 960", "uMammo", "uDR", "uMI PET/CT", "uAI platform"],
+  "certifications": [
+    {"name": "ISO 13485", "number": "", "issuer": "TUV SUD", "scope": "Medical imaging QMS", "expiry": ""},
+    {"name": "CE MDR", "number": "", "issuer": "TUV SUD", "scope": "MRI, CT, PET/CT", "expiry": ""},
+    {"name": "FDA 510(k)", "number": "K240744 (uMR systems)", "issuer": "US FDA", "scope": "uMR systems; 14 systems cleared", "expiry": ""}
+  ],
+  "exportMarkets": ["Uzbekistan", "USA", "Poland", "France", "Kosovo", "Turkey", "Middle East"],
+  "projectReferences": [
+    {"name": "AI imaging solutions", "location": "Uzbekistan", "details": "AI-powered CT/MR introduction in CIS", "year": "2023"},
+    {"name": "Prizren Regional Hospital", "location": "Kosovo", "details": "uMR 588 installation (inferred; verify)", "year": "2024"},
+    {"name": "Polish clinical centre", "location": "Poland", "details": "uMR Omega 3.0T installation (inferred; verify)", "year": "2023"}
+  ],
+  "services": {
+    "installation": "Specialized siting/installation teams for high-field MRI",
+    "commissioning": "Acceptance testing and calibration included",
+    "training": "Clinical application training (radiologists/technicians)",
+    "warranty": "1-3 year warranty packages",
+    "afterSales": "uService remote monitoring; Europe/CIS local teams"
+  },
+  "publicContacts": {
+    "email": "global@united-imaging.com",
+    "telephone": "+86-21-60503600",
+    "contactForm": "https://global.united-imaging.com/en/contact",
+    "linkedin": "https://www.linkedin.com/company/united-imaging-healthcare"
+  },
+  "languages": ["English", "Chinese", "Russian", "Polish", "French"],
+  "minOrder": "1 unit",
+  "leadTime": "12-20 weeks (high-end imaging)",
+  "incoterms": "FOB, CIF, CIP, DAP",
+  "turnover": {"value": "CNY 10.3bn (2024)", "year": "2024", "source": "2024 annual report release"},
+  "evidence": [
+    {"field": "turnover", "value": "CNY 10.3bn (2024)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://global.united-imaging.com/en/news-center/uih-news-list/2025-04-28", "sourceTitle": "UIH 2024 annual report release", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "uzbekistanPresence", "value": "AI-powered imaging installed", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://kr.united-imaging.com/news-center/uih-story-list/uzb", "sourceTitle": "UIH stories: Uzbekistan", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "fdaClearance", "value": "14 systems FDA-cleared", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://usa.united-imaging.com/news/press/united-imaging-healthcare-makes-u-s-market-debut", "sourceTitle": "UIH USA press", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "kosovoRef", "value": "Prizren uMR 588", "status": "INFERRED", "confidence": 75, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verify with contract reference"},
+    {"field": "northMacedoniaDistributor", "value": "Not identified", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verification question"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "514110", "score": 92, "verifiedStrengths": ["uMR/uAngio product match", "Documented Uzbekistan installations", "Installation/training/maintenance service model"], "inferredStrengths": ["Competitive pricing in KfW-type projects"], "unknowns": ["Uzbekistan maintenance contract terms"], "qualificationGaps": [], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "EC-ENEST/SKP/2026/EA-OP/0053", "score": 88, "verifiedStrengths": ["High-end imaging for cancer screening", "Mammography (uMammo)"], "inferredStrengths": ["Balkans presence (Kosovo/Poland)"], "unknowns": ["North Macedonia distributor"], "qualificationGaps": [], "consultantDecision": "Review"}
+  ],
+  "scores": {"technicalFit": 94, "exportReadiness": 88, "internationalExperience": 85, "publicProcurementReadiness": 90, "evidenceCompleteness": 88, "serviceCapability": 86, "overallReadiness": 89},
+  "risks": ["Younger brand vs Siemens/GE", "3.0T/5.0T siting complexity", "Service dependency on regional partners"],
+  "verificationQuestions": ["North Macedonia distributor/service partner", "Uzbekistan installation timelines", "uAI integration scope for screening tender"]
+},
+{
+  "companyId": "kingpeng",
+  "legalEnglishName": "Beijing Kingpeng International Hi-Tech Corporation",
+  "legalChineseName": "北京京鹏环球科技股份有限公司",
+  "headquarters": {"city": "Beijing", "province": "Beijing", "country": "China"},
+  "yearEstablished": 2003,
+  "companyType": ["Manufacturer", "EPC contractor"],
+  "officialWebsite": "https://www.chinakingpeng.com",
+  "marketplaceProfileUrl": "https://cnkingpeng.en.made-in-china.com/",
+  "categories": ["Greenhouse manufacturing", "Agricultural infrastructure", "Horticultural EPC", "Heating and irrigation systems"],
+  "capabilities": ["Turnkey greenhouse EPC (design-manufacture-install)", "Heated greenhouse complexes (heating systems)", "Non-heated greenhouses", "Agricultural infrastructure installation", "O&M training"],
+  "products": ["Glass greenhouses", "Film greenhouses", "PC sheet greenhouses", "Heating systems", "Irrigation systems"],
+  "certifications": [
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": ""},
+    {"name": "High-Tech Enterprise Certificate", "number": "", "issuer": "Beijing Municipal Science & Technology Commission", "scope": "Technology R&D", "expiry": ""}
+  ],
+  "exportMarkets": ["Uzbekistan", "Tajikistan", "Kazakhstan", "Russia", "USA", "Canada", "Qatar", "UAE"],
+  "projectReferences": [
+    {"name": "Greenhouse project", "location": "Uzbekistan", "details": "Company-claimed (verify)", "year": "Unknown"},
+    {"name": "Heated greenhouse complex", "location": "Russia", "details": "Company-claimed (verify)", "year": "Unknown"},
+    {"name": "Agricultural infrastructure", "location": "Tajikistan", "details": "Company-claimed (verify)", "year": "Unknown"}
+  ],
+  "services": {
+    "installation": "Global installation teams and supervision",
+    "commissioning": "Included in EPC turnkey scope",
+    "training": "O&M training for local staff",
+    "warranty": "~1 year (inferred)",
+    "afterSales": "Remote support and spare parts"
+  },
+  "publicContacts": {
+    "email": "info@chinakingpeng.com",
+    "telephone": "+86-10-58711536",
+    "contactForm": "https://www.chinakingpeng.com/Contact-us",
+    "linkedin": "https://www.linkedin.com/company/beijing-kingpeng-international-hi-tech-corporation"
+  },
+  "languages": ["Chinese", "English", "Russian"],
+  "minOrder": "Negotiable",
+  "leadTime": "30-90 days depending on scale",
+  "incoterms": "FOB, CIF, EXW",
+  "turnover": {"value": "RMB 461m revenue; RMB 20.2m net profit (2025)", "year": "2025", "source": "NEEQ annual results"},
+  "evidence": [
+    {"field": "turnover", "value": "RMB 461m (2025)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://news.10jqka.com.cn/20260424/c676260118.shtml", "sourceTitle": "NEEQ annual results (10jqka)", "retrievalDate": "2026-08-10", "notes": "NEEQ 430028"},
+    {"field": "yearEstablished", "value": "2003 (roots 1959)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.chinakingpeng.com/", "sourceTitle": "Official site", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "exportMarkets", "value": "40+ countries incl. Central Asia", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://www.chinakingpeng.com/About-us?_l=en", "sourceTitle": "Official About Us", "retrievalDate": "2026-08-10", "notes": "Company claim; corroborate for Tajikistan"},
+    {"field": "capability", "value": "Turnkey greenhouse EPC", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://www.kingpengintl.com/about-us", "sourceTitle": "Kingpeng International", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "tajikistanRef", "value": "Specific Tajikistan projects not corroborated", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verification question"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "G05", "score": 85, "verifiedStrengths": ["Central Asia market experience", "Turnkey EPC incl. heating", "State-owned financial stability"], "inferredStrengths": ["Russian-language documentation capability", "Competitive pricing"], "unknowns": ["Tajikistan past performance", "Local partner in Tajikistan"], "qualificationGaps": ["Tajik local licences"], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 90, "exportReadiness": 95, "internationalExperience": 90, "publicProcurementReadiness": 85, "evidenceCompleteness": 80, "serviceCapability": 90, "overallReadiness": 88},
+  "risks": ["Landlocked-Tajikistan logistics costs", "CIS geopolitical risk", "Subcontractor transparency"],
+  "verificationQuestions": ["Completed Tajikistan project list", "Central Asia service teams", "NEEQ listing status"]
+}
+,
+{
+  "companyId": "huawei",
+  "legalEnglishName": "Huawei Technologies Co., Ltd.",
+  "legalChineseName": "华为技术有限公司",
+  "headquarters": {"city": "Shenzhen", "province": "Guangdong", "country": "China"},
+  "yearEstablished": 1987,
+  "companyType": ["Manufacturer", "Systems integrator"],
+  "officialWebsite": "https://www.huawei.com",
+  "marketplaceProfileUrl": "",
+  "categories": ["ICT infrastructure", "Enterprise networking", "Servers and storage", "Data centres", "Smart classrooms/education"],
+  "capabilities": ["DWDM/WDM backbone transport", "Routers and switches", "Servers and data-centre infrastructure", "Government network integration", "Smart classroom solutions"],
+  "products": ["OptiX WDM/DWDM", "NetEngine routers", "CloudEngine switches", "FusionServer Pro / TaiShan servers", "FusionModule data centres", "IdeaHub smart classroom"],
+  "certifications": [
+    {"name": "ISO 9001:2015", "number": "", "issuer": "TUV Rheinland / various", "scope": "Quality management", "expiry": "Various"},
+    {"name": "ISO 14001", "number": "", "issuer": "Various", "scope": "Environmental management", "expiry": "Various"},
+    {"name": "ISO 45001", "number": "", "issuer": "Various", "scope": "Occupational health and safety", "expiry": "Various"},
+    {"name": "ISO 27001", "number": "", "issuer": "Various", "scope": "Information security", "expiry": "Various"},
+    {"name": "TL 9000", "number": "", "issuer": "Various", "scope": "Telecom quality management", "expiry": "Various"}
+  ],
+  "exportMarkets": ["Global (170+ countries)", "Africa", "Asia-Pacific", "Europe", "Latin America", "Middle East"],
+  "projectReferences": [
+    {"name": "National backbone networks (DWDM/IP)", "location": "Multiple countries", "details": "Government and enterprise backbone deployments (inferred)", "year": "Ongoing"},
+    {"name": "Angola ICT/education engagement", "location": "Angola", "details": "University/campus ICT (inferred; verify)", "year": "Unknown"}
+  ],
+  "services": {
+    "installation": "Global installation via local offices and partners",
+    "commissioning": "Full system commissioning for network/DC infrastructure",
+    "training": "Huawei Learning Service (ICT training and certification)",
+    "warranty": "1-3 years standard with Hi-Care extensions",
+    "afterSales": "24/7 TAC; global spare-parts logistics"
+  },
+  "publicContacts": {
+    "email": "information@huawei.com",
+    "telephone": "+86-755-28780808",
+    "contactForm": "https://www.huawei.com/en/contact-us",
+    "linkedin": "https://www.linkedin.com/company/huawei"
+  },
+  "languages": ["Chinese", "English", "Spanish", "French", "Portuguese", "Arabic"],
+  "minOrder": "N/A (project-based)",
+  "leadTime": "4-12 weeks typical",
+  "incoterms": "EXW, FOB, CIF, DDP",
+  "turnover": {"value": "CNY 880.9bn (2025)", "year": "2025", "source": "Huawei 2025 Annual Report"},
+  "evidence": [
+    {"field": "turnover", "value": "CNY 880.9bn (2025)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.huawei.com/en/annual-report/2025", "sourceTitle": "Huawei 2025 Annual Report", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "yearEstablished", "value": "1987", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.huawei.com/en/annual-report/2024", "sourceTitle": "Huawei 2024 Annual Report", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "products", "value": "OptiX, NetEngine, CloudEngine, FusionServer, IdeaHub", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://e.huawei.com/en/products", "sourceTitle": "Huawei Enterprise Products", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "certifications", "value": "ISO 9001/14001/45001/27001, TL9000", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://www.huaweicloud.com/intl/en-us/securecenter/compliance/compliance-center/tl9000-iso9001/overview.html", "sourceTitle": "Huawei Cloud Compliance Center", "retrievalDate": "2026-08-10", "notes": "Numbers vary by site"},
+    {"field": "entityListRisk", "value": "US Entity List since 16 May 2019 (69 entities)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.federalregister.gov/documents/2019/05/21/2019-10616/addition-of-entities-to-the-entity-list", "sourceTitle": "Federal Register 2019-10616", "retrievalDate": "2026-08-10", "notes": "Export-control exposure; IFI eligibility risk"},
+    {"field": "angolaRef", "value": "University ICT engagement", "status": "INFERRED", "confidence": 60, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "No direct source retrieved"},
+    {"field": "bhutanRef", "value": "Local partner / GovNet status", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verification question"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "ACCESS/GOVTECH/GD-1", "score": 85, "verifiedStrengths": ["OptiX DWDM capability", "NetEngine router line", "Global backbone experience"], "inferredStrengths": ["Similar government network deployments"], "unknowns": ["Bhutan local partner status", "Funding source (IFI/US restrictions)"], "qualificationGaps": ["Entity List restrictions may bar US/IFI-funded procurement"], "consultantDecision": "Strong candidate"},
+    {"tenderReference": "50/G/C2SC4.A16.8/26", "score": 90, "verifiedStrengths": ["IdeaHub smart classrooms", "FusionModule data centres", "Angola presence"], "inferredStrengths": ["Angola Ministry of Higher Education engagement"], "unknowns": [], "qualificationGaps": ["Verify funding source restrictions"], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 95, "exportReadiness": 90, "internationalExperience": 95, "publicProcurementReadiness": 60, "evidenceCompleteness": 90, "serviceCapability": 90, "overallReadiness": 87},
+  "risks": ["US Entity List and export-control exposure", "Potential IFI procurement exclusion", "Cybersecurity scrutiny on government networks"],
+  "verificationQuestions": ["Bhutan project funding source (US/IFI restrictions?)", "Bhutan 24/7 SLA partner", "ISO certificate numbers for Shenzhen base"]
+},
+{
+  "companyId": "sieyuan",
+  "legalEnglishName": "Sieyuan Electric Co., Ltd.",
+  "legalChineseName": "思源电气股份有限公司",
+  "headquarters": {"city": "Shanghai", "province": "Shanghai", "country": "China"},
+  "yearEstablished": 1993,
+  "companyType": ["Manufacturer", "EPC contractor"],
+  "officialWebsite": "https://en.sieyuan.com",
+  "marketplaceProfileUrl": "",
+  "categories": ["Power transmission", "Power distribution", "Capacitor banks", "Reactors", "Switchgear (GIS/AIS)", "Energy storage"],
+  "capabilities": ["High-voltage capacitor bank manufacturing (integrated/container)", "Series capacitors", "Power-distribution equipment", "Substation installation and commissioning", "Utility staff training"],
+  "products": ["Integrated HV capacitor banks", "Container-type capacitor banks", "Series capacitors", "Reactors", "GIS", "AIS", "Transformers"],
+  "certifications": [
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": ""},
+    {"name": "ISO 14001", "number": "", "issuer": "Not published", "scope": "Environmental management", "expiry": ""}
+  ],
+  "exportMarkets": ["Pakistan", "Africa", "Latin America", "Southeast Asia"],
+  "projectReferences": [
+    {"name": "Capacitor bank supply (utility)", "location": "Pakistan", "details": "Pakistan market presence (inferred; verify specific NTDC/LESCO contracts)", "year": "Unknown"},
+    {"name": "Western Africa Power Pool (Inter-Zonal hub)", "location": "Ghana/Burkina Faso", "details": "Historically associated with debarment matter (flagged)", "year": "Historical"}
+  ],
+  "services": {
+    "installation": "Professional installation for HV equipment",
+    "commissioning": "Site commissioning and testing for substations",
+    "training": "Operational training for utility staff",
+    "warranty": "Standard industrial warranty",
+    "afterSales": "Global service network"
+  },
+  "publicContacts": {
+    "email": "overseas@sieyuan.com",
+    "telephone": "+86-21-61610700",
+    "contactForm": "https://en.sieyuan.com/contact-us",
+    "linkedin": "https://www.linkedin.com/company/sieyuan"
+  },
+  "languages": ["Chinese", "English", "Russian", "Spanish"],
+  "minOrder": "N/A",
+  "leadTime": "12-24 weeks",
+  "incoterms": "FOB, CIF, DDP",
+  "turnover": {"value": "CNY 21.54bn (2025)", "year": "2025", "source": "2025 annual report (Sina Finance); 业绩快报 CNY 21.21bn"},
+  "evidence": [
+    {"field": "turnover", "value": "CNY 21.54bn (2025)", "status": "VERIFIED", "confidence": 98, "sourceUrl": "http://money.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002028&id=12112020", "sourceTitle": "Sina Finance - 2025 annual report", "retrievalDate": "2026-08-10", "notes": "Corrected: initial figure USD 4.24bn not corroborated"},
+    {"field": "products", "value": "HV capacitor banks, GIS, reactors", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://en.sieyuan.com/products-services?cid=54", "sourceTitle": "Sieyuan products page", "retrievalDate": "2026-08-10", "notes": ""},
+    {"field": "worldBankDebarment", "value": "Debarred May 2019 (fraudulent practices)", "status": "VERIFIED", "confidence": 100, "sourceUrl": "https://www.worldbank.org/en/news/press-release/2019/05/14/world-bank-group-debars-sieyuan-electric-co-ltd", "sourceTitle": "World Bank press release", "retrievalDate": "2026-08-10", "notes": "Duration reported 15 months by research agent; WB-ADB cross-debarment agreement applies"},
+    {"field": "eibExclusion", "value": "EIB exclusion 2025-2026 (agent-reported)", "status": "INFERRED", "confidence": 70, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verify status post-June 2026 and ADB Sanctions List"},
+    {"field": "pakistanRef", "value": "LESCO/NTDC supply", "status": "INFERRED", "confidence": 60, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Specific contract evidence to verify"},
+    {"field": "overseasShare", "value": "~34% of revenue overseas (2025 H1)", "status": "VERIFIED", "confidence": 90, "sourceUrl": "https://pdf.dfcfw.com/pdf/H3_AP202508171729288472_1.pdf", "sourceTitle": "Research note (2025 H1)", "retrievalDate": "2026-08-10", "notes": ""}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "ADB-I/G-R1-LESCO-2026 (Lot-6)", "score": 65, "verifiedStrengths": ["HV capacitor bank product fit", "Pakistan market presence"], "inferredStrengths": ["Local service capability in Pakistan"], "unknowns": ["Current ADB cross-debarment status (Aug 2026)"], "qualificationGaps": ["EIB/WB debarment history may trigger ADB rejection under cross-debarment"], "consultantDecision": "Review"}
+  ],
+  "scores": {"technicalFit": 90, "exportReadiness": 80, "internationalExperience": 85, "publicProcurementReadiness": 30, "evidenceCompleteness": 85, "serviceCapability": 80, "overallReadiness": 76},
+  "risks": ["World Bank debarment 2019 (fraudulent practices)", "EIB exclusion 2025-2026; MDB cross-debarment risk", "ADB eligibility uncertainty for LESCO tender"],
+  "verificationQuestions": ["EIB exclusion status post-June 2026", "ADB Sanctions List check", "Integrity compliance programme evidence"]
+},
+{
+  "companyId": "promo_company",
+  "legalEnglishName": "Wuhan Jarmoo Flag Co., Ltd.",
+  "legalChineseName": "武汉嘉慕旗帜有限公司",
+  "headquarters": {"city": "Wuhan", "province": "Hubei", "country": "China"},
+  "yearEstablished": 2012,
+  "companyType": ["Manufacturer"],
+  "officialWebsite": "https://www.jarmoo.com/",
+  "marketplaceProfileUrl": "https://jarmooflag.en.alibaba.com/",
+  "categories": ["Promotional products", "Textiles", "Corporate gifts", "Flags and banners", "Advertising material"],
+  "capabilities": ["Custom branding", "Textile printing", "Corporate gift production", "Fast production (3-5 days)", "Global shipping incl. Europe"],
+  "products": ["Flags", "Banners", "Custom caps", "Bags", "Lanyards", "Custom textiles", "Pop-up tents", "Gift sets"],
+  "certifications": [
+    {"name": "BSCI", "number": "DBID 391807 (per Alibaba profile)", "issuer": "Amfori", "scope": "Social responsibility", "expiry": "Ongoing (marketplace-sourced)"},
+    {"name": "ISO 9001", "number": "", "issuer": "Not published", "scope": "Quality management", "expiry": ""},
+    {"name": "CE", "number": "", "issuer": "Not published", "scope": "Product compliance", "expiry": ""}
+  ],
+  "exportMarkets": ["Europe (primary)", "North America", "Oceania", "Middle East"],
+  "projectReferences": [
+    {"name": "European event promotional supply", "location": "Europe", "details": "Unspecified (inferred)", "year": "Unknown"}
+  ],
+  "services": {
+    "installation": "Self-install products (pop-up tents)",
+    "commissioning": "N/A",
+    "training": "Usage guides provided",
+    "warranty": "1-year quality guarantee",
+    "afterSales": "Dedicated customer service team"
+  },
+  "publicContacts": {
+    "email": "sales@jarmoo.com",
+    "telephone": "+86-27-87611311",
+    "contactForm": "https://www.jarmoo.com/contact-us.html",
+    "linkedin": "https://cn.linkedin.com/company/jarmooflag"
+  },
+  "languages": ["English", "Chinese"],
+  "minOrder": "1 piece (most products)",
+  "leadTime": "3-5 days production + 10-15 days delivery",
+  "incoterms": "EXW, FOB, CIF, DDP",
+  "turnover": {"value": "USD 5-10m (inferred, not verified)", "year": "2024", "source": "Alibaba transaction-level inference"},
+  "evidence": [
+    {"field": "legalName", "value": "Wuhan Jarmoo Flag Co., Ltd., est. 2012", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://www.jarmoo.com/jarmooflag.html", "sourceTitle": "Official site", "retrievalDate": "2026-08-10", "notes": "Chinese registered characters to confirm"},
+    {"field": "europeExport", "value": "Europe primary market", "status": "VERIFIED", "confidence": 95, "sourceUrl": "https://www.zoominfo.com/c/jarmoo-llc/355135053", "sourceTitle": "ZoomInfo", "retrievalDate": "2026-08-10", "notes": "Entity structure (US LLC vs CN Co.) to clarify"},
+    {"field": "certifications", "value": "BSCI/ISO 9001/CE", "status": "INFERRED", "confidence": 70, "sourceUrl": "https://jarmooflag.en.alibaba.com/company_profile.html", "sourceTitle": "Alibaba profile (marketplace - flagged)", "retrievalDate": "2026-08-10", "notes": "Independent verification required"},
+    {"field": "turnover", "value": "USD 5-10m", "status": "INFERRED", "confidence": 50, "sourceUrl": "", "sourceTitle": "Alibaba transaction-level inference", "retrievalDate": "2026-08-10", "notes": "NOT verified"},
+    {"field": "albaniaRef", "value": "No Albanian government references", "status": "UNKNOWN", "confidence": 0, "sourceUrl": "", "sourceTitle": "", "retrievalDate": "2026-08-10", "notes": "Verification question"}
+  ],
+  "tenderMatches": [
+    {"tenderReference": "RFQ/ALB/14/2025", "score": 90, "verifiedStrengths": ["Broad promotional product range", "Europe export experience", "Low MOQ flexibility"], "inferredStrengths": ["Gift-set packaging capability"], "unknowns": ["Albanian government experience", "Factory site confirmation"], "qualificationGaps": ["Textile compliance documentation for EU"], "consultantDecision": "Strong candidate"}
+  ],
+  "scores": {"technicalFit": 90, "exportReadiness": 95, "internationalExperience": 80, "publicProcurementReadiness": 75, "evidenceCompleteness": 90, "serviceCapability": 85, "overallReadiness": 86},
+  "risks": ["Factory location requires audit", "Entity structure (CN vs US LLC) to clarify", "No Albanian public-procurement references"],
+  "verificationQuestions": ["Exact manufacturing site address", "Government/NGO references in Europe", "Textile composition for branded apparel"]
+}
+]

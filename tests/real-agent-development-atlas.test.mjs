@@ -22,13 +22,13 @@ const {
 
 test("registers Real Agent implementations with stable Agent and product identities", () => {
   assert.deepEqual(validator.validateRealAgentDevelopmentKnowledge(), {
-    implementations: 2,
+    implementations: 3,
     patterns: 6,
     lessons: 9,
   });
-  assert.equal(realAgentImplementations.length, 2);
-  assert.equal(new Set(realAgentImplementations.map((item) => item.id)).size, 2);
-  assert.equal(new Set(realAgentImplementations.map((item) => item.slug)).size, 2);
+  assert.equal(realAgentImplementations.length, 3);
+  assert.equal(new Set(realAgentImplementations.map((item) => item.id)).size, 3);
+  assert.equal(new Set(realAgentImplementations.map((item) => item.slug)).size, 3);
 
   const agentIds = new Set(agents.map((item) => item.registryId));
   const productsById = new Map(clientProducts.map((item) => [item.id, item]));
@@ -36,8 +36,14 @@ test("registers Real Agent implementations with stable Agent and product identit
     assert.match(implementation.id, /^implementation:TEA-RAI-[A-Z0-9-]+$/);
     assert.ok(agentIds.has(implementation.ownerAgentId));
     assert.equal(productsById.get(implementation.clientProductId)?.ownerAgentId, implementation.ownerAgentId);
-    assert.equal(implementation.maturity, "validated-client-workflow");
-    assert.equal(implementation.deploymentStatus, "deployed-test-surface");
+    if (implementation.id === "implementation:TEA-RAI-TENDERBOOST") {
+      assert.equal(implementation.maturity, "concept-or-simulation");
+      assert.equal(implementation.evidenceStrength, "unit-or-synthetic-fixture");
+      assert.equal(implementation.deploymentStatus, "not-deployed");
+    } else {
+      assert.equal(implementation.maturity, "validated-client-workflow");
+      assert.equal(implementation.deploymentStatus, "deployed-test-surface");
+    }
     assert.equal(implementation.runtimeReadiness, "static-client-workflow");
     assert.notEqual(implementation.maturity, "enterprise-runtime");
     assert.ok(implementation.primaryInputs.length > 0);
@@ -88,6 +94,8 @@ test("projects the canonical knowledge registries into one Atlas area without JS
   assert.match(app, /Reusable Patterns/);
   assert.match(app, /Lessons Learned/);
   assert.match(app, /realAgentImplementations\.map/);
+  assert.match(app, /implementation\.deploymentStatus !== "not-deployed"/);
+  assert.match(app, /local integration only/);
   assert.match(app, /realAgentReusablePatterns\.map/);
   assert.doesNotMatch(app, /implementation:TEA-RAI-/, "implementation identities belong only in the registry");
   assert.match(agentSpecifications, /realAgentImplementationsForAgent/);

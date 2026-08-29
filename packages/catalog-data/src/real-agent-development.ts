@@ -6,6 +6,7 @@ import type {
 
 const tenderBalanceId = "implementation:TEA-RAI-TENDERBALANCE" as const;
 const logisticsCostId = "implementation:TEA-RAI-LOGISTICS-COST" as const;
+const tenderBoostId = "implementation:TEA-RAI-TENDERBOOST" as const;
 
 const evidencePatternId = "pattern:TEA-RAP-EVIDENCE-BEFORE-PRODUCTION" as const;
 const sourcePatternId = "pattern:TEA-RAP-SOURCE-ROLE-BEFORE-FACT" as const;
@@ -109,6 +110,46 @@ export const realAgentImplementations: RealAgentImplementation[] = [
       releaseLessonId,
     ],
     updatedAt: "2026-08-28",
+  },
+  {
+    id: tenderBoostId,
+    slug: "tenderboost-ai",
+    name: "TenderBoost AI · TenderApps Agent 03",
+    ownerAgentId: "agent:TL-A031",
+    clientProductId: "product:TA-TENDERBOOST",
+    descriptor: "Evidence-linked Company × Tender matching and consultant-controlled campaign preparation",
+    tor: "Assess one Company × Tender pair, explain evidence-linked fit and gaps, retain the consultant decision, and prepare a campaign brief without making Bid/No-Bid decisions or claiming external outreach.",
+    primaryInputs: [
+      "Versioned tender record with absolute deadline and source snapshot",
+      "Versioned supplier profile and evidence records",
+      "Legacy match inputs plus consultant decisions, suppression, consent, and risk state",
+    ],
+    primaryOutput: "A versioned Company × Tender opportunity Case with an evidence-linked match assessment, consultant decision, blockers, and optional non-sending campaign brief",
+    downstreamConsumer: "Consultant review, later participation/Bid-No-Bid analysis, and future separately authorized campaign services",
+    maturity: "concept-or-simulation",
+    evidenceStrength: "unit-or-synthetic-fixture",
+    deploymentStatus: "not-deployed",
+    runtimeReadiness: "static-client-workflow",
+    methodologyVersion: "2.0.0",
+    methodRefs: [
+      "docs/real-tender-agent-development-methodology.md",
+      "docs/real-tender-agent-development-policy.json",
+    ],
+    playbookRefs: [
+      "docs/tenderboost-agent-03-integration.md",
+      "packages/tenderboost/src/types.ts",
+      "packages/tenderboost/src/engine.ts",
+    ],
+    knownLimitations: [
+      "The migrated 16-tender/10-supplier fixture is a dated demonstration snapshot, not a live authorized feed.",
+      "Legacy match, readiness, and verification semantics have not completed an independent realistic-evidence experiment.",
+      "Browser-local Cases are not durable tenant-isolated Artifacts.",
+      "No sending, CRM, consent, suppression, response, or campaign-event integration is connected.",
+      "The relationship view is a fixed schematic, not a geospatial map, distance model, coordinate plot, or routing result.",
+    ],
+    patternIds: [],
+    lessonIds: [],
+    updatedAt: "2026-08-30",
   },
 ];
 

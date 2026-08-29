@@ -13,11 +13,11 @@ export default function CatalogPage() {
       </section>
 
       <section className="client-agent-catalog" aria-label="Practical Agent catalog">
-        {practicalAgents.map((item, index) => (
+        {practicalAgents.map((item) => (
           <article className={`client-agent-card client-agent-card--${item.visual}`} key={item.id}>
             <header>
               <div className="client-agent-card-identity">
-                <span>{String(index + 1).padStart(2, "0")} · {item.id}</span>
+                <span>{String(item.catalogOrder).padStart(2, "0")} · {item.id}</span>
                 <h2>{item.displayName}</h2>
                 <b>{item.functionalSubtitle}</b>
               </div>
