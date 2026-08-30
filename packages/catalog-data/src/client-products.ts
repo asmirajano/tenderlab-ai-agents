@@ -82,7 +82,7 @@ export const clientProducts: ClientProduct[] = [
     catalogOrder: 3,
     family: "Tender Apps",
     name: "TenderMatch",
-    descriptor: "Complete TenderBoost migration baseline with evidence-linked Company × Tender evaluation",
+    descriptor: "TenderMatch frozen-source parity workspace with evidence-linked Company × Tender evaluation",
     surfaceStatus: "Complete frozen-source parity · legacy Campaign Studio isolated",
     dataNotice: "Dated demonstration snapshot · local drafts NOT SENT",
     status: "mvp-simulation",
@@ -90,7 +90,7 @@ export const clientProducts: ClientProduct[] = [
     commandCenterPath: "/products#tendermatch",
     clientAppPath: "apps/tender-apps",
     clientRoute: "/tendermatch",
-    schemaPath: "packages/tenderboost/src/types.ts",
+    schemaPath: "packages/tendermatch/src/types.ts",
     localPreviewUrl: "http://127.0.0.1:4174",
     access: {
       commandCenterAudience: "team-admin-only",

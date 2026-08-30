@@ -19,7 +19,7 @@ import {
   deriveTenderFreshness,
   evaluateAuditedMatch,
   loadCaseResult,
-} from "../packages/tenderboost/src/index.ts";
+} from "../packages/tendermatch/src/index.ts";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const snapshotNow = "2026-08-15T12:00:00+05:00";
@@ -188,8 +188,8 @@ test("rejects unknown saved schemas instead of guessing a migration", () => {
 
 test("documents the formula, experiment, version migration, and matching-only invariants", async () => {
   const [modelCard, playbook] = await Promise.all([
-    readFile(path.join(projectRoot, "docs/tenderboost-scoring-model-card.md"), "utf8"),
-    readFile(path.join(projectRoot, "docs/tenderboost-agent-03-integration.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/tendermatch-scoring-model-card.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/tendermatch-agent-03-integration.md"), "utf8"),
   ]);
   assert.match(modelCard, /technical relevance × 70% \+ market\/delivery relevance × 30%/);
   assert.match(modelCard, /Audited Match Support available \| 6/);
@@ -198,4 +198,9 @@ test("documents the formula, experiment, version migration, and matching-only in
   assert.match(modelCard, /Historical schema `1\.0\.0` and `2\.0\.0` records/);
   assert.match(playbook, /The 64-Agent matching gate is passed: \*\*yes\*\*/);
   assert.match(playbook, /Canonical owner: `agent:TL-A031`/);
+  assert.match(playbook, /### Terminology and protected-exception matrix/);
+  assert.match(playbook, /No active filesystem path may contain `tenderboost`/);
+  assert.match(playbook, /`tenderapps:tenderboost:case:<Case ID>` for historical reads/);
+  assert.match(playbook, /Stable IDs remain unchanged lineage identifiers; they are never display names/);
+  assert.match(playbook, /TenderBoost must be qualified as frozen, legacy, source, migration, or compatibility provenance/);
 });

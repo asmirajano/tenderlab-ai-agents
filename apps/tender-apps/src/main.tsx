@@ -8,11 +8,11 @@ import { LayoutSwitcher, useLayoutPreference } from "./layout-switcher";
 import LogisticsCostingApp from "./logistics-costing-app";
 import { installVitePreloadRecovery } from "./preload-recovery";
 import { practicalAgents } from "./practical-agent-registry";
-import TenderMatchApp from "./tenderboost-app";
+import TenderMatchApp from "./tendermatch-app";
 import "./balance-sheet.css";
 import "./client-shell.css";
 import "./logistics-costing.css";
-import "./tenderboost.css";
+import "./tendermatch.css";
 
 const pageComponents: Record<string, ReactNode> = {
   "/balance-sheet-review": <BalanceSheetApp />,

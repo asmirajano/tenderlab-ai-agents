@@ -1,12 +1,12 @@
 # TenderMatch audited scoring model card
 
-Status: Stage 2 matching-policy evidence experiment retained inside the complete TenderBoost migration baseline, 2026-08-30. This model card governs the TL-A031 result only; the separately versioned legacy Campaign Studio parity module is not a scoring output. Active policy: `tendermatch-audited-match/3.0.0`. Deadline-context policy: `tendermatch-deadline-context/3.0.0`. Frozen source comparison: `tenderboost-legacy-baseline/1.0.0`.
+Status: Stage 2 matching-policy evidence experiment retained inside the TenderMatch frozen-source parity baseline, 2026-08-30. This model card governs the TL-A031 result only; the separately versioned legacy Campaign Studio parity module is not a scoring output. Active policy: `tendermatch-audited-match/3.0.0`. Deadline-context policy: `tendermatch-deadline-context/3.0.0`. Frozen legacy TenderBoost comparison: `tenderboost-legacy-baseline/1.0.0`.
 
 ## Intended use
 
 The policy estimates evidence support for one Company × Tender fit under `agent:TL-A031`. It supports consultant review; it is not a probability of award, eligibility verdict, general readiness score, participation design, Bid/No-Bid recommendation, or external commercial action.
 
-The only authorized evidence for this experiment is the non-confidential frozen TenderBoost fixture at source commit `04b0b2a723223d11617837ee0e7562fa48168cd9`, plus the reviewed pair-to-evidence mapping in `packages/tenderboost/src/experiment-data.ts`.
+The only authorized evidence for this experiment is the non-confidential frozen legacy TenderBoost fixture at source commit `04b0b2a723223d11617837ee0e7562fa48168cd9`, plus the reviewed pair-to-evidence mapping in `packages/tendermatch/src/experiment-data.ts`.
 
 ## Input inventory and semantics
 

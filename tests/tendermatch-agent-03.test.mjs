@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -16,7 +17,7 @@ import {
   loadCaseResult,
   saveCaseResult,
   setConsultantDecision,
-} from "../packages/tenderboost/src/index.ts";
+} from "../packages/tendermatch/src/index.ts";
 import { agents } from "../packages/catalog-data/src/agents.ts";
 import { clientProducts, tenderMatchProduct } from "../packages/catalog-data/src/client-products.ts";
 import { realAgentImplementations } from "../packages/catalog-data/src/real-agent-development.ts";
@@ -55,6 +56,7 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.equal(tenderMatchProduct.name, "TenderMatch");
   assert.equal(tenderMatchProduct.clientRoute, "/tendermatch");
   assert.match(tenderMatchProduct.descriptor, /Company × Tender evaluation/);
+  assert.doesNotMatch(tenderMatchProduct.descriptor, /TenderBoost/i);
 
   const owner = agents.find((item) => item.registryId === "agent:TL-A031");
   assert.equal(owner?.name, "Company-to-Tender Match Score Agent");
@@ -64,9 +66,47 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.equal(implementation?.name, "TenderMatch · TenderApps Agent 03");
   assert.equal(implementation?.slug, "tendermatch");
   assert.equal(implementation?.ownerAgentId, "agent:TL-A031");
+  assert.doesNotMatch(implementation?.descriptor ?? "", /TenderBoost/i);
   assert.match(implementation?.primaryOutput ?? "", /evidence-gated audited result or explicit MISSING state/);
   assert.match(JSON.stringify(implementation), /separately versioned legacy Campaign Studio parity module/);
   assert.match(implementation?.tor ?? "", /without owning[\s\S]+legacy Campaign Studio/);
+});
+
+test("keeps active paths TenderMatch-only and classifies every retained TenderBoost occurrence as protected lineage", async () => {
+  const legacyTerm = "tender" + "boost";
+  const trackedPaths = execFileSync("git", ["ls-files"], { cwd: projectRoot, encoding: "utf8" }).trim().split(/\r?\n/);
+  assert.deepEqual(trackedPaths.filter((entry) => new RegExp(legacyTerm, "i").test(entry)), []);
+
+  const textPath = /(?:^|\/)(?:[^/]+\.(?:css|html|json|md|mjs|toml|ts|tsx|yaml|yml)|AGENTS\.md)$/i;
+  const occurrence = new RegExp(legacyTerm, "ig");
+  const stableId = new RegExp(`(?:product:TA-|implementation:TEA-RAI-)${legacyTerm}`, "i");
+  const compatibilityRoute = new RegExp(`/${legacyTerm}(?:-ai)?`, "i");
+  const storageKey = new RegExp(`tenderapps:${legacyTerm}`, "i");
+  const sourceLocator = new RegExp(`app/${legacyTerm}-ai/page\\.tsx`, "i");
+  const historicalIdentifier = new RegExp(`${legacyTerm}-legacy-`, "i");
+  const frozenSymbol = new RegExp(`${legacyTerm.toUpperCase()}_|${legacyTerm[0].toLowerCase()}${legacyTerm.slice(1, 6)}BoostParityManifest`);
+  const qualifiedContext = /legacy|frozen|source|migration|historical|standalone|lineage|prior|protected|compatibility|qualified/i;
+  const unclassified = [];
+
+  for (const relativePath of trackedPaths.filter((entry) => textPath.test(entry))) {
+    const content = await read(relativePath);
+    for (const [index, line] of content.split(/\r?\n/).entries()) {
+      occurrence.lastIndex = 0;
+      while (occurrence.exec(line)) {
+        const protectedOccurrence = stableId.test(line)
+          || compatibilityRoute.test(line)
+          || storageKey.test(line)
+          || sourceLocator.test(line)
+          || historicalIdentifier.test(line)
+          || frozenSymbol.test(line)
+          || qualifiedContext.test(line)
+          || /sourceProductName|doesNotMatch|No active filesystem path/.test(line);
+        if (!protectedOccurrence) unclassified.push(`${relativePath}:${index + 1}:${line.trim()}`);
+      }
+    }
+  }
+
+  assert.deepEqual(unclassified, []);
 });
 
 test("keeps 18 assessed pairs and 142 unassessed pairs as MISSING rather than zero", () => {
@@ -201,16 +241,20 @@ test("migrates legacy TenderBoost Cases into the matching-only schema without ov
 test("uses canonical and compatibility routes with a complete truthful parity surface", async () => {
   const [main, page, styles, registry, firebase] = await Promise.all([
     read("apps/tender-apps/src/main.tsx"),
-    read("apps/tender-apps/src/tenderboost-app.tsx"),
-    read("apps/tender-apps/src/tenderboost.css"),
+    read("apps/tender-apps/src/tendermatch-app.tsx"),
+    read("apps/tender-apps/src/tendermatch.css"),
     read("apps/tender-apps/src/practical-agent-registry.tsx"),
     read("firebase.json"),
   ]);
+  assert.match(main, /import TenderMatchApp from "\.\/tendermatch-app"/);
+  assert.match(main, /import "\.\/tendermatch\.css"/);
   assert.match(main, /"\/tendermatch": <TenderMatchApp/);
   assert.match(main, /"\/tenderboost": "\/tendermatch"/);
   assert.match(main, /"\/tenderboost-ai": "\/tendermatch"/);
-  assert.match(registry, /displayName: "TenderMatch"/);
-  assert.match(registry, /Complete TenderBoost migration/);
+  const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
+  assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*legacy TenderBoost source)[^"]+"/);
+  assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /SCHEMATIC · NON-GEOSPATIAL/);
@@ -221,6 +265,9 @@ test("uses canonical and compatibility routes with a complete truthful parity su
   assert.match(page, /SIMULATION_STARTED/);
   assert.match(page, /Send \/ activate externally/);
   assert.match(page, /disabled title="No authorized delivery integration or event exists"/);
+  assert.match(page, /aria-label="TenderMatch frozen-source dataset summary"/);
+  assert.match(page, /LEGACY TENDERBOOST-SOURCE RECOMMENDATIONS/);
+  assert.doesNotMatch(page, /aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
   assert.doesNotMatch(page, /Participation Boost proposal sent/);
   assert.doesNotMatch(page, /Command Center|\/products/);
   assert.doesNotMatch(`${page}\n${styles}`, /leaflet|openstreetmap|wikimedia/i);
@@ -229,8 +276,8 @@ test("uses canonical and compatibility routes with a complete truthful parity su
 
 test("orients the Overview around TenderLab's internal Company × Tender review outcome before migration evidence", async () => {
   const [page, styles] = await Promise.all([
-    read("apps/tender-apps/src/tenderboost-app.tsx"),
-    read("apps/tender-apps/src/tenderboost.css"),
+    read("apps/tender-apps/src/tendermatch-app.tsx"),
+    read("apps/tender-apps/src/tendermatch.css"),
   ]);
   const overviewStart = page.indexOf('<section className="tb3-overview-manifesto"');
   const evidenceStart = page.indexOf('<header className="tb3-demonstration-heading"');
@@ -276,9 +323,9 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.match(orientation, /No tender promotion, supplier contact, message delivery, CRM action, response tracking, participation authorization, or Bid\/No-Bid decision occurs in TenderMatch/);
   assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);
 
+  assert.match(migrationEvidence, /className="tb3-demonstration-heading"[\s\S]+<h2>TenderMatch[^<]*frozen-source parity/);
   for (const retainedEvidence of [
     "DEMONSTRATION DATA AND MIGRATION EVIDENCE",
-    "TenderBoost parity, with TenderMatch truth controls",
     "DATED DEMONSTRATION SNAPSHOT",
     "CONSULTANT QUEUE",
     "LOCAL WORKFLOW",

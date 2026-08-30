@@ -17,5 +17,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "../../packages/catalog-data/src/client-products.ts", "../../packages/logistics-costing/src", "../../packages/tenderboost/src"]
+  "include": ["src", "../../packages/catalog-data/src/client-products.ts", "../../packages/logistics-costing/src", "../../packages/tendermatch/src"]
 }

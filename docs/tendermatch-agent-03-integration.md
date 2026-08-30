@@ -1,6 +1,6 @@
 # TenderMatch — TenderApps Agent 03 integration and placement record
 
-Status: local complete-migration parity baseline over a dated fixture, 2026-08-30. This playbook preserves the full reader-facing TenderBoost source while defining the active TenderMatch contract and isolating the unplaced legacy Campaign Studio module. It does not modify the canonical 64-Agent registry or authorize deployment.
+Status: local complete-migration parity baseline over a dated fixture, 2026-08-30. This playbook preserves the frozen reader-facing legacy TenderBoost source while defining the active TenderMatch contract and isolating the unplaced legacy Campaign Studio module. It does not modify the canonical 64-Agent registry or authorize deployment.
 
 ## Mandatory placement re-audit
 
@@ -45,7 +45,20 @@ No evidence supports a new canonical Agent, `agent:TL-A003`, or a standalone app
 - Compatibility aliases: `/tenderboost` and `/tenderboost-ai`, normalized to `/tendermatch` inside the shared client.
 - Frozen migration source: standalone TenderBoost commit `04b0b2a723223d11617837ee0e7562fa48168cd9`.
 
-The legacy IDs, package path `packages/tenderboost/`, fixture `TB` identities, and document filenames remain stable lineage anchors. TenderMatch is the ecosystem-facing name; TenderBoost remains the frozen migration-source identity. Complete UI parity does not transfer the legacy Campaign Studio responsibility to TL-A031.
+The legacy IDs, fixture `TB` identities, and protected source locators remain stable lineage anchors. Active implementation files live under `packages/tendermatch/`. TenderMatch is the ecosystem-facing name; TenderBoost remains the frozen migration-source identity. Complete UI parity does not transfer the legacy Campaign Studio responsibility to TL-A031.
+
+### Terminology and protected-exception matrix
+
+| Surface | Current TenderMatch naming | Protected TenderBoost lineage exception | Rule |
+| --- | --- | --- | --- |
+| Product and implementation | `TenderMatch`, `tendermatch`, `TenderApps Agent 03` | `product:TA-TENDERBOOST`, `implementation:TEA-RAI-TENDERBOOST` | Stable IDs remain unchanged lineage identifiers; they are never display names. |
+| Active files and package | `tendermatch-app.tsx`, `tendermatch.css`, `packages/tendermatch/`, `docs/tendermatch-*`, `tests/tendermatch-*` | None | No active filesystem path may contain `tenderboost`. |
+| Routes and navigation | `/tendermatch`; TenderMatch navigation and page title | `/tenderboost`, `/tenderboost-ai` | Legacy URLs remain compatibility aliases only and do not appear as current navigation. |
+| Case persistence | `tenderapps:tendermatch:case:<Case ID>` for current writes | `tenderapps:tenderboost:case:<Case ID>` for historical reads | Loading preserves backward compatibility; migrated saves use only the current key. |
+| Frozen source provenance | TenderMatch frozen-source parity | `TenderBoost AI`, source commit `04b0b2a…`, `app/tenderboost-ai/page.tsx` locators | TenderBoost must be qualified as frozen, legacy, source, migration, or compatibility provenance. |
+| Frozen symbols and identities | Active policies use `tendermatch-*`; active Case/result identities use `TM` | `TENDERBOOST_*`, `tenderBoostParityManifest`, `TB` fixture identities, historical schema/policy strings | These values bind historical records and deterministic regressions and remain unchanged. |
+| Campaign Studio parity | Isolated local `NOT_SENT` legacy module | `tenderboost-legacy-campaign/*`, `tenderboost-legacy-campaign-parity/*` | Historical identifiers remain because Campaign Studio is sourced from the legacy app and is not a TL-A031 product output. |
+| Styling namespace | TenderMatch UI | `tb3-*` selectors | The internal namespace remains unchanged to avoid behavior-neutral selector churn. |
 
 ## Complete migration parity contract
 
@@ -111,7 +124,7 @@ Each component requires distinct reviewed evidence, confidence of at least 75, a
 
 Company readiness is a frozen historical estimate and not an operand. Pair evidence quality is calculated separately. Deadline urgency is calculated separately from the absolute deadline and supplied clock and does not alter Match Support. The consultant decision never changes the score.
 
-The complete formula audit, policy rationale, experiment table, limitations, and invariants are in `docs/tenderboost-scoring-model-card.md`.
+The complete formula audit, policy rationale, experiment table, limitations, and invariants are in `docs/tendermatch-scoring-model-card.md`.
 
 ## Review readiness and human authority
 
@@ -147,7 +160,7 @@ Practical order `03` is not used as a canonical ID, matching is not conflated wi
 
 ## Source-to-target parity matrix
 
-The typed item-level matrix is `packages/tenderboost/src/legacy-parity.ts`. It contains **90** audited source items: **26 preserved**, **14 adapted to TenderApps design**, **42 truth-corrected**, **8 intentionally isolated for future Agent separation**, and **0 missing**. The strict-pass additions carry frozen-source locators (or an explicit declaration that no frozen-source equivalent exists) and are paired with behavioral tests for deadline reconstruction, recommendation use, channel/cadence output, save/reset revisions, next-action metadata, and persistence failures. The `0 missing` result is therefore corroborated by executable behavior and rendered-browser review, not accepted from the manifest count alone.
+The typed item-level matrix is `packages/tendermatch/src/legacy-parity.ts`. It contains **90** audited source items: **26 preserved**, **14 adapted to TenderApps design**, **42 truth-corrected**, **8 intentionally isolated for future Agent separation**, and **0 missing**. The strict-pass additions carry frozen-source locators (or an explicit declaration that no frozen-source equivalent exists) and are paired with behavioral tests for deadline reconstruction, recommendation use, channel/cadence output, save/reset revisions, next-action metadata, and persistence failures. The `0 missing` result is therefore corroborated by executable behavior and rendered-browser review, not accepted from the manifest count alone.
 
 The reviewable 48-state responsive matrix, restored-control checks, route/history results, focus qualification, overflow verdict, and console verdict are recorded in `docs/tendermatch-strict-parity-browser-qa.md`.
 

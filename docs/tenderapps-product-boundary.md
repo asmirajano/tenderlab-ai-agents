@@ -23,14 +23,14 @@ The Command Center launch uses an absolute HTTPS URL, opens a separate origin, a
 - Command Center source: `app/`; static export: `dist/firebase`.
 - Tender Apps source: `apps/tender-apps/`; static build: `apps/tender-apps/dist`.
 - Page routes: `/`, `/balance-sheet-review`, `/landed-cost`, and `/tendermatch`; `/tenderboost` and `/tenderboost-ai` are shared-client compatibility aliases.
-- Shared deterministic logic: `packages/tender-balance/`, `packages/logistics-costing/`, and `packages/tenderboost/`.
+- Shared deterministic logic: `packages/tender-balance/`, `packages/logistics-costing/`, and `packages/tendermatch/`.
 - One Firebase target: `tender-apps` → `tenderapps-ai`.
 - Historic product-specific sites are redirects into the corresponding page on the unified origin.
 - The old Command Center route `/logistics-costing` is not generated or published.
 
 This prevents accidental shell/navigation coupling and permits separate release, domain, CSP, cache, monitoring, and identity policies. It does not by itself authorize users.
 
-TenderMatch currently presents the complete frozen TenderBoost reader-facing workspace using a dated, non-confidential demonstration snapshot with absolute deadlines, explicit Case/result identity, evidence-linked legacy match inputs, audited Match Support or MISSING, and consultant-decision provenance. The Company × Tender result remains the only `agent:TL-A031` output. Campaign Studio is present only as a separately versioned browser-local legacy parity module whose drafts and lifecycle demonstrations are explicitly `NOT SENT`; it is not assigned to TL-A031 or registered as another Agent. TenderMatch does not own participation design, Bid/No-Bid, promotion, outbound action, CRM, live tender refresh, durable tenant storage, or tenant authorization. Its bounded contract is `docs/tenderboost-agent-03-integration.md`; the legacy TenderBoost package path and stable record IDs remain migration-lineage anchors only.
+TenderMatch currently presents the complete frozen legacy TenderBoost reader-facing workspace using a dated, non-confidential demonstration snapshot with absolute deadlines, explicit Case/result identity, evidence-linked legacy match inputs, audited Match Support or MISSING, and consultant-decision provenance. The Company × Tender result remains the only `agent:TL-A031` output. Campaign Studio is present only as a separately versioned browser-local legacy parity module whose drafts and lifecycle demonstrations are explicitly `NOT SENT`; it is not assigned to TL-A031 or registered as another Agent. TenderMatch does not own participation design, Bid/No-Bid, promotion, outbound action, CRM, live tender refresh, durable tenant storage, or tenant authorization. Its bounded contract is `docs/tendermatch-agent-03-integration.md`; protected TenderBoost record IDs remain migration-lineage anchors only.
 
 ## Security truth
 

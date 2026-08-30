@@ -118,7 +118,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     name: "TenderMatch · TenderApps Agent 03",
     ownerAgentId: "agent:TL-A031",
     clientProductId: "product:TA-TENDERBOOST",
-    descriptor: "Audited Company × Tender evidence support inside the complete TenderBoost migration baseline",
+    descriptor: "Audited Company × Tender evidence support inside the TenderMatch frozen-source parity baseline",
     tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, and retain the consultant’s match decision without owning participation design, Bid/No-Bid authority, or the separately versioned legacy Campaign Studio parity module.",
     primaryInputs: [
       "Versioned tender record with absolute deadline and source snapshot",
@@ -137,12 +137,12 @@ export const realAgentImplementations: RealAgentImplementation[] = [
       "docs/real-tender-agent-development-policy.json",
     ],
     playbookRefs: [
-      "docs/tenderboost-agent-03-integration.md",
-      "docs/tenderboost-scoring-model-card.md",
-      "packages/tenderboost/src/types.ts",
-      "packages/tenderboost/src/engine.ts",
-      "packages/tenderboost/src/legacy-parity.ts",
-      "packages/tenderboost/src/legacy-campaign.ts",
+      "docs/tendermatch-agent-03-integration.md",
+      "docs/tendermatch-scoring-model-card.md",
+      "packages/tendermatch/src/types.ts",
+      "packages/tendermatch/src/engine.ts",
+      "packages/tendermatch/src/legacy-parity.ts",
+      "packages/tendermatch/src/legacy-campaign.ts",
     ],
     knownLimitations: [
       "The migrated 16-tender/10-supplier fixture is a dated demonstration snapshot, not a live authorized feed.",
