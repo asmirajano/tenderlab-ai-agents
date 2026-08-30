@@ -335,38 +335,38 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
 
   for (const content of [
     "TENDERMATCH · TENDERLAB CONSULTANT WORKSPACE · AGENT 03",
-    "reviewable match result",
+    "matches one tender",
     "WHAT YOU PROVIDE",
-    "Tender snapshot",
-    "Supplier profile",
-    "Supporting records",
-    "WHAT TENDERMATCH DOES",
+    "tb3-pair-illustration",
+    "tb3-pair-card tender",
+    "tb3-pair-card company",
+    "tb3-agent-medallion",
+    "KEEP MISSING",
     "WHAT YOU RECEIVE",
     "ILLUSTRATIVE FROZEN OUTPUT · NOT A LIVE DECISION",
-    "AUDITED MATCH SUPPORT",
+    "MATCH SUPPORT",
     "LINKED EVIDENCE",
-    "MISSING / BLOCKERS",
-    "DEADLINE FRESHNESS",
-    "CONSULTANT DECISION",
+    "MISSING / BLOCKER",
+    "FRESHNESS",
+    "DECISION",
     "Open existing match for review",
     "Open Full Matrix",
-    "HOW IT WORKS",
-    "DOWNSTREAM BOUNDARY",
+    "INTERNAL MATCHING ONLY",
   ]) assert.match(orientation, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), content);
 
-  assert.ok(orientation.indexOf("WHAT YOU PROVIDE") < orientation.indexOf("WHAT TENDERMATCH DOES"));
-  assert.ok(orientation.indexOf("WHAT TENDERMATCH DOES") < orientation.indexOf("WHAT YOU RECEIVE"));
+  assert.ok(orientation.indexOf("WHAT YOU PROVIDE") < orientation.indexOf("tb3-agent-medallion"));
+  assert.ok(orientation.indexOf("tb3-agent-medallion") < orientation.indexOf("WHAT YOU RECEIVE"));
   assert.ok(orientation.indexOf('part="outcome-promise"') < orientation.indexOf('part="input"'));
   assert.ok(orientation.indexOf('part="input"') < orientation.indexOf('part="agent-transformation"'));
   assert.ok(orientation.indexOf('part="agent-transformation"') < orientation.indexOf('part="finished-output"'));
   assert.ok(orientation.indexOf('part="finished-output"') < orientation.indexOf('part="primary-action"'));
-  assert.match(orientation, /MISSING<\/b>—never silently converted to zero/);
+  assert.match(orientation, /<ol><li>SELECT<\/li><li>VALIDATE<\/li><li>KEEP MISSING<\/li><li>EXPLAIN<\/li><\/ol>/);
   assert.match(orientation, /onOpen\(previewAssessment, "match-tenders"\)/);
   assert.match(orientation, /onKeyDown=\{\(event\)[\s\S]+event\.key === "Enter"[\s\S]+event\.key === " "/);
   assert.match(orientation, /onView\("matrix"\)/);
   assert.match(orientation, /Promotion and outreach belong to a separate future Marketing Agent/);
-  assert.match(orientation, /TenderMatch ends with a reviewable match result and human-controlled consultant disposition/);
   assert.match(orientation, /PracticalAgentOverviewBoundary[\s\S]+\{caseControls\}/);
+  assert.doesNotMatch(orientation, /HOW IT WORKS|tb3-overview-method|Select and compare|Validate available evidence/);
   assert.doesNotMatch(orientation, /tb3-product-intro/);
   assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);
 
@@ -382,9 +382,12 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.match(page, /sublabel: "Internal matching workspace"/);
   assert.match(styles, /\.tb3-overview-story \{[^}]*grid-template-columns:/);
   assert.match(styles, /\.tb3-page-overview \.tb3-overview-heading h1/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-pair-illustration/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-agent-medallion/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-result-summary/);
   assert.match(styles, /\.tb3-page-overview \.tb3-overview-actions/);
-  assert.match(styles, /@media \(max-width: 1200px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: 1fr; \}/);
+  assert.match(styles, /@media \(max-width: 1200px\)[\s\S]*?\.tb3-page-overview \.tb3-overview-story \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
+  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.tb3-page-overview \.tb3-overview-story \{ grid-template-columns: 1fr; \}/);
 });
 
 test("keeps Campaign Studio outside TenderMatch as an unimplemented future capability candidate", async () => {

@@ -6,6 +6,19 @@ This is the durable browser record for the pre-commit integration candidate base
 
 Six screenshots are retained: Overview at desktop Standard, desktop Wide, tablet, and mobile; Global Tender Demand at desktop Standard; and Supplier Footprint at desktop Standard. This evidence set does not claim a screenshot for every matrix combination.
 
+Four additional corrective screenshots retain the user-approved `d2834b2` Overview composition at desktop Standard, desktop Wide, tablet, and mobile. They are identified by the `overview-corrected-` prefix and are tied to parent checkpoint `9e4bf6c65aa6ad4b8c679e17662f15f331b8c4be` in the manifest.
+
+## Corrective Overview comparison
+
+- The corrected Overview restores the `d2834b2` illustrated Tender × Company cards, evidence cues, central TenderMatch medallion and arrows, four terse action verbs, compact dark reviewable-result panel, supported/blocker cues, and concise action footer.
+- The generic three-box input stack, explanatory missingness paragraph, four procedural description rows, and duplicate post-Overview “How it works” section are absent.
+- Desktop Standard `1280 × 768`: the input, transformation, and output stages occupy `244 / 118 / 507 px`; the action and authority boundary finish at `663 px`, before the viewport bottom. The output is the dominant stage.
+- Desktop Wide `1440 × 900`: the stage widths are `288 / 129 / 599 px`; the action and authority boundary finish at `643 px`.
+- Tablet `834 × 1112`: input and transformation share a `375 / 375 px` row and the dark output occupies the full `750 px` story width below them.
+- Mobile `390 × 844`: all three stages stack in semantic order at the full `345 px` story width. The page has no horizontal overflow; the compact illustrated input begins in the first screen rather than a long explanatory block.
+- At all four widths, the illustrated pair and Agent medallion are present, the duplicate method section is absent, the primary action remains keyboard-operable, and the matching-only Marketing boundary remains visible after the action.
+- A responsive-cascade defect found during rendered QA was corrected: the high-specificity desktop story grid now yields to explicit two-column tablet and one-column mobile rules instead of clipping internal panels.
+
 ## Interaction and responsive matrix
 
 - Checked all ten registered views at desktop Standard `1280 × 768`, tablet `834 × 1112`, and mobile `390 × 844`: 30 combinations.

@@ -394,61 +394,58 @@ function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatc
       <PracticalAgentOverviewPart as="header" className="tb3-overview-heading" part="outcome-promise">
         <div>
           <span>TENDERMATCH · TENDERLAB CONSULTANT WORKSPACE · AGENT 03</span>
-          <h1 id="tendermatch-overview-title">Turn one Tender × Company pair into a <em>reviewable match result.</em></h1>
-          <p>TenderMatch is TenderLab Consultants’ internal workspace for comparing a specific supplier or company with a specific tender, explaining the available support and gaps, and keeping the consultant’s judgment explicit.</p>
+          <h1 id="tendermatch-overview-title">See why one company <em>matches one tender.</em></h1>
+          <p>Evidence-linked Company × Tender review for TenderLab Consultants.</p>
         </div>
         <aside aria-label="TenderMatch operating role">
-          <span>OPERATING ROLE TODAY</span>
-          <strong>Internal matching</strong>
-          <p>Canonical owner <b>TL-A031</b><br />Company × Tender decision support</p>
-          <small>MATCHING SUPPORT · HUMAN-CONTROLLED DISPOSITION</small>
+          <span>INTERNAL WORKSPACE</span>
+          <strong>Human-reviewed matching</strong>
+          <p><b>TL-A031</b> · practical Agent 03</p>
+          <small>MATCH SUPPORT · EVIDENCE · HUMAN DECISION</small>
         </aside>
       </PracticalAgentOverviewPart>
 
       <div className="tb3-overview-story" aria-label="Tender snapshot and company evidence transformed into a reviewable match result">
         <PracticalAgentOverviewPart as="article" className="tb3-story-input" part="input">
-          <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>An explicit pair and its evidence</small></div></header>
-          <div className="tb3-input-stack" aria-label="TenderMatch inputs">
-            <div><span>TENDER</span><b>Tender snapshot</b><small>Scope · buyer · deadline · source</small></div>
-            <div><span>COMPANY</span><b>Supplier profile</b><small>Identity · capability · readiness</small></div>
-            <div><span>EVIDENCE</span><b>Supporting records</b><small>Sources · dates · confidence</small></div>
+          <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>An explicit pair + evidence</small></div></header>
+          <div className="tb3-pair-illustration" aria-label={`${previewTender.reference} tender paired with ${previewSupplier.legalEnglishName}`}>
+            <div className="tb3-pair-card tender"><span>TENDER</span><b>{previewTender.reference}</b><small>{previewTender.object}</small><i>{previewTender.country} · {dateLabel(previewTender.deadlineAt)}</i></div>
+            <strong aria-hidden="true">×</strong>
+            <div className="tb3-pair-card company"><span>COMPANY</span><b>{previewSupplier.legalEnglishName}</b><small>{supplierActivity(previewSupplier)}</small><i>Readiness {previewSupplier.readiness.value}/100 · EST.</i></div>
           </div>
-          <p>Inputs remain separately identified and dated. An absent evaluation or unsupported value stays <b>MISSING</b>—never silently converted to zero.</p>
+          <div className="tb3-evidence-cues" aria-label="Supporting evidence cues"><span>Scope</span><span>Capability</span><span>Deadline</span><span>Sources</span></div>
         </PracticalAgentOverviewPart>
 
-        <PracticalAgentOverviewPart as="article" className="tb3-story-work" part="agent-transformation">
-          <header><span>02</span><div><b>WHAT TENDERMATCH DOES</b><small>Evidence-aware pair review</small></div></header>
-          <ol>
-            <li><span>1</span><p><b>Select and compare</b><small>One tender with one company</small></p></li>
-            <li><span>2</span><p><b>Validate available evidence</b><small>Preserve provenance and MISSING values</small></p></li>
-            <li><span>3</span><p><b>Assess and explain</b><small>Strengths, gaps, blockers and freshness</small></p></li>
-            <li><span>4</span><p><b>Leave the decision human</b><small>Consultant disposition remains explicit</small></p></li>
-          </ol>
+        <PracticalAgentOverviewPart className="tb3-story-work" part="agent-transformation" aria-label="TenderMatch evidence-aware transformation">
+          <span className="tb3-story-arrow" aria-hidden="true">→</span>
+          <div className="tb3-agent-medallion"><small>TENDER APPS</small><strong>Tender<br />Match</strong><i>TL-A031</i></div>
+          <ol><li>SELECT</li><li>VALIDATE</li><li>KEEP MISSING</li><li>EXPLAIN</li></ol>
+          <span className="tb3-story-arrow" aria-hidden="true">→</span>
         </PracticalAgentOverviewPart>
 
         <PracticalAgentOverviewPart as="article" className="tb3-story-output" part="finished-output">
           <header><div><span>03 · WHAT YOU RECEIVE</span><small>ILLUSTRATIVE FROZEN OUTPUT · NOT A LIVE DECISION</small></div><b>REVIEWABLE RESULT</b></header>
-          <div className="tb3-preview-identities">
-            <div><span>COMPANY</span><strong>{previewSupplier.legalEnglishName}</strong><small>{supplierActivity(previewSupplier)}</small></div>
+          <div className="tb3-result-pair">
+            <div><span>COMPANY</span><strong>{previewSupplier.legalEnglishName}</strong></div>
             <i aria-hidden="true">×</i>
-            <div><span>TENDER</span><strong>{previewTender.title}</strong><small>{previewTender.reference} · {previewTender.country}</small></div>
+            <div><span>TENDER</span><strong>{previewTender.reference}</strong></div>
           </div>
-          <dl className="tb3-preview-metrics">
-            <div><dt>AUDITED MATCH SUPPORT</dt><dd>{previewAssessment.auditedMatch.value ?? "MISSING"}<small>{previewAssessment.auditedMatch.value === null ? "Insufficient linked evidence" : `${previewAssessment.auditedMatch.valueClass} · ${previewAssessment.auditedMatch.policyVersion}`}</small></dd></div>
-            <div><dt>LINKED EVIDENCE</dt><dd>{previewAssessment.auditedMatch.evidenceIds.length}<small>{previewAssessment.auditedMatch.evidenceIds.length ? "Traceable record identities" : "MISSING"}</small></dd></div>
-            <div><dt>DEADLINE FRESHNESS</dt><dd>{previewAssessment.tenderFreshness.status}<small>{dateLabel(previewTender.deadlineAt)} · {previewAssessment.tenderFreshness.freshness}</small></dd></div>
-            <div><dt>CONSULTANT DECISION</dt><dd>{decisionLabel[previewDecision]}<small>Human-controlled match disposition</small></dd></div>
+          <dl className="tb3-result-summary">
+            <div className="score"><dt>MATCH SUPPORT</dt><dd>{previewAssessment.auditedMatch.value ?? "MISSING"}<small>{previewAssessment.auditedMatch.value === null ? "Needs evidence" : "EVIDENCE-LINKED"}</small></dd></div>
+            <div><dt>LINKED EVIDENCE</dt><dd>{previewAssessment.auditedMatch.evidenceIds.length}<small>records</small></dd></div>
+            <div><dt>FRESHNESS</dt><dd>{previewAssessment.tenderFreshness.status}<small>{previewAssessment.tenderFreshness.freshness}</small></dd></div>
+            <div><dt>DECISION</dt><dd>{decisionLabel[previewDecision]}<small>consultant</small></dd></div>
           </dl>
-          <div className="tb3-preview-findings">
-            <div><span>MATCH SUPPORT</span>{previewAssessment.linkedStrengths.slice(0, 2).map((claim) => <p key={claim.id}>✓ {claim.text}<small>{claim.evidenceIds.join(" · ")}</small></p>)}</div>
-            <div><span>MISSING / BLOCKERS</span>{previewAssessment.gaps.slice(0, 2).map((gap) => <p key={gap}>? {gap}</p>)}</div>
+          <div className="tb3-result-findings">
+            <div><span>SUPPORTED</span><p>✓ {previewAssessment.linkedStrengths[0]?.text ?? "No supported claim"}</p></div>
+            <div><span>MISSING / BLOCKER</span><p>? {previewAssessment.gaps[0] ?? "None recorded"}</p></div>
           </div>
-          <p className="tb3-preview-note">Legacy Match Score {previewAssessment.matchScore.value ?? "MISSING"} remains a separate historical estimate. Readiness, evidence quality, freshness, audited support, and consultant decision are not blended into one claim.</p>
+          <footer><span>HUMAN-CONTROLLED RESULT</span><b>Ready for consultant review</b><i aria-hidden="true">→</i></footer>
         </PracticalAgentOverviewPart>
       </div>
 
       <PracticalAgentOverviewPart as="footer" className="tb3-overview-actions" part="primary-action">
-        <div><strong>Review one evidence-linked match result.</strong><span>Open a pair, inspect gaps and freshness, and retain the consultant disposition as a separate human judgment.</span></div>
+        <div><strong>Open the reviewable match.</strong><span>Inspect evidence, gaps and freshness; keep the decision human.</span></div>
         <div>
           <button className="primary" type="button" onClick={() => onOpen(previewAssessment, "match-tenders")} onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -459,19 +456,12 @@ function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatc
           <button type="button" onClick={() => onView("matrix")}>Open Full Matrix</button>
         </div>
       </PracticalAgentOverviewPart>
+      <PracticalAgentOverviewBoundary className="tb3-overview-boundary" productId="product:TA-TENDERBOOST" aria-label="TenderMatch authority boundary">
+        <span>INTERNAL MATCHING ONLY</span>
+        <p><b>Consultant decision stays explicit.</b> Promotion and outreach belong to a separate future Marketing Agent.</p>
+        <div><span>MATCHING SUPPORT</span><span>HUMAN DECISION</span></div>
+      </PracticalAgentOverviewBoundary>
     </PracticalAgentOverview>
-
-    <PracticalAgentOverviewBoundary className="tb3-overview-method" productId="product:TA-TENDERBOOST" aria-label="How TenderMatch works and where its authority ends">
-        <div>
-          <span>HOW IT WORKS</span>
-          <ol><li><b>1</b>Select an explicit pair</li><li><b>2</b>Review linked evidence</li><li><b>3</b>Explain support and gaps</li><li><b>4</b>Record consultant disposition</li></ol>
-        </div>
-        <aside>
-          <span>DOWNSTREAM BOUNDARY</span>
-          <strong>Promotion and outreach belong to a separate future Marketing Agent.</strong>
-          <p>TenderMatch ends with a reviewable match result and human-controlled consultant disposition.</p>
-        </aside>
-    </PracticalAgentOverviewBoundary>
 
     {caseControls}
 
