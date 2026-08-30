@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { clientProducts, landedCostProduct, tenderBalanceProduct, tenderBoostProduct } from "../packages/catalog-data/src/client-products.ts";
+import { clientProducts, landedCostProduct, tenderBalanceProduct, tenderMatchProduct } from "../packages/catalog-data/src/client-products.ts";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tenderAppsRoot = path.join(projectRoot, "apps", "tender-apps");
@@ -26,11 +26,11 @@ test("registers all practical Agents as pages in one Tender Apps product", () =>
   assert.equal(landedCostProduct.clientAppPath, "apps/tender-apps");
   assert.equal(tenderBalanceProduct.clientRoute, "/balance-sheet-review");
   assert.equal(landedCostProduct.clientRoute, "/landed-cost");
-  assert.equal(tenderBoostProduct.catalogOrder, 3);
-  assert.equal(tenderBoostProduct.ownerAgentId, "agent:TL-A031");
-  assert.equal(tenderBoostProduct.name, "TenderBoost AI");
-  assert.equal(tenderBoostProduct.clientRoute, "/tenderboost");
-  assert.match(tenderBoostProduct.surfaceStatus, /consultant-controlled/);
+  assert.equal(tenderMatchProduct.catalogOrder, 3);
+  assert.equal(tenderMatchProduct.ownerAgentId, "agent:TL-A031");
+  assert.equal(tenderMatchProduct.name, "TenderMatch");
+  assert.equal(tenderMatchProduct.clientRoute, "/tendermatch");
+  assert.match(tenderMatchProduct.surfaceStatus, /matching only/);
   assert.equal(tenderBalanceProduct.access.commandCenterAudience, "team-admin-only");
   assert.equal(tenderBalanceProduct.access.clientAppToCommandCenter, false);
   assert.equal(tenderBalanceProduct.access.separateOriginRequired, true);
@@ -52,8 +52,8 @@ test("builds TenderBalance inside the unified client app without Command Center 
   assert.match(javascript, /TENDER LOGISTICS COST/);
   assert.match(javascript, /balance-sheet-review/);
   assert.match(javascript, /landed-cost/);
-  assert.match(javascript, /TenderBoost AI/);
-  assert.match(javascript, /tenderboost/);
+  assert.match(javascript, /TenderMatch/);
+  assert.match(javascript, /tendermatch/);
   assert.doesNotMatch(javascript, /href:"\/(?:agents|architecture|case-simulation|products)/);
   assert.doesNotMatch(javascript, /TenderLab home/);
   await assert.rejects(access(path.join(projectRoot, "apps", "tender-balance", "src", "App.tsx")));
@@ -119,7 +119,7 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   assert.match(displayRegistry, /canonicalName:\s*product\.name/);
   assert.match(displayRegistry, /productId:\s*"product:TA-BALANCE"[\s\S]+displayName:\s*"TenderBalance"/);
   assert.match(displayRegistry, /productId:\s*"product:TA-LANDED-COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
-  assert.match(displayRegistry, /productId:\s*"product:TA-TENDERBOOST"[\s\S]+displayName:\s*"TenderBoost AI"/);
+  assert.match(displayRegistry, /productId:\s*"product:TA-TENDERBOOST"[\s\S]+displayName:\s*"TenderMatch"/);
   assert.match(component, /Tender Logistics Cost · Reviewed Cost Evidence/);
   assert.match(component, /Estimated Logistics Cost/);
   assert.match(component, /required \+ 1 free capacity reference/);

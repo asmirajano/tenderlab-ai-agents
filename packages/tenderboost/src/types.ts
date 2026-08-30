@@ -1,9 +1,16 @@
-export const TENDERBOOST_SCHEMA_VERSION = "2.0.0" as const;
+/**
+ * TenderMatch is the active TenderApps product identity.
+ *
+ * The package path and frozen TB fixture identities remain unchanged so the
+ * migrated source and historical Cases stay traceable to TenderBoost AI.
+ */
+export const TENDERMATCH_SCHEMA_VERSION = "3.0.0" as const;
+export const TENDERMATCH_ENGINE_VERSION = "tendermatch-evaluation/3.0.0" as const;
+export const TENDERMATCH_AUDITED_MATCH_POLICY_VERSION = "tendermatch-audited-match/3.0.0" as const;
+export const TENDERMATCH_DEADLINE_CONTEXT_POLICY_VERSION = "tendermatch-deadline-context/3.0.0" as const;
 export const TENDERBOOST_LEGACY_SCHEMA_VERSION = "1.0.0" as const;
-export const TENDERBOOST_ENGINE_VERSION = "tenderboost-match-campaign/2.0.0" as const;
+export const TENDERBOOST_STAGE_2_SCHEMA_VERSION = "2.0.0" as const;
 export const TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION = "tenderboost-legacy-baseline/1.0.0" as const;
-export const TENDERBOOST_AUDITED_MATCH_POLICY_VERSION = "tenderboost-audited-match/2.0.0" as const;
-export const TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION = "tenderboost-campaign-priority/2.0.0" as const;
 export const TENDERBOOST_DEMO_SNAPSHOT_ID = "snapshot:TB-DEMO-2026-08-15" as const;
 export const TENDERBOOST_DEMO_AS_OF = "2026-08-15T00:00:00+05:00" as const;
 
@@ -17,10 +24,7 @@ export type ValueClass = "SOURCE" | "CALCULATED" | "ESTIMATED" | "ASSUMED" | "MI
 export type ConfidenceLevel = "high" | "medium" | "low" | "unknown";
 export type EvidenceReviewStatus = "LEGACY_VERIFIED" | "INFERRED" | "UNKNOWN" | "REVIEWED";
 export type ConsultantDecision = "pending" | "approved" | "hold" | "rejected";
-export type WorkflowState = "draft" | "preliminary" | "reviewed" | "approved" | "released";
-export type CampaignLifecycle = "draft" | "approved" | "active" | "follow-up" | "interested" | "no-response" | "closed" | "rejected";
-export type CampaignChannel = "Email" | "LinkedIn" | "Telephone" | "WhatsApp" | "Website form" | "Manual outreach";
-export type CampaignObjective = "tender-opportunity" | "participation-services" | "tender-intelligence" | "eligibility-readiness";
+export type WorkflowState = "preliminary" | "reviewed";
 
 export type VersionedIdentity = {
   id: string;
@@ -72,7 +76,6 @@ export type EvidenceRecord = VersionedIdentity & {
   notes: string;
   sourceRole: SourceRole;
   valueClass: ValueClass;
-  externalClaimEligible: boolean;
 };
 
 export type LegacyTenderMatch = {
@@ -103,8 +106,6 @@ export type SupplierRecord = VersionedIdentity & {
   legacyEvidenceCompleteness: number;
   risks: string[];
   verificationQuestions: string[];
-  suppressionStatus: "UNKNOWN" | "NOT_SUPPRESSED" | "SUPPRESSED";
-  consentStatus: "MISSING" | "RECORDED" | "REVOKED";
   snapshotId: typeof TENDERBOOST_DEMO_SNAPSHOT_ID;
 };
 
@@ -113,7 +114,6 @@ export type EvidenceLinkedClaim = {
   text: string;
   evidenceIds: string[];
   linkage: "lexical" | "unresolved";
-  externalClaimEligible: boolean;
 };
 
 export type AuditedComponentCode = "technical-relevance" | "market-delivery";
@@ -156,7 +156,7 @@ export type AuditedScoreComponent = {
 };
 
 export type AuditedMatchResult = {
-  policyVersion: typeof TENDERBOOST_AUDITED_MATCH_POLICY_VERSION;
+  policyVersion: typeof TENDERMATCH_AUDITED_MATCH_POLICY_VERSION;
   value: number | null;
   valueClass: "ESTIMATED" | "MISSING";
   label: "strong" | "review" | "weak" | "insufficient-evidence";
@@ -174,7 +174,6 @@ export type LegacyBaselineMetrics = {
   matchScore: number | null;
   supplierReadiness: number;
   globalVerificationQuality: number;
-  campaignPriority: number | null;
   method: string;
 };
 
@@ -207,7 +206,6 @@ export type MatchAssessment = VersionedIdentity & {
   supplierReadiness: { value: number; valueClass: "ESTIMATED"; method: string };
   verificationQuality: CalculatedMetric;
   deadlineUrgency: CalculatedMetric;
-  campaignPriority: CalculatedMetric;
   consultantDecision: ConsultantDecision;
   decisionHistory: MatchDecisionRecord[];
   linkedStrengths: EvidenceLinkedClaim[];
@@ -218,68 +216,29 @@ export type MatchAssessment = VersionedIdentity & {
   tenderFreshness: TenderFreshness;
 };
 
-export type CampaignBlockerCode =
+export type ReviewFindingCode =
   | "MATCH_UNASSESSED"
   | "AUDITED_MATCH_REQUIRED"
-  | "ZERO_MATCH"
-  | "MATCH_REJECTED"
   | "TENDER_CLOSED"
   | "SNAPSHOT_STALE"
-  | "SUPPRESSION_REVIEW_REQUIRED"
-  | "SUPPRESSED"
-  | "CONSENT_REQUIRED"
-  | "CONSENT_REVOKED"
-  | "MATERIAL_RISK_REVIEW"
-  | "EVIDENCE_REFRESH_REQUIRED"
-  | "CONSULTANT_APPROVAL_REQUIRED"
-  | "CAMPAIGN_APPROVAL_REQUIRED"
-  | "OUTREACH_EVENT_REQUIRED";
+  | "MATERIAL_RISK_HANDOFF"
+  | "EVIDENCE_REFRESH_REQUIRED";
 
-export type CampaignBlocker = {
-  code: CampaignBlockerCode;
+export type ReviewFinding = {
+  code: ReviewFindingCode;
   message: string;
   nextAction: string;
+  ownerAgentId: string;
 };
 
-export type CampaignEligibility = {
-  canPrepareDraft: boolean;
-  eligibleForSuggestion: boolean;
-  eligibleForActivation: boolean;
-  blockers: CampaignBlocker[];
+export type ConsultantReviewSupport = {
+  readyForCurrentDecision: boolean;
+  findings: ReviewFinding[];
 };
 
-export type CampaignDraft = VersionedIdentity & {
-  caseId: string;
-  matchId: string;
-  supplierId: string;
-  tenderId: string;
-  lifecycle: CampaignLifecycle;
-  objective: CampaignObjective;
-  channel: CampaignChannel;
-  copy: string;
-  copyEvidenceIds: string[];
-  createdAt: string;
-  approvedAt: string | null;
-  approvedBy: string | null;
-  currentStatus: string;
-  policyVersion: typeof TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION;
-};
-
-export type CampaignEventMode = "integration" | "manual-record" | "simulation";
-export type CampaignEventType = "outreach-sent" | "response-interested" | "no-response-observed" | "crm-handoff" | "simulation-preview";
-
-export type CampaignEvent = VersionedIdentity & {
-  campaignId: string;
-  type: CampaignEventType;
-  mode: CampaignEventMode;
-  occurredAt: string;
-  externalRecordId: string | null;
-  note: string;
-};
-
-export type TenderBoostCaseResult = {
-  schemaVersion: typeof TENDERBOOST_SCHEMA_VERSION;
-  engineVersion: typeof TENDERBOOST_ENGINE_VERSION;
+export type TenderMatchCaseResult = {
+  schemaVersion: typeof TENDERMATCH_SCHEMA_VERSION;
+  engineVersion: typeof TENDERMATCH_ENGINE_VERSION;
   caseIdentity: VersionedIdentity;
   resultIdentity: VersionedIdentity;
   tenderIdentity: VersionedIdentity;
@@ -291,14 +250,12 @@ export type TenderBoostCaseResult = {
   updatedAt: string;
   workflowState: WorkflowState;
   match: MatchAssessment;
-  campaign: CampaignDraft | null;
-  campaignEvents: CampaignEvent[];
-  simulationEvents: CampaignEvent[];
-  activation: CampaignEligibility;
+  reviewSupport: ConsultantReviewSupport;
   knownLimitations: string[];
   migration: {
     status: "native-current" | "compatible-historical";
     fromSchemaVersion: string | null;
+    sourceProductName: "TenderBoost AI" | null;
     migratedAt: string | null;
     note: string;
   };

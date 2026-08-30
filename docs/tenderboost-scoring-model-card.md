@@ -1,125 +1,116 @@
-# TenderBoost audited scoring model card
+# TenderMatch audited scoring model card
 
-Status: Stage 2 bounded experiment, dated 2026-08-30. Policy version: `tenderboost-audited-match/2.0.0`. Campaign-priority policy: `tenderboost-campaign-priority/2.0.0`. Frozen historical baseline: `tenderboost-legacy-baseline/1.0.0`.
+Status: matching-only Stage 2 evidence experiment re-scoped on 2026-08-30. Active policy: `tendermatch-audited-match/3.0.0`. Deadline-context policy: `tendermatch-deadline-context/3.0.0`. Frozen source comparison: `tenderboost-legacy-baseline/1.0.0`.
 
-This model card covers the authorized, non-confidential TenderBoost demonstration fixture only. It does not establish production accuracy, live eligibility, probability of award, supplier qualification, Bid/No-Bid, legal outreach authority, or autonomous campaign authority.
+## Intended use
 
-## Business question and authority
+The policy estimates evidence support for one Company × Tender fit under `agent:TL-A031`. It supports consultant review; it is not a probability of award, eligibility verdict, general readiness score, participation design, Bid/No-Bid recommendation, or external commercial action.
 
-The bounded question is: **does this historically assessed Company × Tender pair have distinct reviewed evidence for both technical relevance and market/delivery relevance, and what support band follows from those records?**
+The only authorized evidence for this experiment is the non-confidential frozen TenderBoost fixture at source commit `04b0b2a723223d11617837ee0e7562fa48168cd9`, plus the reviewed pair-to-evidence mapping in `packages/tenderboost/src/experiment-data.ts`.
 
-The result is an evidence-support estimate for consultant review. It is not a probability, prediction, eligibility verdict, or consultant decision. A human consultant retains the match decision and exact campaign-copy approval. No external activity occurs without a separately authorized integration or auditable manual event.
+## Input inventory and semantics
 
-## Input inventory and source roles
+| Input | Role/value meaning | Active use |
+| --- | --- | --- |
+| 16 tender records | Dated `SUPPORTING_DOCUMENT`; tender fields are `ASSUMED` until refreshed | Pair identity, description, absolute deadline, time context |
+| 10 company records | Dated `SUPPORTING_DOCUMENT` | Company identity and evidence lookup |
+| 18 legacy pair rows | Historical curated `ESTIMATED` values | Comparison only; not an audited operand |
+| 142 absent pair rows | `MISSING`, not zero | Excluded from evaluated/audited results |
+| Evidence records | Legacy-reviewed, inferred, unknown, or reviewed records with confidence and provenance | Component eligibility and explanation |
+| Pair evidence mappings | Reviewed `USER_ASSERTION` semantic assignments | Component semantic bands for the bounded experiment |
+| Company readiness | Historical `ESTIMATED` fixture value | Displayed separately; never an audited operand |
+| Absolute deadline + injected clock | Dated source fact + runtime context | Separate calculated urgency/freshness; never an audited operand |
+| Consultant decision | `SOURCE` user assertion with actor/time/rationale | Separate human disposition; never an audited operand |
 
-| Input | Role and value meaning | Current use |
-|---|---|---|
-| 16 Tender records | Dated `SUPPORTING_DOCUMENT`; tender fields are `ASSUMED` until refreshed | Pair identity, object/tags, country/region, absolute deadline, snapshot age |
-| 10 Supplier profiles | Dated `SUPPORTING_DOCUMENT`; profile fields are not promoted to current facts | Supplier identity and review context |
-| Supplier evidence records | Dated `SUPPORTING_DOCUMENT`; legacy VERIFIED becomes `LEGACY_VERIFIED`, not current external-claim approval | Audited component evidence, confidence, provenance, blockers |
-| 18 curated legacy pair records | Historical `ESTIMATED` values | Immutable comparison baseline only |
-| 142 absent pair records | `MISSING`, not numeric zero | Excluded from audited and campaign results |
-| Pair-to-evidence mappings | Reviewed `USER_ASSERTION` in the bounded experiment manifest | Semantic assignment of existing evidence to a component; creates no new evidence |
-| Supplier readiness | Historical `ESTIMATED` fixture score with no independently replayed formula | Displayed separately; excluded from audited Match Support and audited Campaign Priority |
-| Consultant decision | `SOURCE` user assertion with actor, time, and rationale | Workflow gate only; excluded from audited score and priority formula |
-| Absolute deadline and injected clock | Dated input plus deterministic runtime operand | Freshness, closed state, monotonic urgency |
+## Frozen baseline versus active policy
 
-## Frozen Stage 1 baseline
+The legacy 65–95 pair scores are retained exactly but their formula cannot be replayed from the fixture. The engine does not manufacture evidence to reproduce them. Their compatibility status is historical estimate only.
 
-Stage 1 behavior remains reconstructable and is never silently overwritten:
+The active policy uses two distinct components:
 
-- Match Score: exact curated legacy pair score, or `MISSING` when the pair is absent.
-- Readiness: legacy overall-readiness estimate.
-- Global verification quality: `(LEGACY_VERIFIED count + 0.35 × INFERRED count) / all evidence count × 100`, rounded.
-- Deadline factor: `45` at 0–3 days, `100` at 4–14 days, `82` at 15–30 days, otherwise `48`.
-- Human relevance: `100` approved, `20` hold, `60` pending.
-- Legacy Campaign Priority: `48% Match + 18% readiness + 16% global verification + 11% deadline factor + 7% human relevance`, rounded.
+`Audited Match Support = technical relevance × 70% + market/delivery relevance × 30%`
 
-The audit found that the historical Match and readiness formulas were unavailable; global verification was supplier-wide rather than pair-specific; consultant approval was circularly included in a supposedly separate priority; urgency was non-monotonic; lexical claims could reuse one record more than once; and exact-looking results conveyed unsupported precision. These findings are retained as historical behavior, not repaired in place.
+Each component requires:
 
-## Audited Match Support 2.0.0
+1. a reviewed pair-to-evidence assignment;
+2. at least one referenced record that exists;
+3. record status `LEGACY_VERIFIED` or `REVIEWED` for this bounded experiment;
+4. confidence at least 75;
+5. a semantic band of 60, 80, or 100;
+6. evidence identities not reused across both components.
 
-### Calculation gate
+If either required component fails, the whole audited result is MISSING. Numeric zero is reserved for a future genuinely evaluated zero and cannot be produced from absence. Complete results are labelled `strong` at 85–100, `review` at 70–84, and `weak` below 70. These are review bands, not win probabilities.
 
-An audited score is calculated only when all of these invariants hold:
+The 70/30 weighting is a provisional expert policy. Technical relevance is primary for TL-A031; market/delivery relevance is a bounded secondary fit constraint. It is not learned from outcomes and must be revalidated before production use.
 
-1. the Company × Tender pair is one of the 18 historically assessed pairs;
-2. a reviewed technical-relevance mapping points to at least one existing evidence record;
-3. a reviewed market/delivery mapping points to at least one existing evidence record;
-4. every contributing record is `LEGACY_VERIFIED` or `REVIEWED` and has confidence of at least 75;
-5. no evidence record contributes to both components.
+## Separate dimensions
 
-If any invariant fails, the audited result is `MISSING` with component reason codes and actionable missing inputs. It is never converted to zero.
+- **Legacy Match Score:** frozen curated estimate.
+- **Audited Match Support:** evidence-gated estimate under the active formula.
+- **Company readiness:** general historical estimate owned conceptually by `agent:TL-A009`, not part of pair fit.
+- **Evidence quality:** mean confidence of distinct records accepted for the audited pair, not global company coverage.
+- **Deadline urgency:** monotonic time context from the absolute deadline and supplied clock; it never changes Match Support.
+- **Consultant decision:** human approve/hold/reject record; it never changes any score.
 
-### Semantic bands and formula
+Risk, stale/closed state, and evidence refresh appear as separately owned review findings. They do not become hidden score penalties.
 
-The experiment uses deliberately coarse, inspectable bands:
+## Experiment results
 
-- `100`: direct scope evidence or same-country delivery evidence;
-- `80`: comparable scope evidence or same-region delivery evidence;
-- `60`: general category evidence or broad/global delivery evidence;
-- `MISSING`: no qualifying evidence; this is not a weak or zero match.
+| Outcome | Count | Meaning |
+| --- | ---: | --- |
+| Historically assessed pairs | 18 | Source fixture contains a numeric legacy estimate |
+| Audited Match Support available | 6 | Both distinct evidence components pass |
+| Assessed but audited MISSING | 12 | At least one required component is unsupported |
+| Unassessed / MISSING | 142 | No pair row exists; never interpreted as zero |
 
-When both components exist:
+The six evidence-sufficient scenarios are Yutong × `514122` (100), Kingpeng × `G05` (94), NCS Testing × `DPA14004203 / ICB 514062` (94), Yutong × `UP/ICB/26/01` (100), United Imaging × `514110` (72), and Chery × `ZR-SPACE-252528-GO-RFB` (86).
 
-`Audited Match Support = round(Technical relevance × 0.70 + Market/delivery relevance × 0.30)`
-
-Labels are `strong` at 85–100, `review` at 70–84, and `weak` below 70. These are experiment review bands, not win probabilities. The 70/30 weighting is a provisional expert policy: capability relevance is primary for TL-A031, while market/delivery evidence is a secondary practical constraint. It is not learned from outcomes and must be revalidated before production use.
-
-Evidence quality is not weighted into Match Support, preventing the same evidence from influencing the match twice. Pair Evidence Quality is shown separately as the mean confidence of the distinct accepted component records.
-
-## Audited Campaign Priority 2.0.0
-
-Deadline urgency is monotonic for an open tender: `round(102.5 − 2.5 × days remaining)`, clamped to 25–100. A closed tender has `MISSING` urgency.
-
-Campaign Priority is calculated only when Audited Match Support, Pair Evidence Quality, and open-tender Deadline Urgency all exist:
-
-`Campaign Priority = round(Audited Match Support × 0.65 + Pair Evidence Quality × 0.20 + Deadline Urgency × 0.15)`
-
-Legacy readiness is excluded because its source formula has not been independently replayed. Consultant decision is excluded to avoid circularity. Both remain separately visible and still control workflow eligibility. Suppression, consent, compliance risk, freshness, evidence-for-external-claims, approval, and outreach events are blockers rather than hidden score penalties.
-
-## Bounded experiment results
-
-The experiment evaluated all 18 historically assessed pairs and preserved the other 142 as unassessed `MISSING` pairs.
-
-| Tender | Supplier | Legacy | Audited | Difference | Verdict |
-|---|---|---:|---:|---:|---|
-| `UP/ICB/26/01` | Yutong | 95 | 100 | +5 | Direct ambulance evidence + same-country fleet delivery evidence |
-| `514122` | Yutong | 92 | 100 | +8 | Direct ambulance evidence + Uzbekistan presence |
-| `G05` | Kingpeng | 85 | 94 | +9 | Direct greenhouse EPC + regional delivery evidence |
-| `DPA14004203 / ICB 514062` | NCS Testing | 92 | 94 | +2 | Direct CRM evidence + regional distributor evidence |
-| `514110` | United Imaging | 92 | 72 | −20 | General imaging support + same-country installation; exact modality remains unproved |
-| `ZR-SPACE-252528-GO-RFB` | Chery | 88 | 86 | −2 | Comparable public-fleet evidence + DRC market presence |
-| Remaining 12 assessed pairs | Various | 65–95 | `MISSING` | — | A required component was absent, inferred, unknown, below threshold, or otherwise unsupported |
-| Remaining 142 combinations | Various | `MISSING` | `MISSING` | — | Never assessed in the source fixture |
-
-No legacy score was reverse-engineered. The six numeric audited results arise from the declared component bands; differences are exposed rather than overwritten. The result set demonstrates why high curated scores cannot be treated as evidence completeness: twelve historically positive pairs still lack enough distinct evidence for the audited calculation.
+The audited values differ from historical scores because the historical scores are not reproduced. Differences are displayed, never silently overwritten.
 
 ## Representative deterministic scenarios
 
-1. **Evidence-sufficient strong match:** Yutong × `UP/ICB/26/01` produces 100 from two distinct qualifying records.
-2. **Partial evidence:** Huawei × `ACCESS/GOVTECH/GD-1` has direct technical evidence but UNKNOWN Bhutan evidence, so the overall audited result is `MISSING` and activation remains blocked.
-3. **Unassessed pair:** any one of the other 142 pairs remains `MISSING`, not zero.
-4. **Closed/stale tender:** the supplied clock recomputes closed/freshness state; urgency and priority become `MISSING`, and activation is blocked.
-5. **Suppression/consent/compliance/material risk:** these remain explicit blockers and never become score penalties or positive claims.
-6. **Lifecycle truth:** current match approval, campaign approval provenance, and a non-simulation outreach event with an external identity are all required before `active`; later states require their own recorded event.
+- Evidence-sufficient strong match: both distinct records pass, producing a weighted result and evidence IDs.
+- Partial evidence: one component is MISSING, so the result is MISSING and current approval is held.
+- Unassessed pair: no legacy row, so both legacy and audited values are MISSING rather than zero.
+- Genuine zero: a synthetic evaluated zero remains numeric zero and distinct from absent data.
+- Closed or stale tender: Match Support remains the evidence result, while current-decision support receives a TL-A017 finding.
+- Material risk signal: score remains separate and the finding is handed to `agent:TL-A038`.
+- Human decision: actor, timestamp, rationale, and revision are recorded without changing the formula.
 
-## Confidence and explanation policy
+## Formula audit findings
 
-Recognition, structure, semantics, arithmetic/domain, and human review remain separate. Evidence confidence is carried at record and component level. It determines whether a record qualifies and is displayed as pair Evidence Quality, but does not change a semantic band. This avoids false precision and double-counting.
+| Risk found | Correction in active policy |
+| --- | --- |
+| Historical score has no replayable operands | Retain as immutable comparison only |
+| Company readiness could double-count broad capability evidence | Exclude it from pair Match Support |
+| Global evidence coverage could masquerade as pair evidence | Calculate quality only from accepted pair records |
+| One record could support multiple dimensions | Reject record reuse across required components |
+| Missing evidence could become zero through default arithmetic | Stop calculation and return MISSING |
+| Deadline pressure could inflate fit | Keep time context separate from Match Support |
+| Consultant approval could circularly increase the number under review | Keep decision outside every formula |
+| Narrow semantic assignments could imply unsupported precision | Use three coarse bands and mark the result ESTIMATED |
 
-Each component stores its code, value or `MISSING`, weight, evidence IDs, evidence confidence, rationale, and reason codes. Each Case stores the policy/engine/schema versions, legacy comparison, audited result, priority operands, decision history, events, blockers, and Artifact identities in one composite result.
+## Confidence and limitations
 
-## Saved-Case compatibility
+Recognition and fixture structure are high-confidence because parsing is deterministic. Semantic and arithmetic/domain confidence remain bounded because the source evidence is old, the semantic bands were expert-reviewed rather than outcome-trained, and underlying source documents were not freshly replayed. Human-review confidence changes only when the consultant records a disposition; it does not upgrade source evidence.
 
-- Schema `2.0.0` Cases are recomputed on resume using the supplied Tender, Supplier, and deterministic clock.
-- Schema `1.0.0` Cases are `compatible-historical`: human decision/event/campaign history and legacy values are retained, while audited derived fields and freshness are recomputed under 2.0.0. Migration provenance is recorded in the Case.
-- Unknown schema versions fail with an explicit migration requirement.
-- No latest-Case fallback exists.
-- Historical generated copy is retained as historical content; it is not silently represented as regenerated 2.0.0 copy.
+This policy cannot establish production accuracy, live tender status, complete eligibility, risk clearance, or general company readiness. The snapshot is stale at the current project clock. No result may be called current until upstream source, deadline, evidence, and risk handoffs are satisfied.
 
-## Limitations and next evidence gate
+## Invariants
 
-The fixture includes source references but the underlying documents were not freshly retrieved or replayed in this stage. All external-claim eligibility remains false. Supplier readiness, full tender requirements, consent, suppression, legal contact basis, current compliance, and current tender amendments remain unsupported or missing. The policy is therefore still `concept-or-simulation` with `unit-or-synthetic-fixture` evidence strength, despite the completed bounded formula audit.
+1. MISSING is never coerced to zero.
+2. An unassessed pair never receives a numeric Match Support value.
+3. A numeric zero remains distinguishable from MISSING.
+4. Both required components must exist before weighted arithmetic runs.
+5. One evidence record cannot satisfy both components.
+6. Unsupported, low-confidence, or missing records cannot contribute.
+7. Company readiness, deadline urgency, and consultant decision cannot affect Match Support.
+8. Every accepted component exposes evidence IDs, confidence, rationale, weight, and policy version.
+9. Loaded Cases recompute deadline freshness with the supplied clock.
+10. The primary UI, saved Case, explanations, and future handoffs read one composite result with an explicit Case ID.
 
-The next safe gate is an authorized replay using current, source-complete tender requirements and supplier evidence, with blinded mapping review, calibration against human judgments and outcomes, sensitivity analysis for weights/bands, negative authorization tests, and an explicit methodology-approval decision. Deployment, sending, CRM operation, and canonical Dataset writes remain separate authorization gates.
+## Versioning and saved Cases
+
+Schema/engine `3.0.0` is a major contract change: the active Case contains only matching, explanation, review findings, and consultant-decision provenance. New records use TenderMatch identities and the TenderMatch storage namespace.
+
+Historical schema `1.0.0` and `2.0.0` records are compatible inputs only. Migration reconstructs the active formula from supplied Tender, Company, evidence, and clock; preserves decision history; records the source schema/product; excludes fields outside the TL-A031 contract; and leaves the original legacy browser key intact. Unknown versions fail explicitly.

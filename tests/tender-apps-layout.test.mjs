@@ -91,7 +91,7 @@ test("separates the platform catalog, scalable Agent navigation, and view contro
   assert.match(shell, /\.client-layout-options \{[^}]*border-radius:\s*999px/);
   assert.match(registry, /canonicalName:\s*product\.name/);
   assert.match(registry, /productId:\s*"product:TA-LANDED-COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
-  assert.match(registry, /productId:\s*"product:TA-TENDERBOOST"[\s\S]+displayName:\s*"TenderBoost AI"/);
+  assert.match(registry, /productId:\s*"product:TA-TENDERBOOST"[\s\S]+displayName:\s*"TenderMatch"/);
   assert.match(catalog, /PracticalAgentVisual/);
   assert.match(shell, /\.client-agent-card > header[\s\S]+\.client-agent-visual/);
 });

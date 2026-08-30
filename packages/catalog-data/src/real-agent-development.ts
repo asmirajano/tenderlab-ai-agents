@@ -6,7 +6,8 @@ import type {
 
 const tenderBalanceId = "implementation:TEA-RAI-TENDERBALANCE" as const;
 const logisticsCostId = "implementation:TEA-RAI-LOGISTICS-COST" as const;
-const tenderBoostId = "implementation:TEA-RAI-TENDERBOOST" as const;
+// Stable implementation identity retained from the TenderBoost migration history.
+const tenderMatchId = "implementation:TEA-RAI-TENDERBOOST" as const;
 
 const evidencePatternId = "pattern:TEA-RAP-EVIDENCE-BEFORE-PRODUCTION" as const;
 const sourcePatternId = "pattern:TEA-RAP-SOURCE-ROLE-BEFORE-FACT" as const;
@@ -112,20 +113,20 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     updatedAt: "2026-08-28",
   },
   {
-    id: tenderBoostId,
-    slug: "tenderboost-ai",
-    name: "TenderBoost AI · TenderApps Agent 03",
+    id: tenderMatchId,
+    slug: "tendermatch",
+    name: "TenderMatch · TenderApps Agent 03",
     ownerAgentId: "agent:TL-A031",
     clientProductId: "product:TA-TENDERBOOST",
-    descriptor: "Audited Company × Tender evidence support and consultant-controlled campaign preparation",
-    tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, retain the consultant decision, and prepare a campaign brief without making Bid/No-Bid decisions or claiming external outreach.",
+    descriptor: "Audited Company × Tender evidence support and consultant decision review",
+    tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, and retain the consultant’s match decision without owning participation design or Bid/No-Bid authority.",
     primaryInputs: [
       "Versioned tender record with absolute deadline and source snapshot",
       "Versioned supplier profile and evidence records",
-      "Frozen legacy match inputs, reviewed pair-to-evidence mappings, and consultant decisions, suppression, consent, and risk state",
+      "Frozen legacy match inputs, reviewed pair-to-evidence mappings, and consultant decisions",
     ],
-    primaryOutput: "A versioned Company × Tender opportunity Case with immutable legacy metrics, an evidence-gated audited result or explicit MISSING state, consultant decision, blockers, and optional non-sending campaign brief",
-    downstreamConsumer: "Consultant review, later participation/Bid-No-Bid analysis, and future separately authorized campaign services",
+    primaryOutput: "A versioned Company × Tender Case with immutable legacy metrics, an evidence-gated audited result or explicit MISSING state, evidence explanations, current-review findings, and consultant-decision provenance",
+    downstreamConsumer: "Consultant review and later Participation Solution-Fit or Bid/No-Bid analysis under separate Agent and human authority",
     maturity: "concept-or-simulation",
     evidenceStrength: "unit-or-synthetic-fixture",
     deploymentStatus: "not-deployed",
@@ -147,7 +148,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
       "The experiment uses a dated demonstration fixture with source references, not freshly replayed underlying source documents.",
       "Legacy Match Score and readiness remain historical estimates and are excluded from claims of audited truth.",
       "Browser-local Cases are not durable tenant-isolated Artifacts.",
-      "No sending, CRM, consent, suppression, response, or campaign-event integration is connected.",
+      "The implementation does not own participation design, Bid/No-Bid, or external commercial action.",
       "The relationship view is a fixed schematic, not a geospatial map, distance model, coordinate plot, or routing result.",
     ],
     patternIds: [],

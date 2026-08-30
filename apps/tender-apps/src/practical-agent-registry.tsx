@@ -1,6 +1,6 @@
 import { clientProducts, type ClientProduct } from "../../../packages/catalog-data/src/client-products";
 
-export type PracticalAgentVisualKind = "balance" | "logistics" | "tenderboost";
+export type PracticalAgentVisualKind = "balance" | "logistics" | "tendermatch";
 
 export type PracticalAgentDisplay = {
   id: `agent:${string}`;
@@ -45,11 +45,11 @@ const displayMetadata: readonly PracticalAgentDisplayMetadata[] = [
   },
   {
     productId: "product:TA-TENDERBOOST",
-    displayName: "TenderBoost AI",
-    functionalSubtitle: "Audited Company × Tender evidence support · consultant-controlled campaigns",
-    description: "Compare a frozen legacy score with an evidence-gated audited result, record the consultant decision, and prepare truthful campaign drafts without sending outreach.",
-    pageTitle: "Tender Apps — TenderBoost AI · Agent 03",
-    visual: "tenderboost",
+    displayName: "TenderMatch",
+    functionalSubtitle: "Evidence-linked Company × Tender evaluation · consultant decision support",
+    description: "Compare the frozen TenderBoost estimate with an evidence-gated audited result, inspect MISSING inputs, and record the consultant’s reviewed match decision.",
+    pageTitle: "Tender Apps — TenderMatch · Agent 03",
+    visual: "tendermatch",
   },
 ] as const;
 
@@ -119,11 +119,11 @@ export function PracticalAgentVisual({ kind }: { kind: PracticalAgentVisualKind 
         <circle className="agent-visual-boost-node" cx="166" cy="34" r="15" />
         <circle className="agent-visual-boost-node" cx="174" cy="101" r="20" />
         <circle className="agent-visual-boost-node" cx="159" cy="144" r="12" />
-        <path className="agent-visual-boost-arrow" d="m192 86 29-19m-7-4 7 4-2 8" />
-        <rect className="agent-visual-boost-brief" x="191" y="91" width="48" height="55" rx="8" />
-        <path className="agent-visual-boost-lines" d="M202 107h25m-25 10h25m-25 10h17" />
+        <rect className="agent-visual-boost-brief" x="194" y="68" width="48" height="64" rx="8" />
+        <path className="agent-visual-boost-lines" d="M205 86h25m-25 11h25m-25 11h17" />
+        <path className="agent-visual-boost-arrow" d="m207 119 7 7 15-19" />
       </svg>
-      <span>Evidence-linked match to campaign brief</span>
+      <span>Evidence-linked match explanation</span>
     </div>
   );
 }

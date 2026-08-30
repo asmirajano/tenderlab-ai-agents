@@ -37,6 +37,10 @@ test("registers Real Agent implementations with stable Agent and product identit
     assert.ok(agentIds.has(implementation.ownerAgentId));
     assert.equal(productsById.get(implementation.clientProductId)?.ownerAgentId, implementation.ownerAgentId);
     if (implementation.id === "implementation:TEA-RAI-TENDERBOOST") {
+      assert.equal(implementation.name, "TenderMatch · TenderApps Agent 03");
+      assert.equal(implementation.slug, "tendermatch");
+      assert.equal(implementation.ownerAgentId, "agent:TL-A031");
+      assert.doesNotMatch(JSON.stringify(implementation), /campaign|outreach|crm/i);
       assert.equal(implementation.maturity, "concept-or-simulation");
       assert.equal(implementation.evidenceStrength, "unit-or-synthetic-fixture");
       assert.equal(implementation.deploymentStatus, "not-deployed");

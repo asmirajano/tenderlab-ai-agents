@@ -1,33 +1,30 @@
 import {
-  TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
-  TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+  TENDERMATCH_AUDITED_MATCH_POLICY_VERSION,
+  TENDERMATCH_DEADLINE_CONTEXT_POLICY_VERSION,
+  TENDERMATCH_ENGINE_VERSION,
+  TENDERMATCH_SCHEMA_VERSION,
   TENDERBOOST_DEMO_AS_OF,
   TENDERBOOST_DEMO_SNAPSHOT_ID,
-  TENDERBOOST_ENGINE_VERSION,
   TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
   TENDERBOOST_LEGACY_SCHEMA_VERSION,
-  TENDERBOOST_SCHEMA_VERSION,
+  TENDERBOOST_STAGE_2_SCHEMA_VERSION,
   type AuditedComponentCode,
   type AuditedMatchResult,
   type AuditedPairEvidenceMapping,
   type AuditedReasonCode,
   type AuditedScoreComponent,
-  type CampaignBlocker,
-  type CampaignChannel,
-  type CampaignDraft,
-  type CampaignEligibility,
-  type CampaignEvent,
-  type CampaignEventType,
-  type CampaignLifecycle,
-  type CampaignObjective,
   type ConsultantDecision,
+  type ConsultantReviewSupport,
   type EvidenceLinkedClaim,
   type MatchAssessment,
+  type MatchDecisionRecord,
+  type ReviewFinding,
   type StorageLike,
   type SupplierRecord,
-  type TenderBoostCaseResult,
   type TenderFreshness,
+  type TenderMatchCaseResult,
   type TenderRecord,
+  type VersionedIdentity,
 } from "./types.ts";
 import { auditedDemoPairMappingByKey } from "./experiment-data.ts";
 
@@ -52,13 +49,13 @@ function isMaterialRisk(supplier: SupplierRecord) {
   return supplier.risks.some((risk) => /debar|exclusion|entity list|sanction|fraud|corrupt/i.test(risk));
 }
 
-function revisionNumber(result: TenderBoostCaseResult) {
+function revisionNumber(result: TenderMatchCaseResult) {
   const parsed = Number(result.resultIdentity.version.replace(/^v/, ""));
   return Number.isFinite(parsed) ? parsed : 1;
 }
 
-function nextVersion(version: string) {
-  const parsed = Number(version.replace(/^v/, ""));
+function nextVersion(version: string | undefined) {
+  const parsed = Number((version ?? "v1").replace(/^v/, ""));
   return `v${Number.isFinite(parsed) ? parsed + 1 : 2}`;
 }
 
@@ -85,10 +82,7 @@ function linkLegacyStrengths(supplier: SupplierRecord, strengths: string[]) {
   for (const strength of strengths) {
     const strengthTokens = tokens(strength);
     const candidates = supplier.evidence
-      .map((evidence) => ({
-        evidence,
-        score: overlap(strengthTokens, tokens(`${evidence.field} ${evidence.value} ${evidence.notes}`)),
-      }))
+      .map((evidence) => ({ evidence, score: overlap(strengthTokens, tokens(`${evidence.field} ${evidence.value} ${evidence.notes}`)) }))
       .filter(({ evidence, score }) => score > 0 && evidence.reviewStatus === "LEGACY_VERIFIED")
       .sort((left, right) => right.score - left.score || left.evidence.id.localeCompare(right.evidence.id));
     if (!candidates.length) {
@@ -96,13 +90,11 @@ function linkLegacyStrengths(supplier: SupplierRecord, strengths: string[]) {
       continue;
     }
     const bestScore = candidates[0].score;
-    const evidenceIds = candidates.filter((candidate) => candidate.score === bestScore).slice(0, 2).map((candidate) => candidate.evidence.id);
     linked.push({
-      id: `claim:TB:${supplier.id.split(":").at(-1)}:${slug(strength)}`,
+      id: `claim:TM:${supplier.id.split(":").at(-1)}:${slug(strength)}`,
       text: strength,
-      evidenceIds,
+      evidenceIds: candidates.filter((candidate) => candidate.score === bestScore).slice(0, 2).map((candidate) => candidate.evidence.id),
       linkage: "lexical",
-      externalClaimEligible: evidenceIds.every((id) => supplier.evidence.find((item) => item.id === id)?.externalClaimEligible === true),
     });
   }
   return { linked, unsupported };
@@ -113,13 +105,6 @@ function legacyVerificationQuality(supplier: SupplierRecord) {
   const legacyVerified = supplier.evidence.filter((item) => item.reviewStatus === "LEGACY_VERIFIED").length;
   const inferred = supplier.evidence.filter((item) => item.reviewStatus === "INFERRED").length;
   return Math.round(((legacyVerified + inferred * 0.35) / supplier.evidence.length) * 100);
-}
-
-export function calculateLegacyBaselinePriority(matchScore: number | null, readiness: number, verification: number, freshness: TenderFreshness, decision: ConsultantDecision) {
-  if (matchScore === null || matchScore <= 0 || decision === "rejected" || freshness.status === "closed") return null;
-  const urgency = freshness.daysRemaining <= 3 ? 45 : freshness.daysRemaining <= 14 ? 100 : freshness.daysRemaining <= 30 ? 82 : 48;
-  const humanRelevance = decision === "approved" ? 100 : decision === "hold" ? 20 : 60;
-  return Math.round(matchScore * 0.48 + readiness * 0.18 + verification * 0.16 + urgency * 0.11 + humanRelevance * 0.07);
 }
 
 const AUDITED_COMPONENT_WEIGHTS: Record<AuditedComponentCode, number> = {
@@ -149,11 +134,7 @@ function missingComponent(code: AuditedComponentCode, rationale: string, reasonC
   };
 }
 
-function evaluateAssignment(
-  code: AuditedComponentCode,
-  mapping: AuditedPairEvidenceMapping | undefined,
-  supplier: SupplierRecord,
-): AuditedScoreComponent {
+function evaluateAssignment(code: AuditedComponentCode, mapping: AuditedPairEvidenceMapping | undefined, supplier: SupplierRecord): AuditedScoreComponent {
   const assignment = mapping?.assignments.find((item) => item.component === code);
   if (!assignment) return missingComponent(code, AUDITED_COMPONENT_MISSING[code].input);
   const records = assignment.evidenceIds.map((id) => supplier.evidence.find((item) => item.id === id));
@@ -183,11 +164,14 @@ export function evaluateAuditedMatch(
 ): AuditedMatchResult {
   if (legacyScore === null) {
     return {
-      policyVersion: TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+      policyVersion: TENDERMATCH_AUDITED_MATCH_POLICY_VERSION,
       value: null,
       valueClass: "MISSING",
       label: "insufficient-evidence",
-      components: [missingComponent("technical-relevance", "The Company × Tender pair was not assessed in the frozen fixture."), missingComponent("market-delivery", "The Company × Tender pair was not assessed in the frozen fixture.")],
+      components: [
+        missingComponent("technical-relevance", "The Company × Tender pair was not assessed in the frozen fixture."),
+        missingComponent("market-delivery", "The Company × Tender pair was not assessed in the frozen fixture."),
+      ],
       evidenceIds: [],
       reasonCodes: ["PAIR_UNASSESSED"],
       missingInputs: ["A reviewed Company × Tender assessment"],
@@ -196,6 +180,7 @@ export function evaluateAuditedMatch(
       method: "No audited score is calculated for an unassessed pair; MISSING is not zero.",
     };
   }
+
   let components = (["technical-relevance", "market-delivery"] as AuditedComponentCode[]).map((code) => evaluateAssignment(code, mapping, supplier));
   const used = new Set<string>();
   const reused = new Set<string>();
@@ -210,15 +195,15 @@ export function evaluateAuditedMatch(
       ? missingComponent(component.code, component.rationale, ["EVIDENCE_RECORD_REUSED"])
       : component);
   }
+
   const missingInputs = components.filter((component) => component.value === null).map((component) => AUDITED_COMPONENT_MISSING[component.code].input);
   const componentReasons = components.flatMap((component) => component.reasonCodes);
-  const canCalculate = missingInputs.length === 0;
-  const value = canCalculate
+  const value = missingInputs.length === 0
     ? Math.round(components.reduce((sum, component) => sum + (component.value ?? 0) * component.weight, 0))
     : null;
   const evidenceIds = [...new Set(components.flatMap((component) => component.evidenceIds))];
   return {
-    policyVersion: TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+    policyVersion: TENDERMATCH_AUDITED_MATCH_POLICY_VERSION,
     value,
     valueClass: value === null ? "MISSING" : "ESTIMATED",
     label: value === null ? "insufficient-evidence" : value >= 85 ? "strong" : value >= 70 ? "review" : "weak",
@@ -237,20 +222,19 @@ export function calculateDeadlineUrgency(freshness: TenderFreshness) {
     return {
       value: null,
       valueClass: "MISSING" as const,
-      policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+      policyVersion: TENDERMATCH_DEADLINE_CONTEXT_POLICY_VERSION,
       evidenceIds: [],
       reasonCodes: ["TENDER_CLOSED"],
-      method: "Closed tenders have no current campaign urgency value.",
+      method: "Closed tenders have no current deadline-urgency value.",
     };
   }
-  const value = Math.max(25, Math.min(100, Math.round(102.5 - freshness.daysRemaining * 2.5)));
   return {
-    value,
+    value: Math.max(25, Math.min(100, Math.round(102.5 - freshness.daysRemaining * 2.5))),
     valueClass: "CALCULATED" as const,
-    policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+    policyVersion: TENDERMATCH_DEADLINE_CONTEXT_POLICY_VERSION,
     evidenceIds: [],
     reasonCodes: [],
-    method: "Monotonic deadline urgency: 100 at one day, declining 2.5 points per additional day, floored at 25.",
+    method: "Monotonic review context: 100 at one day, declining 2.5 points per additional day, floored at 25. It does not change Match Support.",
   };
 }
 
@@ -261,51 +245,22 @@ function auditedVerificationQuality(audited: AuditedMatchResult) {
   return {
     value,
     valueClass: value === null ? "MISSING" as const : "CALCULATED" as const,
-    policyVersion: TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+    policyVersion: TENDERMATCH_AUDITED_MATCH_POLICY_VERSION,
     evidenceIds,
     reasonCodes: value === null ? ["PAIR_RELEVANT_EVIDENCE_MISSING"] : [],
     method: "Mean confidence of distinct evidence records accepted for the audited pair components; not global supplier coverage.",
   };
 }
 
-export function calculateCampaignPriority(audited: AuditedMatchResult, verification: ReturnType<typeof auditedVerificationQuality>, urgency: ReturnType<typeof calculateDeadlineUrgency>) {
-  if (audited.value === null || verification.value === null || urgency.value === null) {
-    return {
-      value: null,
-      valueClass: "MISSING" as const,
-      policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
-      evidenceIds: [...new Set([...audited.evidenceIds, ...verification.evidenceIds])],
-      reasonCodes: ["REQUIRED_PRIORITY_OPERAND_MISSING"],
-      method: "Priority remains MISSING until audited match, pair verification, and open-tender urgency are all available.",
-    };
-  }
-  return {
-    value: Math.round(audited.value * 0.65 + verification.value * 0.2 + urgency.value * 0.15),
-    valueClass: "CALCULATED" as const,
-    policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
-    evidenceIds: [...new Set([...audited.evidenceIds, ...verification.evidenceIds])],
-    reasonCodes: [],
-    method: "Audited match 65% + pair-specific verification 20% + deadline urgency 15%; readiness and consultant decision are deliberately excluded.",
-  };
-}
-
-export function assessMatch(
-  tender: TenderRecord,
-  supplier: SupplierRecord,
-  nowIso: string,
-  decision: ConsultantDecision = "pending",
-): MatchAssessment {
+export function assessMatch(tender: TenderRecord, supplier: SupplierRecord, nowIso: string, decision: ConsultantDecision = "pending"): MatchAssessment {
   const legacy = supplier.legacyTenderMatches.find((item) => item.tenderReference === tender.reference);
   const freshness = deriveTenderFreshness(tender, nowIso);
   const globalLegacyQuality = legacyVerificationQuality(supplier);
   const { linked, unsupported } = linkLegacyStrengths(supplier, legacy?.verifiedStrengths ?? []);
   const score = legacy?.score ?? null;
   const auditedMatch = evaluateAuditedMatch(tender, supplier, score);
-  const quality = auditedVerificationQuality(auditedMatch);
-  const deadlineUrgency = calculateDeadlineUrgency(freshness);
-  const campaignPriority = calculateCampaignPriority(auditedMatch, quality, deadlineUrgency);
   return {
-    id: `match:TB:${slug(tender.reference)}:${slug(supplier.id)}`,
+    id: `match:TM:${slug(tender.reference)}:${slug(supplier.id)}`,
     version: "v1",
     key: `${tender.reference}::${supplier.id}`,
     tenderId: tender.id,
@@ -314,21 +269,19 @@ export function assessMatch(
     matchScore: {
       value: score,
       valueClass: legacy ? "ESTIMATED" : "MISSING",
-      method: legacy ? "legacy TenderBoost curated pair score; formula not yet independently revalidated" : "pair not evaluated in the frozen TenderBoost source fixture",
+      method: legacy ? "legacy TenderBoost curated pair score; formula not independently revalidated" : "pair not evaluated in the frozen TenderBoost source fixture",
     },
     legacyBaseline: {
       policyVersion: TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
       matchScore: score,
       supplierReadiness: supplier.readiness.value,
       globalVerificationQuality: globalLegacyQuality,
-      campaignPriority: calculateLegacyBaselinePriority(score, supplier.readiness.value, globalLegacyQuality, freshness, decision),
-      method: "Frozen Stage 1 behavior: match 48% + readiness 18% + global evidence coverage 16% + urgency band 11% + consultant decision 7%.",
+      method: "Frozen source metrics retained for historical comparison only; they do not determine the audited result.",
     },
     auditedMatch,
     supplierReadiness: supplier.readiness,
-    verificationQuality: quality,
-    deadlineUrgency,
-    campaignPriority,
+    verificationQuality: auditedVerificationQuality(auditedMatch),
+    deadlineUrgency: calculateDeadlineUrgency(freshness),
     consultantDecision: decision,
     decisionHistory: [],
     linkedStrengths: linked,
@@ -340,189 +293,122 @@ export function assessMatch(
       structural: "high",
       semantic: legacy ? "medium" : "low",
       arithmeticDomain: "low",
-      humanReview: decision === "approved" ? "medium" : "unknown",
+      humanReview: decision === "pending" ? "unknown" : "medium",
     },
     tenderFreshness: freshness,
   };
 }
 
-function blocker(code: CampaignBlocker["code"], message: string, nextAction: string): CampaignBlocker {
-  return { code, message, nextAction };
+function finding(code: ReviewFinding["code"], message: string, nextAction: string, ownerAgentId: string): ReviewFinding {
+  return { code, message, nextAction, ownerAgentId };
 }
 
-function operationalBlockers(match: MatchAssessment, supplier: SupplierRecord): CampaignBlocker[] {
-  const blockers: CampaignBlocker[] = [];
-  if (!match.exactLegacyPair || match.matchScore.value === null) blockers.push(blocker("MATCH_UNASSESSED", "This Company × Tender pair was not evaluated in the source fixture.", "Select an evaluated pair or run a separately approved assessment method."));
-  else if (match.matchScore.value === 0) blockers.push(blocker("ZERO_MATCH", "This evaluated Company × Tender pair has a genuine zero score.", "Select a positive evidence-backed pair."));
-  else if (match.auditedMatch.value === null) blockers.push(blocker("AUDITED_MATCH_REQUIRED", "The audited formula is missing one or more required evidence components.", `Resolve: ${match.auditedMatch.missingInputs.join("; ")}.`));
-  if (match.consultantDecision === "rejected") blockers.push(blocker("MATCH_REJECTED", "The consultant rejected this match.", "Choose another match or record a new reviewed decision."));
-  if (match.tenderFreshness.status === "closed") blockers.push(blocker("TENDER_CLOSED", "The tender deadline has passed.", "Refresh the tender record and select an open opportunity."));
-  if (match.tenderFreshness.freshness === "stale") blockers.push(blocker("SNAPSHOT_STALE", "The demonstration tender snapshot is stale.", "Refresh from an authorized source before activation."));
-  if (supplier.suppressionStatus === "UNKNOWN") blockers.push(blocker("SUPPRESSION_REVIEW_REQUIRED", "Suppression status has not been checked.", "Complete suppression screening for this supplier and channel."));
-  if (supplier.suppressionStatus === "SUPPRESSED") blockers.push(blocker("SUPPRESSED", "The supplier is suppressed from outreach.", "Do not prepare or activate external outreach."));
-  if (supplier.consentStatus === "MISSING") blockers.push(blocker("CONSENT_REQUIRED", "No consent or lawful-contact basis is recorded.", "Record the authorized contact basis before activation."));
-  if (supplier.consentStatus === "REVOKED") blockers.push(blocker("CONSENT_REVOKED", "Contact consent was revoked.", "Keep the campaign blocked and review retention obligations."));
-  if (isMaterialRisk(supplier)) blockers.push(blocker("MATERIAL_RISK_REVIEW", "A material integrity or compliance risk remains unresolved.", "Complete human compliance review and retain the decision evidence."));
-  if (!match.linkedStrengths.some((claim) => claim.externalClaimEligible)) blockers.push(blocker("EVIDENCE_REFRESH_REQUIRED", "No current reviewed evidence is eligible for an external claim.", "Refresh and approve claim-level evidence before activation."));
-  return blockers;
-}
-
-export function evaluateCampaignEligibility(
-  match: MatchAssessment,
-  supplier: SupplierRecord,
-  campaign: CampaignDraft | null = null,
-  events: CampaignEvent[] = [],
-): CampaignEligibility {
-  const base = operationalBlockers(match, supplier);
-  const hardPreparationCodes = new Set<CampaignBlocker["code"]>(["MATCH_UNASSESSED", "ZERO_MATCH", "MATCH_REJECTED", "TENDER_CLOSED", "SUPPRESSED", "CONSENT_REVOKED"]);
-  const canPrepareDraft = !base.some((item) => hardPreparationCodes.has(item.code));
-  const eligibleForSuggestion = canPrepareDraft && base.length === 0;
-  const blockers = [...base];
-  if (match.consultantDecision !== "approved") blockers.push(blocker("CONSULTANT_APPROVAL_REQUIRED", "The match has not been approved by a consultant.", "Review the evidence and explicitly approve or reject the match."));
-  const hasRetainedCampaignApproval = Boolean(campaign?.approvedAt && campaign.approvedBy) && campaign?.lifecycle !== "draft" && campaign?.lifecycle !== "rejected";
-  if (!hasRetainedCampaignApproval) blockers.push(blocker("CAMPAIGN_APPROVAL_REQUIRED", "The campaign draft is not approved.", "Review and approve the exact channel copy."));
-  const hasRecordedOutreach = events.some((event) => event.type === "outreach-sent" && event.mode !== "simulation" && Boolean(event.externalRecordId));
-  if (!hasRecordedOutreach) blockers.push(blocker("OUTREACH_EVENT_REQUIRED", "No external outreach event is recorded.", "A future authorized integration must record the sent event before the lifecycle can become active."));
-  return {
-    canPrepareDraft,
-    eligibleForSuggestion,
-    eligibleForActivation: blockers.length === 0,
-    blockers,
-  };
+export function evaluateConsultantReviewSupport(match: MatchAssessment, supplier: SupplierRecord): ConsultantReviewSupport {
+  const findings: ReviewFinding[] = [];
+  if (!match.exactLegacyPair || match.matchScore.value === null) {
+    findings.push(finding("MATCH_UNASSESSED", "This Company × Tender pair was not evaluated in the source fixture.", "Run a separately approved pair assessment; do not convert MISSING to zero.", "agent:TL-A031"));
+  } else if (match.auditedMatch.value === null) {
+    findings.push(finding("AUDITED_MATCH_REQUIRED", "The audited calculation lacks one or more required evidence components.", `Resolve: ${match.auditedMatch.missingInputs.join("; ")}.`, "agent:TL-A031"));
+  }
+  if (match.tenderFreshness.status === "closed") {
+    findings.push(finding("TENDER_CLOSED", "The tender deadline has passed.", "Confirm the current notice state through the deadline-monitoring handoff.", "agent:TL-A017"));
+  }
+  if (match.tenderFreshness.freshness === "stale") {
+    findings.push(finding("SNAPSHOT_STALE", "The demonstration tender snapshot is stale.", "Refresh the tender record from an authorized source before making a current decision.", "agent:TL-A017"));
+  }
+  if (isMaterialRisk(supplier)) {
+    findings.push(finding("MATERIAL_RISK_HANDOFF", "A material integrity or compliance signal requires separate review.", "Send the signal to the Risk & Integrity Agent; TenderMatch does not resolve it.", "agent:TL-A038"));
+  }
+  const currentReviewedEvidence = match.auditedMatch.evidenceIds.some((id) => supplier.evidence.find((item) => item.id === id)?.reviewStatus === "REVIEWED");
+  if (match.auditedMatch.evidenceIds.length > 0 && !currentReviewedEvidence) {
+    findings.push(finding("EVIDENCE_REFRESH_REQUIRED", "The accepted experiment records are legacy-reviewed rather than current reviewed evidence.", "Refresh claim-level evidence and provenance before treating the result as current.", "agent:TL-A003"));
+  }
+  return { readyForCurrentDecision: findings.length === 0, findings };
 }
 
 export function buildAllMatches(tenders: TenderRecord[], suppliers: SupplierRecord[], nowIso: string) {
   return tenders
     .flatMap((tender) => suppliers.map((supplier) => assessMatch(tender, supplier, nowIso)))
-    .sort((left, right) => ((right.matchScore.value ?? -1) - (left.matchScore.value ?? -1)) || left.key.localeCompare(right.key));
+    .sort((left, right) => ((right.auditedMatch.value ?? -1) - (left.auditedMatch.value ?? -1)) || ((right.matchScore.value ?? -1) - (left.matchScore.value ?? -1)) || left.key.localeCompare(right.key));
 }
 
-export function campaignSuggestions(tenders: TenderRecord[], suppliers: SupplierRecord[], nowIso: string) {
-  const tenderById = new Map(tenders.map((item) => [item.id, item]));
-  const supplierById = new Map(suppliers.map((item) => [item.id, item]));
-  return buildAllMatches(tenders, suppliers, nowIso)
-    .map((match) => ({ match, tender: tenderById.get(match.tenderId)!, supplier: supplierById.get(match.supplierId)! }))
-    .filter(({ match, supplier }) => evaluateCampaignEligibility(match, supplier).eligibleForSuggestion)
-    .sort((left, right) => (right.match.campaignPriority.value ?? -1) - (left.match.campaignPriority.value ?? -1));
-}
-
-function recommendedObjective(match: MatchAssessment): CampaignObjective {
-  if (match.auditedMatch.value === null || match.gaps.length || (match.verificationQuality.value ?? 0) < 70) return "eligibility-readiness";
-  if (match.consultantDecision === "approved" && match.auditedMatch.value >= 85) return "participation-services";
-  if (match.auditedMatch.value >= 80) return "tender-opportunity";
-  return "tender-intelligence";
-}
-
-export function recommendedChannel(match: MatchAssessment): CampaignChannel {
-  if (match.tenderFreshness.daysRemaining <= 7) return "Telephone";
-  if ((match.auditedMatch.value ?? 0) >= 85) return "Email";
-  return "LinkedIn";
-}
-
-export function generateCampaignCopy(
-  match: MatchAssessment,
-  tender: TenderRecord,
-  supplier: SupplierRecord,
-  channel: CampaignChannel,
-  objective: CampaignObjective,
-) {
-  const eligibleClaims = match.linkedStrengths.filter((claim) => claim.externalClaimEligible);
-  const claimLines = eligibleClaims.length
-    ? eligibleClaims.map((claim) => `• ${claim.text} [${claim.evidenceIds.join(", ")}]`).join("\n")
-    : "• No current reviewed evidence is approved for external use.";
-  const heading = channel === "Telephone" ? "CONSULTANT CALL BRIEF" : `${channel.toUpperCase()} DRAFT`;
-  const legacyLabel = match.matchScore.value === null ? "MISSING · not evaluated" : `${match.matchScore.value}/100 (${match.matchScore.valueClass.toLowerCase()})`;
-  const auditedLabel = match.auditedMatch.value === null ? `MISSING · ${match.auditedMatch.missingInputs.join("; ")}` : `${match.auditedMatch.value}/100 (${match.auditedMatch.label})`;
-  return `${heading} · NOT SENT\n\nObjective: ${objective}\nSupplier: ${supplier.legalEnglishName}\nTender: ${tender.title}\nReference: ${tender.reference}\nAbsolute deadline: ${tender.deadlineAt}\n\nTenderBoost legacy Match Score: ${legacyLabel}\nAudited Match Support: ${auditedLabel}\n\nEvidence-approved claims:\n${claimLines}\n\nConsultant note:\nThis dated demonstration snapshot may support internal preparation only. Refresh the tender, evidence, suppression, consent, and compliance checks before any external activation.`;
-}
-
-function identities(caseId: string, resultVersion: number, hasCampaign: boolean) {
+function identities(caseId: string, resultVersion: number) {
   const version = `v${resultVersion}`;
-  const artifacts = [{ id: `artifact:TB:${slug(caseId)}:case-json`, version }];
-  if (hasCampaign) artifacts.push({ id: `artifact:TB:${slug(caseId)}:campaign-brief`, version });
-  return { version, artifacts };
+  return {
+    version,
+    artifacts: [{ id: `artifact:TM:${slug(caseId)}:case-json`, version }],
+  };
 }
 
-function reviseResult(result: TenderBoostCaseResult, changes: Partial<TenderBoostCaseResult>, supplier: SupplierRecord, nowIso: string) {
-  const nextVersion = revisionNumber(result) + 1;
-  const { version, artifacts } = identities(result.caseIdentity.id, nextVersion, Boolean(changes.campaign ?? result.campaign));
+function reviseResult(result: TenderMatchCaseResult, changes: Partial<TenderMatchCaseResult>, nowIso: string): TenderMatchCaseResult {
+  const nextRevision = revisionNumber(result) + 1;
+  const { version, artifacts } = identities(result.caseIdentity.id, nextRevision);
   const merged = { ...result, ...changes };
-  const activation = evaluateCampaignEligibility(merged.match, supplier, merged.campaign, merged.campaignEvents);
   return {
     ...merged,
-    schemaVersion: TENDERBOOST_SCHEMA_VERSION,
-    engineVersion: TENDERBOOST_ENGINE_VERSION,
+    schemaVersion: TENDERMATCH_SCHEMA_VERSION,
+    engineVersion: TENDERMATCH_ENGINE_VERSION,
     caseIdentity: { ...merged.caseIdentity, version },
-    resultIdentity: { id: `result:TB:${slug(merged.caseIdentity.id)}:${version}`, version },
+    resultIdentity: { id: `result:TM:${slug(merged.caseIdentity.id)}:${version}`, version },
     artifactIdentities: artifacts,
     updatedAt: nowIso,
-    activation,
-  } satisfies TenderBoostCaseResult;
+  };
 }
 
-export function createCaseResult(
-  caseId: string,
-  tender: TenderRecord,
-  supplier: SupplierRecord,
-  nowIso: string,
-): TenderBoostCaseResult {
+export function createCaseResult(caseId: string, tender: TenderRecord, supplier: SupplierRecord, nowIso: string): TenderMatchCaseResult {
   if (!caseId.trim()) throw new Error("An explicit Case ID is required.");
   const match = assessMatch(tender, supplier, nowIso);
-  const { version, artifacts } = identities(caseId, 1, false);
-  const result: TenderBoostCaseResult = {
-    schemaVersion: TENDERBOOST_SCHEMA_VERSION,
-    engineVersion: TENDERBOOST_ENGINE_VERSION,
+  const { version, artifacts } = identities(caseId, 1);
+  return {
+    schemaVersion: TENDERMATCH_SCHEMA_VERSION,
+    engineVersion: TENDERMATCH_ENGINE_VERSION,
     caseIdentity: { id: caseId, version },
-    resultIdentity: { id: `result:TB:${slug(caseId)}:${version}`, version },
+    resultIdentity: { id: `result:TM:${slug(caseId)}:${version}`, version },
     tenderIdentity: { id: tender.id, version: tender.version },
     supplierIdentity: { id: supplier.id, version: supplier.version },
     evidenceSnapshotIdentity: { id: TENDERBOOST_DEMO_SNAPSHOT_ID, version: TENDERBOOST_DEMO_AS_OF },
-    decisionIdentity: { id: `match-decision:TB:${slug(caseId)}:pending`, version: "v1" },
+    decisionIdentity: { id: `match-decision:TM:${slug(caseId)}:pending`, version: "v1" },
     artifactIdentities: artifacts,
     createdAt: nowIso,
     updatedAt: nowIso,
     workflowState: "preliminary",
     match,
-    campaign: null,
-    campaignEvents: [],
-    simulationEvents: [],
-    activation: evaluateCampaignEligibility(match, supplier),
+    reviewSupport: evaluateConsultantReviewSupport(match, supplier),
     knownLimitations: [
       "The 16-tender and 10-supplier fixture is a dated demonstration snapshot, not a live feed.",
       "The audited policy is validated only on the bounded dated fixture; 12 of 18 assessed pairs remain MISSING because required evidence is incomplete.",
       "Legacy Match Score and readiness remain historical estimates and are not silently overwritten by the audited result.",
-      "Browser-local Case storage is not durable tenant-isolated persistence.",
-      "No sending, CRM, consent, suppression, or response integration is connected.",
+      "Browser-local Case storage is not durable tenant-isolated persistence or a canonical Dataset write.",
+      "TenderMatch provides fit explanation and consultant decision support only; Bid/No-Bid and participation design remain downstream responsibilities.",
       "The relationship diagram is schematic and non-geospatial; it does not represent coordinates, distance, routing, or live map accuracy.",
     ],
     migration: {
       status: "native-current",
       fromSchemaVersion: null,
+      sourceProductName: null,
       migratedAt: null,
-      note: "Created under the current audited scoring schema.",
+      note: "Created under the current TenderMatch matching-only schema.",
     },
   };
-  return result;
 }
 
 export function setConsultantDecision(
-  result: TenderBoostCaseResult,
-  supplier: SupplierRecord,
+  result: TenderMatchCaseResult,
   decision: ConsultantDecision,
   nowIso: string,
   provenance: { actorId: string; rationale: string },
 ) {
   if (!provenance.actorId.trim() || !provenance.rationale.trim()) throw new Error("Match decision provenance requires an actor and rationale.");
   const sequence = result.match.decisionHistory.length + 1;
-  const decisionRecord = {
-    id: `match-decision:TB:${slug(result.caseIdentity.id)}:${sequence}`,
+  const decisionRecord: MatchDecisionRecord = {
+    id: `match-decision:TM:${slug(result.caseIdentity.id)}:${sequence}`,
     version: "v1",
     decision,
     actorId: provenance.actorId,
     decidedAt: nowIso,
     rationale: provenance.rationale,
-    sourceRole: "USER_ASSERTION" as const,
-    valueClass: "SOURCE" as const,
+    sourceRole: "USER_ASSERTION",
+    valueClass: "SOURCE",
   };
   const match: MatchAssessment = {
     ...result.match,
@@ -530,130 +416,30 @@ export function setConsultantDecision(
     consultantDecision: decision,
     decisionHistory: [...result.match.decisionHistory, decisionRecord],
     trust: { ...result.match.trust, humanReview: decision === "pending" ? "unknown" : "medium" },
-    legacyBaseline: {
-      ...result.match.legacyBaseline,
-      campaignPriority: calculateLegacyBaselinePriority(result.match.matchScore.value, result.match.supplierReadiness.value, result.match.legacyBaseline.globalVerificationQuality, result.match.tenderFreshness, decision),
-    },
   };
-  const campaign = decision === "rejected" && result.campaign ? { ...result.campaign, version: nextVersion(result.campaign.version), lifecycle: "rejected" as const, currentStatus: "Rejected · no outreach permitted" } : result.campaign;
-  return reviseResult(result, { match, campaign, decisionIdentity: decisionRecord, workflowState: decision === "approved" ? "reviewed" : "preliminary" }, supplier, nowIso);
+  return reviseResult(result, {
+    match,
+    decisionIdentity: decisionRecord,
+    workflowState: decision === "pending" ? "preliminary" : "reviewed",
+  }, nowIso);
 }
 
-export function createCampaignDraft(
-  result: TenderBoostCaseResult,
-  tender: TenderRecord,
-  supplier: SupplierRecord,
-  nowIso: string,
-  channel: CampaignChannel = recommendedChannel(result.match),
-  objective: CampaignObjective = recommendedObjective(result.match),
-) {
-  const eligibility = evaluateCampaignEligibility(result.match, supplier);
-  if (!eligibility.canPrepareDraft) throw new Error(eligibility.blockers[0]?.message ?? "Campaign draft is blocked.");
-  const campaign: CampaignDraft = {
-    id: `campaign:TB:${slug(result.caseIdentity.id)}`,
-    version: "v1",
-    caseId: result.caseIdentity.id,
-    matchId: result.match.id,
-    supplierId: supplier.id,
-    tenderId: tender.id,
-    lifecycle: "draft",
-    objective,
-    channel,
-    copy: generateCampaignCopy(result.match, tender, supplier, channel, objective),
-    copyEvidenceIds: result.match.linkedStrengths.filter((claim) => claim.externalClaimEligible).flatMap((claim) => claim.evidenceIds),
-    createdAt: nowIso,
-    approvedAt: null,
-    approvedBy: null,
-    currentStatus: "Draft only · no message sent",
-    policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
-  };
-  return reviseResult(result, { campaign }, supplier, nowIso);
-}
-
-export function approveCampaignDraft(result: TenderBoostCaseResult, supplier: SupplierRecord, approvedBy: string, nowIso: string) {
-  if (!result.campaign) throw new Error("Create a campaign draft before approval.");
-  if (result.match.consultantDecision !== "approved") throw new Error("The consultant must approve the match separately before approving campaign copy.");
-  const campaign = {
-    ...result.campaign,
-    version: nextVersion(result.campaign.version),
-    lifecycle: "approved" as const,
-    approvedAt: nowIso,
-    approvedBy,
-    currentStatus: "Approved draft · no message sent",
-  };
-  return reviseResult(result, { campaign, workflowState: "approved" }, supplier, nowIso);
-}
-
-export function recordCampaignEvent(
-  result: TenderBoostCaseResult,
-  supplier: SupplierRecord,
-  event: Omit<CampaignEvent, "id" | "version" | "campaignId">,
-  nowIso: string,
-) {
-  if (!result.campaign) throw new Error("A Campaign identity is required before recording an event.");
-  if (event.mode === "simulation" && event.type !== "simulation-preview") throw new Error("Simulation events cannot claim outreach, response, handoff, or no-response activity.");
-  if (event.mode !== "simulation" && !event.externalRecordId) throw new Error("A real campaign event requires an integration or manual-record identity.");
-  const sequence = result.campaignEvents.length + result.simulationEvents.length + 1;
-  const record: CampaignEvent = {
-    ...event,
-    id: `campaign-event:TB:${slug(result.caseIdentity.id)}:${sequence}`,
-    version: "v1",
-    campaignId: result.campaign.id,
-  };
-  if (record.mode === "simulation") {
-    return reviseResult(result, { simulationEvents: [...result.simulationEvents, record] }, supplier, nowIso);
-  }
-  return reviseResult(result, { campaignEvents: [...result.campaignEvents, record] }, supplier, nowIso);
-}
-
-function hasRealEvent(result: TenderBoostCaseResult, type: CampaignEventType) {
-  return result.campaignEvents.some((event) => event.type === type && event.mode !== "simulation" && Boolean(event.externalRecordId));
-}
-
-export function transitionCampaignLifecycle(
-  result: TenderBoostCaseResult,
-  supplier: SupplierRecord,
-  target: CampaignLifecycle,
-  nowIso: string,
-) {
-  if (!result.campaign) throw new Error("A Campaign identity is required before lifecycle transition.");
-  const current = result.campaign.lifecycle;
-  if (target === "active") {
-    if (current !== "approved") throw new Error("Only an approved campaign can become active.");
-    const eligibility = evaluateCampaignEligibility(result.match, supplier, result.campaign, result.campaignEvents);
-    if (!eligibility.eligibleForActivation) throw new Error(eligibility.blockers[0]?.message ?? "Campaign activation is blocked.");
-  } else if (target === "follow-up") {
-    if (current !== "active" || !hasRealEvent(result, "outreach-sent")) throw new Error("Follow-up requires an active campaign backed by an outreach event.");
-  } else if (target === "interested") {
-    if (!["active", "follow-up"].includes(current) || !hasRealEvent(result, "response-interested")) throw new Error("Interested requires an explicit non-simulation response event.");
-  } else if (target === "no-response") {
-    if (!["active", "follow-up"].includes(current) || !hasRealEvent(result, "no-response-observed")) throw new Error("No response requires an explicit non-simulation observation event.");
-  } else if (target === "closed") {
-    if (!["interested", "no-response"].includes(current)) throw new Error("Only a resolved response state can be closed.");
-  } else if (target !== "rejected") {
-    throw new Error(`Use the dedicated review action for ${target}.`);
-  }
-  const campaign = { ...result.campaign, version: nextVersion(result.campaign.version), lifecycle: target, currentStatus: `${target} · backed by recorded lifecycle evidence` };
-  return reviseResult(result, { campaign }, supplier, nowIso);
-}
-
-function storageKey(caseId: string) {
+function currentStorageKey(caseId: string) {
   if (!caseId.trim()) throw new Error("An explicit Case ID is required.");
+  return `tenderapps:tendermatch:case:${encodeURIComponent(caseId)}`;
+}
+
+function legacyStorageKey(caseId: string) {
   return `tenderapps:tenderboost:case:${encodeURIComponent(caseId)}`;
 }
 
-export function saveCaseResult(storage: StorageLike, result: TenderBoostCaseResult) {
-  storage.setItem(storageKey(result.caseIdentity.id), JSON.stringify(result));
+export function saveCaseResult(storage: StorageLike, result: TenderMatchCaseResult) {
+  storage.setItem(currentStorageKey(result.caseIdentity.id), JSON.stringify(result));
   return result.caseIdentity.id;
 }
 
-export function resumeCaseResult(
-  result: TenderBoostCaseResult,
-  tender: TenderRecord,
-  supplier: SupplierRecord,
-  nowIso: string,
-) {
-  if (result.tenderIdentity.id !== tender.id || result.supplierIdentity.id !== supplier.id) throw new Error("Resume context does not match the persisted TenderBoost Case identities.");
+export function resumeCaseResult(result: TenderMatchCaseResult, tender: TenderRecord, supplier: SupplierRecord, nowIso: string) {
+  if (result.tenderIdentity.id !== tender.id || result.supplierIdentity.id !== supplier.id) throw new Error("Resume context does not match the persisted TenderMatch Case identities.");
   const reassessed = assessMatch(tender, supplier, nowIso, result.match.consultantDecision);
   const match: MatchAssessment = {
     ...reassessed,
@@ -661,40 +447,74 @@ export function resumeCaseResult(
     consultantDecision: result.match.consultantDecision,
     decisionHistory: result.match.decisionHistory ?? [],
   };
-  const campaign = result.campaign ? { ...result.campaign, policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION } : null;
-  return reviseResult(result, { match, campaign }, supplier, nowIso);
+  return reviseResult(result, { match, reviewSupport: evaluateConsultantReviewSupport(match, supplier) }, nowIso);
+}
+
+type HistoricalPersistedCase = {
+  schemaVersion: string;
+  caseIdentity?: VersionedIdentity;
+  tenderIdentity?: VersionedIdentity;
+  supplierIdentity?: VersionedIdentity;
+  createdAt?: string;
+  match?: Partial<MatchAssessment> & { consultantDecision?: ConsultantDecision; decisionHistory?: MatchDecisionRecord[] };
+};
+
+function migrateHistoricalCase(parsed: HistoricalPersistedCase, caseId: string, tender: TenderRecord, supplier: SupplierRecord, nowIso: string): TenderMatchCaseResult {
+  if (parsed.caseIdentity?.id !== caseId) throw new Error("Persisted Case identity does not match the requested Case.");
+  if (parsed.tenderIdentity?.id !== tender.id || parsed.supplierIdentity?.id !== supplier.id) throw new Error("Historical Case context does not match the supplied TenderMatch identities.");
+  const decision = ["pending", "approved", "hold", "rejected"].includes(parsed.match?.consultantDecision ?? "")
+    ? parsed.match?.consultantDecision as ConsultantDecision
+    : "pending";
+  const history = Array.isArray(parsed.match?.decisionHistory) ? parsed.match.decisionHistory : [];
+  const migrated = createCaseResult(caseId, tender, supplier, nowIso);
+  const match = {
+    ...migrated.match,
+    version: nextVersion(parsed.match?.version),
+    consultantDecision: decision,
+    decisionHistory: history,
+    trust: { ...migrated.match.trust, humanReview: decision === "pending" ? "unknown" as const : "medium" as const },
+  };
+  const caseVersion = nextVersion(parsed.caseIdentity.version);
+  return {
+    ...migrated,
+    caseIdentity: { id: caseId, version: caseVersion },
+    resultIdentity: { id: `result:TM:${slug(caseId)}:${caseVersion}`, version: caseVersion },
+    artifactIdentities: [{ id: `artifact:TM:${slug(caseId)}:case-json`, version: caseVersion }],
+    decisionIdentity: history.at(-1) ?? migrated.decisionIdentity,
+    createdAt: parsed.createdAt ?? nowIso,
+    workflowState: decision === "pending" ? "preliminary" : "reviewed",
+    match,
+    reviewSupport: evaluateConsultantReviewSupport(match, supplier),
+    migration: {
+      status: "compatible-historical",
+      fromSchemaVersion: parsed.schemaVersion,
+      sourceProductName: "TenderBoost AI",
+      migratedAt: nowIso,
+      note: "Matching values and consultant-decision provenance were retained. Fields outside the audited TL-A031 matching contract were not imported; the original browser record remains under its legacy key.",
+    },
+  };
 }
 
 export function loadCaseResult(
   storage: StorageLike,
   caseId: string,
   context: { tender: TenderRecord; supplier: SupplierRecord; nowIso: string },
-): TenderBoostCaseResult | null {
-  const raw = storage.getItem(storageKey(caseId));
+): TenderMatchCaseResult | null {
+  const currentRaw = storage.getItem(currentStorageKey(caseId));
+  const legacyRaw = currentRaw ? null : storage.getItem(legacyStorageKey(caseId));
+  const raw = currentRaw ?? legacyRaw;
   if (!raw) return null;
-  const parsed = JSON.parse(raw) as Omit<TenderBoostCaseResult, "schemaVersion"> & { schemaVersion: string };
-  if (parsed.caseIdentity.id !== caseId) throw new Error("Persisted Case identity does not match the requested Case.");
-  if (!parsed.resultIdentity?.id || !parsed.match?.id) throw new Error("Persisted TenderBoost Case is incomplete.");
-  if (parsed.schemaVersion !== TENDERBOOST_SCHEMA_VERSION && parsed.schemaVersion !== TENDERBOOST_LEGACY_SCHEMA_VERSION) {
-    throw new Error(`TenderBoost Case schema ${parsed.schemaVersion} is unsupported and requires an explicit migration.`);
+  const parsed = JSON.parse(raw) as HistoricalPersistedCase;
+  if (parsed.caseIdentity?.id !== caseId) throw new Error("Persisted Case identity does not match the requested Case.");
+  if (parsed.schemaVersion === TENDERMATCH_SCHEMA_VERSION) {
+    return resumeCaseResult(parsed as TenderMatchCaseResult, context.tender, context.supplier, context.nowIso);
   }
-  if (parsed.schemaVersion === TENDERBOOST_LEGACY_SCHEMA_VERSION) {
-    const legacy = parsed as unknown as TenderBoostCaseResult;
-    return resumeCaseResult({
-      ...legacy,
-      schemaVersion: TENDERBOOST_SCHEMA_VERSION,
-      engineVersion: TENDERBOOST_ENGINE_VERSION,
-      migration: {
-        status: "compatible-historical",
-        fromSchemaVersion: TENDERBOOST_LEGACY_SCHEMA_VERSION,
-        migratedAt: context.nowIso,
-        note: "Historical legacy values and human/event provenance were retained; audited derived fields were recomputed from the supplied Tender, Supplier, and clock.",
-      },
-    }, context.tender, context.supplier, context.nowIso);
+  if (parsed.schemaVersion === TENDERBOOST_LEGACY_SCHEMA_VERSION || parsed.schemaVersion === TENDERBOOST_STAGE_2_SCHEMA_VERSION) {
+    return migrateHistoricalCase(parsed, caseId, context.tender, context.supplier, context.nowIso);
   }
-  return resumeCaseResult({ ...parsed, schemaVersion: TENDERBOOST_SCHEMA_VERSION }, context.tender, context.supplier, context.nowIso);
+  throw new Error(`TenderMatch Case schema ${parsed.schemaVersion} is unsupported and requires an explicit migration.`);
 }
 
 export function removeCaseResult(storage: StorageLike, caseId: string) {
-  storage.removeItem(storageKey(caseId));
+  storage.removeItem(currentStorageKey(caseId));
 }

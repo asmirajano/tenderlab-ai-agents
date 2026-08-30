@@ -30,7 +30,6 @@ function evidenceRecord(supplierId: string, item: LegacySupplierFixture["evidenc
     notes: item.notes,
     sourceRole: "SUPPORTING_DOCUMENT",
     valueClass: item.status === "UNKNOWN" ? "MISSING" : item.status === "INFERRED" ? "ESTIMATED" : "ASSUMED",
-    externalClaimEligible: false,
   };
 }
 
@@ -58,8 +57,6 @@ export const demoSuppliers: SupplierRecord[] = fixture.map((supplier) => ({
   legacyEvidenceCompleteness: supplier.scores.evidenceCompleteness,
   risks: supplier.risks,
   verificationQuestions: supplier.verificationQuestions,
-  suppressionStatus: "UNKNOWN",
-  consentStatus: "MISSING",
   snapshotId: TENDERBOOST_DEMO_SNAPSHOT_ID,
 }));
 

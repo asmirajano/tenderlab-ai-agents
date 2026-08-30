@@ -8,7 +8,7 @@ import { LayoutSwitcher, useLayoutPreference } from "./layout-switcher";
 import LogisticsCostingApp from "./logistics-costing-app";
 import { installVitePreloadRecovery } from "./preload-recovery";
 import { practicalAgents } from "./practical-agent-registry";
-import TenderBoostApp from "./tenderboost-app";
+import TenderMatchApp from "./tenderboost-app";
 import "./balance-sheet.css";
 import "./client-shell.css";
 import "./logistics-costing.css";
@@ -17,7 +17,7 @@ import "./tenderboost.css";
 const pageComponents: Record<string, ReactNode> = {
   "/balance-sheet-review": <BalanceSheetApp />,
   "/landed-cost": <LogisticsCostingApp />,
-  "/tenderboost": <TenderBoostApp />,
+  "/tendermatch": <TenderMatchApp />,
 };
 
 const routes: Record<string, { label: string; title: string; surfaceStatus: string; component: ReactNode }> = {
@@ -32,7 +32,8 @@ const routes: Record<string, { label: string; title: string; surfaceStatus: stri
 const routeAliases: Record<string, string> = {
   "/tenderbalance": "/balance-sheet-review",
   "/logistics-costing": "/landed-cost",
-  "/tenderboost-ai": "/tenderboost",
+  "/tenderboost": "/tendermatch",
+  "/tenderboost-ai": "/tendermatch",
 };
 
 function normalizePath(pathname: string) {

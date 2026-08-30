@@ -77,18 +77,19 @@ export const clientProducts: ClientProduct[] = [
     },
   },
   {
+    // Stable ID retained from the TenderBoost migration; the active product name and route are TenderMatch.
     id: "product:TA-TENDERBOOST",
     catalogOrder: 3,
     family: "Tender Apps",
-    name: "TenderBoost AI",
-    descriptor: "Evidence-linked Company × Tender matching and consultant-controlled campaign preparation",
-    surfaceStatus: "Audited fixture experiment · consultant-controlled preparation",
+    name: "TenderMatch",
+    descriptor: "Evidence-linked Company × Tender evaluation and consultant decision support",
+    surfaceStatus: "Audited dated-fixture experiment · matching only",
     dataNotice: "Dated demonstration snapshot only",
     status: "mvp-simulation",
     ownerAgentId: "agent:TL-A031",
-    commandCenterPath: "/products#tenderboost",
+    commandCenterPath: "/products#tendermatch",
     clientAppPath: "apps/tender-apps",
-    clientRoute: "/tenderboost",
+    clientRoute: "/tendermatch",
     schemaPath: "packages/tenderboost/src/types.ts",
     localPreviewUrl: "http://127.0.0.1:4174",
     access: {
@@ -104,4 +105,4 @@ export const clientProducts: ClientProduct[] = [
 
 export const tenderBalanceProduct = clientProducts.find((product) => product.id === "product:TA-BALANCE")!;
 export const landedCostProduct = clientProducts.find((product) => product.id === "product:TA-LANDED-COST")!;
-export const tenderBoostProduct = clientProducts.find((product) => product.id === "product:TA-TENDERBOOST")!;
+export const tenderMatchProduct = clientProducts.find((product) => product.id === "product:TA-TENDERBOOST")!;

@@ -5,363 +5,226 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
-  approveCampaignDraft,
+  TENDERMATCH_SCHEMA_VERSION,
   assessMatch,
   buildAllMatches,
-  campaignSuggestions,
-  createCampaignDraft,
   createCaseResult,
-  demoSnapshot,
   demoSuppliers,
   demoTenders,
   deriveTenderFreshness,
-  evaluateCampaignEligibility,
+  evaluateConsultantReviewSupport,
   loadCaseResult,
-  recordCampaignEvent,
   saveCaseResult,
   setConsultantDecision,
-  transitionCampaignLifecycle,
 } from "../packages/tenderboost/src/index.ts";
-import { clientProducts, tenderBoostProduct } from "../packages/catalog-data/src/client-products.ts";
+import { agents } from "../packages/catalog-data/src/agents.ts";
+import { clientProducts, tenderMatchProduct } from "../packages/catalog-data/src/client-products.ts";
 import { realAgentImplementations } from "../packages/catalog-data/src/real-agent-development.ts";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const currentNow = "2026-08-30T12:00:00+05:00";
 const snapshotNow = "2026-08-15T12:00:00+05:00";
+const currentNow = "2026-08-30T12:00:00+05:00";
 
-async function read(relativePath) {
+function read(relativePath) {
   return readFile(path.join(projectRoot, relativePath), "utf8");
 }
 
-function selectedPositive(now = snapshotNow) {
-  const match = buildAllMatches(demoTenders, demoSuppliers, now).find((candidate) => (candidate.auditedMatch.value ?? -1) > 0 && candidate.linkedStrengths.length > 0 && candidate.tenderFreshness.status !== "closed");
-  assert.ok(match, "expected an open audited-positive pair with evidence links");
-  const tender = demoTenders.find((candidate) => candidate.id === match.tenderId);
-  const supplier = demoSuppliers.find((candidate) => candidate.id === match.supplierId);
-  assert.ok(tender && supplier);
-  return { match, tender, supplier };
-}
-
-function controlledSupplier(supplier) {
+function memoryStorage() {
+  const values = new Map();
   return {
-    ...structuredClone(supplier),
-    suppressionStatus: "NOT_SUPPRESSED",
-    consentStatus: "RECORDED",
-    risks: [],
-    evidence: supplier.evidence.map((item) => ({ ...item, externalClaimEligible: item.reviewStatus === "LEGACY_VERIFIED" })),
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+    values,
   };
 }
 
-class MemoryStorage {
-  values = new Map();
-  getItem(key) { return this.values.get(key) ?? null; }
-  setItem(key, value) { this.values.set(key, String(value)); }
-  removeItem(key) { this.values.delete(key); }
+function fixturePair() {
+  return {
+    tender: demoTenders.find((item) => item.reference === "514122"),
+    supplier: demoSuppliers.find((item) => item.id === "supplier:TB:yutong"),
+  };
 }
 
-test("registers TenderBoost as practical page 03 under TL-A031 without creating Agent 003", async () => {
+test("places TenderMatch as practical page 03 under TL-A031 without creating or implying Agent 003", () => {
+  assert.equal(agents.length, 64);
   assert.equal(clientProducts.length, 3);
-  assert.equal(tenderBoostProduct.catalogOrder, 3);
-  assert.equal(tenderBoostProduct.ownerAgentId, "agent:TL-A031");
-  assert.equal(tenderBoostProduct.clientRoute, "/tenderboost");
-  assert.notEqual(tenderBoostProduct.ownerAgentId, "agent:TL-A003");
+  assert.equal(tenderMatchProduct.catalogOrder, 3);
+  assert.equal(tenderMatchProduct.ownerAgentId, "agent:TL-A031");
+  assert.notEqual(tenderMatchProduct.ownerAgentId, "agent:TL-A003");
+  assert.equal(tenderMatchProduct.name, "TenderMatch");
+  assert.equal(tenderMatchProduct.clientRoute, "/tendermatch");
+  assert.match(tenderMatchProduct.descriptor, /Company × Tender evaluation/);
+
+  const owner = agents.find((item) => item.registryId === "agent:TL-A031");
+  assert.equal(owner?.name, "Company-to-Tender Match Score Agent");
+  assert.equal(owner?.output.primary, "Объяснимая оценка Company × Tender");
 
   const implementation = realAgentImplementations.find((item) => item.id === "implementation:TEA-RAI-TENDERBOOST");
+  assert.equal(implementation?.name, "TenderMatch · TenderApps Agent 03");
+  assert.equal(implementation?.slug, "tendermatch");
   assert.equal(implementation?.ownerAgentId, "agent:TL-A031");
-  assert.equal(implementation?.maturity, "concept-or-simulation");
-  assert.equal(implementation?.deploymentStatus, "not-deployed");
-  assert.ok(implementation?.playbookRefs.includes("docs/tenderboost-agent-03-integration.md"));
-  assert.ok(implementation?.playbookRefs.includes("docs/tenderboost-scoring-model-card.md"));
-
-  const agents = await read("packages/catalog-data/src/agents.ts");
-  assert.equal((agents.match(/id:\s*31, name:\s*"Company-to-Tender Match Score Agent"/g) ?? []).length, 1);
+  assert.match(implementation?.primaryOutput ?? "", /evidence-gated audited result or explicit MISSING state/);
+  assert.doesNotMatch(JSON.stringify(implementation), /campaign|outreach|crm|promotion|advertis/i);
 });
 
-test("retains the 16-tender and 10-supplier fixture only as a dated demonstration snapshot", () => {
-  assert.equal(demoSnapshot.classification, "DATED DEMONSTRATION SNAPSHOT");
-  assert.equal(demoSnapshot.sourceCommit, "04b0b2a723223d11617837ee0e7562fa48168cd9");
-  assert.equal(demoTenders.length, 16);
-  assert.equal(demoSuppliers.length, 10);
-  assert.ok(demoTenders.every((item) => item.snapshotId === demoSnapshot.id));
-  assert.ok(demoTenders.every((item) => item.deadlineAt.includes("T") && !Object.hasOwn(item, "daysLeft")));
-  assert.ok(demoSuppliers.every((item) => item.suppressionStatus === "UNKNOWN" && item.consentStatus === "MISSING"));
+test("keeps 18 assessed pairs and 142 unassessed pairs as MISSING rather than zero", () => {
   const matches = buildAllMatches(demoTenders, demoSuppliers, snapshotNow);
+  assert.equal(matches.length, 160);
   assert.equal(matches.filter((item) => item.matchScore.value !== null).length, 18);
-  assert.equal(matches.filter((item) => item.matchScore.value === null && item.matchScore.valueClass === "MISSING").length, 142);
-  assert.equal(matches.filter((item) => item.matchScore.value === 0).length, 0, "the source fixture contains no genuine evaluated zero");
-  assert.equal(matches.filter((item) => item.auditedMatch.value !== null).length, 6);
-  assert.equal(matches.filter((item) => item.exactLegacyPair && item.auditedMatch.value === null).length, 12);
-  assert.equal(matches.filter((item) => !item.exactLegacyPair && item.auditedMatch.value === null).length, 142);
+  assert.equal(matches.filter((item) => item.matchScore.value === null).length, 142);
+  assert.equal(matches.filter((item) => item.matchScore.value === 0).length, 0);
+
+  const { tender, supplier } = fixturePair();
+  const unassessedSupplier = demoSuppliers.find((item) => item.id === "supplier:TB:huawei");
+  const unassessed = assessMatch(tender, unassessedSupplier, snapshotNow);
+  assert.equal(unassessed.matchScore.value, null);
+  assert.equal(unassessed.matchScore.valueClass, "MISSING");
+  assert.equal(unassessed.auditedMatch.value, null);
+  assert.deepEqual(unassessed.auditedMatch.reasonCodes, ["PAIR_UNASSESSED"]);
+
+  const zeroSupplier = {
+    ...supplier,
+    legacyTenderMatches: supplier.legacyTenderMatches.map((item) => item.tenderReference === tender.reference ? { ...item, score: 0 } : item),
+  };
+  const genuineZero = assessMatch(tender, zeroSupplier, snapshotNow);
+  assert.equal(genuineZero.exactLegacyPair, true);
+  assert.equal(genuineZero.matchScore.value, 0);
+  assert.equal(genuineZero.matchScore.valueClass, "ESTIMATED");
+  assert.notEqual(genuineZero.matchScore.value, unassessed.matchScore.value);
 });
 
-test("derives urgency from absolute deadlines and blocks stale or closed tender state", () => {
-  const closed = deriveTenderFreshness(demoTenders[0], currentNow);
-  assert.equal(closed.status, "closed");
-  assert.equal(closed.daysRemaining, 0);
-  assert.equal(closed.freshness, "stale");
-
-  const future = deriveTenderFreshness(demoTenders.at(-1), currentNow);
-  assert.equal(future.status, "open");
-  assert.ok(future.daysRemaining > 100);
-  assert.equal(future.freshness, "stale");
-
-  const { supplier } = selectedPositive(currentNow);
-  const closedMatch = assessMatch(demoTenders[0], supplier, currentNow);
-  const eligibility = evaluateCampaignEligibility(closedMatch, supplier);
-  assert.ok(eligibility.blockers.some((item) => item.code === "TENDER_CLOSED"));
-  assert.ok(eligibility.blockers.some((item) => item.code === "SNAPSHOT_STALE"));
+test("keeps Match Support, readiness, evidence quality, deadline context, and consultant decision separate", () => {
+  const { tender, supplier } = fixturePair();
+  const base = assessMatch(tender, supplier, snapshotNow, "pending");
+  const approved = assessMatch(tender, { ...supplier, readiness: { ...supplier.readiness, value: 1 } }, snapshotNow, "approved");
+  assert.equal(base.auditedMatch.value, 100);
+  assert.equal(approved.auditedMatch.value, base.auditedMatch.value);
+  assert.equal(approved.verificationQuality.value, base.verificationQuality.value);
+  assert.equal(approved.deadlineUrgency.value, base.deadlineUrgency.value);
+  assert.notEqual(approved.supplierReadiness.value, base.supplierReadiness.value);
+  assert.equal("campaignPriority" in base, false);
 });
 
-test("keeps legacy Match, audited Match, Readiness, Evidence Quality, Urgency, Priority, and Decision distinct", () => {
-  const { match, supplier } = selectedPositive();
-  assert.equal(match.matchScore.valueClass, "ESTIMATED");
-  assert.equal(match.supplierReadiness.valueClass, "ESTIMATED");
-  assert.equal(match.verificationQuality.valueClass, "CALCULATED");
-  assert.equal(match.deadlineUrgency.valueClass, "CALCULATED");
-  assert.equal(match.campaignPriority.valueClass, "CALCULATED");
-  assert.equal(match.consultantDecision, "pending");
-  assert.notEqual(match.matchScore.method, match.supplierReadiness.method);
-  assert.notEqual(match.matchScore.value, match.auditedMatch.value);
-  assert.notEqual(match.campaignPriority.value, match.consultantDecision);
-  assert.ok(match.auditedMatch.components.every((component) => component.evidenceIds.length > 0));
-  assert.equal(new Set(match.auditedMatch.evidenceIds).size, match.auditedMatch.evidenceIds.length);
-  assert.ok(match.linkedStrengths.length > 0);
-  const evidenceIds = new Set(supplier.evidence.map((item) => item.id));
-  for (const claim of match.linkedStrengths) {
-    assert.ok(claim.evidenceIds.length > 0);
-    assert.ok(claim.evidenceIds.every((id) => evidenceIds.has(id)));
-    assert.equal(claim.externalClaimEligible, false, "legacy evidence must be refreshed before external use");
-  }
+test("recomputes absolute deadline freshness with an injected clock", () => {
+  const { tender } = fixturePair();
+  const before = deriveTenderFreshness(tender, snapshotNow);
+  const after = deriveTenderFreshness(tender, "2026-08-17T00:00:00+05:00");
+  assert.equal(before.status, "urgent");
+  assert.equal(after.status, "closed");
+  assert.equal(after.daysRemaining, 0);
 });
 
-test("keeps unassessed distinct from genuine zero and excludes both plus rejected or suppressed pairs", () => {
-  const matches = buildAllMatches(demoTenders, demoSuppliers, currentNow);
-  const unassessed = matches.find((item) => item.matchScore.value === null);
-  assert.ok(unassessed);
-  const unassessedSupplier = demoSuppliers.find((item) => item.id === unassessed.supplierId);
-  assert.ok(unassessedSupplier);
-  const unassessedEligibility = evaluateCampaignEligibility(unassessed, unassessedSupplier);
-  assert.equal(unassessedEligibility.canPrepareDraft, false);
-  assert.ok(unassessedEligibility.blockers.some((item) => item.code === "MATCH_UNASSESSED"));
+test("surfaces separately owned current-review findings without changing the score", () => {
+  const { tender, supplier } = fixturePair();
+  const current = assessMatch(tender, supplier, currentNow);
+  const support = evaluateConsultantReviewSupport(current, supplier);
+  const codes = new Set(support.findings.map((item) => item.code));
+  assert.equal(current.auditedMatch.value, 100);
+  assert.equal(support.readyForCurrentDecision, false);
+  assert.ok(codes.has("TENDER_CLOSED"));
+  assert.ok(codes.has("SNAPSHOT_STALE"));
+  assert.ok(codes.has("EVIDENCE_REFRESH_REQUIRED"));
+  assert.equal(support.findings.find((item) => item.code === "TENDER_CLOSED")?.ownerAgentId, "agent:TL-A017");
+  assert.equal(support.findings.find((item) => item.code === "EVIDENCE_REFRESH_REQUIRED")?.ownerAgentId, "agent:TL-A003");
 
-  const { tender, supplier } = selectedPositive();
-  const genuineZero = assessMatch(tender, supplier, snapshotNow);
-  genuineZero.matchScore = { ...genuineZero.matchScore, value: 0, valueClass: "ESTIMATED", method: "synthetic evaluated-zero regression" };
-  const zeroEligibility = evaluateCampaignEligibility(genuineZero, supplier);
-  assert.equal(zeroEligibility.canPrepareDraft, false);
-  assert.ok(zeroEligibility.blockers.some((item) => item.code === "ZERO_MATCH"));
-  assert.equal(zeroEligibility.blockers.some((item) => item.code === "MATCH_UNASSESSED"), false);
-
-  const rejected = assessMatch(tender, supplier, snapshotNow, "rejected");
-  assert.equal(evaluateCampaignEligibility(rejected, supplier).canPrepareDraft, false);
-
-  const suppressedSupplier = { ...supplier, suppressionStatus: "SUPPRESSED" };
-  const positive = assessMatch(tender, suppressedSupplier, snapshotNow);
-  assert.equal(evaluateCampaignEligibility(positive, suppressedSupplier).canPrepareDraft, false);
-
-  const partial = buildAllMatches(demoTenders, demoSuppliers, snapshotNow).find((item) => item.exactLegacyPair && item.auditedMatch.value === null);
-  assert.ok(partial);
-  const partialSupplier = demoSuppliers.find((item) => item.id === partial.supplierId);
-  assert.ok(partialSupplier);
-  assert.ok(evaluateCampaignEligibility(partial, partialSupplier).blockers.some((item) => item.code === "AUDITED_MATCH_REQUIRED"));
-
-  assert.deepEqual(campaignSuggestions(demoTenders, demoSuppliers, currentNow), [], "every dated demo pair remains blocked by freshness, evidence, consent, or suppression review");
+  const risky = { ...supplier, risks: [...supplier.risks, "Sanctions screening unresolved"] };
+  const riskSupport = evaluateConsultantReviewSupport(assessMatch(tender, risky, snapshotNow), risky);
+  assert.equal(riskSupport.findings.find((item) => item.code === "MATERIAL_RISK_HANDOFF")?.ownerAgentId, "agent:TL-A038");
 });
 
-test("requires explicit events for active, follow-up, interested, and no-response lifecycle states", () => {
-  const source = selectedPositive();
-  const supplier = controlledSupplier(source.supplier);
-  const tender = { ...source.tender, snapshotAsOf: snapshotNow };
-  let result = createCaseResult("case:TB-TEST:LIFECYCLE", tender, supplier, snapshotNow);
-  const stableMatchId = result.match.id;
-  result = setConsultantDecision(result, supplier, "approved", snapshotNow, { actorId: "consultant:test", rationale: "Approved for lifecycle regression." });
-  assert.equal(result.match.id, stableMatchId);
-  assert.equal(result.match.version, "v2");
-  assert.equal(result.match.decisionHistory.length, 1);
-  assert.equal(result.match.decisionHistory[0].actorId, "consultant:test");
-  assert.equal(result.match.decisionHistory[0].decidedAt, snapshotNow);
-  assert.equal(result.match.decisionHistory[0].rationale, "Approved for lifecycle regression.");
-  result = createCampaignDraft(result, tender, supplier, snapshotNow, "Email");
-  result = approveCampaignDraft(result, supplier, "consultant:test", snapshotNow);
-  assert.equal(result.campaign.version, "v2");
-
-  assert.deepEqual(result.activation.blockers.map((item) => item.code), ["OUTREACH_EVENT_REQUIRED"]);
-  assert.throws(() => transitionCampaignLifecycle(result, supplier, "active", snapshotNow), /outreach event/i);
-
-  result = recordCampaignEvent(result, supplier, {
-    type: "simulation-preview",
-    mode: "simulation",
-    occurredAt: snapshotNow,
-    externalRecordId: null,
-    note: "simulation only",
-  }, snapshotNow);
-  assert.equal(result.campaign.lifecycle, "approved");
-  assert.equal(result.campaignEvents.length, 0);
-  assert.equal(result.simulationEvents.length, 1);
-  assert.throws(() => transitionCampaignLifecycle(result, supplier, "active", snapshotNow), /outreach event/i);
-  assert.throws(() => recordCampaignEvent(result, supplier, {
-    type: "outreach-sent",
-    mode: "simulation",
-    occurredAt: snapshotNow,
-    externalRecordId: null,
-    note: "invalid simulation",
-  }, snapshotNow), /Simulation events cannot claim outreach/i);
-
-  result = recordCampaignEvent(result, supplier, {
-    type: "outreach-sent",
-    mode: "manual-record",
-    occurredAt: snapshotNow,
-    externalRecordId: "external:test:message-1",
-    note: "authorized test fixture",
-  }, snapshotNow);
-  assert.equal(result.activation.eligibleForActivation, true);
-  result = transitionCampaignLifecycle(result, supplier, "active", snapshotNow);
-  assert.equal(result.campaign.version, "v3");
-  assert.equal(result.activation.blockers.some((item) => item.code === "CAMPAIGN_APPROVAL_REQUIRED"), false);
-  assert.equal(result.activation.eligibleForActivation, true, "retained campaign approval remains valid after activation");
-  result = transitionCampaignLifecycle(result, supplier, "follow-up", snapshotNow);
-  assert.throws(() => transitionCampaignLifecycle(result, supplier, "interested", snapshotNow), /response event/i);
-  result = recordCampaignEvent(result, supplier, {
-    type: "response-interested",
-    mode: "integration",
-    occurredAt: snapshotNow,
-    externalRecordId: "external:test:response-1",
-    note: "authorized test fixture",
-  }, snapshotNow);
-  result = transitionCampaignLifecycle(result, supplier, "interested", snapshotNow);
-  assert.equal(result.campaign.lifecycle, "interested");
-});
-
-test("blocks hold to active even when campaign approval and an outreach event exist", () => {
-  const source = selectedPositive();
-  const supplier = controlledSupplier(source.supplier);
-  const tender = { ...source.tender, snapshotAsOf: snapshotNow };
-  let result = createCaseResult("case:TB-TEST:HOLD-ACTIVE", tender, supplier, snapshotNow);
-  result = setConsultantDecision(result, supplier, "approved", snapshotNow, { actorId: "consultant:one", rationale: "Initial positive review." });
-  result = createCampaignDraft(result, tender, supplier, snapshotNow, "Email");
-  result = approveCampaignDraft(result, supplier, "consultant:one", snapshotNow);
-  result = setConsultantDecision(result, supplier, "hold", "2026-08-15T13:00:00+05:00", { actorId: "consultant:two", rationale: "Hold pending compliance clarification." });
-  assert.equal(result.match.version, "v3");
-  assert.equal(result.match.decisionHistory.length, 2);
-  assert.equal(result.match.decisionHistory.at(-1).rationale, "Hold pending compliance clarification.");
-  result = recordCampaignEvent(result, supplier, {
-    type: "outreach-sent",
-    mode: "manual-record",
-    occurredAt: "2026-08-15T13:05:00+05:00",
-    externalRecordId: "external:test:hold-message",
-    note: "Regression event only.",
-  }, "2026-08-15T13:05:00+05:00");
-  assert.ok(result.activation.blockers.some((item) => item.code === "CONSULTANT_APPROVAL_REQUIRED"));
-  assert.equal(result.activation.eligibleForActivation, false);
-  assert.throws(() => transitionCampaignLifecycle(result, supplier, "active", "2026-08-15T13:06:00+05:00"), /not been approved by a consultant/i);
-});
-
-test("exercises the real no-response branch only after explicit outreach and observation events", () => {
-  const source = selectedPositive();
-  const supplier = controlledSupplier(source.supplier);
-  const tender = { ...source.tender, snapshotAsOf: snapshotNow };
-  let result = createCaseResult("case:TB-TEST:NO-RESPONSE", tender, supplier, snapshotNow);
-  result = setConsultantDecision(result, supplier, "approved", snapshotNow, { actorId: "consultant:test", rationale: "Approved for no-response regression." });
-  result = createCampaignDraft(result, tender, supplier, snapshotNow, "Email");
-  result = approveCampaignDraft(result, supplier, "consultant:test", snapshotNow);
-  result = recordCampaignEvent(result, supplier, {
-    type: "outreach-sent",
-    mode: "integration",
-    occurredAt: snapshotNow,
-    externalRecordId: "external:test:no-response-send",
-    note: "Authorized regression fixture.",
-  }, snapshotNow);
-  result = transitionCampaignLifecycle(result, supplier, "active", snapshotNow);
-  result = transitionCampaignLifecycle(result, supplier, "follow-up", snapshotNow);
-  assert.throws(() => transitionCampaignLifecycle(result, supplier, "no-response", snapshotNow), /observation event/i);
-  result = recordCampaignEvent(result, supplier, {
-    type: "no-response-observed",
-    mode: "manual-record",
-    occurredAt: "2026-08-20T12:00:00+05:00",
-    externalRecordId: "external:test:no-response-observation",
-    note: "Observation recorded by authorized regression fixture.",
-  }, "2026-08-20T12:00:00+05:00");
-  result = transitionCampaignLifecycle(result, supplier, "no-response", "2026-08-20T12:01:00+05:00");
-  assert.equal(result.campaign.lifecycle, "no-response");
-  assert.ok(result.campaignEvents.some((item) => item.type === "no-response-observed"));
-});
-
-test("generates truthful no-send copy from the canonical Case result", () => {
-  const { tender, supplier } = selectedPositive();
-  let result = createCaseResult("case:TB-TEST:COPY", tender, supplier, snapshotNow);
-  result = createCampaignDraft(result, tender, supplier, snapshotNow, "LinkedIn");
-  assert.match(result.campaign.copy, /LINKEDIN DRAFT · NOT SENT/);
-  assert.match(result.campaign.copy, /Absolute deadline:/);
-  assert.match(result.campaign.copy, /Audited Match Support:/);
-  assert.match(result.campaign.copy, /No current reviewed evidence is approved for external use/);
-  assert.doesNotMatch(result.campaign.copy, /proposal sent|message sent|response received/i);
-  assert.equal(result.campaign.copyEvidenceIds.length, 0);
-});
-
-test("persists and reconstructs only the explicitly requested Case ID", () => {
-  const { tender, supplier } = selectedPositive();
-  const storage = new MemoryStorage();
-  const first = createCaseResult("case:TB-TEST:ONE", tender, supplier, snapshotNow);
-  const second = createCaseResult("case:TB-TEST:TWO", tender, supplier, snapshotNow);
-  saveCaseResult(storage, first);
-  saveCaseResult(storage, second);
-  const firstLoaded = loadCaseResult(storage, first.caseIdentity.id, { tender, supplier, nowIso: snapshotNow });
-  const secondLoaded = loadCaseResult(storage, second.caseIdentity.id, { tender, supplier, nowIso: snapshotNow });
-  assert.equal(firstLoaded?.caseIdentity.id, first.caseIdentity.id);
-  assert.equal(secondLoaded?.caseIdentity.id, second.caseIdentity.id);
-  assert.equal(firstLoaded?.resultIdentity.version, "v2", "resuming produces an explicit result revision");
-  assert.equal(firstLoaded?.match.version, "v2", "clock-derived match state is revisioned");
-  assert.equal(firstLoaded?.migration.status, "native-current");
-  assert.equal(loadCaseResult(storage, "case:TB-TEST:MISSING", { tender, supplier, nowIso: snapshotNow }), null);
-  assert.equal([...storage.values.keys()].some((key) => /latest/i.test(key)), false);
-});
-
-test("recomputes freshness from an injected clock when a persisted Case is resumed", () => {
-  const { tender, supplier } = selectedPositive();
-  const storage = new MemoryStorage();
-  const savedBeforeDeadline = createCaseResult("case:TB-TEST:STALE-RESUME", tender, supplier, snapshotNow);
-  assert.notEqual(savedBeforeDeadline.match.tenderFreshness.status, "closed");
-  saveCaseResult(storage, savedBeforeDeadline);
-  const resumed = loadCaseResult(storage, savedBeforeDeadline.caseIdentity.id, {
-    tender,
-    supplier,
-    nowIso: "2027-01-01T12:00:00+05:00",
+test("records consultant decision revisions with actor, timestamp, and rationale without changing formula outputs", () => {
+  const { tender, supplier } = fixturePair();
+  const initial = createCaseResult("case:TM-DEMO:decision", tender, supplier, snapshotNow);
+  const approved = setConsultantDecision(initial, "approved", "2026-08-15T13:00:00+05:00", {
+    actorId: "consultant:one",
+    rationale: "Reviewed both evidence components.",
   });
+  assert.equal(approved.match.version, "v2");
+  assert.equal(approved.caseIdentity.version, "v2");
+  assert.equal(approved.match.consultantDecision, "approved");
+  assert.equal(approved.match.decisionHistory.length, 1);
+  assert.deepEqual(approved.match.decisionHistory[0], {
+    id: "match-decision:TM:case-tm-demo-decision:1",
+    version: "v1",
+    decision: "approved",
+    actorId: "consultant:one",
+    decidedAt: "2026-08-15T13:00:00+05:00",
+    rationale: "Reviewed both evidence components.",
+    sourceRole: "USER_ASSERTION",
+    valueClass: "SOURCE",
+  });
+  assert.equal(approved.match.auditedMatch.value, initial.match.auditedMatch.value);
+  assert.equal(approved.match.deadlineUrgency.value, initial.match.deadlineUrgency.value);
+});
+
+test("reconstructs only an explicit TenderMatch Case and makes a saved pre-deadline Case closed after the deadline", () => {
+  const { tender, supplier } = fixturePair();
+  const storage = memoryStorage();
+  const original = createCaseResult("case:TM-DEMO:stale-resume", tender, supplier, snapshotNow);
+  saveCaseResult(storage, original);
+  assert.ok(storage.values.has("tenderapps:tendermatch:case:case%3ATM-DEMO%3Astale-resume"));
+  assert.equal(loadCaseResult(storage, "case:TM-DEMO:missing", { tender, supplier, nowIso: currentNow }), null);
+  const resumed = loadCaseResult(storage, original.caseIdentity.id, { tender, supplier, nowIso: currentNow });
   assert.equal(resumed?.match.tenderFreshness.status, "closed");
   assert.equal(resumed?.match.tenderFreshness.freshness, "stale");
-  assert.equal(resumed?.match.tenderFreshness.daysRemaining, 0);
-  assert.equal(resumed?.match.campaignPriority.value, null);
-  assert.ok(resumed?.activation.blockers.some((item) => item.code === "TENDER_CLOSED"));
+  assert.equal(resumed?.match.auditedMatch.value, original.match.auditedMatch.value);
+  assert.ok(resumed?.reviewSupport.findings.some((item) => item.code === "TENDER_CLOSED"));
 });
 
-test("integrates the route and shared shell without a Command Center backlink or external map dependency", async () => {
-  const [main, page, styles, registry, shell, firebase] = await Promise.all([
+test("migrates legacy TenderBoost Cases into the matching-only schema without overwriting the legacy record", () => {
+  const { tender, supplier } = fixturePair();
+  const storage = memoryStorage();
+  const caseId = "case:TB-DEMO:historical";
+  const historical = createCaseResult(caseId, tender, supplier, snapshotNow);
+  historical.schemaVersion = "2.0.0";
+  historical.campaign = { id: "campaign:historical" };
+  historical.campaignEvents = [{ id: "event:historical" }];
+  const legacyKey = `tenderapps:tenderboost:case:${encodeURIComponent(caseId)}`;
+  storage.setItem(legacyKey, JSON.stringify(historical));
+
+  const migrated = loadCaseResult(storage, caseId, { tender, supplier, nowIso: currentNow });
+  assert.equal(migrated?.schemaVersion, TENDERMATCH_SCHEMA_VERSION);
+  assert.equal(migrated?.migration.status, "compatible-historical");
+  assert.equal(migrated?.migration.fromSchemaVersion, "2.0.0");
+  assert.equal(migrated?.migration.sourceProductName, "TenderBoost AI");
+  assert.equal("campaign" in migrated, false);
+  assert.equal("campaignEvents" in migrated, false);
+  assert.ok(storage.values.has(legacyKey));
+  assert.equal(storage.values.has(`tenderapps:tendermatch:case:${encodeURIComponent(caseId)}`), false);
+  saveCaseResult(storage, migrated);
+  assert.ok(storage.values.has(`tenderapps:tendermatch:case:${encodeURIComponent(caseId)}`));
+  assert.ok(storage.values.has(legacyKey));
+});
+
+test("uses the canonical TenderMatch route, safe compatibility aliases, truthful shared-shell metadata, and no active downstream action UI", async () => {
+  const [main, page, styles, registry, firebase] = await Promise.all([
     read("apps/tender-apps/src/main.tsx"),
     read("apps/tender-apps/src/tenderboost-app.tsx"),
     read("apps/tender-apps/src/tenderboost.css"),
     read("apps/tender-apps/src/practical-agent-registry.tsx"),
-    read("apps/tender-apps/src/client-shell.css"),
     read("firebase.json"),
   ]);
-  assert.match(main, /"\/tenderboost": <TenderBoostApp/);
-  assert.match(main, /"\/tenderboost-ai": "\/tenderboost"/);
-  assert.match(main, /route\.surfaceStatus/);
-  assert.match(registry, /productId: "product:TA-TENDERBOOST"/);
-  assert.match(registry, /Audited Company × Tender evidence support/);
-  assert.match(page, /LEGACY BASELINE · 1\.0\.0/);
-  assert.match(page, /AUDITED SUPPORT · 2\.0\.0/);
-  assert.match(page, /insufficient evidence/i);
-  assert.match(page, /data-map-mode="schematic-non-geospatial"/);
+  assert.match(main, /"\/tendermatch": <TenderMatchApp/);
+  assert.match(main, /"\/tenderboost": "\/tendermatch"/);
+  assert.match(main, /"\/tenderboost-ai": "\/tendermatch"/);
+  assert.match(registry, /displayName: "TenderMatch"/);
+  assert.match(registry, /Evidence-linked Company × Tender evaluation/);
+  assert.match(page, /TENDERAPPS AGENT 03/);
+  assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /SCHEMATIC · NON-GEOSPATIAL/);
-  assert.match(page, /not a live map, distance model, coordinate plot, or routing result/);
-  assert.match(page, /No send integration connected/);
-  assert.match(page, /Simulation events are stored separately/);
-  assert.doesNotMatch(`${main}\n${page}`, /Command Center|top-navigation|Participation Boost proposal sent/);
-  assert.doesNotMatch(`${main}\n${page}`, /from ["']leaflet["']|import\(["']leaflet["']\)|https?:\/\/(?:[^\s"']*openstreetmap|[^\s"']*wikimedia)/i);
-  assert.match(styles, /@media \(max-width: 1120px\)/);
-  assert.match(styles, /@media \(max-width: 1040px\)[\s\S]*?\.tb3-page \{ padding-top: 170px; \}/);
-  assert.match(styles, /@media \(max-width: 560px\)/);
-  assert.match(styles, /@media \(max-width: 560px\)[\s\S]*?\.tb3-page \{ padding-top: 148px; \}/);
-  assert.match(shell, /--boost-content-max-width:\s*1640px/);
-  assert.doesNotMatch(firebase, /tenderboost-ai\.web\.app|tenderboost-ai/);
+  assert.match(page, /data-map-mode="schematic-non-geospatial"/);
+  assert.doesNotMatch(`${page}\n${registry}\n${styles}`, /Campaign Studio|campaign brief|outreach|CRM action|response tracking/i);
+  assert.doesNotMatch(page, /Command Center|\/products/);
+  assert.doesNotMatch(`${page}\n${styles}`, /leaflet|openstreetmap|wikimedia/i);
+  assert.doesNotMatch(firebase, /tenderboost-ai\.web\.app/);
+});
+
+test("retains Campaign Studio only as an unregistered future capability candidate", async () => {
+  const candidate = await read("docs/campaign-studio-future-capability-candidate.md");
+  assert.match(candidate, /unplaced future capability candidate/i);
+  assert.match(candidate, /outside TenderMatch and `agent:TL-A031`/);
+  assert.match(candidate, /No assumption is made that it requires Agent 65/);
+  assert.equal(clientProducts.some((item) => /campaign/i.test(`${item.name} ${item.descriptor}`)), false);
+  assert.equal(realAgentImplementations.some((item) => /campaign/i.test(`${item.name} ${item.descriptor} ${item.tor}`)), false);
 });
