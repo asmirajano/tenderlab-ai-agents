@@ -1,5 +1,7 @@
 # TenderMatch strict-parity browser QA
 
+> Historical evidence only: this record describes the approved `d19e977` parity checkpoint. The later TenderMatch product-boundary decision removed Campaign Studio and Follow-ups from the active application. Current navigation evidence is maintained in `docs/evidence/tendermatch-navigation-audit.md`.
+
 Evidence base: local checkpoint `b72dda2b03792f814ee3612320353febbcd9b451`, followed by the bounded desktop-objective CSS correction recorded with this summary. Production preview: `http://127.0.0.1:4174/tendermatch`. No deployed surface was tested or changed.
 
 ## Responsive view matrix

@@ -1,6 +1,6 @@
 # TenderMatch audited scoring model card
 
-Status: Stage 2 matching-policy evidence experiment retained inside the TenderMatch frozen-source parity baseline, 2026-08-30. This model card governs the TL-A031 result only; the separately versioned legacy Campaign Studio parity module is not a scoring output. Active policy: `tendermatch-audited-match/3.0.0`. Deadline-context policy: `tendermatch-deadline-context/3.0.0`. Frozen legacy TenderBoost comparison: `tenderboost-legacy-baseline/1.0.0`.
+Status: Stage 2 matching-policy evidence experiment retained inside the TenderMatch frozen-source matching baseline, 2026-08-30. This model card governs the TL-A031 result only. Campaign Studio and outreach workflows are not part of TenderMatch. Active policy: `tendermatch-audited-match/3.0.0`. Deadline-context policy: `tendermatch-deadline-context/3.0.0`. Frozen legacy TenderBoost comparison: `tenderboost-legacy-baseline/1.0.0`.
 
 ## Intended use
 

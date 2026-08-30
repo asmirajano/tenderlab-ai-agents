@@ -34,6 +34,10 @@ const routeAliases: Record<string, string> = {
   "/logistics-costing": "/landed-cost",
   "/tenderboost": "/tendermatch",
   "/tenderboost-ai": "/tendermatch",
+  "/tendermatch/campaigns": "/tendermatch",
+  "/tendermatch/followups": "/tendermatch",
+  "/tenderboost/campaigns": "/tendermatch",
+  "/tenderboost-ai/followups": "/tendermatch",
 };
 
 function normalizePath(pathname: string) {

@@ -30,8 +30,8 @@ test("registers all practical Agents as pages in one Tender Apps product", () =>
   assert.equal(tenderMatchProduct.ownerAgentId, "agent:TL-A031");
   assert.equal(tenderMatchProduct.name, "TenderMatch");
   assert.equal(tenderMatchProduct.clientRoute, "/tendermatch");
-  assert.match(tenderMatchProduct.surfaceStatus, /Complete frozen-source parity/);
-  assert.match(tenderMatchProduct.surfaceStatus, /Campaign Studio isolated/);
+  assert.match(tenderMatchProduct.surfaceStatus, /Frozen matching workspace/);
+  assert.match(tenderMatchProduct.surfaceStatus, /promotion and outreach excluded/);
   assert.equal(tenderBalanceProduct.access.commandCenterAudience, "team-admin-only");
   assert.equal(tenderBalanceProduct.access.clientAppToCommandCenter, false);
   assert.equal(tenderBalanceProduct.access.separateOriginRequired, true);

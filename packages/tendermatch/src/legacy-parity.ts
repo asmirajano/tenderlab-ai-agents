@@ -4,7 +4,6 @@ export type LegacyParityStatus =
   | "preserved"
   | "adapted-to-tenderapps-design"
   | "truth-corrected"
-  | "intentionally-isolated-for-future-agent-separation"
   | "missing";
 
 export type LegacyParityItem = {
@@ -28,7 +27,8 @@ const item = (
 ): LegacyParityItem => ({ id, category, sourceSurface, targetSurface, status, note, sourceEvidence });
 
 /**
- * Reviewable source-to-target inventory for the frozen 04b0b2a TenderBoost UI.
+ * Reviewable source-to-target inventory for the frozen 04b0b2a TenderBoost matching UI.
+ * Campaign Studio entries were removed after the TenderMatch product-boundary decision.
  * Tests reject a checkpoint while any item remains `missing`.
  */
 export const tenderBoostParityManifest: LegacyParityItem[] = [
@@ -41,8 +41,6 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("nav-matrix-full", "navigation", "05 Full Match Matrix", "Match Matrix / Portfolio", "truth-corrected", "Unassessed cells show MISSING rather than zero."),
   item("nav-matrix-tenders", "navigation", "05 AutoMatch by Tenders", "Match Matrix / By tender", "adapted-to-tenderapps-design", "Tender-first ranking retained."),
   item("nav-matrix-suppliers", "navigation", "05 AutoMatch by Suppliers", "Match Matrix / By supplier", "adapted-to-tenderapps-design", "Supplier-first ranking retained."),
-  item("nav-campaigns", "navigation", "06 Campaign Studio / Campaigns", "Legacy module / Campaigns", "intentionally-isolated-for-future-agent-separation", "Not represented as TL-A031 or a canonical Agent."),
-  item("nav-followups", "navigation", "06 Campaign Studio / Follow-ups", "Legacy module / Follow-ups", "intentionally-isolated-for-future-agent-separation", "Only local simulation events can populate follow-up states."),
   item("content-dashboard-hero", "content", "Outbound activation hero", "Migration baseline hero", "truth-corrected", "No live or autonomous activation claim."),
   item("content-dashboard-metrics", "content", "Five dashboard metrics", "Six provenance-aware metrics", "truth-corrected", "Separates evaluated, unassessed, and audited pairs."),
   item("content-priority-queue", "content", "Priority activation matches", "Legacy evaluated-match queue", "truth-corrected", "Historical estimates are labelled and current blockers are shown."),
@@ -65,15 +63,6 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("content-match-review", "content", "Selected match review", "Selected Case match review", "truth-corrected", "Uses the versioned canonical Case result and evidence links."),
   item("content-evidence-profile", "content", "Supplier identity and evidence", "Supplier identity and evidence", "preserved", "Every fixture evidence record is displayed."),
   item("content-evidence-audit", "content", "Profile provenance summary", "Profile provenance summary", "preserved", "Status, confidence, source and retrieval date retained."),
-  item("content-campaign-suggestions", "content", "Suggested campaigns", "Legacy campaign candidates", "intentionally-isolated-for-future-agent-separation", "Only evaluated positive pairs are candidates."),
-  item("content-campaign-pipeline", "content", "Campaign pipeline", "Local draft/simulation pipeline", "truth-corrected", "Active/follow-up/response labels always say simulation and NOT SENT."),
-  item("content-campaign-workspace", "content", "Campaign workspace", "Legacy local campaign workspace", "intentionally-isolated-for-future-agent-separation", "Separate schema, revision and storage key."),
-  item("content-channel-list", "content", "Seven channels", "Seven draft formats", "truth-corrected", "Channels generate local copy only; they do not deliver it."),
-  item("content-copy-editor", "content", "Editable generated copy", "Editable NOT SENT draft", "truth-corrected", "Only evidence-linked claims are eligible for draft proof."),
-  item("content-sequence", "content", "Deadline-aware sequence", "Local simulation cadence", "truth-corrected", "Nothing is scheduled externally."),
-  item("content-followup-table", "content", "Campaign follow-up table", "Simulation follow-up table", "truth-corrected", "Requires a recorded simulation event."),
-  item("content-event-log", "content", "Campaign event log", "Versioned local event log", "truth-corrected", "Events identify simulation versus human draft actions."),
-  item("content-handoff", "content", "ProposalPrep handoff lock", "Disabled future handoff", "preserved", "No downstream transfer is claimed."),
   item("content-case-audit", "content", "No equivalent", "Case identity and audit", "preserved", "Approved Stage 1/2 integrity surface retained in addition to parity."),
   item("interaction-radar-tabs", "interaction", "Radar Tenders/Suppliers tabs", "Radar Tenders/Suppliers tabs", "preserved", "Pointer and keyboard semantic buttons."),
   item("interaction-radar-filter", "interaction", "Region filters", "Region filters", "preserved", "Filters clusters and focus records."),
@@ -86,31 +75,12 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("interaction-decision", "interaction", "Reject/Hold/Approve", "Hold/Reject/Approve match", "truth-corrected", "Approval obeys current evidence/freshness blockers and retains provenance."),
   item("interaction-evidence-link", "interaction", "Open supplier verification", "Open supplier verification", "preserved", "No route loss."),
   item("interaction-layout", "interaction", "Standalone Standard/Wide", "Shared TenderApps Standard/Wide", "adapted-to-tenderapps-design", "Single shared persisted layout control."),
-  item("interaction-draft-create", "interaction", "Create Campaign", "Create local legacy draft", "intentionally-isolated-for-future-agent-separation", "No canonical ownership implied."),
-  item("interaction-draft-edit", "interaction", "Edit channel/copy/note", "Edit channel/objective/copy/note", "preserved", "Every change increments the local campaign revision."),
-  item("interaction-draft-approval", "interaction", "Approve campaign", "Approve draft content", "truth-corrected", "Approval is provenance, not delivery authorization."),
-  item("interaction-lifecycle", "interaction", "Activate/follow-up/response", "Explicit lifecycle simulation", "truth-corrected", "No real state is claimed without an integration event."),
-  item("interaction-response", "interaction", "Simulate response", "Simulate interested/no-response", "truth-corrected", "Impossible before a simulation-start event."),
-  item("interaction-response-reset", "interaction", "Reset response simulation", "Versioned local response reset", "truth-corrected", "Reset returns the selected local record to follow-up simulation and records provenance; it cannot erase or imply an external event.", "04b0b2a:app/tenderboost-ai/page.tsx:861-886,1252,1258,1267"),
-  item("interaction-collapse", "interaction", "Campaign suggestion and pipeline collapse", "Campaign suggestion and pipeline collapse", "preserved", "Uses aria-expanded and stable controls."),
-  item("interaction-workspace-collapse", "interaction", "Campaign Workspace Collapse/Expand", "Legacy workspace Collapse/Expand", "intentionally-isolated-for-future-agent-separation", "The isolated workspace retains its own accessible disclosure control.", "04b0b2a:app/tenderboost-ai/page.tsx:1223-1225"),
-  item("content-objective-recommendation", "content", "AI recommended objective, rationale and Use recommendation", "Evidence-bounded local recommendation", "intentionally-isolated-for-future-agent-separation", "Recommendation remains local decision support and never activation authority.", "04b0b2a:app/tenderboost-ai/page.tsx:1227"),
-  item("content-channel-recommendation", "content", "Recommended campaign channel", "Recommended local draft format", "intentionally-isolated-for-future-agent-separation", "The recommended format is visible without implying delivery.", "04b0b2a:app/tenderboost-ai/page.tsx:1236"),
-  item("content-sequence-channels", "content", "Cadence day and channel", "Local cadence day, channel and action", "truth-corrected", "Each cadence step preserves its channel but remains NOT SCHEDULED.", "04b0b2a:app/tenderboost-ai/page.tsx:1246"),
-  item("interaction-explicit-campaign-save", "interaction", "Save changes", "Guarded browser-local Save changes", "adapted-to-tenderapps-design", "Explicit save records a revision and visible saved/failure feedback; autosave remains separately labelled.", "04b0b2a:app/tenderboost-ai/page.tsx:1244"),
-  item("content-followup-next-action", "content", "Next Action and follow-up date", "Local simulation next action and date", "truth-corrected", "Dates are review cues stored on the local simulation record, not scheduler tasks.", "04b0b2a:app/tenderboost-ai/page.tsx:1258,1267"),
   item("interaction-case-save", "interaction", "No explicit Case persistence", "Save explicit Case", "preserved", "Stage 1/2 result persistence retained."),
   item("interaction-case-load", "interaction", "No explicit Case resume", "Load explicit Case", "truth-corrected", "Deadline freshness recomputes from the injected clock."),
-  item("interaction-campaign-persist", "interaction", "Session campaign state", "Browser-local legacy module state", "adapted-to-tenderapps-design", "Separate storage key and visible non-durable warning."),
   item("state-empty-priority", "state", "No priority matches", "No evaluated matches", "truth-corrected", "MISSING is not presented as a low score."),
-  item("state-empty-campaign", "state", "No campaign suggestions", "No eligible legacy candidates", "truth-corrected", "Blocker next steps are shown."),
-  item("state-empty-followup", "state", "No follow-up records", "No simulation follow-up records", "truth-corrected", "Explains the required event."),
   item("state-errors", "state", "Implicit action failures", "Visible action and persistence errors", "adapted-to-tenderapps-design", "Errors use role=alert."),
-  item("state-campaign-load-error", "state", "No frozen-source equivalent", "Recoverable visible load error", "adapted-to-tenderapps-design", "A failed browser read cannot discard valid in-memory edits or silently overwrite the unsafe payload.", "No frozen-source equivalent; TenderApps parity hardening addition"),
-  item("state-campaign-autosave-error", "state", "No frozen-source equivalent", "Recoverable visible autosave error", "adapted-to-tenderapps-design", "Autosave failure is announced while the current local state stays usable.", "No frozen-source equivalent; TenderApps parity hardening addition"),
   item("state-case-save-error", "state", "No frozen-source equivalent", "Guarded explicit Case save", "adapted-to-tenderapps-design", "Storage failure is surfaced with role=alert and the active Case remains in memory.", "No frozen-source equivalent; Stage 1/2 integrity addition"),
   item("state-statuses", "state", "Pending/approved/hold/rejected", "Pending/approved/hold/rejected", "preserved", "Match decisions remain separate from scores."),
-  item("state-campaign-statuses", "state", "Draft through closed", "Draft/approved plus simulated lifecycle", "truth-corrected", "Every non-draft downstream status names simulation."),
   item("data-tenders", "data", "16 tender records", "16 tender records", "preserved", "Titles, objects, buyers, countries, sources, budgets and tags retained."),
   item("data-deadlines", "data", "Relative daysLeft", "Absolute deadlineAt", "truth-corrected", "Days remaining and urgency are derived from the current/injected clock."),
   item("data-deadline-baseline-vector", "data", "Frozen daysLeft vector", "Deterministic whole-day deadline conversion", "truth-corrected", "At the frozen as-of instant, floor((end-of-day deadline - clock)/24h) reproduces [1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135].", "04b0b2a:app/tenderboost-ai/page.tsx:137-153 · tenders[].daysLeft"),
@@ -238,7 +208,6 @@ export function paritySummary() {
     preserved: 0,
     "adapted-to-tenderapps-design": 0,
     "truth-corrected": 0,
-    "intentionally-isolated-for-future-agent-separation": 0,
     missing: 0,
   });
 }

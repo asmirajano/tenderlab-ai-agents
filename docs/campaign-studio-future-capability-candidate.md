@@ -2,9 +2,9 @@
 
 Status: historical knowledge retained from the TenderBoost migration. This is not a registered TenderApps product, practical product number, canonical Agent, implementation record, route, runtime, or development authorization.
 
-Campaign Studio is explicitly outside TenderMatch's canonical Company × Tender responsibility and `agent:TL-A031`. The TenderMatch frozen-source parity baseline renders the historical TenderBoost browser-local workflow as a separately versioned **legacy parity module** so the source application remains functionally reviewable; this does not constitute placement, registration, production activation, or ownership. Before Campaign Studio becomes an active practical capability it must independently pass the canonical 64-Agent placement audit and receive one approved disposition. No assumption is made that it requires Agent 65 or any new canonical identity.
+Campaign Studio is explicitly outside TenderMatch's canonical Company × Tender responsibility and `agent:TL-A031`. Its former migrated legacy-parity pages were removed from TenderMatch after product-boundary review. Before Campaign Studio becomes an active practical capability it must independently pass the canonical 64-Agent placement audit and receive one approved disposition. No assumption is made that it requires Agent 65 or any new canonical identity.
 
-The parity module uses schema `tenderboost-legacy-campaign/1.1.0`, stores only local drafts and versioned simulation events, and keeps `communicationStatus: NOT_SENT`. A content approval is not activation authority. Active, follow-up, interested, no-response, and response-reset demonstrations are named simulation states and require an explicit local simulation-start event; next-action dates are local review cues, not scheduler tasks. They never imply a sent message, CRM action, external response, or downstream handoff.
+Historical Campaign Studio code and state semantics remain available only in Git history and the untouched frozen standalone source. TenderMatch no longer loads, writes, renders, or links those records. No Marketing Agent is created or implemented by this boundary change.
 
 ## Reusable historical policy
 

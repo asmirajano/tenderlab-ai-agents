@@ -118,8 +118,8 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     name: "TenderMatch · TenderApps Agent 03",
     ownerAgentId: "agent:TL-A031",
     clientProductId: "product:TA-TENDERBOOST",
-    descriptor: "Audited Company × Tender evidence support inside the TenderMatch frozen-source parity baseline",
-    tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, and retain the consultant’s match decision without owning participation design, Bid/No-Bid authority, or the separately versioned legacy Campaign Studio parity module.",
+    descriptor: "Audited Company × Tender evidence support inside the TenderMatch frozen matching-source baseline",
+    tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, and retain the consultant’s match decision without owning participation design, Bid/No-Bid authority, promotion, outreach, CRM action, or response tracking.",
     primaryInputs: [
       "Versioned tender record with absolute deadline and source snapshot",
       "Versioned supplier profile and evidence records",
@@ -142,7 +142,6 @@ export const realAgentImplementations: RealAgentImplementation[] = [
       "packages/tendermatch/src/types.ts",
       "packages/tendermatch/src/engine.ts",
       "packages/tendermatch/src/legacy-parity.ts",
-      "packages/tendermatch/src/legacy-campaign.ts",
     ],
     knownLimitations: [
       "The migrated 16-tender/10-supplier fixture is a dated demonstration snapshot, not a live authorized feed.",
@@ -151,7 +150,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
       "Legacy Match Score and readiness remain historical estimates and are excluded from claims of audited truth.",
       "Browser-local Cases are not durable tenant-isolated Artifacts.",
       "The implementation does not own participation design, Bid/No-Bid, or external commercial action.",
-      "The shared TenderMatch page contains a complete source-parity rendering of Campaign Studio as a separately versioned, browser-local, NOT SENT legacy module; it is not owned by agent:TL-A031 and is not a registered real or canonical Agent.",
+      "Campaign Studio and follow-up simulation pages were removed from TenderMatch after product-boundary review; promotion, outreach, CRM action, and response tracking require a separately placed future capability.",
       "The relationship view is a fixed schematic, not a geospatial map, distance model, coordinate plot, or routing result.",
     ],
     patternIds: [],

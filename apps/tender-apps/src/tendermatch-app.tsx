@@ -1,44 +1,23 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
-  advanceLegacyCampaignSimulation,
-  buildLegacyCampaignCadence,
   buildAllMatches,
   chinaRadarClusters,
   createCaseResult,
-  createLegacyCampaign,
   demoSnapshot,
   demoSuppliers,
   demoTenders,
   fixtureSupplierKey,
-  generateLegacyCampaignCopy,
-  legacyCampaignActivationBlockers,
-  legacyCampaignChannels,
-  legacyCampaignObjectives,
-  legacyCampaignObjectiveRecommendation,
-  legacyCampaignPriority,
   loadCaseResult,
-  loadLegacyCampaigns,
-  markLegacyCampaignSaved,
   paritySummary,
-  recommendedLegacyCampaignChannel,
-  resetLegacyCampaignResponseSimulation,
   regionsForSupplier,
   resumeCaseResult,
-  reviseLegacyCampaign,
   saveCaseResult,
-  saveLegacyCampaigns,
   setConsultantDecision,
-  startLegacyCampaignSimulation,
   supplierActivity,
   supplierRadarCoordinates,
   tenderRadarCoordinates,
-  toggleLegacyCampaignApproval,
   worldRadarClusters,
   type ConsultantDecision,
-  type LegacyCampaignObjectiveId,
-  type LegacyCampaignOrigin,
-  type LegacyCampaignRecord,
-  type LegacyCampaignStage,
   type MatchAssessment,
   type SupplierRecord,
   type TenderMatchCaseResult,
@@ -56,17 +35,15 @@ type WorkspaceView =
   | "matrix"
   | "match-tenders"
   | "match-suppliers"
-  | "audit"
-  | "campaigns"
-  | "followups";
+  | "audit";
 
 type NavItem = { id: WorkspaceView; label: string; short: string; sublabel: string };
-type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match" | "legacy";
+type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match";
 type NavGroup = {
   id: NavGroupId;
   label: string;
   short: string;
-  family: "overview" | "intelligence" | "analysis" | "legacy";
+  family: "overview" | "intelligence" | "analysis";
   sublabel: string;
   items: NavItem[];
 };
@@ -88,13 +65,21 @@ const navGroups: NavGroup[] = [
     { id: "match-suppliers", label: "AutoMatch by Suppliers", short: "05C", sublabel: "Supplier-first" },
     { id: "audit", label: "Detailed Case Review", short: "05D", sublabel: "Identity + decision" },
   ] },
-  { id: "legacy", label: "Legacy Campaign Studio", short: "06", family: "legacy", sublabel: "Isolated parity module", items: [
-    { id: "campaigns", label: "Campaigns", short: "06A", sublabel: "Local drafts · NOT SENT" },
-    { id: "followups", label: "Follow-ups", short: "06B", sublabel: "Simulation events only" },
-  ] },
 ];
 
 const navItems = navGroups.flatMap((group) => group.items);
+const workspaceViewIds = new Set<WorkspaceView>(navItems.map((item) => item.id));
+
+export function resolveTenderMatchWorkspaceView(candidate: string | null | undefined): WorkspaceView {
+  return candidate && workspaceViewIds.has(candidate as WorkspaceView) ? candidate as WorkspaceView : "dashboard";
+}
+
+function initialWorkspaceView(): WorkspaceView {
+  if (typeof window === "undefined") return "dashboard";
+  const url = new URL(window.location.href);
+  const hashView = url.hash.replace(/^#\/?/, "").split("/").at(-1);
+  return resolveTenderMatchWorkspaceView(url.searchParams.get("view") ?? hashView);
+}
 
 function navGroupForView(view: WorkspaceView) {
   return navGroups.find((group) => group.items.some((item) => item.id === view))!;
@@ -138,16 +123,6 @@ function WorkspaceNavigation({ compact = false, expanded, onToggle, onView, view
   </nav>;
 }
 
-const campaignStageLabel: Record<LegacyCampaignStage, string> = {
-  draft: "Draft",
-  approved: "Approved content",
-  "active-simulation": "Active simulation",
-  "follow-up-simulation": "Follow-up simulation",
-  "interested-simulation": "Interested simulation",
-  "no-response-simulation": "No-response simulation",
-  closed: "Closed simulation",
-};
-
 const decisionLabel: Record<ConsultantDecision, string> = { pending: "Pending", approved: "Approved", hold: "On hold", rejected: "Rejected" };
 const sourceCommit = "04b0b2a723223d11617837ee0e7562fa48168cd9";
 const actorId = "actor:tenderlab-consultant:local-demo";
@@ -181,26 +156,6 @@ function evidenceStatusClass(status: string) {
   return "unknown";
 }
 
-function initialCampaignWorkspaceState(): { records: LegacyCampaignRecord[]; ready: boolean; message: string; error: string } {
-  if (typeof window === "undefined") return { records: [], ready: false, message: "Browser storage unavailable", error: "" };
-  try {
-    const records = loadLegacyCampaigns(window.localStorage);
-    return {
-      records,
-      ready: true,
-      message: records.length ? `Loaded ${records.length} local NOT SENT record${records.length === 1 ? "" : "s"}` : "No saved local campaign records",
-      error: "",
-    };
-  } catch (error) {
-    return {
-      records: [],
-      ready: false,
-      message: "Load failed · valid in-memory state was retained",
-      error: error instanceof Error ? `Campaign workspace load failed: ${error.message}` : "Campaign workspace load failed. In-memory state remains available.",
-    };
-  }
-}
-
 function bestLegacyMatch(matches: MatchAssessment[]) {
   return [...matches].sort((left, right) => (right.matchScore.value ?? -1) - (left.matchScore.value ?? -1))[0];
 }
@@ -231,13 +186,6 @@ function SupplierTabs({ view, onChange }: { view: WorkspaceView; onChange: (view
   </nav>;
 }
 
-function CampaignTabs({ view, onChange }: { view: WorkspaceView; onChange: (view: WorkspaceView) => void }) {
-  return <nav className="tb3-subtabs tb3-legacy-tabs" aria-label="Migrated legacy Campaign Studio views">
-    <button aria-current={view === "campaigns" ? "page" : undefined} className={view === "campaigns" ? "active" : ""} onClick={() => onChange("campaigns")}><b>Campaigns</b><span>Local drafts · NOT SENT</span></button>
-    <button aria-current={view === "followups" ? "page" : undefined} className={view === "followups" ? "active" : ""} onClick={() => onChange("followups")}><b>Follow-ups</b><span>Recorded simulation events only</span></button>
-  </nav>;
-}
-
 export default function TenderMatchApp() {
   const [sessionNow, setSessionNow] = useState(() => new Date().toISOString());
   const initialMatches = useMemo(() => buildAllMatches(demoTenders, demoSuppliers, sessionNow), [sessionNow]);
@@ -248,38 +196,25 @@ export default function TenderMatchApp() {
   const initialSupplier = demoSuppliers.find((entry) => entry.id === initialAssessment.supplierId) ?? demoSuppliers[0];
   const initialResult = useMemo(() => createCaseResult(caseIdFor(initialTender, initialSupplier), initialTender, initialSupplier, sessionNow), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [view, setView] = useState<WorkspaceView>("dashboard");
+  const [view, setView] = useState<WorkspaceView>(initialWorkspaceView);
   const [expandedNavGroups, setExpandedNavGroups] = useState<Record<NavGroupId, boolean>>({
     overview: true,
     market: false,
     suppliers: false,
     "tender-directory": true,
     match: false,
-    legacy: false,
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
   const [caseResults, setCaseResults] = useState<Record<string, TenderMatchCaseResult>>({ [initialResult.match.key]: initialResult });
   const [persistenceMessage, setPersistenceMessage] = useState("Not saved in this browser session");
-  const [initialCampaignState] = useState(initialCampaignWorkspaceState);
-  const [actionError, setActionError] = useState(initialCampaignState.error);
+  const [actionError, setActionError] = useState("");
   const [tenderRadarFilter, setTenderRadarFilter] = useState("All regions");
   const [supplierRadarFilter, setSupplierRadarFilter] = useState("All regions");
   const [tenderRadarZoom, setTenderRadarZoom] = useState(1);
   const [supplierRadarZoom, setSupplierRadarZoom] = useState(1);
   const [replayProgress, setReplayProgress] = useState(100);
   const [isReplaying, setIsReplaying] = useState(false);
-  const [campaigns, setCampaigns] = useState<LegacyCampaignRecord[]>(initialCampaignState.records);
-  const [campaignStorageReady] = useState(initialCampaignState.ready);
-  const [campaignPersistenceMessage, setCampaignPersistenceMessage] = useState(initialCampaignState.message);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
-  const [campaignComposerOpen, setCampaignComposerOpen] = useState(false);
-  const [campaignCreateMode, setCampaignCreateMode] = useState<"tender" | "supplier" | "match">("match");
-  const [campaignTenderId, setCampaignTenderId] = useState(initialTender.id);
-  const [campaignSupplierId, setCampaignSupplierId] = useState(initialSupplier.id);
-  const [campaignSuggestionsOpen, setCampaignSuggestionsOpen] = useState(true);
-  const [campaignPipelineOpen, setCampaignPipelineOpen] = useState(true);
-  const [campaignWorkspaceOpen, setCampaignWorkspaceOpen] = useState(true);
   const viewSurfaceRef = useRef<HTMLDivElement>(null);
   const lastFocusedViewRef = useRef<WorkspaceView>("dashboard");
 
@@ -316,8 +251,6 @@ export default function TenderMatchApp() {
     setSessionNow(nowIso);
     setCaseResults((current) => ({ ...current, [key]: nextResult }));
     setSelectedKey(key);
-    setCampaignTenderId(nextTender.id);
-    setCampaignSupplierId(nextSupplier.id);
     setActionError("");
     if (nextView) changeView(nextView);
   };
@@ -334,7 +267,7 @@ export default function TenderMatchApp() {
       const decidedAt = new Date().toISOString();
       const updated = setConsultantDecision(result, decision, decidedAt, {
         actorId,
-        rationale: `Consultant recorded ${decision} through the complete TenderMatch parity workspace.`,
+        rationale: `Consultant recorded ${decision} through the TenderMatch evidence-review workspace.`,
       });
       setCaseResults((current) => ({ ...current, [selectedKey]: updated }));
     } catch (error) {
@@ -385,24 +318,6 @@ export default function TenderMatchApp() {
   }, [isReplaying]);
 
   useEffect(() => {
-    if (!campaignStorageReady) return;
-    let nextMessage = "";
-    let nextError = "";
-    try {
-      saveLegacyCampaigns(window.localStorage, campaigns);
-      nextMessage = `Autosaved ${campaigns.length} local NOT SENT record${campaigns.length === 1 ? "" : "s"}`;
-    } catch (error) {
-      nextMessage = "Autosave failed · edits remain in memory";
-      nextError = error instanceof Error ? `Campaign autosave failed: ${error.message}` : "Campaign autosave failed. Current edits remain in memory.";
-    }
-    const timer = window.setTimeout(() => {
-      setCampaignPersistenceMessage(nextMessage);
-      if (nextError) setActionError(nextError);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [campaigns, campaignStorageReady]);
-
-  useEffect(() => {
     if (lastFocusedViewRef.current === view) return;
     lastFocusedViewRef.current = view;
     viewSurfaceRef.current?.focus();
@@ -410,121 +325,6 @@ export default function TenderMatchApp() {
 
   const toggleNavGroup = (group: NavGroupId) => {
     setExpandedNavGroups((current) => ({ ...current, [group]: !current[group] }));
-  };
-
-  const replaceCampaign = (next: LegacyCampaignRecord) => {
-    setCampaigns((current) => current.some((entry) => entry.id === next.id)
-      ? current.map((entry) => entry.id === next.id ? next : entry)
-      : [next, ...current]);
-    setSelectedCampaignId(next.id);
-    setCampaignWorkspaceOpen(true);
-  };
-
-  const resultForAssessment = (assessment: MatchAssessment) => {
-    const nextTender = demoTenders.find((entry) => entry.id === assessment.tenderId) ?? tender;
-    const nextSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId) ?? supplier;
-    return caseResults[assessment.key] ?? createCaseResult(caseIdFor(nextTender, nextSupplier), nextTender, nextSupplier, sessionNow);
-  };
-
-  const createCampaignFromAssessment = (assessment: MatchAssessment, origin: LegacyCampaignOrigin) => {
-    setActionError("");
-    try {
-      const existing = campaigns.find((entry) => entry.matchKey === assessment.key);
-      if (existing) {
-        setSelectedCampaignId(existing.id);
-        setCampaignComposerOpen(false);
-        changeView("campaigns");
-        return;
-      }
-      const nextTender = demoTenders.find((entry) => entry.id === assessment.tenderId) ?? tender;
-      const nextSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId) ?? supplier;
-      const campaignResult = resultForAssessment(assessment);
-      const record = createLegacyCampaign(campaignResult, nextTender, nextSupplier, origin, actorId, new Date().toISOString());
-      replaceCampaign(record);
-      setCampaignComposerOpen(false);
-      changeView("campaigns");
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "The local legacy campaign draft could not be created.");
-    }
-  };
-
-  const currentCampaign = campaigns.find((entry) => entry.id === selectedCampaignId) ?? campaigns[0] ?? null;
-  const currentCampaignAssessment = currentCampaign ? matchByKey.get(currentCampaign.matchKey) ?? currentAssessment : currentAssessment;
-  const currentCampaignTender = demoTenders.find((entry) => entry.id === currentCampaignAssessment.tenderId) ?? tender;
-  const currentCampaignSupplier = demoSuppliers.find((entry) => entry.id === currentCampaignAssessment.supplierId) ?? supplier;
-  const currentCampaignResult = currentCampaign ? resultForAssessment(currentCampaignAssessment) : result;
-  const campaignCandidates = evaluatedMatches.filter((entry) => (entry.matchScore.value ?? 0) > 0 && entry.consultantDecision !== "rejected");
-  const suggestedCampaigns = campaignCandidates
-    .filter((entry) => !campaigns.some((record) => record.matchKey === entry.key))
-    .map((assessment) => ({ assessment, priority: legacyCampaignPriority(assessment, demoSuppliers.find((entry) => entry.id === assessment.supplierId)!) }))
-    .filter((entry): entry is { assessment: MatchAssessment; priority: number } => entry.priority !== null)
-    .sort((left, right) => right.priority - left.priority);
-  const composerCandidates = campaignCreateMode === "tender"
-    ? campaignCandidates.filter((entry) => entry.tenderId === campaignTenderId)
-    : campaignCreateMode === "supplier"
-      ? campaignCandidates.filter((entry) => entry.supplierId === campaignSupplierId)
-      : currentAssessment.matchScore.value !== null ? [currentAssessment] : [];
-
-  const updateCurrentCampaign = (changes: Parameters<typeof reviseLegacyCampaign>[1], rationale: string) => {
-    if (!currentCampaign) return;
-    replaceCampaign(reviseLegacyCampaign(currentCampaign, changes, actorId, new Date().toISOString(), rationale));
-  };
-
-  const changeCampaignObjective = (objective: LegacyCampaignObjectiveId) => {
-    if (!currentCampaign) return;
-    const channel = recommendedLegacyCampaignChannel(currentCampaignResult, currentCampaignSupplier, objective);
-    updateCurrentCampaign({ objective, channel, draftCopy: generateLegacyCampaignCopy(currentCampaignResult, currentCampaignTender, currentCampaignSupplier, objective, channel) }, `Consultant selected ${legacyCampaignObjectives.find((entry) => entry.id === objective)?.label}.`);
-  };
-
-  const changeCampaignChannel = (channel: string) => {
-    if (!currentCampaign) return;
-    updateCurrentCampaign({ channel, draftCopy: generateLegacyCampaignCopy(currentCampaignResult, currentCampaignTender, currentCampaignSupplier, currentCampaign.objective, channel) }, `Consultant selected the ${channel} draft format.`);
-  };
-
-  const campaignAction = (action: "approval" | "simulate" | "follow-up" | "interested" | "no-response" | "closed") => {
-    if (!currentCampaign) return;
-    setActionError("");
-    try {
-      const nowIso = new Date().toISOString();
-      const next = action === "approval"
-        ? toggleLegacyCampaignApproval(currentCampaign, actorId, nowIso)
-        : action === "simulate"
-          ? startLegacyCampaignSimulation(currentCampaign, currentCampaignResult, currentCampaignSupplier, actorId, nowIso)
-          : advanceLegacyCampaignSimulation(currentCampaign, action, actorId, nowIso);
-      replaceCampaign(next);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "The local campaign state could not be changed.");
-    }
-  };
-
-  const saveCurrentCampaign = () => {
-    if (!currentCampaign) return;
-    setActionError("");
-    const nowIso = new Date().toISOString();
-    const saved = markLegacyCampaignSaved(currentCampaign, actorId, nowIso);
-    const nextRecords = campaigns.map((entry) => entry.id === saved.id ? saved : entry);
-    try {
-      saveLegacyCampaigns(window.localStorage, nextRecords);
-      setCampaigns(nextRecords);
-      setSelectedCampaignId(saved.id);
-      setCampaignPersistenceMessage(`Saved changes locally at ${nowIso} · NOT SENT`);
-    } catch (error) {
-      setCampaignPersistenceMessage("Save failed · edits remain in memory");
-      setActionError(error instanceof Error ? `Campaign save failed: ${error.message}` : "Campaign save failed. Current edits remain in memory.");
-    }
-  };
-
-  const followupAction = (record: LegacyCampaignRecord, action: "simulate-response" | "reset-response") => {
-    setActionError("");
-    try {
-      const nowIso = new Date().toISOString();
-      const next = action === "reset-response"
-        ? resetLegacyCampaignResponseSimulation(record, actorId, nowIso)
-        : advanceLegacyCampaignSimulation(record, "interested", actorId, nowIso);
-      replaceCampaign(next);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "The local response simulation could not be changed.");
-    }
   };
 
   const selectedRadarTenderMatches = allMatches.filter((entry) => entry.tenderId === tender.id);
@@ -548,9 +348,9 @@ export default function TenderMatchApp() {
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>6 page families · {navItems.length} reachable views</small></header>
+        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>5 page families · {navItems.length} reachable views</small></header>
         <WorkspaceNavigation expanded={expandedNavGroups} onToggle={toggleNavGroup} onView={changeView} view={view} />
-        <div className="tb3-owner-note"><span>CANONICAL OWNER</span><b>agent:TL-A031</b><p>Company-to-Tender Match Score Agent</p><small>Campaign Studio: isolated local legacy module · excluded from ownership</small></div>
+        <div className="tb3-owner-note"><span>CANONICAL OWNER</span><b>agent:TL-A031</b><p>Company-to-Tender Match Score Agent</p><small>Promotion and outreach belong to a separate future capability.</small></div>
       </aside>
 
       <section className="tb3-content">
@@ -571,11 +371,9 @@ export default function TenderMatchApp() {
           {view === "suppliers" && <SupplierDirectoryView view={view} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
           {view === "tenders" && <TenderDirectoryView allMatches={allMatches} onOpen={openAssessment} />}
           {view === "matrix" && <MatrixView view={view} matchByKey={matchByKey} onView={changeView} onOpen={openAssessment} />}
-          {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} replayProgress={replayProgress} isReplaying={isReplaying} onReplay={runReplay} onView={changeView} onOpen={openAssessment} onDecision={decide} onCampaign={() => createCampaignFromAssessment(result.match, "match-matrix")} />}
+          {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} replayProgress={replayProgress} isReplaying={isReplaying} onReplay={runReplay} onView={changeView} onOpen={openAssessment} onDecision={decide} />}
           {view === "verification" && <VerificationView view={view} supplier={supplier} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
           {view === "audit" && <AuditView result={result} />}
-          {view === "campaigns" && <CampaignsView currentAssessment={currentAssessment} campaigns={campaigns} currentCampaign={currentCampaign} currentCampaignResult={currentCampaignResult} currentCampaignTender={currentCampaignTender} currentCampaignSupplier={currentCampaignSupplier} currentCampaignAssessment={currentCampaignAssessment} matchByKey={matchByKey} composerOpen={campaignComposerOpen} createMode={campaignCreateMode} campaignTenderId={campaignTenderId} campaignSupplierId={campaignSupplierId} composerCandidates={composerCandidates} suggestedCampaigns={suggestedCampaigns} suggestionsOpen={campaignSuggestionsOpen} pipelineOpen={campaignPipelineOpen} workspaceOpen={campaignWorkspaceOpen} persistenceMessage={campaignPersistenceMessage} onView={changeView} onComposerOpen={setCampaignComposerOpen} onCreateMode={setCampaignCreateMode} onTenderId={setCampaignTenderId} onSupplierId={setCampaignSupplierId} onCreate={createCampaignFromAssessment} onSuggestionsOpen={setCampaignSuggestionsOpen} onPipelineOpen={setCampaignPipelineOpen} onWorkspaceOpen={setCampaignWorkspaceOpen} onSelectCampaign={setSelectedCampaignId} onObjective={changeCampaignObjective} onChannel={changeCampaignChannel} onCopy={(draftCopy) => updateCurrentCampaign({ draftCopy }, "Consultant edited the local NOT SENT draft.")} onNote={(consultantNote) => updateCurrentCampaign({ consultantNote }, "Consultant updated the internal note.")} onSave={saveCurrentCampaign} onApproval={() => campaignAction("approval")} onSimulate={() => campaignAction("simulate")} onAdvance={campaignAction} onVerification={() => openAssessment(currentCampaignAssessment, "verification")} />}
-          {view === "followups" && <FollowupsView campaigns={campaigns} matchByKey={matchByKey} selectedCampaignId={selectedCampaignId} onView={changeView} onSelectCampaign={setSelectedCampaignId} onResponse={(record) => followupAction(record, "simulate-response")} onReset={(record) => followupAction(record, "reset-response")} />}
         </div>
       </section>
     </section>
@@ -679,10 +477,10 @@ function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatc
 
     <header className="tb3-demonstration-heading">
       <span>DEMONSTRATION DATA AND MIGRATION EVIDENCE</span>
-      <h2>TenderMatch frozen-source parity and truth controls</h2>
-      <p>Every original reader-facing workspace is restored. Historical estimates remain visible, but unassessed pairs, stale data, and local campaign simulations are no longer presented as live facts.</p>
+      <h2>TenderMatch frozen matching baseline and truth controls</h2>
+      <p>The frozen matching workspace is preserved. Historical estimates remain visible, while unassessed pairs and stale data are never presented as current facts.</p>
     </header>
-    <section className="tb3-notice" role="status"><div><span>DATED DEMONSTRATION SNAPSHOT</span><b>Frozen {dateLabel(demoSnapshot.asOf)} · source commit {sourceCommit.slice(0, 7)}</b><p>Deadlines are absolute and recalculated from the current clock. The 1,000-item radar universes are legacy simulations, not live datasets.</p></div><strong>{summaryMissing === 0 ? "PARITY MATRIX COMPLETE" : `${summaryMissing} MISSING`}</strong></section>
+    <section className="tb3-notice" role="status"><div><span>DATED DEMONSTRATION SNAPSHOT</span><b>Frozen {dateLabel(demoSnapshot.asOf)} · source commit {sourceCommit.slice(0, 7)}</b><p>Deadlines are absolute and recalculated from the current clock. The 1,000-item radar universes are legacy simulations, not live datasets.</p></div><strong>{summaryMissing === 0 ? "MATCHING INVENTORY COMPLETE" : `${summaryMissing} MISSING`}</strong></section>
     <section className="tb3-metrics-grid" aria-label="TenderMatch frozen-source dataset summary">
       <Metric label="TENDERS" value={demoTenders.length} note={`${sourceCount} source labels · frozen fixture`} onClick={() => onView("tenders")} />
       <Metric label="SUPPLIER PROFILES" value={demoSuppliers.length} note={`${evidenceCount} evidence records`} onClick={() => onView("suppliers")} />
@@ -703,10 +501,9 @@ function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatc
         ["03", "Pair evaluation", "18 assessed · 142 MISSING", true],
         ["04", "Audited support", "6 evidence-sufficient results", true],
         ["05", "Consultant decision", `${Object.values(caseResults).filter((entry) => entry.match.consultantDecision !== "pending").length} recorded in local Cases`, false],
-        ["06", "Legacy Campaign Studio", "Isolated · drafts NOT SENT", false],
       ].map(([number, title, note, done]) => <div className={done ? "done" : ""} key={String(number)}><span>{done ? "✓" : number}</span><p><b>{title}</b><small>{note}</small></p></div>)}</aside>
     </section>
-    <section className="tb3-capability-strip"><div><span>CAPABILITY HANDOFFS</span><h2>Matching stays separate from downstream work</h2></div><div><b>Tender Discovery</b><i>→</i><b>Supplier Intelligence</b><i>→</i><b className="active">TL-A031 · TenderMatch</b><i>→</i><b>Human participation decision</b><i>→</i><b className="legacy">Legacy Campaign module · unplaced</b></div></section>
+    <section className="tb3-capability-strip"><div><span>CAPABILITY HANDOFFS</span><h2>Matching stays separate from downstream work</h2></div><div><b>Tender Discovery</b><i>→</i><b>Supplier Intelligence</b><i>→</i><b className="active">TL-A031 · TenderMatch</b><i>→</i><b>Human participation decision</b><i>→</i><b>Separate future promotion capability</b></div></section>
   </>;
 }
 
@@ -753,7 +550,7 @@ function MatrixView({ view, matchByKey, onView, onOpen }: { view: WorkspaceView;
   </>;
 }
 
-function MatchWorkspaceView({ view, tender, supplier, result, allMatches, tenderMatches, supplierMatches, caseResults, replayProgress, isReplaying, onReplay, onView, onOpen, onDecision, onCampaign }: { view: "match-tenders" | "match-suppliers"; tender: TenderRecord; supplier: SupplierRecord; result: TenderMatchCaseResult; allMatches: MatchAssessment[]; tenderMatches: MatchAssessment[]; supplierMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; replayProgress: number; isReplaying: boolean; onReplay: () => void; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void; onDecision: (decision: ConsultantDecision) => void; onCampaign: () => void }) {
+function MatchWorkspaceView({ view, tender, supplier, result, allMatches, tenderMatches, supplierMatches, caseResults, replayProgress, isReplaying, onReplay, onView, onOpen, onDecision }: { view: "match-tenders" | "match-suppliers"; tender: TenderRecord; supplier: SupplierRecord; result: TenderMatchCaseResult; allMatches: MatchAssessment[]; tenderMatches: MatchAssessment[]; supplierMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; replayProgress: number; isReplaying: boolean; onReplay: () => void; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void; onDecision: (decision: ConsultantDecision) => void }) {
   return <>
     <ViewHeader eyebrow={`05 · MATCH MATRIX / ${view === "match-tenders" ? "TENDER-FIRST" : "SUPPLIER-FIRST"}`} title={view === "match-tenders" ? "AutoMatch by Tenders" : "AutoMatch by Suppliers"} description="Replay the frozen deterministic evaluation and inspect one explicit pair without turning MISSING into zero or mixing legacy score, audited support, readiness, evidence quality, urgency, and decision." aside={<button className="tb3-replay" onClick={onReplay} disabled={isReplaying}><span>↯</span><p><b>{isReplaying ? "Re-evaluating…" : "Re-evaluate snapshot"}</b><small>{Math.round((replayProgress / 100) * allMatches.length)} / {allMatches.length} pairs</small></p></button>} />
     <MatchModeTabs view={view} onChange={onView} />
@@ -761,7 +558,7 @@ function MatchWorkspaceView({ view, tender, supplier, result, allMatches, tender
     <section className="tb3-match-workspace">
       <aside className="tb3-picker"><header><span>{view === "match-tenders" ? "TENDERS" : "SUPPLIERS"}</span><b>{view === "match-tenders" ? `${demoTenders.length} frozen records` : `${demoSuppliers.length} researched profiles`}</b></header>{view === "match-tenders" ? demoTenders.map((entry) => <button className={entry.id === tender.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)); if (best) onOpen(best); }}><span>{entry.sourceLabel}</span><b>{entry.reference}</b><p>{entry.title}</p><small>{entry.country} · {dateLabel(entry.deadlineAt)}</small></button>) : demoSuppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>CN</span><p><b>{entry.legalEnglishName}</b><small>{supplierActivity(entry)} · readiness {entry.readiness.value}/100 EST.</small></p><i>→</i></button>)}</aside>
       <article className="tb3-ranking"><header><div><span>{view === "match-tenders" ? tender.sourceLabel : "SELECTED SUPPLIER"}</span><h2>{view === "match-tenders" ? tender.title : supplier.legalEnglishName}</h2><p>{view === "match-tenders" ? `${tender.buyer} · ${tender.country}` : `${supplier.headquarters.city}, ${supplier.headquarters.province} · ${supplier.companyType.join(" + ")}`}</p></div><div><small>{view === "match-tenders" ? "DEADLINE" : "READINESS"}</small><b>{view === "match-tenders" ? dateLabel(tender.deadlineAt) : `${supplier.readiness.value}/100`}</b><small>{view === "match-tenders" ? "STATUS" : "EVIDENCE"}</small><b>{view === "match-tenders" ? result.match.tenderFreshness.status : `${supplier.legacyEvidenceCompleteness}/100 EST.`}</b></div></header><div className="tb3-ranking-head"><span>{view === "match-tenders" ? "SUPPLIER" : "TENDER"}</span><span>READINESS</span><span>LEGACY</span><span>AUDITED</span><span>DECISION</span></div><div className="tb3-ranking-rows">{(view === "match-tenders" ? tenderMatches : supplierMatches).map((assessment) => { const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!; const cachedDecision = caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision; return <button className={assessment.key === result.match.key ? "selected" : ""} key={assessment.key} onClick={() => onOpen(assessment)}><div><span>{view === "match-tenders" ? "CN" : "IFI"}</span><p><b>{view === "match-tenders" ? rowSupplier.legalEnglishName : rowTender.title}</b><small>{view === "match-tenders" ? supplierActivity(rowSupplier) : `${rowTender.reference} · ${rowTender.country} · ${rowTender.object}`}</small></p></div><strong>{rowSupplier.readiness.value}<small>EST.</small></strong><strong className={scoreBand(assessment.matchScore.value)}>{assessment.matchScore.value ?? "—"}<small>{assessment.matchScore.value === null ? "MISSING" : "EST."}</small></strong><strong className={scoreBand(assessment.auditedMatch.value)}>{assessment.auditedMatch.value ?? "—"}<small>{assessment.auditedMatch.value === null ? "MISSING" : "AUDITED"}</small></strong><em className={`tb3-state ${cachedDecision}`}>{decisionLabel[cachedDecision]}</em></button>; })}</div></article>
-      <MatchReviewPanel result={result} tender={tender} supplier={supplier} onViewChange={onView} onDecision={onDecision} onCampaign={onCampaign} />
+      <MatchReviewPanel result={result} tender={tender} supplier={supplier} onViewChange={onView} onDecision={onDecision} />
     </section>
   </>;
 }
@@ -770,119 +567,23 @@ function VerificationView({ view, supplier, allMatches, onView, onOpen }: { view
   return <>
     <ViewHeader eyebrow="03 · SUPPLIERS / VERIFICATION" title="Verification" description="Inspect every evidence record, confidence value, source reference, retrieval date, risk, and verification question before using a claim." aside={<div className="tb3-directory-count"><b>{supplier.evidence.filter((entry) => ["LEGACY_VERIFIED", "REVIEWED"].includes(entry.reviewStatus)).length}/{supplier.evidence.length}</b><span>legacy-verified facts</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{demoSuppliers.length} profiles</b></header>{demoSuppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>CN</span><p><b>{entry.legalEnglishName}</b><small>Readiness {entry.readiness.value}/100 · ESTIMATED</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>CN</span><div><p>PRELIMINARY PROFILE · FROZEN ACCIO RESEARCH</p><h2>{supplier.legalEnglishName}</h2><small>{supplier.legalChineseName} · {supplier.companyType.join(" + ")}</small></div></header><div className="tb3-evidence-legend"><span className="verified">Legacy verified</span><span className="inferred">Inferred · internal only</span><span className="unknown">Unknown / MISSING</span></div><div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>CONFIDENCE</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus.replace("LEGACY_", "")}</span><strong>{entry.confidence ? `${entry.confidence}%` : "—"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>Inferred, unknown, low-confidence, and unlinked facts are excluded from campaign proof. All local drafts remain NOT SENT.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length}</b><small>evidence records</small></div><div><b>{supplier.evidence.filter((entry) => entry.reviewStatus === "INFERRED").length}</b><small>inferences</small></div><div><b>{supplier.evidence.filter((entry) => entry.reviewStatus === "UNKNOWN").length}</b><small>unknown fields</small></div><p>Every fact retains retrieval date, confidence, status, value class, and source identity.</p><section><b>CONSULTANT FLAGS</b>{supplier.risks.slice(0, 3).map((risk) => <p key={risk}>! {risk}</p>)}{supplier.verificationQuestions.slice(0, 2).map((question) => <p key={question}>? {question}</p>)}</section><a href={supplier.officialWebsite} target="_blank" rel="noreferrer">Official supplier website ↗</a><button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
+    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{demoSuppliers.length} profiles</b></header>{demoSuppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>CN</span><p><b>{entry.legalEnglishName}</b><small>Readiness {entry.readiness.value}/100 · ESTIMATED</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>CN</span><div><p>PRELIMINARY PROFILE · FROZEN ACCIO RESEARCH</p><h2>{supplier.legalEnglishName}</h2><small>{supplier.legalChineseName} · {supplier.companyType.join(" + ")}</small></div></header><div className="tb3-evidence-legend"><span className="verified">Legacy verified</span><span className="inferred">Inferred · internal only</span><span className="unknown">Unknown / MISSING</span></div><div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>CONFIDENCE</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus.replace("LEGACY_", "")}</span><strong>{entry.confidence ? `${entry.confidence}%` : "—"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>Inferred, unknown, low-confidence, and unlinked facts are excluded from match support. Promotion and outreach are outside TenderMatch.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length}</b><small>evidence records</small></div><div><b>{supplier.evidence.filter((entry) => entry.reviewStatus === "INFERRED").length}</b><small>inferences</small></div><div><b>{supplier.evidence.filter((entry) => entry.reviewStatus === "UNKNOWN").length}</b><small>unknown fields</small></div><p>Every fact retains retrieval date, confidence, status, value class, and source identity.</p><section><b>CONSULTANT FLAGS</b>{supplier.risks.slice(0, 3).map((risk) => <p key={risk}>! {risk}</p>)}{supplier.verificationQuestions.slice(0, 2).map((question) => <p key={question}>? {question}</p>)}</section><a href={supplier.officialWebsite} target="_blank" rel="noreferrer">Official supplier website ↗</a><button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
   </>;
 }
 
 function AuditView({ result }: { result: TenderMatchCaseResult }) {
   return <>
     <ViewHeader eyebrow="05 · CASE / AUDIT" title="Case Audit" description="The complete migration keeps the Stage 1/2 Case identity, evidence-linked scoring, saved-state migration, and consultant-decision provenance." />
-    <section className="tb3-audit-grid"><article><span>IDENTITY CHAIN</span><h2>One matching result</h2><dl><div><dt>Case</dt><dd>{result.caseIdentity.id} · {result.caseIdentity.version}</dd></div><div><dt>Result</dt><dd>{result.resultIdentity.id}</dd></div><div><dt>Tender</dt><dd>{result.tenderIdentity.id}</dd></div><div><dt>Company</dt><dd>{result.supplierIdentity.id}</dd></div><div><dt>Match</dt><dd>{result.match.id} · {result.match.version}</dd></div><div><dt>Evidence</dt><dd>{result.evidenceSnapshotIdentity.id}</dd></div><div><dt>Decision</dt><dd>{result.decisionIdentity.id} · {result.match.decisionHistory.length} recorded</dd></div></dl></article><article><span>SOURCE + VALUE POLICY</span><h2>Dated inputs, explicit meanings</h2><p>Legacy score and readiness remain historical estimates. Audited support exists only with both required evidence components. Evidence quality, deadline urgency, and decision remain separate.</p><div className="tb3-value-classes">{["SOURCE", "CALCULATED", "ESTIMATED", "ASSUMED", "MISSING"].map((entry) => <b key={entry}>{entry}</b>)}</div><p><strong>Policies:</strong> {result.match.auditedMatch.policyVersion} · {result.match.deadlineUrgency.policyVersion}</p></article><article><span>DECISION PROVENANCE</span><h2>Human review history</h2><p>TenderMatch records match disposition only. It does not make a participation or Bid/No-Bid decision.</p><div className="tb3-decision-history">{result.match.decisionHistory.length ? result.match.decisionHistory.map((entry) => <div key={entry.id}><b>{entry.decision}</b><span>{entry.actorId} · {entry.decidedAt}</span><p>{entry.rationale}</p></div>) : <small>No consultant decision event recorded.</small>}</div></article><article><span>KNOWN LIMITATIONS</span><h2>Current safe boundary</h2>{result.knownLimitations.map((entry) => <p key={entry}>— {entry}</p>)}<p>— Campaign Studio is a separately versioned local legacy parity module, not TL-A031 output.</p><p><strong>Case compatibility:</strong> {result.migration.status} · {result.migration.note}</p></article></section>
+    <section className="tb3-audit-grid"><article><span>IDENTITY CHAIN</span><h2>One matching result</h2><dl><div><dt>Case</dt><dd>{result.caseIdentity.id} · {result.caseIdentity.version}</dd></div><div><dt>Result</dt><dd>{result.resultIdentity.id}</dd></div><div><dt>Tender</dt><dd>{result.tenderIdentity.id}</dd></div><div><dt>Company</dt><dd>{result.supplierIdentity.id}</dd></div><div><dt>Match</dt><dd>{result.match.id} · {result.match.version}</dd></div><div><dt>Evidence</dt><dd>{result.evidenceSnapshotIdentity.id}</dd></div><div><dt>Decision</dt><dd>{result.decisionIdentity.id} · {result.match.decisionHistory.length} recorded</dd></div></dl></article><article><span>SOURCE + VALUE POLICY</span><h2>Dated inputs, explicit meanings</h2><p>Legacy score and readiness remain historical estimates. Audited support exists only with both required evidence components. Evidence quality, deadline urgency, and decision remain separate.</p><div className="tb3-value-classes">{["SOURCE", "CALCULATED", "ESTIMATED", "ASSUMED", "MISSING"].map((entry) => <b key={entry}>{entry}</b>)}</div><p><strong>Policies:</strong> {result.match.auditedMatch.policyVersion} · {result.match.deadlineUrgency.policyVersion}</p></article><article><span>DECISION PROVENANCE</span><h2>Human review history</h2><p>TenderMatch records match disposition only. It does not make a participation or Bid/No-Bid decision.</p><div className="tb3-decision-history">{result.match.decisionHistory.length ? result.match.decisionHistory.map((entry) => <div key={entry.id}><b>{entry.decision}</b><span>{entry.actorId} · {entry.decidedAt}</span><p>{entry.rationale}</p></div>) : <small>No consultant decision event recorded.</small>}</div></article><article><span>KNOWN LIMITATIONS</span><h2>Current safe boundary</h2>{result.knownLimitations.map((entry) => <p key={entry}>— {entry}</p>)}<p>— Promotion, outreach, CRM action, and response tracking belong to a separate future capability.</p><p><strong>Case compatibility:</strong> {result.migration.status} · {result.migration.note}</p></article></section>
   </>;
 }
 
-type CampaignsViewProps = {
-  currentAssessment: MatchAssessment;
-  campaigns: LegacyCampaignRecord[];
-  currentCampaign: LegacyCampaignRecord | null;
-  currentCampaignResult: TenderMatchCaseResult;
-  currentCampaignTender: TenderRecord;
-  currentCampaignSupplier: SupplierRecord;
-  currentCampaignAssessment: MatchAssessment;
-  matchByKey: Map<string, MatchAssessment>;
-  composerOpen: boolean;
-  createMode: "tender" | "supplier" | "match";
-  campaignTenderId: string;
-  campaignSupplierId: string;
-  composerCandidates: MatchAssessment[];
-  suggestedCampaigns: Array<{ assessment: MatchAssessment; priority: number }>;
-  suggestionsOpen: boolean;
-  pipelineOpen: boolean;
-  workspaceOpen: boolean;
-  persistenceMessage: string;
-  onView: (view: WorkspaceView) => void;
-  onComposerOpen: (open: boolean) => void;
-  onCreateMode: (mode: "tender" | "supplier" | "match") => void;
-  onTenderId: (id: string) => void;
-  onSupplierId: (id: string) => void;
-  onCreate: (assessment: MatchAssessment, origin: LegacyCampaignOrigin) => void;
-  onSuggestionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  onPipelineOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  onWorkspaceOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  onSelectCampaign: (id: string) => void;
-  onObjective: (objective: LegacyCampaignObjectiveId) => void;
-  onChannel: (channel: string) => void;
-  onCopy: (value: string) => void;
-  onNote: (value: string) => void;
-  onSave: () => void;
-  onApproval: () => void;
-  onSimulate: () => void;
-  onAdvance: (action: "approval" | "simulate" | "follow-up" | "interested" | "no-response" | "closed") => void;
-  onVerification: () => void;
-};
-
-function CampaignsView(props: CampaignsViewProps) {
-  return <>
-    <ViewHeader eyebrow="06 · MIGRATED LEGACY MODULE / CAMPAIGNS" title="Campaign Studio" description="Complete original local drafting coverage is retained for migration parity. This module is unplaced, browser-local, NOT SENT, and outside agent:TL-A031." aside={<div className="tb3-campaign-actions"><span>LEGACY MODULE · NO INTEGRATION</span><button onClick={() => { props.onCreateMode("match"); props.onComposerOpen(true); }}>+ Create local draft</button></div>} />
-    <CampaignTabs view="campaigns" onChange={props.onView} />
-    <section className="tb3-legacy-warning"><div><span>ARCHITECTURE BOUNDARY</span><b>Retained for parity—not registered as an Agent</b><p>Campaign design, promotion, messaging, CRM action, delivery, and response tracking require a separate 64-Agent placement audit. No Agent 65 is reserved.</p></div><strong>ALL DRAFTS<br />NOT SENT</strong></section>
-    {props.composerOpen && <section className="tb3-campaign-composer"><header><div><span>CONSULTANT-DRIVEN LOCAL CREATION</span><h2>Create Campaign Draft</h2><p>Choose an evaluated pair. Unassessed/MISSING pairs are excluded.</p></div><button aria-label="Close campaign creator" onClick={() => props.onComposerOpen(false)}>×</button></header><nav aria-label="Campaign creation starting point"><button className={props.createMode === "tender" ? "active" : ""} onClick={() => props.onCreateMode("tender")}>Start with Tender</button><button className={props.createMode === "supplier" ? "active" : ""} onClick={() => props.onCreateMode("supplier")}>Start with Supplier</button><button className={props.createMode === "match" ? "active" : ""} onClick={() => props.onCreateMode("match")}>Current Match</button></nav>{props.createMode === "tender" && <label><span>SELECT TENDER</span><select value={props.campaignTenderId} onChange={(event) => props.onTenderId(event.target.value)}>{demoTenders.map((entry) => <option key={entry.id} value={entry.id}>{entry.reference} · {entry.object} · {entry.country}</option>)}</select></label>}{props.createMode === "supplier" && <label><span>SELECT SUPPLIER</span><select value={props.campaignSupplierId} onChange={(event) => props.onSupplierId(event.target.value)}>{demoSuppliers.map((entry) => <option key={entry.id} value={entry.id}>{entry.legalEnglishName} · {supplierActivity(entry)}</option>)}</select></label>}<div className="tb3-composer-candidates">{props.composerCandidates.length ? props.composerCandidates.slice(0, 8).map((assessment) => { const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!; const existing = props.campaigns.find((entry) => entry.matchKey === assessment.key); return <article key={assessment.key}><div><span className={scoreBand(assessment.matchScore.value)}>{assessment.matchScore.value}</span><p><b>{rowSupplier.legalEnglishName}</b><small>{supplierActivity(rowSupplier)} → {rowTender.object}</small><em>{rowTender.reference} · {rowTender.country} · {assessment.tenderFreshness.daysRemaining}d</em></p></div><p>{assessment.auditedMatch.value === null ? "Audited support MISSING · draft allowed, activation blocked" : `Audited support ${assessment.auditedMatch.value} · ${assessment.linkedStrengths.length} evidence-linked claims`}</p><button onClick={() => props.onCreate(assessment, "consultant")}>{existing ? "Open Draft" : "Create Draft"}</button></article>; }) : <div className="tb3-empty"><b>No evaluated positive pair in this selection.</b><span>MISSING pairs are excluded rather than treated as zero.</span></div>}</div></section>}
-    <section className="tb3-suggestions"><header><div><span>LEGACY TENDERBOOST-SOURCE RECOMMENDATIONS</span><h2>Suggested Campaign Drafts</h2><p>Priority remains separate from Match, readiness, evidence quality, urgency, and consultant decision.</p></div><div><b>{props.suggestedCampaigns.length} candidates</b><button aria-expanded={props.suggestionsOpen} onClick={() => props.onSuggestionsOpen((value) => !value)}>{props.suggestionsOpen ? "Collapse" : "Expand"}</button></div></header>{props.suggestionsOpen && <div>{props.suggestedCampaigns.length ? props.suggestedCampaigns.slice(0, 6).map(({ assessment, priority }) => { const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!; return <article key={assessment.key}><div className="tb3-priority"><span>LEGACY CAMPAIGN PRIORITY</span><b>{priority}<small>/100 EST.</small></b><i><em style={{ width: `${priority}%` }} /></i></div><section><div><span>SUPPLIER</span><h3>{rowSupplier.legalEnglishName}</h3><small>{supplierActivity(rowSupplier)}</small></div><b>×</b><div><span>TENDER</span><h3>{rowTender.title}</h3><small>{rowTender.object} · {rowTender.country}</small></div></section><p><b>Match {assessment.matchScore.value}/100 EST.</b><span>{assessment.auditedMatch.value === null ? "Audited support MISSING" : `Audited support ${assessment.auditedMatch.value}`}</span><span>{assessment.tenderFreshness.status} · {assessment.tenderFreshness.freshness}</span></p><button onClick={() => props.onCreate(assessment, "suggested")}>Create local draft →</button></article>; }) : <div className="tb3-empty"><b>No new draft suggestions.</b><span>Existing, rejected, and unassessed pairs are excluded.</span></div>}</div>}</section>
-    <section className="tb3-campaign-pipeline"><header><div><span>LOCAL LIFECYCLE</span><h2>Campaign Pipeline</h2><p>Draft and approval are human actions. Every later stage is an explicit simulation and remains NOT SENT.</p></div><div><b>{props.campaigns.length} records</b><button aria-expanded={props.pipelineOpen} onClick={() => props.onPipelineOpen((value) => !value)}>{props.pipelineOpen ? "Collapse" : "Expand"}</button></div></header>{props.pipelineOpen && <div className="tb3-campaign-board">{[
-      { title: "Drafts", stages: ["draft", "approved"] as LegacyCampaignStage[] },
-      { title: "Active simulations", stages: ["active-simulation", "follow-up-simulation"] as LegacyCampaignStage[] },
-      { title: "Completed simulations", stages: ["interested-simulation", "no-response-simulation", "closed"] as LegacyCampaignStage[] },
-    ].map((group) => { const entries = props.campaigns.filter((record) => group.stages.includes(record.stage)); return <article key={group.title}><header><h3>{group.title}</h3><b>{entries.length}</b></header><div>{entries.length ? entries.map((record) => { const assessment = props.matchByKey.get(record.matchKey); const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment?.supplierId); const rowTender = demoTenders.find((entry) => entry.id === assessment?.tenderId); return <button className={record.id === props.currentCampaign?.id ? "active" : ""} key={record.id} onClick={() => props.onSelectCampaign(record.id)}><span className={`tb3-campaign-stage ${record.stage}`}>{campaignStageLabel[record.stage]}</span><b>{rowSupplier?.legalEnglishName}</b><small>{rowTender?.reference} · {record.communicationStatus}</small><em>Revision {record.revision}</em></button>; }) : <p>No records in this stage.</p>}</div></article>; })}</div>}</section>
-    {props.currentCampaign && <CampaignWorkspace record={props.currentCampaign} result={props.currentCampaignResult} tender={props.currentCampaignTender} supplier={props.currentCampaignSupplier} expanded={props.workspaceOpen} persistenceMessage={props.persistenceMessage} onExpanded={props.onWorkspaceOpen} onObjective={props.onObjective} onChannel={props.onChannel} onCopy={props.onCopy} onNote={props.onNote} onSave={props.onSave} onApproval={props.onApproval} onSimulate={props.onSimulate} onAdvance={(action) => props.onAdvance(action)} onVerification={props.onVerification} />}
-  </>;
-}
-
-function FollowupsView({ campaigns, matchByKey, selectedCampaignId, onView, onSelectCampaign, onResponse, onReset }: { campaigns: LegacyCampaignRecord[]; matchByKey: Map<string, MatchAssessment>; selectedCampaignId: string | null; onView: (view: WorkspaceView) => void; onSelectCampaign: (id: string) => void; onResponse: (record: LegacyCampaignRecord) => void; onReset: (record: LegacyCampaignRecord) => void }) {
-  const simulated = campaigns.filter((entry) => entry.events.some((event) => event.type === "SIMULATION_STARTED"));
-  const selected = campaigns.find((entry) => entry.id === selectedCampaignId);
-  const responseRecord = (selected && ["interested-simulation", "no-response-simulation"].includes(selected.stage) ? selected : undefined)
-    ?? simulated.find((entry) => ["interested-simulation", "no-response-simulation"].includes(entry.stage));
-  const responseCandidate = (selected && ["active-simulation", "follow-up-simulation"].includes(selected.stage) ? selected : undefined)
-    ?? simulated.find((entry) => ["active-simulation", "follow-up-simulation"].includes(entry.stage));
-  return <>
-    <ViewHeader eyebrow="06 · MIGRATED LEGACY MODULE / FOLLOW-UPS" title="Follow-ups" description="Only campaigns with a recorded local simulation-start event appear here. No message, call, delivery, CRM action, scheduler task, or external response is claimed." aside={<div className="tb3-response-actions">{responseRecord ? <button onClick={() => onReset(responseRecord)}>Reset response simulation</button> : <button disabled={!responseCandidate} onClick={() => responseCandidate && onResponse(responseCandidate)}>Simulate response</button>}<small>{responseRecord ? `${campaignStageLabel[responseRecord.stage]} · local only` : responseCandidate ? "Creates a versioned local interested-response event" : "Start a lifecycle simulation first"}</small></div>} />
-    <CampaignTabs view="followups" onChange={onView} />
-    <section className="tb3-radar-kpis"><Metric label="CAMPAIGN RECORDS" value={campaigns.length} note="browser-local" /><Metric label="APPROVED CONTENT" value={campaigns.filter((entry) => entry.approval).length} note="not activation" /><Metric label="ACTIVE SIMULATIONS" value={campaigns.filter((entry) => ["active-simulation", "follow-up-simulation"].includes(entry.stage)).length} note="NOT SENT" /><Metric label="SIMULATED RESPONSES" value={campaigns.filter((entry) => ["interested-simulation", "no-response-simulation"].includes(entry.stage)).length} note="not external events" signal /></section>
-    <section className="tb3-followup-layout"><article className="tb3-followup-table"><header><span>SIMULATION PIPELINE</span><h2>Campaign and follow-up status</h2></header><div className="head"><span>SUPPLIER / TENDER</span><span>DRAFT</span><span>STATUS</span><span>LAST EVENT</span><span>NEXT ACTION</span><span>NOTE</span></div>{simulated.length ? simulated.map((record) => { const assessment = matchByKey.get(record.matchKey)!; const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!; const lastEvent = record.events.at(-1)!; return <div className="row" key={record.id}><div><b>{rowSupplier.legalEnglishName}</b><small>{rowTender.reference} · {rowTender.object}</small><button onClick={() => { onSelectCampaign(record.id); onView("campaigns"); }}>Open campaign →</button></div><div><span>{record.channel}</span><small>{record.communicationStatus}</small></div><div><strong>{campaignStageLabel[record.stage]}</strong><small>simulation only</small></div><div><span>{lastEvent.type.replaceAll("_", " ")}</span><small>{lastEvent.occurredAt}</small></div><div><span>{record.nextAction}</span><small>{record.nextFollowUpAt ? `Next follow-up ${dateLabel(record.nextFollowUpAt)}` : "No scheduled task"}</small></div><div><span>{record.consultantNote || "No internal note"}</span></div></div>; }) : <div className="tb3-empty"><b>No follow-up simulation records yet.</b><span>Approve a local draft and explicitly start its isolated lifecycle simulation first.</span></div>}</article><aside className="tb3-event-log"><header><span>AUDIT LOG</span><h2>Latest local events</h2></header>{campaigns.flatMap((record) => record.events.map((event) => ({ record, event }))).sort((left, right) => right.event.occurredAt.localeCompare(left.event.occurredAt)).slice(0, 8).map(({ record, event }) => <div key={event.id}><span>{event.simulationOnly ? "SIMULATION" : "HUMAN"}</span><p><b>{event.type.replaceAll("_", " ")}</b><small>{record.id} · {event.occurredAt}</small></p></div>)}</aside></section>
-    <section className="tb3-handoff-lock"><div><span>PROPOSALPREP AI</span><h2>External handoff is not part of this migration baseline</h2><p>A simulated interested response does not authorize a transfer. A separately approved integration event would be required.</p></div><button disabled>Transfer to ProposalPrep AI →</button></section>
-  </>;
-}
-
-function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision, onCampaign }: { result: TenderMatchCaseResult; tender: TenderRecord; supplier: SupplierRecord; onViewChange: (view: WorkspaceView) => void; onDecision: (decision: ConsultantDecision) => void; onCampaign: () => void }) {
+function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision }: { result: TenderMatchCaseResult; tender: TenderRecord; supplier: SupplierRecord; onViewChange: (view: WorkspaceView) => void; onDecision: (decision: ConsultantDecision) => void }) {
   return <aside className="tb3-match-review"><header><span>SELECTED EXPLICIT CASE</span><b className={scoreBand(result.match.auditedMatch.value)}>{result.match.auditedMatch.value ?? "—"}</b></header><h2>{supplier.legalEnglishName}</h2><p>{tender.reference} · {tender.country}</p><div className="tb3-breakdown">{[
     ["Audited support", result.match.auditedMatch.value, result.match.auditedMatch.valueClass],
     ["Legacy score", result.match.matchScore.value, result.match.matchScore.valueClass],
     ["Readiness", result.match.supplierReadiness.value, result.match.supplierReadiness.valueClass],
     ["Evidence quality", result.match.verificationQuality.value, result.match.verificationQuality.valueClass],
     ["Deadline urgency", result.match.deadlineUrgency.value, result.match.deadlineUrgency.valueClass],
-  ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "MISSING" : valueClass}</small></strong></div>)}</div><section><span>EVIDENCE-LINKED STRENGTHS</span><div>{result.match.linkedStrengths.length ? result.match.linkedStrengths.map((claim) => <article key={claim.id}><b>✓ {claim.text}</b>{claim.evidenceIds.map((id) => <code key={id}>{id}</code>)}</article>) : <p>No evidence-linked strength is available.</p>}</div></section><section className="gaps"><span>GAPS / UNKNOWNS</span><div>{result.match.gaps.length ? result.match.gaps.map((gap) => <p key={gap}>? {gap}</p>) : <p>No legacy gap recorded.</p>}{result.reviewSupport.findings.map((finding) => <p key={finding.code}>! {finding.code}: {finding.nextAction}</p>)}</div></section><button className="tb3-evidence-link" onClick={() => onViewChange("verification")}>Open supplier verification →</button><div className="tb3-decision-actions"><button className={result.match.consultantDecision === "rejected" ? "selected reject" : ""} onClick={() => onDecision("rejected")}>Reject</button><button className={result.match.consultantDecision === "hold" ? "selected" : ""} onClick={() => onDecision("hold")}>Hold</button><button disabled={!result.reviewSupport.readyForCurrentDecision} className={result.match.consultantDecision === "approved" ? "selected" : ""} onClick={() => onDecision("approved")}>Approve match</button></div>{result.match.matchScore.value !== null && result.match.matchScore.value > 0 && <button className="tb3-campaign-link" onClick={onCampaign}>Create legacy local draft →</button>}<small className="tb3-owner-boundary">Match decision: TL-A031 workspace · Campaign draft: isolated unplaced legacy module</small></aside>;
-}
-
-function CampaignWorkspace({ record, result, tender, supplier, expanded, persistenceMessage, onExpanded, onObjective, onChannel, onCopy, onNote, onSave, onApproval, onSimulate, onAdvance, onVerification }: { record: LegacyCampaignRecord; result: TenderMatchCaseResult; tender: TenderRecord; supplier: SupplierRecord; expanded: boolean; persistenceMessage: string; onExpanded: React.Dispatch<React.SetStateAction<boolean>>; onObjective: (objective: LegacyCampaignObjectiveId) => void; onChannel: (channel: string) => void; onCopy: (value: string) => void; onNote: (value: string) => void; onSave: () => void; onApproval: () => void; onSimulate: () => void; onAdvance: (action: "follow-up" | "interested" | "no-response" | "closed") => void; onVerification: () => void }) {
-  const blockers = legacyCampaignActivationBlockers(result, supplier);
-  const recommendation = legacyCampaignObjectiveRecommendation(result.match);
-  const recommendedChannel = recommendedLegacyCampaignChannel(result, supplier, record.objective);
-  const cadence = buildLegacyCampaignCadence(result, record.channel);
-  return <section className="tb3-campaign-workspace">
-    <header><div><span>LOCAL LEGACY WORKSPACE · {record.origin.toUpperCase()}</span><h2>Campaign Workspace</h2><p>{supplier.legalEnglishName} <i>×</i> {tender.object}</p></div><div><b className={`tb3-campaign-stage ${record.stage}`}>{campaignStageLabel[record.stage]}</b><small>Revision {record.revision} · {record.communicationStatus}</small><button aria-controls="tb3-campaign-workspace-body" aria-expanded={expanded} onClick={() => onExpanded((value) => !value)}>{expanded ? "Collapse" : "Expand"}</button></div></header>
-    {expanded && <div id="tb3-campaign-workspace-body">
-      <section className="tb3-objective">
-        <label><span>DRAFT OBJECTIVE</span><select value={record.objective} onChange={(event) => onObjective(event.target.value as LegacyCampaignObjectiveId)}>{legacyCampaignObjectives.map((entry) => <option value={entry.id} key={entry.id}>{entry.label}</option>)}</select><small>{legacyCampaignObjectives.find((entry) => entry.id === record.objective)?.description}</small></label>
-        <aside className="tb3-ai-recommendation"><span>AI RECOMMENDED</span><b>{legacyCampaignObjectives.find((entry) => entry.id === recommendation.id)?.label}</b><p><strong>Why:</strong> {recommendation.reason}</p>{record.objective !== recommendation.id && <button onClick={() => onObjective(recommendation.id)}>Use recommendation</button>}</aside>
-        <aside><span>REAL ACTIVATION GATE</span><b>{blockers.length ? `${blockers.length} blockers` : "Evidence gate satisfied"}</b>{blockers.length ? blockers.map((blocker) => <p key={blocker}>! {blocker.replaceAll("_", " ")}</p>) : <p>Sending still requires a separately authorized integration event.</p>}</aside>
-      </section>
-      <section className="tb3-campaign-context"><div><span>OPPORTUNITY</span><b>{tender.object}</b><p>{tender.reference} · {tender.country} · {result.match.tenderFreshness.status}</p></div><i>→</i><div><span>COMPANY</span><b>{supplier.legalEnglishName}</b><p>{supplierActivity(supplier)} · readiness {supplier.readiness.value} EST.</p></div><i>→</i><div><span>MATCH / AUDITED</span><b>{result.match.matchScore.value ?? "MISSING"} / {result.match.auditedMatch.value ?? "MISSING"}</b><p>separate historical and audited values</p></div><i>→</i><div><span>COMMUNICATION</span><b>{record.communicationStatus}</b><p>local draft or simulation only</p></div></section>
-      <section className="tb3-campaign-grid">
-        <aside className="tb3-channel-list"><header><span>CHANNEL FORMATS</span><b>Recommended: {recommendedChannel}</b></header>{legacyCampaignChannels.map((channel) => <button className={record.channel === channel ? "active" : ""} key={channel} onClick={() => onChannel(channel)}><span>{channel.slice(0, 2).toUpperCase()}</span><p><b>{channel}</b><small>{channel === recommendedChannel ? `Recommended${record.channel === channel ? " · selected" : ""}` : record.channel === channel ? "Selected · NOT SENT" : "Alternative format"}</small></p><i>{record.channel === channel ? "✓" : "→"}</i></button>)}</aside>
-        <article className="tb3-copy-editor"><header><div><span>LEGACY CAMPAIGN COPY · EVIDENCE-GATED</span><h2>{legacyCampaignObjectives.find((entry) => entry.id === record.objective)?.shortLabel} · {record.channel}</h2></div><b>{campaignStageLabel[record.stage].toUpperCase()} · NOT SENT</b></header><textarea aria-label="Editable local campaign draft" value={record.draftCopy} onChange={(event) => onCopy(event.target.value)} spellCheck /><div className="tb3-copy-evidence"><span>EVIDENCE IDS USED</span>{result.match.auditedMatch.evidenceIds.length ? result.match.auditedMatch.evidenceIds.map((id) => <code key={id}>{id}</code>) : <i>MISSING · no evidence-linked claim may be asserted</i>}</div><div className="tb3-copy-guardrail"><span>EXCLUDED / UNRESOLVED</span><p>{result.match.gaps.length ? result.match.gaps.slice(0, 4).join(" · ") : "No legacy gap recorded; current-source review may still be required."}</p></div><label><span>CONSULTANT NOTE</span><input value={record.consultantNote} onChange={(event) => onNote(event.target.value)} placeholder="Add an internal local note" /></label><div className="tb3-save-status" role="status"><b>{record.lastSavedAt ? `Explicitly saved ${record.lastSavedAt}` : "Explicit save pending"}</b><span>{persistenceMessage}</span></div><div className="tb3-copy-actions"><button className="save" onClick={onSave}>Save changes</button><button onClick={onVerification}>Open Verification</button>{["draft", "approved"].includes(record.stage) && <button className="approve" onClick={onApproval}>{record.stage === "approved" ? "Return to Draft" : "Approve Content"}</button>}{record.stage === "approved" && <button className="simulate" onClick={onSimulate}>Start lifecycle simulation</button>}{record.stage === "active-simulation" && <><button className="simulate" onClick={() => onAdvance("follow-up")}>Simulate follow-up</button><button onClick={() => onAdvance("interested")}>Simulate interested</button><button onClick={() => onAdvance("no-response")}>Simulate no response</button></>}{record.stage === "follow-up-simulation" && <><button onClick={() => onAdvance("interested")}>Simulate interested</button><button onClick={() => onAdvance("no-response")}>Simulate no response</button></>}{["interested-simulation", "no-response-simulation"].includes(record.stage) && <button onClick={() => onAdvance("closed")}>Close simulation</button>}<button disabled title="No authorized delivery integration or event exists">Send / activate externally</button></div></article>
-        <aside className="tb3-sequence"><span>{record.stage.includes("simulation") ? "SIMULATION ACTIVE · NOT SENT" : "LOCAL PLAN · NOT SCHEDULED"}</span><h3>Deadline-aware cadence</h3>{cadence.map((step, index) => <div key={step.day}><span>{index + 1}</span><p><b>Day {step.day} · {step.channel}</b><small>{step.action}</small></p></div>)}<p>No task is scheduled and no external activity has occurred.</p><section><b>STOP RULES</b><p>Reply · opt-out · invalid address · consultant stop · tender deadline</p></section></aside>
-      </section>
-      <footer><span>EVENT PROVENANCE</span>{record.events.slice(-5).map((entry) => <div key={entry.id}><b>{entry.type.replaceAll("_", " ")}</b><small>{entry.simulationOnly ? "SIMULATION" : "HUMAN"} · {entry.occurredAt} · {entry.actorId}</small><p>{entry.rationale}</p></div>)}</footer>
-    </div>}
-  </section>;
+  ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "MISSING" : valueClass}</small></strong></div>)}</div><section><span>EVIDENCE-LINKED STRENGTHS</span><div>{result.match.linkedStrengths.length ? result.match.linkedStrengths.map((claim) => <article key={claim.id}><b>✓ {claim.text}</b>{claim.evidenceIds.map((id) => <code key={id}>{id}</code>)}</article>) : <p>No evidence-linked strength is available.</p>}</div></section><section className="gaps"><span>GAPS / UNKNOWNS</span><div>{result.match.gaps.length ? result.match.gaps.map((gap) => <p key={gap}>? {gap}</p>) : <p>No legacy gap recorded.</p>}{result.reviewSupport.findings.map((finding) => <p key={finding.code}>! {finding.code}: {finding.nextAction}</p>)}</div></section><button className="tb3-evidence-link" onClick={() => onViewChange("verification")}>Open supplier verification →</button><div className="tb3-decision-actions"><button className={result.match.consultantDecision === "rejected" ? "selected reject" : ""} onClick={() => onDecision("rejected")}>Reject</button><button className={result.match.consultantDecision === "hold" ? "selected" : ""} onClick={() => onDecision("hold")}>Hold</button><button disabled={!result.reviewSupport.readyForCurrentDecision} className={result.match.consultantDecision === "approved" ? "selected" : ""} onClick={() => onDecision("approved")}>Approve match</button></div><small className="tb3-owner-boundary">Match disposition: TL-A031 workspace · promotion and outreach are outside TenderMatch</small></aside>;
 }

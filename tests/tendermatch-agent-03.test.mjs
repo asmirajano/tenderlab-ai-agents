@@ -68,20 +68,20 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.equal(implementation?.ownerAgentId, "agent:TL-A031");
   assert.doesNotMatch(implementation?.descriptor ?? "", /TenderBoost/i);
   assert.match(implementation?.primaryOutput ?? "", /evidence-gated audited result or explicit MISSING state/);
-  assert.match(JSON.stringify(implementation), /separately versioned legacy Campaign Studio parity module/);
-  assert.match(implementation?.tor ?? "", /without owning[\s\S]+legacy Campaign Studio/);
+  assert.match(JSON.stringify(implementation), /Campaign Studio and follow-up simulation pages were removed/);
+  assert.match(implementation?.tor ?? "", /without owning[\s\S]+promotion[\s\S]+outreach[\s\S]+CRM action/);
 });
 
-test("maps all 12 TenderMatch views exactly once into the restored six-family workflow", async () => {
+test("maps all 10 TenderMatch views exactly once into the five-family matching workflow", async () => {
   const page = await read("apps/tender-apps/src/tendermatch-app.tsx");
   const styles = await read("apps/tender-apps/src/tendermatch.css");
   const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\n\];\n\nconst navItems/)?.[0] ?? "";
   const expectedViews = [
     ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
     ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "AutoMatch by Tenders", "05B"],
-    ["match-suppliers", "AutoMatch by Suppliers", "05C"], ["audit", "Detailed Case Review", "05D"], ["campaigns", "Campaigns", "06A"], ["followups", "Follow-ups", "06B"],
+    ["match-suppliers", "AutoMatch by Suppliers", "05C"], ["audit", "Detailed Case Review", "05D"],
   ];
-  const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"], ["legacy", "Legacy Campaign Studio"]];
+  const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"]];
 
   assert.ok(registry);
   for (const [view, label, short] of expectedViews) {
@@ -93,7 +93,9 @@ test("maps all 12 TenderMatch views exactly once into the restored six-family wo
     assert.ok(index > priorIndex, `${family} must follow the approved workflow order`);
     priorIndex = index;
   }
-  assert.match(registry, /Legacy Campaign Studio[\s\S]+Isolated parity module[\s\S]+Local drafts · NOT SENT[\s\S]+Simulation events only/);
+  assert.doesNotMatch(registry, /Legacy Campaign Studio|campaigns|followups|06A|06B/);
+  assert.match(page, /resolveTenderMatchWorkspaceView[\s\S]+workspaceViewIds\.has[\s\S]+"dashboard"/);
+  assert.match(page, /url\.searchParams\.get\("view"\)[\s\S]+hashView/);
   assert.match(page, /aria-controls=\{`tb3-nav-children-/);
   assert.match(page, /aria-expanded=\{isExpanded\}/);
   assert.match(page, /aria-current=\{view === item\.id \? "page" : undefined\}/);
@@ -122,7 +124,13 @@ test("keeps active paths TenderMatch-only and classifies every retained TenderBo
   const unclassified = [];
 
   for (const relativePath of trackedPaths.filter((entry) => textPath.test(entry))) {
-    const content = await read(relativePath);
+    let content;
+    try {
+      content = await read(relativePath);
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
     for (const [index, line] of content.split(/\r?\n/).entries()) {
       occurrence.lastIndex = 0;
       while (occurrence.exec(line)) {
@@ -271,7 +279,7 @@ test("migrates legacy TenderBoost Cases into the matching-only schema without ov
   assert.ok(storage.values.has(legacyKey));
 });
 
-test("uses canonical and compatibility routes with a complete truthful parity surface", async () => {
+test("uses canonical and compatibility routes with a truthful matching-only surface", async () => {
   const [main, page, styles, registry, firebase] = await Promise.all([
     read("apps/tender-apps/src/main.tsx"),
     read("apps/tender-apps/src/tendermatch-app.tsx"),
@@ -284,22 +292,19 @@ test("uses canonical and compatibility routes with a complete truthful parity su
   assert.match(main, /"\/tendermatch": <TenderMatchApp/);
   assert.match(main, /"\/tenderboost": "\/tendermatch"/);
   assert.match(main, /"\/tenderboost-ai": "\/tendermatch"/);
+  assert.match(main, /"\/tendermatch\/campaigns": "\/tendermatch"/);
+  assert.match(main, /"\/tendermatch\/followups": "\/tendermatch"/);
   const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
   assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
-  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*legacy TenderBoost source)[^"]+"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*promotion)(?=[^"]*outreach)[^"]+"/);
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /SCHEMATIC · NON-GEOSPATIAL/);
   assert.match(page, /data-map-mode="schematic-non-geospatial"/);
-  assert.match(page, /Campaign Studio/);
-  assert.match(page, /isolated local legacy module/i);
-  assert.match(page, /NOT SENT/);
-  assert.match(page, /SIMULATION_STARTED/);
-  assert.match(page, /Send \/ activate externally/);
-  assert.match(page, /disabled title="No authorized delivery integration or event exists"/);
+  assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
+  assert.match(page, /Promotion and outreach belong to a separate future capability/);
   assert.match(page, /aria-label="TenderMatch frozen-source dataset summary"/);
-  assert.match(page, /LEGACY TENDERBOOST-SOURCE RECOMMENDATIONS/);
   assert.doesNotMatch(page, /aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
   assert.doesNotMatch(page, /Participation Boost proposal sent/);
   assert.doesNotMatch(page, /Command Center|\/products/);
@@ -364,7 +369,7 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.doesNotMatch(orientation, /tb3-product-intro/);
   assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);
 
-  assert.match(migrationEvidence, /className="tb3-demonstration-heading"[\s\S]+<h2>TenderMatch[^<]*frozen-source parity/);
+  assert.match(migrationEvidence, /className="tb3-demonstration-heading"[\s\S]+<h2>TenderMatch[^<]*frozen matching baseline/);
   for (const retainedEvidence of [
     "DEMONSTRATION DATA AND MIGRATION EVIDENCE",
     "DATED DEMONSTRATION SNAPSHOT",
@@ -381,12 +386,12 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: 1fr; \}/);
 });
 
-test("renders Campaign Studio only as an unregistered legacy parity module and future capability candidate", async () => {
+test("keeps Campaign Studio outside TenderMatch as an unimplemented future capability candidate", async () => {
   const candidate = await read("docs/campaign-studio-future-capability-candidate.md");
   assert.match(candidate, /unplaced future capability candidate/i);
   assert.match(candidate, /outside TenderMatch's canonical Company × Tender responsibility and `agent:TL-A031`/);
-  assert.match(candidate, /legacy parity module/);
-  assert.match(candidate, /communicationStatus: NOT_SENT/);
+  assert.match(candidate, /former migrated legacy-parity pages were removed from TenderMatch/);
+  assert.match(candidate, /no longer loads, writes, renders, or links those records/);
   assert.match(candidate, /No assumption is made that it requires Agent 65/);
   assert.equal(clientProducts.some((item) => /campaign/i.test(`${item.name} ${item.descriptor}`)), false);
   assert.equal(realAgentImplementations.some((item) => item.ownerAgentId !== "agent:TL-A031" && /Campaign Studio/i.test(item.name)), false);
