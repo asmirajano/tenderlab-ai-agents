@@ -56,7 +56,7 @@ The intentional presentation difference is the shared TenderApps design system: 
 Truth corrections override literal reproduction when the source could mislead:
 
 - 142 absent pair records are `MISSING`, not 0/100;
-- tender freshness and urgency derive from `deadlineAt` and the supplied/current clock;
+- tender freshness and urgency derive from `deadlineAt` and the supplied/current clock; at `TENDERBOOST_DEMO_AS_OF`, `floor((end-of-day deadline - clock) / 24h)` deterministically reproduces the source vector `[1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135]` without persisting relative time;
 - 1,000-item radar universes and fixed geometry are labelled simulated and schematic/non-geospatial;
 - “Participation Boost proposal sent” is replaced with `NOT SENT · no event recorded`;
 - historical Match Score, readiness, verification quality, audited support, deadline urgency, campaign priority, and consultant decision remain separate;
@@ -91,7 +91,7 @@ Negative scope of the **TL-A031 result and authority**:
 - tender discovery, general company readiness, eligibility, participation design, win probability, Bid/No-Bid, or risk acceptance;
 - live tender refresh, autonomous workflow scheduling, canonical Dataset writes, or enterprise persistence.
 
-The historical **Campaign Studio** concept remains an unplaced future capability candidate in `docs/campaign-studio-future-capability-candidate.md`. For migration parity only, its original local workspace is rendered inside `/tendermatch` as a separately versioned legacy module. It has no registration, product number, canonical Agent ID, independent route, external integration, or place in the TL-A031 Case/result contract. Its schema is `tenderboost-legacy-campaign/1.0.0`, its policy is `tenderboost-legacy-campaign-parity/1.0.0`, and every record has `communicationStatus: NOT_SENT`.
+The historical **Campaign Studio** concept remains an unplaced future capability candidate in `docs/campaign-studio-future-capability-candidate.md`. For migration parity only, its original local workspace is rendered inside `/tendermatch` as a separately versioned legacy module. It has no registration, product number, canonical Agent ID, independent route, external integration, or place in the TL-A031 Case/result contract. Its schema is `tenderboost-legacy-campaign/1.1.0`, its policy is `tenderboost-legacy-campaign-parity/1.1.0`, and every record has `communicationStatus: NOT_SENT`. The parity module includes its own accessible disclosure, AI-recommended objective with rationale and human “Use recommendation” action, visible recommended draft channel, channel-labelled cadence, explicit local save feedback, and reversible versioned response simulation.
 
 ## Source, value, and identity policy
 
@@ -125,7 +125,7 @@ Current Cases save only under the explicit key `tenderapps:tendermatch:case:<Cas
 
 Schema `3.0.0` remains the matching-only TL-A031 Case contract. Historical schema `1.0.0` and Stage 2 schema `2.0.0` records may be read from the legacy TenderBoost storage key. Migration retains matching values and consultant-decision provenance, excludes fields outside TL-A031’s active contract, and writes any later save to the new TenderMatch key. The original legacy browser record remains untouched. Unknown schema versions fail explicitly.
 
-Legacy campaign records use the separate key `tenderapps:tendermatch:legacy-campaigns:v1`. State-changing revisions increment `revision` and append actor/time/rationale events. Loading rejects unsupported schemas or any record whose communication status is not `NOT_SENT`. This browser-local state is not nested into, or presented as, the TenderMatch Case result.
+Legacy campaign records use the separate key `tenderapps:tendermatch:legacy-campaigns:v2`; safe `1.0.0` records under the prior `v1` key migrate locally without deleting the source payload. State-changing revisions—including explicit save and response reset—increment `revision` and append actor/time/rationale events. Loading rejects unsupported schemas or any record whose communication status is not `NOT_SENT`. Initial-load, autosave, explicit-save, and Case-save failures are visible and recoverable; valid in-memory state remains usable. This browser-local state is not nested into, or presented as, the TenderMatch Case result.
 
 Browser-local state is operational demonstration state, not a canonical `COMPANY-TENDER-OPPORTUNITY-ASSESSMENTS` Dataset write. Durable persistence still requires tenant authorization, record identity, approval rules, versioning, provenance, retention, and negative authorization tests.
 
@@ -147,7 +147,7 @@ Practical order `03` is not used as a canonical ID, matching is not conflated wi
 
 ## Source-to-target parity matrix
 
-The typed item-level matrix is `packages/tenderboost/src/legacy-parity.ts`. It contains **79** audited source items: **26 preserved**, **10 adapted to TenderApps design**, **38 truth-corrected**, **5 intentionally isolated for future Agent separation**, and **0 missing**. Tests fail if any item remains `missing`.
+The typed item-level matrix is `packages/tenderboost/src/legacy-parity.ts`. It contains **90** audited source items: **26 preserved**, **14 adapted to TenderApps design**, **42 truth-corrected**, **8 intentionally isolated for future Agent separation**, and **0 missing**. The strict-pass additions carry frozen-source locators (or an explicit declaration that no frozen-source equivalent exists) and are paired with behavioral tests for deadline reconstruction, recommendation use, channel/cadence output, save/reset revisions, next-action metadata, and persistence failures. The `0 missing` result is therefore corroborated by executable behavior and rendered-browser review, not accepted from the manifest count alone.
 
 | Frozen source surface | TenderApps target | Coverage | Intentional difference |
 | --- | --- | --- | --- |
@@ -161,8 +161,8 @@ The typed item-level matrix is `packages/tenderboost/src/legacy-parity.ts`. It c
 | 05 AutoMatch by Tenders | By Tender | adapted to TenderApps design | Tender picker, ranked suppliers, replay progress, selected pair review, evidence link, decisions, and local-draft handoff remain. |
 | 05 AutoMatch by Suppliers | By Supplier | adapted to TenderApps design | Supplier picker, ranked tenders, replay progress, selected pair review, evidence link, decisions, and local-draft handoff remain. |
 | Stage 1/2 matching audit | Case Audit | preserved | Explicit Case/result/evidence/decision identities, value policy, history, limitations, and resume compatibility remain. |
-| 06 Campaign Studio / Campaigns | Legacy Campaigns | intentionally isolated | Candidate composer, suggestions, priority, pipeline, objectives, seven channel formats, editable copy, notes, approval, cadence, guardrails, and events remain under a separate local schema. |
-| 06 Campaign Studio / Follow-ups | Legacy Follow-ups | intentionally isolated | Metrics, status table, event log, response branches, empty state, and disabled ProposalPrep handoff remain as explicit simulations. |
+| 06 Campaign Studio / Campaigns | Legacy Campaigns | intentionally isolated | Candidate composer, suggestions, priority, pipeline, accessible workspace disclosure, AI objective/rationale/use action, recommended channel, seven channel formats, editable copy, explicit save/autosave feedback, approval, channel-labelled cadence, guardrails, and events remain under a separate local schema. |
+| 06 Campaign Studio / Follow-ups | Legacy Follow-ups | intentionally isolated | Metrics, status table, event log, page-level simulate/reset controls, per-record next action/date, response branches, empty state, and disabled ProposalPrep handoff remain as explicit local simulations. |
 
 | Cross-cutting source item group | Count / fields | Target treatment | Status |
 | --- | --- | --- | --- |
@@ -175,22 +175,25 @@ The typed item-level matrix is `packages/tenderboost/src/legacy-parity.ts`. It c
 | Match interactions | full matrix cell selection, two ranked modes, replay progress, evidence link, approve/hold/reject | Explicit Case result and current evidence/deadline gates | truth-corrected |
 | Layout | standalone Standard/Wide | shared TenderApps Standard/Wide preference | adapted |
 | Empty/error states | priority, campaign, follow-up, implicit failures | MISSING-aware empty states and visible `role=alert` errors | truth-corrected |
-| Campaign drafting | create by tender/supplier/current pair, objective, channel, editable content, note, approval | Local versioned draft; evidence-linked claims only; `NOT_SENT` | isolated + truth-corrected |
-| Campaign lifecycle | active, follow-up, interested, no-response, closed | Corresponding simulation-only states require `SIMULATION_STARTED` event | isolated + truth-corrected |
-| Persistence | layout/session state | shared layout preference, explicit Case storage, separate legacy campaign storage | adapted + truth-corrected |
+| Campaign drafting | create by tender/supplier/current pair, objective recommendation/rationale/use, recommended channel, editable content, note, explicit save, approval | Local versioned draft; evidence-linked claims only; `NOT_SENT` | isolated + truth-corrected |
+| Campaign lifecycle | active, follow-up, interested, no-response, reset, closed, next action/date | Corresponding simulation-only states require `SIMULATION_STARTED`; dates are local review cues, never scheduled tasks | isolated + truth-corrected |
+| Persistence | layout/session state | shared layout preference, guarded explicit Case storage, separate versioned legacy campaign storage, visible load/autosave/save failures | adapted + truth-corrected |
 | External map/deployment shell | Leaflet, OSM, Wikimedia, standalone header/backlink/Firebase | deliberately excluded; local visuals and shared shell used instead | adapted to TenderApps design |
 
 ## Correction ledger
 
 | What happened | Root cause | Correction | Reusable rule | Regression evidence |
 | --- | --- | --- | --- | --- |
-| The first migration reduced the complete TenderBoost application to three matching-only views. | The owner-Agent contract was incorrectly used as permission to discard reader-facing migration scope. | Restore every original surface and interaction, while isolating Campaign Studio in a separate local schema outside TL-A031. | Product migration parity and canonical capability ownership are separate dimensions; preserve both explicitly. | Typed 79-item parity manifest, route/UI tests, and responsive browser matrix. |
+| The first migration reduced the complete TenderBoost application to three matching-only views. | The owner-Agent contract was incorrectly used as permission to discard reader-facing migration scope. | Restore every original surface and interaction, while isolating Campaign Studio in a separate local schema outside TL-A031. | Product migration parity and canonical capability ownership are separate dimensions; preserve both explicitly. | Source-located 90-item parity manifest, behavioral route/UI tests, and responsive browser matrix. |
 | 142 absent pair records could be read as zero. | A full matrix was constructed from only 18 evaluated records. | Preserve `null/MISSING`; keep numeric zero distinct. | Absence of an assessment is not an adverse assessment. | Matrix cardinality and zero-versus-MISSING tests. |
 | Saved time state could become stale. | Relative state was persisted. | Recompute from absolute deadline and injected clock on resume. | Persist dated facts; derive clock-relative state. | Stale persisted-Case test. |
+| Reconstructed frozen deadlines were all one day high. | End-of-day instants were combined with `Math.ceil`, counting a partial terminal day as another full day. | Use a deterministic floor of positive deadline distance; keep zero/closed handling clock-derived. | When migrating a frozen relative-day fixture to absolute end-of-day instants, specify and regression-test the calendar conversion. | Exact 16-value baseline-vector test. |
 | Legacy and audited results could appear equivalent. | Historical curated scores had no replayable formula. | Keep immutable legacy estimates beside evidence-gated audited support. | Never reverse-engineer evidence to reproduce a historical score. | 18-pair experiment and policy tests. |
 | A fixed relationship picture could imply geographic accuracy. | Labels changed while geometry did not. | Mark it visibly and semantically as schematic/non-geospatial. | Fixed geometry must never claim live map meaning. | UI/CSP fallback assertions. |
 | The original supplier radar claimed a Participation Boost proposal was sent. | UI copy treated a target-status idea as an integration event. | Replace it with `NOT SENT · no event recorded` everywhere. | External action requires an integration/event record. | Truthfulness and browser text assertions. |
 | Original campaign lifecycle labels could imply real activation or responses. | Local demonstration state was not separated from external event truth. | Use a separate versioned module; content approval is provenance only; post-approval states are explicit simulations requiring a simulation event. | Simulation state must be named and structurally distinct from operational state. | Campaign transition, no-response, interested, storage, and no-send tests. |
+| Strict parity omitted workspace recommendations, channel-labelled cadence, explicit save, response reset, and follow-up next actions. | The initial parity matrix grouped Campaign Studio too coarsely and allowed a self-declared zero-missing result. | Re-audit the exact frozen source controls, add source locators, restore the bounded local behaviors, and prove them behaviorally. | Item-level manifests need source evidence plus executable control/state coverage. | Recommendation, cadence, save, reset, next-action, persistence-error, and browser interaction tests. |
+| Campaign and Case persistence failures were swallowed or unguarded. | Browser storage was treated as reliable. | Announce recoverable load/autosave/save errors with `role=alert` and retain the current in-memory state. | Browser-local persistence is fallible and must never silently destroy the active review state. | Failing-storage tests and rendered alert/status assertions. |
 
 ## Current maturity
 

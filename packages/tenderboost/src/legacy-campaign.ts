@@ -7,9 +7,11 @@ import type {
   TenderRecord,
 } from "./types.ts";
 
-export const LEGACY_CAMPAIGN_SCHEMA_VERSION = "tenderboost-legacy-campaign/1.0.0" as const;
-export const LEGACY_CAMPAIGN_POLICY_VERSION = "tenderboost-legacy-campaign-parity/1.0.0" as const;
-export const LEGACY_CAMPAIGN_STORAGE_KEY = "tenderapps:tendermatch:legacy-campaigns:v1" as const;
+export const LEGACY_CAMPAIGN_SCHEMA_VERSION = "tenderboost-legacy-campaign/1.1.0" as const;
+export const LEGACY_CAMPAIGN_POLICY_VERSION = "tenderboost-legacy-campaign-parity/1.1.0" as const;
+export const LEGACY_CAMPAIGN_STORAGE_KEY = "tenderapps:tendermatch:legacy-campaigns:v2" as const;
+const LEGACY_CAMPAIGN_V1_STORAGE_KEY = "tenderapps:tendermatch:legacy-campaigns:v1" as const;
+const LEGACY_CAMPAIGN_V1_SCHEMA_VERSION = "tenderboost-legacy-campaign/1.0.0" as const;
 
 export type LegacyCampaignStage =
   | "draft"
@@ -21,7 +23,7 @@ export type LegacyCampaignStage =
   | "closed";
 export type LegacyCampaignOrigin = "consultant" | "suggested" | "match-matrix";
 export type LegacyCampaignObjectiveId = "tender-opportunity" | "tenderlab-platform" | "participation-services" | "tender-intelligence" | "eligibility-readiness";
-export type LegacyCampaignEventType = "DRAFT_CREATED" | "DRAFT_UPDATED" | "CONTENT_APPROVED" | "CONTENT_RETURNED_TO_DRAFT" | "SIMULATION_STARTED" | "SIMULATED_FOLLOW_UP" | "SIMULATED_INTERESTED" | "SIMULATED_NO_RESPONSE" | "SIMULATION_CLOSED";
+export type LegacyCampaignEventType = "DRAFT_CREATED" | "DRAFT_UPDATED" | "DRAFT_SAVED" | "CONTENT_APPROVED" | "CONTENT_RETURNED_TO_DRAFT" | "SIMULATION_STARTED" | "SIMULATED_FOLLOW_UP" | "SIMULATED_INTERESTED" | "SIMULATED_NO_RESPONSE" | "SIMULATED_RESPONSE_RESET" | "SIMULATION_CLOSED";
 
 export type LegacyCampaignEvent = {
   id: string;
@@ -49,6 +51,9 @@ export type LegacyCampaignRecord = {
   updatedAt: string;
   draftCopy: string;
   consultantNote: string;
+  lastSavedAt: string | null;
+  nextAction: string;
+  nextFollowUpAt: string | null;
   communicationStatus: "NOT_SENT";
   operatingMode: "LOCAL_LEGACY_PARITY_MODULE";
   approval: null | { actorId: string; approvedAt: string; rationale: string };
@@ -66,6 +71,9 @@ export const legacyCampaignObjectives: Array<{ id: LegacyCampaignObjectiveId; la
   { id: "eligibility-readiness", label: "Eligibility & Readiness Review", shortLabel: "Readiness", description: "Draft a request to resolve qualification and evidence gaps." },
 ];
 
+export type LegacyCampaignObjectiveRecommendation = { id: LegacyCampaignObjectiveId; reason: string };
+export type LegacyCampaignCadenceStep = { day: number; channel: string; action: string };
+
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 96);
 }
@@ -78,12 +86,31 @@ function hasMaterialRisk(supplier: SupplierRecord) {
   return supplier.risks.some((risk) => /debar|exclusion|entity list|sanction/i.test(risk));
 }
 
+export function legacyCampaignObjectiveRecommendation(match: MatchAssessment): LegacyCampaignObjectiveRecommendation {
+  if (match.auditedMatch.value === null || match.verificationQuality.value === null || match.verificationQuality.value < 70) return {
+    id: "eligibility-readiness",
+    reason: "Evidence support is missing or verification quality is below the legacy review threshold, so readiness review is the safest draft objective.",
+  };
+  if (match.matchScore.value !== null && match.matchScore.value >= 90 && match.tenderFreshness.daysRemaining > 30) return {
+    id: "tenderlab-platform",
+    reason: "The historical match estimate is at least 90 and the deadline leaves more than 30 whole days for a platform-oriented draft.",
+  };
+  if (match.consultantDecision === "approved") return {
+    id: "participation-services",
+    reason: "A consultant approved the current match review, so a bounded participation-services draft is recommended for separate human review.",
+  };
+  if (match.matchScore.value !== null && match.matchScore.value >= 85) return {
+    id: "tender-opportunity",
+    reason: "The historical match estimate is at least 85, supporting a focused opportunity brief while the consultant retains the decision.",
+  };
+  return {
+    id: "tender-intelligence",
+    reason: "The available evidence supports a decision-ready intelligence brief more strongly than a participation or activation claim.",
+  };
+}
+
 export function legacyCampaignObjective(match: MatchAssessment): LegacyCampaignObjectiveId {
-  if (match.auditedMatch.value === null || match.verificationQuality.value === null || match.verificationQuality.value < 70) return "eligibility-readiness";
-  if (match.matchScore.value !== null && match.matchScore.value >= 90 && match.tenderFreshness.daysRemaining > 30) return "tenderlab-platform";
-  if (match.consultantDecision === "approved") return "participation-services";
-  if (match.matchScore.value !== null && match.matchScore.value >= 85) return "tender-opportunity";
-  return "tender-intelligence";
+  return legacyCampaignObjectiveRecommendation(match).id;
 }
 
 export function legacyCampaignPriority(match: MatchAssessment, supplier: SupplierRecord) {
@@ -134,6 +161,20 @@ export function recommendedLegacyCampaignChannel(result: TenderMatchCaseResult, 
   return "Email";
 }
 
+export function buildLegacyCampaignCadence(result: TenderMatchCaseResult, initialChannel: string): LegacyCampaignCadenceStep[] {
+  const lastAvailableDay = Math.max(0, result.match.tenderFreshness.daysRemaining - 1);
+  return [
+    { day: 0, channel: initialChannel, action: "Initial opportunity brief" },
+    { day: 2, channel: initialChannel === "LinkedIn" ? "Email" : "LinkedIn", action: "Send match proof and tender summary" },
+    { day: 5, channel: "Telephone", action: "Consultant qualification call" },
+    { day: lastAvailableDay, channel: "Email", action: "Final deadline reminder" },
+  ].filter((step, index, steps) => step.day <= lastAvailableDay && steps.findIndex((candidate) => candidate.day === step.day) === index);
+}
+
+function addDays(nowIso: string, days: number) {
+  return new Date(new Date(nowIso).getTime() + days * 86_400_000).toISOString();
+}
+
 export function generateLegacyCampaignCopy(
   result: TenderMatchCaseResult,
   tender: TenderRecord,
@@ -182,6 +223,9 @@ export function createLegacyCampaign(
     updatedAt: nowIso,
     draftCopy: generateLegacyCampaignCopy(result, tender, supplier, objective, channel),
     consultantNote: "",
+    lastSavedAt: null,
+    nextAction: "Review and explicitly save the local draft",
+    nextFollowUpAt: null,
     communicationStatus: "NOT_SENT",
     operatingMode: "LOCAL_LEGACY_PARITY_MODULE",
     approval: null,
@@ -206,12 +250,25 @@ export function reviseLegacyCampaign(
   } satisfies LegacyCampaignRecord;
 }
 
+export function markLegacyCampaignSaved(record: LegacyCampaignRecord, actorId: string, nowIso: string) {
+  return {
+    ...record,
+    revision: record.revision + 1,
+    updatedAt: nowIso,
+    lastSavedAt: nowIso,
+    nextAction: record.stage === "draft" ? "Approve content or continue editing" : record.nextAction,
+    events: [...record.events, event("DRAFT_SAVED", actorId, nowIso, "Consultant explicitly saved the local NOT SENT workspace in this browser.", false)],
+  } satisfies LegacyCampaignRecord;
+}
+
 export function toggleLegacyCampaignApproval(record: LegacyCampaignRecord, actorId: string, nowIso: string) {
   if (record.stage === "draft") return {
     ...record,
     revision: record.revision + 1,
     stage: "approved",
     approval: { actorId, approvedAt: nowIso, rationale: "Consultant approved local draft content only; this is not activation or delivery authorization, and the draft remains NOT SENT." },
+    nextAction: "Start the isolated lifecycle simulation or return content to draft",
+    nextFollowUpAt: null,
     updatedAt: nowIso,
     events: [...record.events, event("CONTENT_APPROVED", actorId, nowIso, "Local draft content approved; this is not activation or delivery authorization.", false)],
   } satisfies LegacyCampaignRecord;
@@ -220,6 +277,8 @@ export function toggleLegacyCampaignApproval(record: LegacyCampaignRecord, actor
     revision: record.revision + 1,
     stage: "draft",
     approval: null,
+    nextAction: "Review and explicitly save the local draft",
+    nextFollowUpAt: null,
     updatedAt: nowIso,
     events: [...record.events, event("CONTENT_RETURNED_TO_DRAFT", actorId, nowIso, "Consultant returned local content to draft.", false)],
   } satisfies LegacyCampaignRecord;
@@ -233,6 +292,8 @@ export function startLegacyCampaignSimulation(record: LegacyCampaignRecord, resu
     ...record,
     revision: record.revision + 1,
     stage: "active-simulation",
+    nextAction: "Simulate a response or follow-up",
+    nextFollowUpAt: addDays(nowIso, 2),
     updatedAt: nowIso,
     lastEligibilityBlockers: blockers,
     events: [...record.events, event("SIMULATION_STARTED", actorId, nowIso, `Isolated lifecycle simulation started with ${blockers.length} real-activation blocker(s). No communication was sent.`, true)],
@@ -253,8 +314,31 @@ export function advanceLegacyCampaignSimulation(record: LegacyCampaignRecord, ne
     ...record,
     revision: record.revision + 1,
     stage: transition.stage,
+    nextAction: next === "follow-up"
+      ? "Simulate a response or close after review"
+      : next === "interested"
+        ? "Review the simulated interest and decide whether to close"
+        : next === "no-response"
+          ? "Review the simulated no-response and decide whether to close"
+          : "No next action · simulation closed",
+    nextFollowUpAt: next === "follow-up" ? addDays(nowIso, 3) : next === "interested" ? addDays(nowIso, 1) : next === "no-response" ? addDays(nowIso, 3) : null,
     updatedAt: nowIso,
     events: [...record.events, event(transition.type, actorId, nowIso, transition.rationale, true)],
+  } satisfies LegacyCampaignRecord;
+}
+
+export function resetLegacyCampaignResponseSimulation(record: LegacyCampaignRecord, actorId: string, nowIso: string) {
+  if (record.stage !== "interested-simulation" && record.stage !== "no-response-simulation") {
+    throw new Error("Only a simulated response state can be reset.");
+  }
+  return {
+    ...record,
+    revision: record.revision + 1,
+    stage: "follow-up-simulation",
+    updatedAt: nowIso,
+    nextAction: "Simulate a response or close after review",
+    nextFollowUpAt: addDays(nowIso, 3),
+    events: [...record.events, event("SIMULATED_RESPONSE_RESET", actorId, nowIso, "Local response simulation reset to follow-up; no external response or communication is claimed.", true)],
   } satisfies LegacyCampaignRecord;
 }
 
@@ -263,11 +347,26 @@ export function saveLegacyCampaigns(storage: StorageLike, records: LegacyCampaig
 }
 
 export function loadLegacyCampaigns(storage: StorageLike) {
-  const raw = storage.getItem(LEGACY_CAMPAIGN_STORAGE_KEY);
+  const currentRaw = storage.getItem(LEGACY_CAMPAIGN_STORAGE_KEY);
+  const legacyRaw = currentRaw ? null : storage.getItem(LEGACY_CAMPAIGN_V1_STORAGE_KEY);
+  const raw = currentRaw ?? legacyRaw;
   if (!raw) return [];
-  const parsed = JSON.parse(raw) as LegacyCampaignRecord[];
-  if (!Array.isArray(parsed) || parsed.some((record) => record.schemaVersion !== LEGACY_CAMPAIGN_SCHEMA_VERSION || record.communicationStatus !== "NOT_SENT")) {
+  type LegacyCampaignV1 = Omit<LegacyCampaignRecord, "schemaVersion" | "policyVersion" | "lastSavedAt" | "nextAction" | "nextFollowUpAt"> & { schemaVersion: typeof LEGACY_CAMPAIGN_V1_SCHEMA_VERSION; policyVersion: string };
+  const parsed = JSON.parse(raw) as unknown;
+  if (!Array.isArray(parsed) || parsed.some((record) => {
+    if (!record || typeof record !== "object") return true;
+    const candidate = record as LegacyCampaignRecord | LegacyCampaignV1;
+    return (candidate.schemaVersion !== LEGACY_CAMPAIGN_SCHEMA_VERSION && candidate.schemaVersion !== LEGACY_CAMPAIGN_V1_SCHEMA_VERSION)
+      || candidate.communicationStatus !== "NOT_SENT";
+  })) {
     throw new Error("The saved legacy Campaign Studio workspace has an unsupported or unsafe schema.");
   }
-  return parsed;
+  return (parsed as Array<LegacyCampaignRecord | LegacyCampaignV1>).map((record) => record.schemaVersion === LEGACY_CAMPAIGN_SCHEMA_VERSION ? record : {
+    ...record,
+    schemaVersion: LEGACY_CAMPAIGN_SCHEMA_VERSION,
+    policyVersion: LEGACY_CAMPAIGN_POLICY_VERSION,
+    lastSavedAt: null,
+    nextAction: record.stage === "draft" ? "Review and explicitly save the local draft" : "Review the migrated local simulation state",
+    nextFollowUpAt: null,
+  }) as LegacyCampaignRecord[];
 }

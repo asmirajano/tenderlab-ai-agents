@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   advanceLegacyCampaignSimulation,
+  buildLegacyCampaignCadence,
   buildAllMatches,
   chinaRadarClusters,
   createCaseResult,
@@ -13,11 +14,14 @@ import {
   legacyCampaignActivationBlockers,
   legacyCampaignChannels,
   legacyCampaignObjectives,
+  legacyCampaignObjectiveRecommendation,
   legacyCampaignPriority,
   loadCaseResult,
   loadLegacyCampaigns,
+  markLegacyCampaignSaved,
   paritySummary,
   recommendedLegacyCampaignChannel,
+  resetLegacyCampaignResponseSimulation,
   regionsForSupplier,
   resumeCaseResult,
   reviseLegacyCampaign,
@@ -115,6 +119,26 @@ function evidenceStatusClass(status: string) {
   return "unknown";
 }
 
+function initialCampaignWorkspaceState(): { records: LegacyCampaignRecord[]; ready: boolean; message: string; error: string } {
+  if (typeof window === "undefined") return { records: [], ready: false, message: "Browser storage unavailable", error: "" };
+  try {
+    const records = loadLegacyCampaigns(window.localStorage);
+    return {
+      records,
+      ready: true,
+      message: records.length ? `Loaded ${records.length} local NOT SENT record${records.length === 1 ? "" : "s"}` : "No saved local campaign records",
+      error: "",
+    };
+  } catch (error) {
+    return {
+      records: [],
+      ready: false,
+      message: "Load failed · valid in-memory state was retained",
+      error: error instanceof Error ? `Campaign workspace load failed: ${error.message}` : "Campaign workspace load failed. In-memory state remains available.",
+    };
+  }
+}
+
 function bestLegacyMatch(matches: MatchAssessment[]) {
   return [...matches].sort((left, right) => (right.matchScore.value ?? -1) - (left.matchScore.value ?? -1))[0];
 }
@@ -166,17 +190,17 @@ export default function TenderMatchApp() {
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
   const [caseResults, setCaseResults] = useState<Record<string, TenderMatchCaseResult>>({ [initialResult.match.key]: initialResult });
   const [persistenceMessage, setPersistenceMessage] = useState("Not saved in this browser session");
-  const [actionError, setActionError] = useState("");
+  const [initialCampaignState] = useState(initialCampaignWorkspaceState);
+  const [actionError, setActionError] = useState(initialCampaignState.error);
   const [tenderRadarFilter, setTenderRadarFilter] = useState("All regions");
   const [supplierRadarFilter, setSupplierRadarFilter] = useState("All regions");
   const [tenderRadarZoom, setTenderRadarZoom] = useState(1);
   const [supplierRadarZoom, setSupplierRadarZoom] = useState(1);
   const [replayProgress, setReplayProgress] = useState(100);
   const [isReplaying, setIsReplaying] = useState(false);
-  const [campaigns, setCampaigns] = useState<LegacyCampaignRecord[]>(() => {
-    if (typeof window === "undefined") return [];
-    try { return loadLegacyCampaigns(window.localStorage); } catch { return []; }
-  });
+  const [campaigns, setCampaigns] = useState<LegacyCampaignRecord[]>(initialCampaignState.records);
+  const [campaignStorageReady] = useState(initialCampaignState.ready);
+  const [campaignPersistenceMessage, setCampaignPersistenceMessage] = useState(initialCampaignState.message);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [campaignComposerOpen, setCampaignComposerOpen] = useState(false);
   const [campaignCreateMode, setCampaignCreateMode] = useState<"tender" | "supplier" | "match">("match");
@@ -184,6 +208,7 @@ export default function TenderMatchApp() {
   const [campaignSupplierId, setCampaignSupplierId] = useState(initialSupplier.id);
   const [campaignSuggestionsOpen, setCampaignSuggestionsOpen] = useState(true);
   const [campaignPipelineOpen, setCampaignPipelineOpen] = useState(true);
+  const [campaignWorkspaceOpen, setCampaignWorkspaceOpen] = useState(true);
   const viewSurfaceRef = useRef<HTMLDivElement>(null);
   const lastFocusedViewRef = useRef<WorkspaceView>("dashboard");
 
@@ -239,8 +264,14 @@ export default function TenderMatchApp() {
   };
 
   const saveCase = () => {
-    saveCaseResult(window.localStorage, result);
-    setPersistenceMessage(`Saved explicit Case ${result.caseIdentity.id}`);
+    setActionError("");
+    try {
+      saveCaseResult(window.localStorage, result);
+      setPersistenceMessage(`Saved explicit Case ${result.caseIdentity.id}`);
+    } catch (error) {
+      setPersistenceMessage("Case remains available in memory; browser persistence failed");
+      setActionError(error instanceof Error ? `Case save failed: ${error.message}` : "Case save failed. The current Case remains available in memory.");
+    }
   };
 
   const loadCase = () => {
@@ -275,8 +306,22 @@ export default function TenderMatchApp() {
   }, [isReplaying]);
 
   useEffect(() => {
-    try { saveLegacyCampaigns(window.localStorage, campaigns); } catch { /* explicit actions surface recoverable errors */ }
-  }, [campaigns]);
+    if (!campaignStorageReady) return;
+    let nextMessage = "";
+    let nextError = "";
+    try {
+      saveLegacyCampaigns(window.localStorage, campaigns);
+      nextMessage = `Autosaved ${campaigns.length} local NOT SENT record${campaigns.length === 1 ? "" : "s"}`;
+    } catch (error) {
+      nextMessage = "Autosave failed · edits remain in memory";
+      nextError = error instanceof Error ? `Campaign autosave failed: ${error.message}` : "Campaign autosave failed. Current edits remain in memory.";
+    }
+    const timer = window.setTimeout(() => {
+      setCampaignPersistenceMessage(nextMessage);
+      if (nextError) setActionError(nextError);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [campaigns, campaignStorageReady]);
 
   useEffect(() => {
     if (lastFocusedViewRef.current === view) return;
@@ -289,6 +334,7 @@ export default function TenderMatchApp() {
       ? current.map((entry) => entry.id === next.id ? next : entry)
       : [next, ...current]);
     setSelectedCampaignId(next.id);
+    setCampaignWorkspaceOpen(true);
   };
 
   const resultForAssessment = (assessment: MatchAssessment) => {
@@ -368,6 +414,36 @@ export default function TenderMatchApp() {
     }
   };
 
+  const saveCurrentCampaign = () => {
+    if (!currentCampaign) return;
+    setActionError("");
+    const nowIso = new Date().toISOString();
+    const saved = markLegacyCampaignSaved(currentCampaign, actorId, nowIso);
+    const nextRecords = campaigns.map((entry) => entry.id === saved.id ? saved : entry);
+    try {
+      saveLegacyCampaigns(window.localStorage, nextRecords);
+      setCampaigns(nextRecords);
+      setSelectedCampaignId(saved.id);
+      setCampaignPersistenceMessage(`Saved changes locally at ${nowIso} · NOT SENT`);
+    } catch (error) {
+      setCampaignPersistenceMessage("Save failed · edits remain in memory");
+      setActionError(error instanceof Error ? `Campaign save failed: ${error.message}` : "Campaign save failed. Current edits remain in memory.");
+    }
+  };
+
+  const followupAction = (record: LegacyCampaignRecord, action: "simulate-response" | "reset-response") => {
+    setActionError("");
+    try {
+      const nowIso = new Date().toISOString();
+      const next = action === "reset-response"
+        ? resetLegacyCampaignResponseSimulation(record, actorId, nowIso)
+        : advanceLegacyCampaignSimulation(record, "interested", actorId, nowIso);
+      replaceCampaign(next);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The local response simulation could not be changed.");
+    }
+  };
+
   const selectedRadarTenderMatches = allMatches.filter((entry) => entry.tenderId === tender.id);
   const selectedRadarBestMatch = bestLegacyMatch(selectedRadarTenderMatches);
   const visibleTenderClusters = tenderRadarFilter === "All regions" ? worldRadarClusters : worldRadarClusters.filter((entry) => entry.group === tenderRadarFilter);
@@ -408,8 +484,8 @@ export default function TenderMatchApp() {
           {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} replayProgress={replayProgress} isReplaying={isReplaying} onReplay={runReplay} onView={setView} onOpen={openAssessment} onDecision={decide} onCampaign={() => createCampaignFromAssessment(result.match, "match-matrix")} />}
           {view === "verification" && <VerificationView view={view} supplier={supplier} allMatches={allMatches} onView={setView} onOpen={openAssessment} />}
           {view === "audit" && <AuditView result={result} />}
-          {view === "campaigns" && <CampaignsView currentAssessment={currentAssessment} campaigns={campaigns} currentCampaign={currentCampaign} currentCampaignResult={currentCampaignResult} currentCampaignTender={currentCampaignTender} currentCampaignSupplier={currentCampaignSupplier} currentCampaignAssessment={currentCampaignAssessment} matchByKey={matchByKey} composerOpen={campaignComposerOpen} createMode={campaignCreateMode} campaignTenderId={campaignTenderId} campaignSupplierId={campaignSupplierId} composerCandidates={composerCandidates} suggestedCampaigns={suggestedCampaigns} suggestionsOpen={campaignSuggestionsOpen} pipelineOpen={campaignPipelineOpen} onView={setView} onComposerOpen={setCampaignComposerOpen} onCreateMode={setCampaignCreateMode} onTenderId={setCampaignTenderId} onSupplierId={setCampaignSupplierId} onCreate={createCampaignFromAssessment} onSuggestionsOpen={setCampaignSuggestionsOpen} onPipelineOpen={setCampaignPipelineOpen} onSelectCampaign={setSelectedCampaignId} onObjective={changeCampaignObjective} onChannel={changeCampaignChannel} onCopy={(draftCopy) => updateCurrentCampaign({ draftCopy }, "Consultant edited the local NOT SENT draft.")} onNote={(consultantNote) => updateCurrentCampaign({ consultantNote }, "Consultant updated the internal note.")} onApproval={() => campaignAction("approval")} onSimulate={() => campaignAction("simulate")} onAdvance={campaignAction} onVerification={() => openAssessment(currentCampaignAssessment, "verification")} />}
-          {view === "followups" && <FollowupsView campaigns={campaigns} matchByKey={matchByKey} onView={setView} onSelectCampaign={setSelectedCampaignId} />}
+          {view === "campaigns" && <CampaignsView currentAssessment={currentAssessment} campaigns={campaigns} currentCampaign={currentCampaign} currentCampaignResult={currentCampaignResult} currentCampaignTender={currentCampaignTender} currentCampaignSupplier={currentCampaignSupplier} currentCampaignAssessment={currentCampaignAssessment} matchByKey={matchByKey} composerOpen={campaignComposerOpen} createMode={campaignCreateMode} campaignTenderId={campaignTenderId} campaignSupplierId={campaignSupplierId} composerCandidates={composerCandidates} suggestedCampaigns={suggestedCampaigns} suggestionsOpen={campaignSuggestionsOpen} pipelineOpen={campaignPipelineOpen} workspaceOpen={campaignWorkspaceOpen} persistenceMessage={campaignPersistenceMessage} onView={setView} onComposerOpen={setCampaignComposerOpen} onCreateMode={setCampaignCreateMode} onTenderId={setCampaignTenderId} onSupplierId={setCampaignSupplierId} onCreate={createCampaignFromAssessment} onSuggestionsOpen={setCampaignSuggestionsOpen} onPipelineOpen={setCampaignPipelineOpen} onWorkspaceOpen={setCampaignWorkspaceOpen} onSelectCampaign={setSelectedCampaignId} onObjective={changeCampaignObjective} onChannel={changeCampaignChannel} onCopy={(draftCopy) => updateCurrentCampaign({ draftCopy }, "Consultant edited the local NOT SENT draft.")} onNote={(consultantNote) => updateCurrentCampaign({ consultantNote }, "Consultant updated the internal note.")} onSave={saveCurrentCampaign} onApproval={() => campaignAction("approval")} onSimulate={() => campaignAction("simulate")} onAdvance={campaignAction} onVerification={() => openAssessment(currentCampaignAssessment, "verification")} />}
+          {view === "followups" && <FollowupsView campaigns={campaigns} matchByKey={matchByKey} selectedCampaignId={selectedCampaignId} onView={setView} onSelectCampaign={setSelectedCampaignId} onResponse={(record) => followupAction(record, "simulate-response")} onReset={(record) => followupAction(record, "reset-response")} />}
         </div>
       </section>
     </section>
@@ -535,6 +611,8 @@ type CampaignsViewProps = {
   suggestedCampaigns: Array<{ assessment: MatchAssessment; priority: number }>;
   suggestionsOpen: boolean;
   pipelineOpen: boolean;
+  workspaceOpen: boolean;
+  persistenceMessage: string;
   onView: (view: WorkspaceView) => void;
   onComposerOpen: (open: boolean) => void;
   onCreateMode: (mode: "tender" | "supplier" | "match") => void;
@@ -543,11 +621,13 @@ type CampaignsViewProps = {
   onCreate: (assessment: MatchAssessment, origin: LegacyCampaignOrigin) => void;
   onSuggestionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onPipelineOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  onWorkspaceOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onSelectCampaign: (id: string) => void;
   onObjective: (objective: LegacyCampaignObjectiveId) => void;
   onChannel: (channel: string) => void;
   onCopy: (value: string) => void;
   onNote: (value: string) => void;
+  onSave: () => void;
   onApproval: () => void;
   onSimulate: () => void;
   onAdvance: (action: "approval" | "simulate" | "follow-up" | "interested" | "no-response" | "closed") => void;
@@ -566,17 +646,22 @@ function CampaignsView(props: CampaignsViewProps) {
       { title: "Active simulations", stages: ["active-simulation", "follow-up-simulation"] as LegacyCampaignStage[] },
       { title: "Completed simulations", stages: ["interested-simulation", "no-response-simulation", "closed"] as LegacyCampaignStage[] },
     ].map((group) => { const entries = props.campaigns.filter((record) => group.stages.includes(record.stage)); return <article key={group.title}><header><h3>{group.title}</h3><b>{entries.length}</b></header><div>{entries.length ? entries.map((record) => { const assessment = props.matchByKey.get(record.matchKey); const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment?.supplierId); const rowTender = demoTenders.find((entry) => entry.id === assessment?.tenderId); return <button className={record.id === props.currentCampaign?.id ? "active" : ""} key={record.id} onClick={() => props.onSelectCampaign(record.id)}><span className={`tb3-campaign-stage ${record.stage}`}>{campaignStageLabel[record.stage]}</span><b>{rowSupplier?.legalEnglishName}</b><small>{rowTender?.reference} · {record.communicationStatus}</small><em>Revision {record.revision}</em></button>; }) : <p>No records in this stage.</p>}</div></article>; })}</div>}</section>
-    {props.currentCampaign && <CampaignWorkspace record={props.currentCampaign} result={props.currentCampaignResult} tender={props.currentCampaignTender} supplier={props.currentCampaignSupplier} onObjective={props.onObjective} onChannel={props.onChannel} onCopy={props.onCopy} onNote={props.onNote} onApproval={props.onApproval} onSimulate={props.onSimulate} onAdvance={(action) => props.onAdvance(action)} onVerification={props.onVerification} />}
+    {props.currentCampaign && <CampaignWorkspace record={props.currentCampaign} result={props.currentCampaignResult} tender={props.currentCampaignTender} supplier={props.currentCampaignSupplier} expanded={props.workspaceOpen} persistenceMessage={props.persistenceMessage} onExpanded={props.onWorkspaceOpen} onObjective={props.onObjective} onChannel={props.onChannel} onCopy={props.onCopy} onNote={props.onNote} onSave={props.onSave} onApproval={props.onApproval} onSimulate={props.onSimulate} onAdvance={(action) => props.onAdvance(action)} onVerification={props.onVerification} />}
   </>;
 }
 
-function FollowupsView({ campaigns, matchByKey, onView, onSelectCampaign }: { campaigns: LegacyCampaignRecord[]; matchByKey: Map<string, MatchAssessment>; onView: (view: WorkspaceView) => void; onSelectCampaign: (id: string) => void }) {
+function FollowupsView({ campaigns, matchByKey, selectedCampaignId, onView, onSelectCampaign, onResponse, onReset }: { campaigns: LegacyCampaignRecord[]; matchByKey: Map<string, MatchAssessment>; selectedCampaignId: string | null; onView: (view: WorkspaceView) => void; onSelectCampaign: (id: string) => void; onResponse: (record: LegacyCampaignRecord) => void; onReset: (record: LegacyCampaignRecord) => void }) {
   const simulated = campaigns.filter((entry) => entry.events.some((event) => event.type === "SIMULATION_STARTED"));
+  const selected = campaigns.find((entry) => entry.id === selectedCampaignId);
+  const responseRecord = (selected && ["interested-simulation", "no-response-simulation"].includes(selected.stage) ? selected : undefined)
+    ?? simulated.find((entry) => ["interested-simulation", "no-response-simulation"].includes(entry.stage));
+  const responseCandidate = (selected && ["active-simulation", "follow-up-simulation"].includes(selected.stage) ? selected : undefined)
+    ?? simulated.find((entry) => ["active-simulation", "follow-up-simulation"].includes(entry.stage));
   return <>
-    <ViewHeader eyebrow="06 · MIGRATED LEGACY MODULE / FOLLOW-UPS" title="Follow-ups" description="Only campaigns with a recorded local simulation-start event appear here. No message, call, delivery, CRM action, or external response is claimed." />
+    <ViewHeader eyebrow="06 · MIGRATED LEGACY MODULE / FOLLOW-UPS" title="Follow-ups" description="Only campaigns with a recorded local simulation-start event appear here. No message, call, delivery, CRM action, scheduler task, or external response is claimed." aside={<div className="tb3-response-actions">{responseRecord ? <button onClick={() => onReset(responseRecord)}>Reset response simulation</button> : <button disabled={!responseCandidate} onClick={() => responseCandidate && onResponse(responseCandidate)}>Simulate response</button>}<small>{responseRecord ? `${campaignStageLabel[responseRecord.stage]} · local only` : responseCandidate ? "Creates a versioned local interested-response event" : "Start a lifecycle simulation first"}</small></div>} />
     <CampaignTabs view="followups" onChange={onView} />
     <section className="tb3-radar-kpis"><Metric label="CAMPAIGN RECORDS" value={campaigns.length} note="browser-local" /><Metric label="APPROVED CONTENT" value={campaigns.filter((entry) => entry.approval).length} note="not activation" /><Metric label="ACTIVE SIMULATIONS" value={campaigns.filter((entry) => ["active-simulation", "follow-up-simulation"].includes(entry.stage)).length} note="NOT SENT" /><Metric label="SIMULATED RESPONSES" value={campaigns.filter((entry) => ["interested-simulation", "no-response-simulation"].includes(entry.stage)).length} note="not external events" signal /></section>
-    <section className="tb3-followup-layout"><article className="tb3-followup-table"><header><span>SIMULATION PIPELINE</span><h2>Campaign and follow-up status</h2></header><div className="head"><span>SUPPLIER / TENDER</span><span>DRAFT</span><span>STATUS</span><span>LAST EVENT</span><span>NOTE</span></div>{simulated.length ? simulated.map((record) => { const assessment = matchByKey.get(record.matchKey)!; const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!; const lastEvent = record.events.at(-1)!; return <div className="row" key={record.id}><div><b>{rowSupplier.legalEnglishName}</b><small>{rowTender.reference} · {rowTender.object}</small><button onClick={() => { onSelectCampaign(record.id); onView("campaigns"); }}>Open campaign →</button></div><div><span>{record.channel}</span><small>{record.communicationStatus}</small></div><div><strong>{campaignStageLabel[record.stage]}</strong><small>simulation only</small></div><div><span>{lastEvent.type.replaceAll("_", " ")}</span><small>{lastEvent.occurredAt}</small></div><div><span>{record.consultantNote || "No internal note"}</span></div></div>; }) : <div className="tb3-empty"><b>No follow-up simulation records yet.</b><span>Approve a local draft and explicitly start its isolated lifecycle simulation first.</span></div>}</article><aside className="tb3-event-log"><header><span>AUDIT LOG</span><h2>Latest local events</h2></header>{campaigns.flatMap((record) => record.events.map((event) => ({ record, event }))).sort((left, right) => right.event.occurredAt.localeCompare(left.event.occurredAt)).slice(0, 8).map(({ record, event }) => <div key={event.id}><span>{event.simulationOnly ? "SIMULATION" : "HUMAN"}</span><p><b>{event.type.replaceAll("_", " ")}</b><small>{record.id} · {event.occurredAt}</small></p></div>)}</aside></section>
+    <section className="tb3-followup-layout"><article className="tb3-followup-table"><header><span>SIMULATION PIPELINE</span><h2>Campaign and follow-up status</h2></header><div className="head"><span>SUPPLIER / TENDER</span><span>DRAFT</span><span>STATUS</span><span>LAST EVENT</span><span>NEXT ACTION</span><span>NOTE</span></div>{simulated.length ? simulated.map((record) => { const assessment = matchByKey.get(record.matchKey)!; const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!; const lastEvent = record.events.at(-1)!; return <div className="row" key={record.id}><div><b>{rowSupplier.legalEnglishName}</b><small>{rowTender.reference} · {rowTender.object}</small><button onClick={() => { onSelectCampaign(record.id); onView("campaigns"); }}>Open campaign →</button></div><div><span>{record.channel}</span><small>{record.communicationStatus}</small></div><div><strong>{campaignStageLabel[record.stage]}</strong><small>simulation only</small></div><div><span>{lastEvent.type.replaceAll("_", " ")}</span><small>{lastEvent.occurredAt}</small></div><div><span>{record.nextAction}</span><small>{record.nextFollowUpAt ? `Next follow-up ${dateLabel(record.nextFollowUpAt)}` : "No scheduled task"}</small></div><div><span>{record.consultantNote || "No internal note"}</span></div></div>; }) : <div className="tb3-empty"><b>No follow-up simulation records yet.</b><span>Approve a local draft and explicitly start its isolated lifecycle simulation first.</span></div>}</article><aside className="tb3-event-log"><header><span>AUDIT LOG</span><h2>Latest local events</h2></header>{campaigns.flatMap((record) => record.events.map((event) => ({ record, event }))).sort((left, right) => right.event.occurredAt.localeCompare(left.event.occurredAt)).slice(0, 8).map(({ record, event }) => <div key={event.id}><span>{event.simulationOnly ? "SIMULATION" : "HUMAN"}</span><p><b>{event.type.replaceAll("_", " ")}</b><small>{record.id} · {event.occurredAt}</small></p></div>)}</aside></section>
     <section className="tb3-handoff-lock"><div><span>PROPOSALPREP AI</span><h2>External handoff is not part of this migration baseline</h2><p>A simulated interested response does not authorize a transfer. A separately approved integration event would be required.</p></div><button disabled>Transfer to ProposalPrep AI →</button></section>
   </>;
 }
@@ -591,7 +676,26 @@ function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision, 
   ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "MISSING" : valueClass}</small></strong></div>)}</div><section><span>EVIDENCE-LINKED STRENGTHS</span><div>{result.match.linkedStrengths.length ? result.match.linkedStrengths.map((claim) => <article key={claim.id}><b>✓ {claim.text}</b>{claim.evidenceIds.map((id) => <code key={id}>{id}</code>)}</article>) : <p>No evidence-linked strength is available.</p>}</div></section><section className="gaps"><span>GAPS / UNKNOWNS</span><div>{result.match.gaps.length ? result.match.gaps.map((gap) => <p key={gap}>? {gap}</p>) : <p>No legacy gap recorded.</p>}{result.reviewSupport.findings.map((finding) => <p key={finding.code}>! {finding.code}: {finding.nextAction}</p>)}</div></section><button className="tb3-evidence-link" onClick={() => onViewChange("verification")}>Open supplier verification →</button><div className="tb3-decision-actions"><button className={result.match.consultantDecision === "rejected" ? "selected reject" : ""} onClick={() => onDecision("rejected")}>Reject</button><button className={result.match.consultantDecision === "hold" ? "selected" : ""} onClick={() => onDecision("hold")}>Hold</button><button disabled={!result.reviewSupport.readyForCurrentDecision} className={result.match.consultantDecision === "approved" ? "selected" : ""} onClick={() => onDecision("approved")}>Approve match</button></div>{result.match.matchScore.value !== null && result.match.matchScore.value > 0 && <button className="tb3-campaign-link" onClick={onCampaign}>Create legacy local draft →</button>}<small className="tb3-owner-boundary">Match decision: TL-A031 workspace · Campaign draft: isolated unplaced legacy module</small></aside>;
 }
 
-function CampaignWorkspace({ record, result, tender, supplier, onObjective, onChannel, onCopy, onNote, onApproval, onSimulate, onAdvance, onVerification }: { record: LegacyCampaignRecord; result: TenderMatchCaseResult; tender: TenderRecord; supplier: SupplierRecord; onObjective: (objective: LegacyCampaignObjectiveId) => void; onChannel: (channel: string) => void; onCopy: (value: string) => void; onNote: (value: string) => void; onApproval: () => void; onSimulate: () => void; onAdvance: (action: "follow-up" | "interested" | "no-response" | "closed") => void; onVerification: () => void }) {
+function CampaignWorkspace({ record, result, tender, supplier, expanded, persistenceMessage, onExpanded, onObjective, onChannel, onCopy, onNote, onSave, onApproval, onSimulate, onAdvance, onVerification }: { record: LegacyCampaignRecord; result: TenderMatchCaseResult; tender: TenderRecord; supplier: SupplierRecord; expanded: boolean; persistenceMessage: string; onExpanded: React.Dispatch<React.SetStateAction<boolean>>; onObjective: (objective: LegacyCampaignObjectiveId) => void; onChannel: (channel: string) => void; onCopy: (value: string) => void; onNote: (value: string) => void; onSave: () => void; onApproval: () => void; onSimulate: () => void; onAdvance: (action: "follow-up" | "interested" | "no-response" | "closed") => void; onVerification: () => void }) {
   const blockers = legacyCampaignActivationBlockers(result, supplier);
-  return <section className="tb3-campaign-workspace"><header><div><span>LOCAL LEGACY WORKSPACE · {record.origin.toUpperCase()}</span><h2>Campaign Workspace</h2><p>{supplier.legalEnglishName} <i>×</i> {tender.object}</p></div><div><b className={`tb3-campaign-stage ${record.stage}`}>{campaignStageLabel[record.stage]}</b><small>Revision {record.revision} · {record.communicationStatus}</small></div></header><section className="tb3-objective"><label><span>DRAFT OBJECTIVE</span><select value={record.objective} onChange={(event) => onObjective(event.target.value as LegacyCampaignObjectiveId)}>{legacyCampaignObjectives.map((entry) => <option value={entry.id} key={entry.id}>{entry.label}</option>)}</select><small>{legacyCampaignObjectives.find((entry) => entry.id === record.objective)?.description}</small></label><aside><span>REAL ACTIVATION GATE</span><b>{blockers.length ? `${blockers.length} blockers` : "Evidence gate satisfied"}</b>{blockers.length ? blockers.map((blocker) => <p key={blocker}>! {blocker.replaceAll("_", " ")}</p>) : <p>Sending still requires a separately authorized integration event.</p>}</aside></section><section className="tb3-campaign-context"><div><span>OPPORTUNITY</span><b>{tender.object}</b><p>{tender.reference} · {tender.country} · {result.match.tenderFreshness.status}</p></div><i>→</i><div><span>COMPANY</span><b>{supplier.legalEnglishName}</b><p>{supplierActivity(supplier)} · readiness {supplier.readiness.value} EST.</p></div><i>→</i><div><span>MATCH / AUDITED</span><b>{result.match.matchScore.value ?? "MISSING"} / {result.match.auditedMatch.value ?? "MISSING"}</b><p>separate historical and audited values</p></div><i>→</i><div><span>COMMUNICATION</span><b>{record.communicationStatus}</b><p>local draft or simulation only</p></div></section><section className="tb3-campaign-grid"><aside className="tb3-channel-list"><header><span>CHANNEL FORMATS</span><b>Local copy only</b></header>{legacyCampaignChannels.map((channel) => <button className={record.channel === channel ? "active" : ""} key={channel} onClick={() => onChannel(channel)}><span>{channel.slice(0, 2).toUpperCase()}</span><p><b>{channel}</b><small>{record.channel === channel ? "Selected · NOT SENT" : "Alternative format"}</small></p><i>{record.channel === channel ? "✓" : "→"}</i></button>)}</aside><article className="tb3-copy-editor"><header><div><span>LEGACY CAMPAIGN COPY · EVIDENCE-GATED</span><h2>{legacyCampaignObjectives.find((entry) => entry.id === record.objective)?.shortLabel} · {record.channel}</h2></div><b>{campaignStageLabel[record.stage].toUpperCase()} · NOT SENT</b></header><textarea aria-label="Editable local campaign draft" value={record.draftCopy} onChange={(event) => onCopy(event.target.value)} spellCheck /><div className="tb3-copy-evidence"><span>EVIDENCE IDS USED</span>{result.match.auditedMatch.evidenceIds.length ? result.match.auditedMatch.evidenceIds.map((id) => <code key={id}>{id}</code>) : <i>MISSING · no evidence-linked claim may be asserted</i>}</div><div className="tb3-copy-guardrail"><span>EXCLUDED / UNRESOLVED</span><p>{result.match.gaps.length ? result.match.gaps.slice(0, 4).join(" · ") : "No legacy gap recorded; current-source review may still be required."}</p></div><label><span>CONSULTANT NOTE</span><input value={record.consultantNote} onChange={(event) => onNote(event.target.value)} placeholder="Add an internal local note" /></label><div className="tb3-copy-actions"><button onClick={onVerification}>Open Verification</button>{["draft", "approved"].includes(record.stage) && <button className="approve" onClick={onApproval}>{record.stage === "approved" ? "Return to Draft" : "Approve Content"}</button>}{record.stage === "approved" && <button className="simulate" onClick={onSimulate}>Start lifecycle simulation</button>}{record.stage === "active-simulation" && <><button className="simulate" onClick={() => onAdvance("follow-up")}>Simulate follow-up</button><button onClick={() => onAdvance("interested")}>Simulate interested</button><button onClick={() => onAdvance("no-response")}>Simulate no response</button></>}{record.stage === "follow-up-simulation" && <><button onClick={() => onAdvance("interested")}>Simulate interested</button><button onClick={() => onAdvance("no-response")}>Simulate no response</button></>}{["interested-simulation", "no-response-simulation"].includes(record.stage) && <button onClick={() => onAdvance("closed")}>Close simulation</button>}<button disabled title="No authorized delivery integration or event exists">Send / activate externally</button></div></article><aside className="tb3-sequence"><span>{record.stage.includes("simulation") ? "SIMULATION ACTIVE · NOT SENT" : "LOCAL PLAN · NOT SCHEDULED"}</span><h3>Deadline-aware cadence</h3>{[0, 2, 5, Math.max(0, result.match.tenderFreshness.daysRemaining - 1)].filter((day, index, values) => day >= 0 && values.indexOf(day) === index).slice(0, 4).map((day, index) => <div key={day}><span>{index + 1}</span><p><b>Day {day}</b><small>{index === 0 ? "Opportunity brief" : index === 1 ? "Evidence summary" : index === 2 ? "Qualification call plan" : "Deadline reminder plan"}</small></p></div>)}<p>No task is scheduled and no external activity has occurred.</p><section><b>STOP RULES</b><p>Reply · opt-out · invalid address · consultant stop · tender deadline</p></section></aside></section><footer><span>EVENT PROVENANCE</span>{record.events.slice(-5).map((entry) => <div key={entry.id}><b>{entry.type.replaceAll("_", " ")}</b><small>{entry.simulationOnly ? "SIMULATION" : "HUMAN"} · {entry.occurredAt} · {entry.actorId}</small><p>{entry.rationale}</p></div>)}</footer></section>;
+  const recommendation = legacyCampaignObjectiveRecommendation(result.match);
+  const recommendedChannel = recommendedLegacyCampaignChannel(result, supplier, record.objective);
+  const cadence = buildLegacyCampaignCadence(result, record.channel);
+  return <section className="tb3-campaign-workspace">
+    <header><div><span>LOCAL LEGACY WORKSPACE · {record.origin.toUpperCase()}</span><h2>Campaign Workspace</h2><p>{supplier.legalEnglishName} <i>×</i> {tender.object}</p></div><div><b className={`tb3-campaign-stage ${record.stage}`}>{campaignStageLabel[record.stage]}</b><small>Revision {record.revision} · {record.communicationStatus}</small><button aria-controls="tb3-campaign-workspace-body" aria-expanded={expanded} onClick={() => onExpanded((value) => !value)}>{expanded ? "Collapse" : "Expand"}</button></div></header>
+    {expanded && <div id="tb3-campaign-workspace-body">
+      <section className="tb3-objective">
+        <label><span>DRAFT OBJECTIVE</span><select value={record.objective} onChange={(event) => onObjective(event.target.value as LegacyCampaignObjectiveId)}>{legacyCampaignObjectives.map((entry) => <option value={entry.id} key={entry.id}>{entry.label}</option>)}</select><small>{legacyCampaignObjectives.find((entry) => entry.id === record.objective)?.description}</small></label>
+        <aside className="tb3-ai-recommendation"><span>AI RECOMMENDED</span><b>{legacyCampaignObjectives.find((entry) => entry.id === recommendation.id)?.label}</b><p><strong>Why:</strong> {recommendation.reason}</p>{record.objective !== recommendation.id && <button onClick={() => onObjective(recommendation.id)}>Use recommendation</button>}</aside>
+        <aside><span>REAL ACTIVATION GATE</span><b>{blockers.length ? `${blockers.length} blockers` : "Evidence gate satisfied"}</b>{blockers.length ? blockers.map((blocker) => <p key={blocker}>! {blocker.replaceAll("_", " ")}</p>) : <p>Sending still requires a separately authorized integration event.</p>}</aside>
+      </section>
+      <section className="tb3-campaign-context"><div><span>OPPORTUNITY</span><b>{tender.object}</b><p>{tender.reference} · {tender.country} · {result.match.tenderFreshness.status}</p></div><i>→</i><div><span>COMPANY</span><b>{supplier.legalEnglishName}</b><p>{supplierActivity(supplier)} · readiness {supplier.readiness.value} EST.</p></div><i>→</i><div><span>MATCH / AUDITED</span><b>{result.match.matchScore.value ?? "MISSING"} / {result.match.auditedMatch.value ?? "MISSING"}</b><p>separate historical and audited values</p></div><i>→</i><div><span>COMMUNICATION</span><b>{record.communicationStatus}</b><p>local draft or simulation only</p></div></section>
+      <section className="tb3-campaign-grid">
+        <aside className="tb3-channel-list"><header><span>CHANNEL FORMATS</span><b>Recommended: {recommendedChannel}</b></header>{legacyCampaignChannels.map((channel) => <button className={record.channel === channel ? "active" : ""} key={channel} onClick={() => onChannel(channel)}><span>{channel.slice(0, 2).toUpperCase()}</span><p><b>{channel}</b><small>{channel === recommendedChannel ? `Recommended${record.channel === channel ? " · selected" : ""}` : record.channel === channel ? "Selected · NOT SENT" : "Alternative format"}</small></p><i>{record.channel === channel ? "✓" : "→"}</i></button>)}</aside>
+        <article className="tb3-copy-editor"><header><div><span>LEGACY CAMPAIGN COPY · EVIDENCE-GATED</span><h2>{legacyCampaignObjectives.find((entry) => entry.id === record.objective)?.shortLabel} · {record.channel}</h2></div><b>{campaignStageLabel[record.stage].toUpperCase()} · NOT SENT</b></header><textarea aria-label="Editable local campaign draft" value={record.draftCopy} onChange={(event) => onCopy(event.target.value)} spellCheck /><div className="tb3-copy-evidence"><span>EVIDENCE IDS USED</span>{result.match.auditedMatch.evidenceIds.length ? result.match.auditedMatch.evidenceIds.map((id) => <code key={id}>{id}</code>) : <i>MISSING · no evidence-linked claim may be asserted</i>}</div><div className="tb3-copy-guardrail"><span>EXCLUDED / UNRESOLVED</span><p>{result.match.gaps.length ? result.match.gaps.slice(0, 4).join(" · ") : "No legacy gap recorded; current-source review may still be required."}</p></div><label><span>CONSULTANT NOTE</span><input value={record.consultantNote} onChange={(event) => onNote(event.target.value)} placeholder="Add an internal local note" /></label><div className="tb3-save-status" role="status"><b>{record.lastSavedAt ? `Explicitly saved ${record.lastSavedAt}` : "Explicit save pending"}</b><span>{persistenceMessage}</span></div><div className="tb3-copy-actions"><button className="save" onClick={onSave}>Save changes</button><button onClick={onVerification}>Open Verification</button>{["draft", "approved"].includes(record.stage) && <button className="approve" onClick={onApproval}>{record.stage === "approved" ? "Return to Draft" : "Approve Content"}</button>}{record.stage === "approved" && <button className="simulate" onClick={onSimulate}>Start lifecycle simulation</button>}{record.stage === "active-simulation" && <><button className="simulate" onClick={() => onAdvance("follow-up")}>Simulate follow-up</button><button onClick={() => onAdvance("interested")}>Simulate interested</button><button onClick={() => onAdvance("no-response")}>Simulate no response</button></>}{record.stage === "follow-up-simulation" && <><button onClick={() => onAdvance("interested")}>Simulate interested</button><button onClick={() => onAdvance("no-response")}>Simulate no response</button></>}{["interested-simulation", "no-response-simulation"].includes(record.stage) && <button onClick={() => onAdvance("closed")}>Close simulation</button>}<button disabled title="No authorized delivery integration or event exists">Send / activate externally</button></div></article>
+        <aside className="tb3-sequence"><span>{record.stage.includes("simulation") ? "SIMULATION ACTIVE · NOT SENT" : "LOCAL PLAN · NOT SCHEDULED"}</span><h3>Deadline-aware cadence</h3>{cadence.map((step, index) => <div key={step.day}><span>{index + 1}</span><p><b>Day {step.day} · {step.channel}</b><small>{step.action}</small></p></div>)}<p>No task is scheduled and no external activity has occurred.</p><section><b>STOP RULES</b><p>Reply · opt-out · invalid address · consultant stop · tender deadline</p></section></aside>
+      </section>
+      <footer><span>EVENT PROVENANCE</span>{record.events.slice(-5).map((entry) => <div key={entry.id}><b>{entry.type.replaceAll("_", " ")}</b><small>{entry.simulationOnly ? "SIMULATION" : "HUMAN"} · {entry.occurredAt} · {entry.actorId}</small><p>{entry.rationale}</p></div>)}</footer>
+    </div>}
+  </section>;
 }

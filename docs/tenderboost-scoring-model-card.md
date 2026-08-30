@@ -50,6 +50,8 @@ The 70/30 weighting is a provisional expert policy. Technical relevance is prima
 - **Company readiness:** general historical estimate owned conceptually by `agent:TL-A009`, not part of pair fit.
 - **Evidence quality:** mean confidence of distinct records accepted for the audited pair, not global company coverage.
 - **Deadline urgency:** monotonic time context from the absolute deadline and supplied clock; it never changes Match Support.
+
+Frozen-baseline conversion is deterministic: tenders use absolute end-of-day instants, and positive whole days remaining are `floor((deadlineAt - suppliedClock) / 24h)`. At `TENDERBOOST_DEMO_AS_OF` this reproduces the original 16-value `daysLeft` vector `[1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135]`; resumed Cases always recompute from the new injected clock.
 - **Consultant decision:** human approve/hold/reject record; it never changes any score.
 
 Risk, stale/closed state, and evidence refresh appear as separately owned review findings. They do not become hidden score penalties.

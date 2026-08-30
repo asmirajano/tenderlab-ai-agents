@@ -14,6 +14,7 @@ export type LegacyParityItem = {
   targetSurface: string;
   status: LegacyParityStatus;
   note: string;
+  sourceEvidence?: string;
 };
 
 const item = (
@@ -23,7 +24,8 @@ const item = (
   targetSurface: string,
   status: LegacyParityStatus,
   note: string,
-): LegacyParityItem => ({ id, category, sourceSurface, targetSurface, status, note });
+  sourceEvidence?: string,
+): LegacyParityItem => ({ id, category, sourceSurface, targetSurface, status, note, sourceEvidence });
 
 /**
  * Reviewable source-to-target inventory for the frozen 04b0b2a TenderBoost UI.
@@ -89,7 +91,14 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("interaction-draft-approval", "interaction", "Approve campaign", "Approve draft content", "truth-corrected", "Approval is provenance, not delivery authorization."),
   item("interaction-lifecycle", "interaction", "Activate/follow-up/response", "Explicit lifecycle simulation", "truth-corrected", "No real state is claimed without an integration event."),
   item("interaction-response", "interaction", "Simulate response", "Simulate interested/no-response", "truth-corrected", "Impossible before a simulation-start event."),
-  item("interaction-collapse", "interaction", "Campaign section collapse", "Campaign section collapse", "preserved", "Uses aria-expanded and stable controls."),
+  item("interaction-response-reset", "interaction", "Reset response simulation", "Versioned local response reset", "truth-corrected", "Reset returns the selected local record to follow-up simulation and records provenance; it cannot erase or imply an external event.", "app/tenderboost-ai/page.tsx:861-886,1251-1274"),
+  item("interaction-collapse", "interaction", "Campaign suggestion and pipeline collapse", "Campaign suggestion and pipeline collapse", "preserved", "Uses aria-expanded and stable controls."),
+  item("interaction-workspace-collapse", "interaction", "Campaign Workspace Collapse/Expand", "Legacy workspace Collapse/Expand", "intentionally-isolated-for-future-agent-separation", "The isolated workspace retains its own accessible disclosure control.", "app/tenderboost-ai/page.tsx:1223-1231"),
+  item("content-objective-recommendation", "content", "AI recommended objective, rationale and Use recommendation", "Evidence-bounded local recommendation", "intentionally-isolated-for-future-agent-separation", "Recommendation remains local decision support and never activation authority.", "app/tenderboost-ai/page.tsx:1232-1237"),
+  item("content-channel-recommendation", "content", "Recommended campaign channel", "Recommended local draft format", "intentionally-isolated-for-future-agent-separation", "The recommended format is visible without implying delivery.", "app/tenderboost-ai/page.tsx:1238-1241"),
+  item("content-sequence-channels", "content", "Cadence day and channel", "Local cadence day, channel and action", "truth-corrected", "Each cadence step preserves its channel but remains NOT SCHEDULED.", "app/tenderboost-ai/page.tsx:1244-1247"),
+  item("interaction-explicit-campaign-save", "interaction", "Save changes", "Guarded browser-local Save changes", "adapted-to-tenderapps-design", "Explicit save records a revision and visible saved/failure feedback; autosave remains separately labelled.", "app/tenderboost-ai/page.tsx:1242"),
+  item("content-followup-next-action", "content", "Next Action and follow-up date", "Local simulation next action and date", "truth-corrected", "Dates are review cues stored on the local simulation record, not scheduler tasks.", "app/tenderboost-ai/page.tsx:1258-1274"),
   item("interaction-case-save", "interaction", "No explicit Case persistence", "Save explicit Case", "preserved", "Stage 1/2 result persistence retained."),
   item("interaction-case-load", "interaction", "No explicit Case resume", "Load explicit Case", "truth-corrected", "Deadline freshness recomputes from the injected clock."),
   item("interaction-campaign-persist", "interaction", "Session campaign state", "Browser-local legacy module state", "adapted-to-tenderapps-design", "Separate storage key and visible non-durable warning."),
@@ -97,10 +106,14 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("state-empty-campaign", "state", "No campaign suggestions", "No eligible legacy candidates", "truth-corrected", "Blocker next steps are shown."),
   item("state-empty-followup", "state", "No follow-up records", "No simulation follow-up records", "truth-corrected", "Explains the required event."),
   item("state-errors", "state", "Implicit action failures", "Visible action and persistence errors", "adapted-to-tenderapps-design", "Errors use role=alert."),
+  item("state-campaign-load-error", "state", "Campaign initial load", "Recoverable visible load error", "adapted-to-tenderapps-design", "A failed browser read cannot discard valid in-memory edits or silently overwrite the unsafe payload.", "app/tenderboost-ai/page.tsx:721-731"),
+  item("state-campaign-autosave-error", "state", "Campaign autosave", "Recoverable visible autosave error", "adapted-to-tenderapps-design", "Autosave failure is announced while the current local state stays usable.", "app/tenderboost-ai/page.tsx:733-742"),
+  item("state-case-save-error", "state", "No explicit Case save", "Guarded explicit Case save", "adapted-to-tenderapps-design", "Storage failure is surfaced with role=alert and the active Case remains in memory.", "No frozen-source equivalent; Stage 1/2 integrity addition"),
   item("state-statuses", "state", "Pending/approved/hold/rejected", "Pending/approved/hold/rejected", "preserved", "Match decisions remain separate from scores."),
   item("state-campaign-statuses", "state", "Draft through closed", "Draft/approved plus simulated lifecycle", "truth-corrected", "Every non-draft downstream status names simulation."),
   item("data-tenders", "data", "16 tender records", "16 tender records", "preserved", "Titles, objects, buyers, countries, sources, budgets and tags retained."),
   item("data-deadlines", "data", "Relative daysLeft", "Absolute deadlineAt", "truth-corrected", "Days remaining and urgency are derived from the current/injected clock."),
+  item("data-deadline-baseline-vector", "data", "Frozen daysLeft vector", "Deterministic whole-day deadline conversion", "truth-corrected", "At the frozen as-of instant, floor((end-of-day deadline - clock)/24h) reproduces [1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135].", "app/tenderboost-ai/page.tsx fixture tenderData[].daysLeft"),
   item("data-suppliers", "data", "10 supplier records", "10 supplier records", "preserved", "Frozen JSON blob is byte-identical."),
   item("data-evidence", "data", "Supplier evidence fields", "Versioned evidence records", "truth-corrected", "Source role, value class and review status are explicit."),
   item("data-matches", "data", "18 assessed pairs", "18 evaluated legacy pairs", "preserved", "Scores 65–95 remain historical estimates."),

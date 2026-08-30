@@ -65,7 +65,9 @@ export function deriveTenderFreshness(tender: TenderRecord, nowIso: string): Ten
   const snapshot = new Date(tender.snapshotAsOf).getTime();
   if (![now, deadline, snapshot].every(Number.isFinite)) throw new Error("Tender freshness requires valid absolute dates.");
   const difference = deadline - now;
-  const daysRemaining = difference <= 0 ? 0 : Math.ceil(difference / DAY_MS);
+  // Deadlines are stored as end-of-day instants. Floor preserves the frozen
+  // source's whole-calendar-day baseline while keeping freshness clock-derived.
+  const daysRemaining = difference <= 0 ? 0 : Math.floor(difference / DAY_MS);
   const snapshotAgeDays = Math.max(0, Math.floor((now - snapshot) / DAY_MS));
   return {
     status: difference <= 0 ? "closed" : daysRemaining <= 7 ? "urgent" : "open",
