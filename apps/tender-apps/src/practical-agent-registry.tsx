@@ -47,7 +47,7 @@ const displayMetadata: readonly PracticalAgentDisplayMetadata[] = [
     productId: "product:TA-TENDERBOOST",
     displayName: "TenderMatch",
     functionalSubtitle: "Frozen-source parity · evidence-linked Company × Tender review",
-    description: "Use TenderMatch to review frozen Company × Tender evidence and audited matching support while keeping promotion, outreach, CRM action, and response tracking outside this workspace.",
+    description: "Use TenderMatch to review frozen Company × Tender evidence, audited matching support, missing information, freshness, and a human-controlled consultant disposition.",
     pageTitle: "Tender Apps — TenderMatch · Agent 03",
     visual: "tendermatch",
   },

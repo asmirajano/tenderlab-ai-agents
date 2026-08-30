@@ -119,7 +119,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     ownerAgentId: "agent:TL-A031",
     clientProductId: "product:TA-TENDERBOOST",
     descriptor: "Audited Company × Tender evidence support inside the TenderMatch frozen matching-source baseline",
-    tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, and retain the consultant’s match decision without owning participation design, Bid/No-Bid authority, promotion, outreach, CRM action, or response tracking.",
+    tor: "Compare one historical Company × Tender estimate with a separately evidence-gated audited result, explain supported and missing components, and retain the consultant’s match disposition within a matching-only human-review workspace.",
     primaryInputs: [
       "Versioned tender record with absolute deadline and source snapshot",
       "Versioned supplier profile and evidence records",
@@ -150,7 +150,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
       "Legacy Match Score and readiness remain historical estimates and are excluded from claims of audited truth.",
       "Browser-local Cases are not durable tenant-isolated Artifacts.",
       "The implementation does not own participation design, Bid/No-Bid, or external commercial action.",
-      "Campaign Studio and follow-up simulation pages were removed from TenderMatch after product-boundary review; promotion, outreach, CRM action, and response tracking require a separately placed future capability.",
+      "Historical Campaign Studio and follow-up simulation pages were removed from the active TenderMatch product after boundary review and remain available only in Git/source history.",
       "The relationship view is a fixed schematic, not a geospatial map, distance model, coordinate plot, or routing result.",
     ],
     patternIds: [],

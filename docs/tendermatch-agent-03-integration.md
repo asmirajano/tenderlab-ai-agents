@@ -71,7 +71,7 @@ Truth corrections override literal reproduction when the source could mislead:
 - 142 absent pair records are `MISSING`, not 0/100;
 - tender freshness and urgency derive from `deadlineAt` and the supplied/current clock; at `TENDERBOOST_DEMO_AS_OF`, `floor((end-of-day deadline - clock) / 24h)` deterministically reproduces the source vector `[1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135]` without persisting relative time;
 - 1,000-item radar universes and fixed geometry are labelled simulated and schematic/non-geospatial;
-- “Participation Boost proposal sent” is replaced with `NOT SENT · no event recorded`;
+- the frozen source's false “Participation Boost proposal sent” field is removed from the active matching surface;
 - historical Match Score, readiness, verification quality, audited support, deadline urgency, and consultant decision remain separate;
 - no message, call, CRM action, delivery, response, or downstream handoff is claimed.
 
@@ -199,7 +199,7 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 | Reconstructed frozen deadlines were all one day high. | End-of-day instants were combined with `Math.ceil`, counting a partial terminal day as another full day. | Use a deterministic floor of positive deadline distance; keep zero/closed handling clock-derived. | When migrating a frozen relative-day fixture to absolute end-of-day instants, specify and regression-test the calendar conversion. | Exact 16-value baseline-vector test. |
 | Legacy and audited results could appear equivalent. | Historical curated scores had no replayable formula. | Keep immutable legacy estimates beside evidence-gated audited support. | Never reverse-engineer evidence to reproduce a historical score. | 18-pair experiment and policy tests. |
 | A fixed relationship picture could imply geographic accuracy. | Labels changed while geometry did not. | Mark it visibly and semantically as schematic/non-geospatial. | Fixed geometry must never claim live map meaning. | UI/CSP fallback assertions. |
-| The original supplier radar claimed a Participation Boost proposal was sent. | UI copy treated a target-status idea as an integration event. | Replace it with `NOT SENT · no event recorded` everywhere. | External action requires an integration/event record. | Truthfulness and browser text assertions. |
+| The original supplier radar claimed a Participation Boost proposal was sent. | UI copy treated a target-status idea as an integration event. | Remove the action-status field from the active matching product. | A matching-only product must not expose downstream workflow state. | Absence assertions and rendered supplier-profile review. |
 | A parity checkpoint temporarily rendered Campaign Studio inside TenderMatch. | Migration parity was prioritized over the confirmed product boundary. | Remove both pages, controls, runtime/persistence code, and active manifest entries; retain only downstream history. | A capability outside the owner Agent must not remain reachable merely for legacy parity. | Five-family/ten-view registry assertions, stale-view fallback, absence checks, and browser navigation review. |
 | Case persistence failures were unguarded. | Browser storage was treated as reliable. | Announce recoverable Case-save errors with `role=alert` and retain the current in-memory state. | Browser-local persistence is fallible and must never silently destroy the active review state. | Failing-storage tests and rendered alert/status assertions. |
 

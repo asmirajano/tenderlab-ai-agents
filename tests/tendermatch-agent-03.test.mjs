@@ -68,8 +68,8 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.equal(implementation?.ownerAgentId, "agent:TL-A031");
   assert.doesNotMatch(implementation?.descriptor ?? "", /TenderBoost/i);
   assert.match(implementation?.primaryOutput ?? "", /evidence-gated audited result or explicit MISSING state/);
-  assert.match(JSON.stringify(implementation), /Campaign Studio and follow-up simulation pages were removed/);
-  assert.match(implementation?.tor ?? "", /without owning[\s\S]+promotion[\s\S]+outreach[\s\S]+CRM action/);
+  assert.match(JSON.stringify(implementation), /Historical Campaign Studio and follow-up simulation pages were removed/);
+  assert.match(implementation?.tor ?? "", /matching-only human-review workspace/);
 });
 
 test("maps all 10 TenderMatch views exactly once into the five-family matching workflow", async () => {
@@ -296,14 +296,15 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(main, /"\/tendermatch\/followups": "\/tendermatch"/);
   const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
   assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
-  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*promotion)(?=[^"]*outreach)[^"]+"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*audited matching support)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /SCHEMATIC · NON-GEOSPATIAL/);
   assert.match(page, /data-map-mode="schematic-non-geospatial"/);
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
-  assert.match(page, /Promotion and outreach belong to a separate future capability/);
+  assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
+  assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
   assert.match(page, /aria-label="TenderMatch frozen-source dataset summary"/);
   assert.doesNotMatch(page, /aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
   assert.doesNotMatch(page, /Participation Boost proposal sent/);
@@ -327,7 +328,7 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
 
   assert.match(productShell, /TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE/);
   assert.match(productShell, /Company × Tender evidence review for TenderLab Consultants/);
-  assert.match(productShell, /MATCH SUPPORT · HUMAN DECISION · NO OUTREACH/);
+  assert.match(productShell, /MATCH SUPPORT · EVIDENCE REVIEW · HUMAN DISPOSITION/);
   assert.match(productShell, /TenderMatch workspace/);
   assert.match(productShell, /view !== "dashboard" && caseControls/);
   assert.doesNotMatch(productShell, /COMPLETE MIGRATION BASELINE|SOURCE BASELINE|Complete frozen TenderBoost workspace/);
@@ -363,8 +364,8 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.match(orientation, /onOpen\(previewAssessment, "match-tenders"\)/);
   assert.match(orientation, /onKeyDown=\{\(event\)[\s\S]+event\.key === "Enter"[\s\S]+event\.key === " "/);
   assert.match(orientation, /onView\("matrix"\)/);
-  assert.match(orientation, /separate TenderMarketing or promotion capability/);
-  assert.match(orientation, /No tender promotion, supplier contact, message delivery, CRM action, response tracking, participation authorization, or Bid\/No-Bid decision occurs in TenderMatch/);
+  assert.match(orientation, /Promotion and outreach belong to a separate future Marketing Agent/);
+  assert.match(orientation, /TenderMatch ends with a reviewable match result and human-controlled consultant disposition/);
   assert.match(orientation, /PracticalAgentOverviewBoundary[\s\S]+\{caseControls\}/);
   assert.doesNotMatch(orientation, /tb3-product-intro/);
   assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);

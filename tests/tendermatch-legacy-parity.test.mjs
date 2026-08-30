@@ -49,10 +49,10 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   const styles = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch.css"), "utf8");
   for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "AutoMatch by Tenders", "AutoMatch by Suppliers", "Detailed Case Review"]) assert.match(page, new RegExp(label));
   for (const content of ["Global Tender Demand", "Global Supplier Market", "Full Match Matrix", "AutoMatch by Tenders", "AutoMatch by Suppliers", "Case save failed"]) assert.match(page, new RegExp(content));
-  assert.match(page, /Promotion and outreach belong to a separate future capability/);
+  assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.match(page, /role="alert"/);
   assert.match(page, /MISSING—not 0\/100/);
-  assert.match(page, /NOT SENT · no event recorded/);
+  assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
   assert.match(page, /data-map-mode="schematic-non-geospatial"/);
   assert.match(page, /viewSurfaceRef\.current\?\.focus\(\)/);
   assert.match(page, /role="region"[\s\S]+tabIndex=\{-1\}/);

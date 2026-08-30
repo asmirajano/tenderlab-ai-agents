@@ -41,8 +41,8 @@ test("registers Real Agent implementations with stable Agent and product identit
       assert.equal(implementation.slug, "tendermatch");
       assert.equal(implementation.ownerAgentId, "agent:TL-A031");
       assert.doesNotMatch(implementation.primaryOutput, /campaign|outreach|crm/i);
-      assert.match(implementation.tor, /without owning[\s\S]+promotion[\s\S]+outreach[\s\S]+CRM action/i);
-      assert.ok(implementation.knownLimitations.some((item) => /Campaign Studio and follow-up simulation pages were removed[\s\S]+separately placed future capability/i.test(item)));
+      assert.match(implementation.tor, /matching-only human-review workspace/i);
+      assert.ok(implementation.knownLimitations.some((item) => /Historical Campaign Studio and follow-up simulation pages were removed[\s\S]+Git\/source history/i.test(item)));
       assert.equal(implementation.maturity, "concept-or-simulation");
       assert.equal(implementation.evidenceStrength, "unit-or-synthetic-fixture");
       assert.equal(implementation.deploymentStatus, "not-deployed");
