@@ -76,6 +76,23 @@ test("accounts for every frozen source surface with no missing parity items", ()
     const auditedItem = tenderBoostParityManifest.find((item) => item.id === id);
     assert.ok(auditedItem?.sourceEvidence, `${id} must retain a frozen-source locator or an explicit no-source statement`);
   }
+  const exactSourceEvidence = {
+    "interaction-response-reset": "04b0b2a:app/tenderboost-ai/page.tsx:861-886,1252,1258,1267",
+    "interaction-workspace-collapse": "04b0b2a:app/tenderboost-ai/page.tsx:1223-1225",
+    "content-objective-recommendation": "04b0b2a:app/tenderboost-ai/page.tsx:1227",
+    "content-channel-recommendation": "04b0b2a:app/tenderboost-ai/page.tsx:1236",
+    "content-sequence-channels": "04b0b2a:app/tenderboost-ai/page.tsx:1246",
+    "interaction-explicit-campaign-save": "04b0b2a:app/tenderboost-ai/page.tsx:1244",
+    "content-followup-next-action": "04b0b2a:app/tenderboost-ai/page.tsx:1258,1267",
+    "state-campaign-load-error": "No frozen-source equivalent; TenderApps parity hardening addition",
+    "state-campaign-autosave-error": "No frozen-source equivalent; TenderApps parity hardening addition",
+    "state-case-save-error": "No frozen-source equivalent; Stage 1/2 integrity addition",
+    "data-deadline-baseline-vector": "04b0b2a:app/tenderboost-ai/page.tsx:137-153 · tenders[].daysLeft",
+  };
+  for (const [id, sourceEvidence] of Object.entries(exactSourceEvidence)) {
+    assert.equal(tenderBoostParityManifest.find((item) => item.id === id)?.sourceEvidence, sourceEvidence, id);
+  }
+  assert.equal(tenderBoostParityManifest.some((item) => item.sourceEvidence?.includes("tenderData")), false);
 });
 
 test("reconstructs the exact frozen relative-deadline vector from absolute end-of-day deadlines", () => {
@@ -232,6 +249,8 @@ test("renders every original view family in the TenderApps page without standalo
   assert.match(styles, /\.tb3-view-surface:focus \{ outline: none; \}/);
   assert.match(styles, /\.tb3-product-intro aside > b \{ grid-column: 2; grid-row: 1; \}/);
   assert.match(styles, /\.tb3-product-intro aside strong \{ grid-column: 2; grid-row: 2; \}/);
+  assert.match(styles, /@media \(max-width: 860px\)[\s\S]*?\.tb3-objective \{ grid-template-columns: 1fr; \}/);
+  assert.doesNotMatch(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\}\s*\.tb3-objective \{ grid-template-columns: 1fr; \}\s*$/);
   assert.doesNotMatch(page, /Agent Command Center|tb-topbar|tb-sidebar/);
   assert.doesNotMatch(`${page}\n${styles}`, /tileLayer|openstreetmap|wikimedia|leaflet/i);
 });

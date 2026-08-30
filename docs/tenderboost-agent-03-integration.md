@@ -149,6 +149,8 @@ Practical order `03` is not used as a canonical ID, matching is not conflated wi
 
 The typed item-level matrix is `packages/tenderboost/src/legacy-parity.ts`. It contains **90** audited source items: **26 preserved**, **14 adapted to TenderApps design**, **42 truth-corrected**, **8 intentionally isolated for future Agent separation**, and **0 missing**. The strict-pass additions carry frozen-source locators (or an explicit declaration that no frozen-source equivalent exists) and are paired with behavioral tests for deadline reconstruction, recommendation use, channel/cadence output, save/reset revisions, next-action metadata, and persistence failures. The `0 missing` result is therefore corroborated by executable behavior and rendered-browser review, not accepted from the manifest count alone.
 
+The reviewable 48-state responsive matrix, restored-control checks, route/history results, focus qualification, overflow verdict, and console verdict are recorded in `docs/tendermatch-strict-parity-browser-qa.md`.
+
 | Frozen source surface | TenderApps target | Coverage | Intentional difference |
 | --- | --- | --- | --- |
 | 01 Dashboard | Overview | truth-corrected | Activation wording becomes dated/local; six metrics separate evaluated, audited, and MISSING. |

@@ -589,4 +589,3 @@ button.tb3-metric:hover { border-color: var(--tb3-green); transform: translateY(
 @media (prefers-reduced-motion: reduce) {
   .tb3-schematic-map > div, .tb3-progress i { transition: none; }
 }
-  .tb3-objective { grid-template-columns: 1fr; }
