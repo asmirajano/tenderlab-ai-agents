@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0.0",
+  "evidenceSet": "tendermatch-final-integration",
+  "capturedAt": "2026-08-30",
+  "candidateIdentity": {
+    "branch": "codex/tendermatch-final-integration",
+    "integratedBaseCommit": "573af695690a5e128f1264f9f70451a57d38a5bc",
+    "state": "pre-commit working-tree candidate",
+    "note": "The screenshots were captured from the uncommitted integrated candidate based on the stated commit. The final checkpoint commit is recorded in the handoff; this manifest does not misidentify the pre-commit candidate as that later commit."
+  },
+  "preview": {
+    "origin": "http://127.0.0.1:4177",
+    "canonicalRoute": "/tendermatch",
+    "buildMode": "TenderApps production preview"
+  },
+  "screenshots": [
+    {
+      "filename": "desktop-standard-overview.png",
+      "route": "/tendermatch",
+      "view": "overview",
+      "viewport": { "width": 1280, "height": 768, "layout": "standard" },
+      "imageDimensions": { "width": 1265, "height": 759 },
+      "sha256": "0a5caa0f181b72b555cd2bc98ae5bb2feca4c6d16c69b3e5cc3bdd2125fab98d"
+    },
+    {
+      "filename": "desktop-standard-tender-map.png",
+      "route": "/tendermatch",
+      "view": "radar-tenders",
+      "viewport": { "width": 1280, "height": 768, "layout": "standard" },
+      "imageDimensions": { "width": 1265, "height": 759 },
+      "sha256": "2a8055080608cc4a73fadffac5fdf3627715e85c46922fe823c1cc4122b34bab"
+    },
+    {
+      "filename": "desktop-standard-supplier-map.png",
+      "route": "/tendermatch",
+      "view": "radar-suppliers",
+      "viewport": { "width": 1280, "height": 768, "layout": "standard" },
+      "imageDimensions": { "width": 1265, "height": 759 },
+      "sha256": "98003cf18b481b023a0510c599bb661795559ac7c51460bfc8f7028a848457b1"
+    },
+    {
+      "filename": "desktop-wide-overview.png",
+      "route": "/tendermatch",
+      "view": "overview",
+      "viewport": { "width": 1440, "height": 900, "layout": "wide" },
+      "imageDimensions": { "width": 1425, "height": 891 },
+      "sha256": "b5090a50c0d4e40ae4577174e0ec20afdfbde421945672a0efbade77482e2bc7"
+    },
+    {
+      "filename": "tablet-overview.png",
+      "route": "/tendermatch",
+      "view": "overview",
+      "viewport": { "width": 834, "height": 1112, "layout": "responsive" },
+      "imageDimensions": { "width": 819, "height": 1092 },
+      "sha256": "19e73dca88da68350353a7f5c63019cfb1252ce8bf5854743b9c24611b69a097"
+    },
+    {
+      "filename": "mobile-overview.png",
+      "route": "/tendermatch",
+      "view": "overview",
+      "viewport": { "width": 390, "height": 844, "layout": "responsive" },
+      "imageDimensions": { "width": 375, "height": 812 },
+      "sha256": "502aa54300a19de22c34155f059f9eeb4ec980bfb91d92c695af005321f33de1"
+    }
+  ],
+  "validation": {
+    "focusedTests": { "passed": 47, "failed": 0, "skipped": 0, "status": "pass" },
+    "fullRepositoryTests": { "passed": 254, "failed": 0, "status": "pass" },
+    "originalStandaloneStaticTests": { "passed": 3, "failed": 0, "skipped": 0, "status": "pass", "commit": "04b0b2a723223d11617837ee0e7562fa48168cd9" },
+    "targetedLint": { "status": "pass" },
+    "strictChangedSurfaceTypecheck": { "status": "pass" },
+    "tenderAppsProductionBuild": { "status": "pass", "transformedModules": 93, "warning": "Vite emitted its non-blocking large-chunk advisory." },
+    "fullRepositoryBuild": { "status": "pass", "generatedCanonicalAgentSpecifications": 64 },
+    "fullAppTypecheck": {
+      "status": "known unrelated baseline failures",
+      "changedTenderMatchErrors": 0,
+      "unchangedAreas": [
+        "apps/tender-apps/src/logistics-calculation-excel.ts",
+        "packages/tender-balance/src/file-reader.ts",
+        "packages/tender-balance/src/fin1-fx.ts",
+        "packages/tender-balance/src/fin2.ts",
+        "packages/tender-balance/src/model.ts"
+      ]
+    },
+    "browserMatrix": {
+      "combinations": 30,
+      "views": 10,
+      "viewports": ["desktop-standard", "tablet", "mobile"],
+      "allExpectedHeadingsPresent": true,
+      "horizontalOverflowFailures": 0,
+      "consoleWarningsOrErrors": 0
+    }
+  }
+}

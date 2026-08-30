@@ -18,8 +18,8 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const snapshotNow = "2026-08-15T12:00:00+05:00";
 
 test("accounts for every active frozen matching surface with no missing items", () => {
-  assert.equal(tenderBoostParityManifest.length, 60);
-  assert.deepEqual(paritySummary(), { preserved: 23, "adapted-to-tenderapps-design": 10, "truth-corrected": 27, missing: 0 });
+  assert.equal(tenderBoostParityManifest.length, 65);
+  assert.deepEqual(paritySummary(), { preserved: 24, "adapted-to-tenderapps-design": 11, "truth-corrected": 30, missing: 0 });
   assert.equal(new Set(tenderBoostParityManifest.map((item) => item.id)).size, tenderBoostParityManifest.length);
   assert.equal(tenderBoostParityManifest.some((item) => item.status === "missing"), false);
   for (const source of ["01 Dashboard", "02 Market Radar / Tenders", "02 Market Radar / Suppliers", "03 Suppliers / Profiles", "03 Suppliers / Verification", "04 Tenders", "05 Full Match Matrix", "05 AutoMatch by Tenders", "05 AutoMatch by Suppliers"]) {
@@ -53,11 +53,20 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   assert.match(page, /role="alert"/);
   assert.match(page, /MISSING—not 0\/100/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
-  assert.match(page, /data-map-mode="schematic-non-geospatial"/);
+  assert.match(page, /data-map-mode="local-geographic"/);
+  assert.match(page, /data-map-snapshot="frozen"/);
+  assert.match(page, /GLOBAL OPPORTUNITY DENSITY · FROZEN/);
+  assert.match(page, /GEOGRAPHIC SUPPLIER DENSITY · FROZEN/);
+  assert.match(page, /Map geometry · Wikimedia Commons/);
+  assert.match(page, /Use arrow keys or drag to pan after zooming/);
+  assert.match(page, /TenderLab focus/);
+  assert.match(page, /Matching target/);
+  assert.match(styles, /url\("\/tendermatch\/maps\/world-map\.png"\)/);
+  assert.match(styles, /url\("\/tendermatch\/maps\/china-prefectures\.png"\)/);
   assert.match(page, /viewSurfaceRef\.current\?\.focus\(\)/);
   assert.match(page, /role="region"[\s\S]+tabIndex=\{-1\}/);
   assert.doesNotMatch(page, /Legacy Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|Create legacy local draft|SIMULATION_STARTED/);
   assert.doesNotMatch(styles, /tb3-(?:legacy|campaign|followup|response-actions|event-log|channel-list|copy-editor|sequence)/);
   assert.doesNotMatch(page, /Agent Command Center|tb-topbar|tb-sidebar/);
-  assert.doesNotMatch(`${page}\n${styles}`, /tileLayer|openstreetmap|wikimedia|leaflet/i);
+  assert.doesNotMatch(`${page}\n${styles}`, /tileLayer|openstreetmap|leaflet|Special:Redirect/i);
 });

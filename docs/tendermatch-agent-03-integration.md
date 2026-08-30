@@ -70,7 +70,7 @@ Truth corrections override literal reproduction when the source could mislead:
 
 - 142 absent pair records are `MISSING`, not 0/100;
 - tender freshness and urgency derive from `deadlineAt` and the supplied/current clock; at `TENDERBOOST_DEMO_AS_OF`, `floor((end-of-day deadline - clock) / 24h)` deterministically reproduces the source vector `[1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135]` without persisting relative time;
-- 1,000-item radar universes and fixed geometry are labelled simulated and schematic/non-geospatial;
+- 1,000-item radar universes and frozen coordinates are labelled simulated; the geographic geometry is self-hosted and never presented as a live feed;
 - the frozen source's false “Participation Boost proposal sent” field is removed from the active matching surface;
 - historical Match Score, readiness, verification quality, audited support, deadline urgency, and consultant decision remain separate;
 - no message, call, CRM action, delivery, response, or downstream handoff is claimed.
@@ -158,15 +158,15 @@ Practical order `03` is not used as a canonical ID, matching is not conflated wi
 
 ## Source-to-target parity matrix
 
-The active typed matching inventory is `packages/tendermatch/src/legacy-parity.ts`. It contains **60** audited matching-source items: **23 preserved**, **10 adapted to TenderApps design**, **27 truth-corrected**, and **0 missing**. Campaign Studio and Follow-ups entries were removed from the active manifest after the approved boundary decision; this is a deliberate scope exclusion, not a claim that those frozen-source capabilities migrated into TenderMatch.
+The active typed matching inventory is `packages/tendermatch/src/legacy-parity.ts`. It contains **65** audited matching-source items: **24 preserved**, **11 adapted to TenderApps design**, **30 truth-corrected**, and **0 missing**. The five restored map items are the tender legend, tender focus signal, supplier legend, supplier focus signal, and supplier-map pan. Campaign Studio and Follow-ups entries were removed from the active manifest after the approved boundary decision; this is a deliberate scope exclusion, not a claim that those frozen-source capabilities migrated into TenderMatch.
 
 The historical 48-state strict-parity review is retained in `docs/tendermatch-strict-parity-browser-qa.md` as evidence for the superseded parity checkpoint. Current navigation evidence is recorded separately and covers the five-family, ten-view matching workspace.
 
 | Frozen source surface | TenderApps target | Coverage | Intentional difference |
 | --- | --- | --- | --- |
 | 01 Dashboard | Overview | truth-corrected | Activation wording becomes dated/local; six metrics separate evaluated, audited, and MISSING. |
-| 02 Market Radar / Tenders | Radar · Tenders | truth-corrected | Original 1,000/86/16 metrics and filters remain; local schematic replaces external world-map asset. |
-| 02 Market Radar / Suppliers | Radar · Suppliers | truth-corrected | Original 1,000/15/10/11 metrics and filters remain; local schematic replaces Leaflet/OpenStreetMap; false sent proposal removed. |
+| 02 Market Radar / Tenders | Radar · Tenders | truth-corrected | Original 1,000/86/16 metrics, filters, local world geography, clusters, markers, zoom, legend, attribution, focus signal and drill-down remain; data are frozen/simulated. |
+| 02 Market Radar / Suppliers | Radar · Suppliers | truth-corrected | Original 1,000/15/10/11 metrics, filters, local China geography, clusters, coordinates, zoom/pan, legend, attribution, target signal and drill-down remain; external tiles and false action claims do not. |
 | 03 Suppliers / Profiles | Supplier Profiles | preserved | All ten rows, identity, activity, readiness, markets, verification counts, and drill-down remain. |
 | 03 Suppliers / Verification | Verification | preserved | Every evidence row, status, confidence, source, retrieval date, risk, question, website, and back action remains. |
 | 04 Open Tenders | Tender Snapshot | truth-corrected | All sixteen source rows and displayed fields remain; absolute deadline and derived status replace relative-only days. |
@@ -181,13 +181,13 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 | Supplier fixture | 10 records; identity, headquarters, type, site, categories, capabilities, products, markets, evidence, matches, scores, risks, questions | Byte-identical JSON transformed into versioned records | preserved |
 | Match fixture | 18 assessed pairs with scores 65–95 | Immutable legacy estimates beside evidence-gated audited results | preserved + truth-corrected |
 | Absent matrix pairs | 142 combinations | Explicit `null/MISSING`; future evaluated zero stays numeric | truth-corrected |
-| Radar interactions | two tabs, region filters, zoom, marker selection, detail drill-down | Same meaningful controls over local schematic geometry | adapted + truth-corrected |
+| Radar interactions | two tabs, region filters, zoom, pointer/keyboard marker selection, supplier-map pan, detail drill-down | Same meaningful controls over self-hosted geographic geometry | adapted + truth-corrected |
 | Directory interactions | supplier/tender row selection and drill-down | Semantic buttons, keyboard focus, responsive internal scrolling | adapted |
 | Match interactions | full matrix cell selection, two ranked modes, replay progress, evidence link, approve/hold/reject | Explicit Case result and current evidence/deadline gates | truth-corrected |
 | Layout | standalone Standard/Wide | shared TenderApps Standard/Wide preference | adapted |
 | Empty/error states | MISSING-aware results and Case failures | Explicit MISSING states and visible `role=alert` Case errors | truth-corrected |
 | Persistence | layout/session state | shared layout preference and guarded explicit Case storage | adapted + truth-corrected |
-| External map/deployment shell | Leaflet, OSM, Wikimedia, standalone header/backlink/Firebase | deliberately excluded; local visuals and shared shell used instead | adapted to TenderApps design |
+| External map/deployment shell | Leaflet/OSM runtime, Wikimedia geometry reference, standalone header/backlink/Firebase | external tile/runtime requests remain excluded; source-linked world and China geography are self-hosted with visible attribution | adapted to TenderApps design |
 
 ## Correction ledger
 
@@ -198,7 +198,7 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 | Saved time state could become stale. | Relative state was persisted. | Recompute from absolute deadline and injected clock on resume. | Persist dated facts; derive clock-relative state. | Stale persisted-Case test. |
 | Reconstructed frozen deadlines were all one day high. | End-of-day instants were combined with `Math.ceil`, counting a partial terminal day as another full day. | Use a deterministic floor of positive deadline distance; keep zero/closed handling clock-derived. | When migrating a frozen relative-day fixture to absolute end-of-day instants, specify and regression-test the calendar conversion. | Exact 16-value baseline-vector test. |
 | Legacy and audited results could appear equivalent. | Historical curated scores had no replayable formula. | Keep immutable legacy estimates beside evidence-gated audited support. | Never reverse-engineer evidence to reproduce a historical score. | 18-pair experiment and policy tests. |
-| A fixed relationship picture could imply geographic accuracy. | Labels changed while geometry did not. | Mark it visibly and semantically as schematic/non-geospatial. | Fixed geometry must never claim live map meaning. | UI/CSP fallback assertions. |
+| The first matching-only integration replaced geographic maps with schematic blobs and dropped legends, focus signals, and supplier-map pan. | CSP safety was mistaken for permission to substitute a meaningful visualization. | Bundle source-linked geometry locally, preserve frozen coordinates, restore interaction cues, and label it as frozen with no live tiles. | CSP-safe adaptation must preserve the source visualization contract; a schematic is not geographic parity. | Map-asset, legend, focus-signal, selection, zoom/pan, CSP, and browser regressions. |
 | The original supplier radar claimed a Participation Boost proposal was sent. | UI copy treated a target-status idea as an integration event. | Remove the action-status field from the active matching product. | A matching-only product must not expose downstream workflow state. | Absence assertions and rendered supplier-profile review. |
 | A parity checkpoint temporarily rendered Campaign Studio inside TenderMatch. | Migration parity was prioritized over the confirmed product boundary. | Remove both pages, controls, runtime/persistence code, and active manifest entries; retain only downstream history. | A capability outside the owner Agent must not remain reachable merely for legacy parity. | Five-family/ten-view registry assertions, stale-view fallback, absence checks, and browser navigation review. |
 | Case persistence failures were unguarded. | Browser storage was treated as reliable. | Announce recoverable Case-save errors with `role=alert` and retain the current in-memory state. | Browser-local persistence is fallible and must never silently destroy the active review state. | Failing-storage tests and rendered alert/status assertions. |

@@ -75,7 +75,7 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
 test("maps all 10 TenderMatch views exactly once into the five-family matching workflow", async () => {
   const page = await read("apps/tender-apps/src/tendermatch-app.tsx");
   const styles = await read("apps/tender-apps/src/tendermatch.css");
-  const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\n\];\n\nconst navItems/)?.[0] ?? "";
+  const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\r?\n\];\r?\n\r?\nconst navItems/)?.[0] ?? "";
   const expectedViews = [
     ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
     ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "AutoMatch by Tenders", "05B"],
@@ -300,8 +300,8 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
-  assert.match(page, /SCHEMATIC · NON-GEOSPATIAL/);
-  assert.match(page, /data-map-mode="schematic-non-geospatial"/);
+  assert.match(page, /data-map-mode="local-geographic"/);
+  assert.match(page, /data-map-snapshot="frozen"/);
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
@@ -309,7 +309,7 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.doesNotMatch(page, /aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
   assert.doesNotMatch(page, /Participation Boost proposal sent/);
   assert.doesNotMatch(page, /Command Center|\/products/);
-  assert.doesNotMatch(`${page}\n${styles}`, /leaflet|openstreetmap|wikimedia/i);
+  assert.doesNotMatch(`${page}\n${styles}`, /leaflet|openstreetmap|Special:Redirect/i);
   assert.doesNotMatch(firebase, /tenderboost-ai\.web\.app/);
 });
 
