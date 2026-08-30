@@ -72,6 +72,39 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.match(implementation?.tor ?? "", /without owning[\s\S]+legacy Campaign Studio/);
 });
 
+test("maps all 12 TenderMatch views exactly once into the restored six-family workflow", async () => {
+  const page = await read("apps/tender-apps/src/tendermatch-app.tsx");
+  const styles = await read("apps/tender-apps/src/tendermatch.css");
+  const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\n\];\n\nconst navItems/)?.[0] ?? "";
+  const expectedViews = [
+    ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
+    ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "AutoMatch by Tenders", "05B"],
+    ["match-suppliers", "AutoMatch by Suppliers", "05C"], ["audit", "Detailed Case Review", "05D"], ["campaigns", "Campaigns", "06A"], ["followups", "Follow-ups", "06B"],
+  ];
+  const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"], ["legacy", "Legacy Campaign Studio"]];
+
+  assert.ok(registry);
+  for (const [view, label, short] of expectedViews) {
+    assert.equal((registry.match(new RegExp(`id: "${view}", label: "${label}", short: "${short}"`, "g")) ?? []).length, 1, `${view} must appear exactly once in the navigation registry`);
+  }
+  let priorIndex = -1;
+  for (const [id, family] of expectedFamilies) {
+    const index = registry.indexOf(`id: "${id}", label: "${family}"`);
+    assert.ok(index > priorIndex, `${family} must follow the approved workflow order`);
+    priorIndex = index;
+  }
+  assert.match(registry, /Legacy Campaign Studio[\s\S]+Isolated parity module[\s\S]+Local drafts · NOT SENT[\s\S]+Simulation events only/);
+  assert.match(page, /aria-controls=\{`tb3-nav-children-/);
+  assert.match(page, /aria-expanded=\{isExpanded\}/);
+  assert.match(page, /aria-current=\{view === item\.id \? "page" : undefined\}/);
+  assert.match(page, /aria-controls="tb3-mobile-workflow-tree"/);
+  assert.match(page, /setMobileNavOpen\(false\)/);
+  assert.match(page, /activateNavigationFromKeyboard[\s\S]+event\.key !== "Enter"[\s\S]+event\.key !== " "/);
+  assert.match(styles, /\.tb3-nav-family\.current/);
+  assert.match(styles, /\.tb3-nav-children button\.active/);
+  assert.match(styles, /\.tb3-mobile-workspace-nav > div \{[^}]*overflow-y: auto/);
+});
+
 test("keeps active paths TenderMatch-only and classifies every retained TenderBoost occurrence as protected lineage", async () => {
   const legacyTerm = "tender" + "boost";
   const trackedPaths = execFileSync("git", ["ls-files"], { cwd: projectRoot, encoding: "utf8" }).trim().split(/\r?\n/);

@@ -234,7 +234,7 @@ test("surfaces storage failures without mutating valid in-memory campaign or Cas
 test("renders every original view family in the TenderApps page without standalone shell or external maps", async () => {
   const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
   const styles = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch.css"), "utf8");
-  for (const label of ["Overview", "Radar · Tenders", "Radar · Suppliers", "Supplier Profiles", "Verification", "Tenders", "Full Matrix", "By Tender", "By Supplier", "Case Audit", "Legacy Campaigns", "Legacy Follow-ups"]) assert.match(page, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "AutoMatch by Tenders", "AutoMatch by Suppliers", "Detailed Case Review", "Legacy Campaign Studio", "Campaigns", "Follow-ups"]) assert.match(page, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   for (const content of ["Global Tender Demand", "Global Supplier Market", "Full Match Matrix", "AutoMatch by Tenders", "AutoMatch by Suppliers", "Suggested Campaign Drafts", "Campaign Pipeline", "Follow-ups", "ProposalPrep AI"]) assert.match(page, new RegExp(content));
   for (const content of ["AI RECOMMENDED", "Use recommendation", "Recommended:", "Save changes", "Simulate response", "Reset response simulation", "NEXT ACTION", "Next follow-up", "Campaign autosave failed", "Campaign workspace load failed", "Case save failed"]) assert.match(page, new RegExp(content));
   assert.match(page, /aria-controls="tb3-campaign-workspace-body"/);

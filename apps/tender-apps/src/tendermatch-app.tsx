@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   advanceLegacyCampaignSimulation,
   buildLegacyCampaignCadence,
@@ -60,22 +60,83 @@ type WorkspaceView =
   | "campaigns"
   | "followups";
 
-type NavItem = { id: WorkspaceView; label: string; short: string; family: "overview" | "intelligence" | "analysis" | "legacy"; sublabel: string };
+type NavItem = { id: WorkspaceView; label: string; short: string; sublabel: string };
+type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match" | "legacy";
+type NavGroup = {
+  id: NavGroupId;
+  label: string;
+  short: string;
+  family: "overview" | "intelligence" | "analysis" | "legacy";
+  sublabel: string;
+  items: NavItem[];
+};
 
-const navItems: NavItem[] = [
-  { id: "dashboard", label: "Overview", short: "01", family: "overview", sublabel: "Internal matching workspace" },
-  { id: "radar-tenders", label: "Radar · Tenders", short: "02A", family: "intelligence", sublabel: "Global demand" },
-  { id: "radar-suppliers", label: "Radar · Suppliers", short: "02B", family: "intelligence", sublabel: "Supplier market" },
-  { id: "suppliers", label: "Supplier Profiles", short: "03A", family: "intelligence", sublabel: "10 companies" },
-  { id: "verification", label: "Verification", short: "03B", family: "intelligence", sublabel: "Evidence + provenance" },
-  { id: "tenders", label: "Tenders", short: "04", family: "intelligence", sublabel: "16 opportunities" },
-  { id: "matrix", label: "Full Matrix", short: "05A", family: "analysis", sublabel: "10 × 16" },
-  { id: "match-tenders", label: "By Tender", short: "05B", family: "analysis", sublabel: "Tender-first" },
-  { id: "match-suppliers", label: "By Supplier", short: "05C", family: "analysis", sublabel: "Supplier-first" },
-  { id: "audit", label: "Case Audit", short: "05D", family: "analysis", sublabel: "Identity + decision" },
-  { id: "campaigns", label: "Legacy Campaigns", short: "06A", family: "legacy", sublabel: "Isolated local drafts" },
-  { id: "followups", label: "Legacy Follow-ups", short: "06B", family: "legacy", sublabel: "Simulation only" },
+const navGroups: NavGroup[] = [
+  { id: "overview", label: "Overview", short: "01", family: "overview", sublabel: "Internal matching workspace", items: [{ id: "dashboard", label: "Overview", short: "01", sublabel: "Internal matching workspace" }] },
+  { id: "market", label: "Market Radar", short: "02", family: "intelligence", sublabel: "Source discovery", items: [
+    { id: "radar-tenders", label: "Tenders", short: "02A", sublabel: "Global demand" },
+    { id: "radar-suppliers", label: "Suppliers", short: "02B", sublabel: "Supplier market" },
+  ] },
+  { id: "suppliers", label: "Suppliers", short: "03", family: "intelligence", sublabel: "Profiles and evidence", items: [
+    { id: "suppliers", label: "Profiles", short: "03A", sublabel: "10 companies" },
+    { id: "verification", label: "Verification", short: "03B", sublabel: "Evidence + provenance" },
+  ] },
+  { id: "tender-directory", label: "Tenders", short: "04", family: "intelligence", sublabel: "16 opportunities", items: [{ id: "tenders", label: "Tenders", short: "04", sublabel: "16 opportunities" }] },
+  { id: "match", label: "Match Matrix", short: "05", family: "analysis", sublabel: "Evaluate and review", items: [
+    { id: "matrix", label: "Full Match Matrix", short: "05A", sublabel: "10 × 16" },
+    { id: "match-tenders", label: "AutoMatch by Tenders", short: "05B", sublabel: "Tender-first" },
+    { id: "match-suppliers", label: "AutoMatch by Suppliers", short: "05C", sublabel: "Supplier-first" },
+    { id: "audit", label: "Detailed Case Review", short: "05D", sublabel: "Identity + decision" },
+  ] },
+  { id: "legacy", label: "Legacy Campaign Studio", short: "06", family: "legacy", sublabel: "Isolated parity module", items: [
+    { id: "campaigns", label: "Campaigns", short: "06A", sublabel: "Local drafts · NOT SENT" },
+    { id: "followups", label: "Follow-ups", short: "06B", sublabel: "Simulation events only" },
+  ] },
 ];
+
+const navItems = navGroups.flatMap((group) => group.items);
+
+function navGroupForView(view: WorkspaceView) {
+  return navGroups.find((group) => group.items.some((item) => item.id === view))!;
+}
+
+function activateNavigationFromKeyboard(event: KeyboardEvent<HTMLButtonElement>, action: () => void) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  action();
+}
+
+function WorkspaceNavigation({ compact = false, expanded, onToggle, onView, view }: {
+  compact?: boolean;
+  expanded: Record<NavGroupId, boolean>;
+  onToggle: (group: NavGroupId) => void;
+  onView: (view: WorkspaceView) => void;
+  view: WorkspaceView;
+}) {
+  return <nav className={`tb3-nav-tree${compact ? " compact" : ""}`} aria-label={compact ? "TenderMatch mobile workflow" : "TenderMatch workflow"}>
+    {navGroups.map((group) => {
+      const standalone = group.items.length === 1;
+      const active = group.items.some((item) => item.id === view);
+      if (standalone) {
+        const item = group.items[0]!;
+        return <button aria-current={active ? "page" : undefined} className={`tb3-nav-standalone family-${group.family}${active ? " active" : ""}`} data-nav-family={group.id} key={group.id} onClick={() => onView(item.id)} onKeyDown={(event) => activateNavigationFromKeyboard(event, () => onView(item.id))}>
+          <span>{group.short}</span><p><b>{group.label}</b><small>{group.sublabel}</small></p><i aria-hidden="true">→</i>
+        </button>;
+      }
+      const isExpanded = expanded[group.id];
+      return <section className={`tb3-nav-family family-${group.family}${active ? " current" : ""}`} data-nav-family={group.id} key={group.id}>
+        <button aria-controls={`tb3-nav-children-${compact ? "mobile-" : ""}${group.id}`} aria-expanded={isExpanded} className="tb3-nav-family-toggle" onClick={() => onToggle(group.id)} onKeyDown={(event) => activateNavigationFromKeyboard(event, () => onToggle(group.id))}>
+          <span>{group.short}</span><p><b>{group.label}</b><small>{active ? group.items.find((item) => item.id === view)?.label : group.sublabel}</small></p><i aria-hidden="true">⌄</i>
+        </button>
+        {isExpanded && <div className="tb3-nav-children" id={`tb3-nav-children-${compact ? "mobile-" : ""}${group.id}`}>
+          {group.items.map((item) => <button aria-current={view === item.id ? "page" : undefined} className={view === item.id ? "active" : ""} key={item.id} onClick={() => onView(item.id)} onKeyDown={(event) => activateNavigationFromKeyboard(event, () => onView(item.id))}>
+            <span>{item.short.slice(-1)}</span><p><b>{item.label}</b><small>{item.sublabel}</small></p><i aria-hidden="true">→</i>
+          </button>)}
+        </div>}
+      </section>;
+    })}
+  </nav>;
+}
 
 const campaignStageLabel: Record<LegacyCampaignStage, string> = {
   draft: "Draft",
@@ -188,6 +249,15 @@ export default function TenderMatchApp() {
   const initialResult = useMemo(() => createCaseResult(caseIdFor(initialTender, initialSupplier), initialTender, initialSupplier, sessionNow), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [view, setView] = useState<WorkspaceView>("dashboard");
+  const [expandedNavGroups, setExpandedNavGroups] = useState<Record<NavGroupId, boolean>>({
+    overview: true,
+    market: false,
+    suppliers: false,
+    "tender-directory": true,
+    match: false,
+    legacy: false,
+  });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
   const [caseResults, setCaseResults] = useState<Record<string, TenderMatchCaseResult>>({ [initialResult.match.key]: initialResult });
   const [persistenceMessage, setPersistenceMessage] = useState("Not saved in this browser session");
@@ -228,6 +298,14 @@ export default function TenderMatchApp() {
   const sourceCount = new Set(demoTenders.map((entry) => entry.sourceLabel)).size;
   const summary = paritySummary();
 
+  const changeView = (nextView: WorkspaceView) => {
+    const activeGroup = navGroupForView(nextView);
+    if (activeGroup.items.length > 1) {
+      setExpandedNavGroups((current) => current[activeGroup.id] ? current : { ...current, [activeGroup.id]: true });
+    }
+    setView(nextView);
+  };
+
   const openPair = (nextTender: TenderRecord, nextSupplier: SupplierRecord, nextView?: WorkspaceView) => {
     const nowIso = new Date().toISOString();
     const key = matchKey(nextTender, nextSupplier);
@@ -241,7 +319,7 @@ export default function TenderMatchApp() {
     setCampaignTenderId(nextTender.id);
     setCampaignSupplierId(nextSupplier.id);
     setActionError("");
-    if (nextView) setView(nextView);
+    if (nextView) changeView(nextView);
   };
 
   const openAssessment = (assessment: MatchAssessment, nextView?: WorkspaceView) => {
@@ -330,6 +408,10 @@ export default function TenderMatchApp() {
     viewSurfaceRef.current?.focus();
   }, [view]);
 
+  const toggleNavGroup = (group: NavGroupId) => {
+    setExpandedNavGroups((current) => ({ ...current, [group]: !current[group] }));
+  };
+
   const replaceCampaign = (next: LegacyCampaignRecord) => {
     setCampaigns((current) => current.some((entry) => entry.id === next.id)
       ? current.map((entry) => entry.id === next.id ? next : entry)
@@ -351,7 +433,7 @@ export default function TenderMatchApp() {
       if (existing) {
         setSelectedCampaignId(existing.id);
         setCampaignComposerOpen(false);
-        setView("campaigns");
+        changeView("campaigns");
         return;
       }
       const nextTender = demoTenders.find((entry) => entry.id === assessment.tenderId) ?? tender;
@@ -360,7 +442,7 @@ export default function TenderMatchApp() {
       const record = createLegacyCampaign(campaignResult, nextTender, nextSupplier, origin, actorId, new Date().toISOString());
       replaceCampaign(record);
       setCampaignComposerOpen(false);
-      setView("campaigns");
+      changeView("campaigns");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "The local legacy campaign draft could not be created.");
     }
@@ -466,29 +548,34 @@ export default function TenderMatchApp() {
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKSPACE</span><b>TenderMatch workspace</b><small>{navItems.length} reachable views</small></header>
-        <nav aria-label="TenderMatch workspace sections">{navItems.map((entry) => <button aria-current={view === entry.id ? "page" : undefined} className={`${view === entry.id ? "active " : ""}family-${entry.family}`} key={entry.id} onClick={() => setView(entry.id)}><span>{entry.short}</span><p><b>{entry.label}</b><small>{entry.sublabel}</small></p><i aria-hidden="true">→</i></button>)}</nav>
+        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>6 page families · {navItems.length} reachable views</small></header>
+        <WorkspaceNavigation expanded={expandedNavGroups} onToggle={toggleNavGroup} onView={changeView} view={view} />
         <div className="tb3-owner-note"><span>CANONICAL OWNER</span><b>agent:TL-A031</b><p>Company-to-Tender Match Score Agent</p><small>Campaign Studio: isolated local legacy module · excluded from ownership</small></div>
       </aside>
 
       <section className="tb3-content">
-        <nav className="tb3-mobile-workspace-nav" aria-label="TenderMatch current view"><label><span>WORKSPACE VIEW</span><select value={view} onChange={(event) => setView(event.target.value as WorkspaceView)}>{navItems.map((entry) => <option value={entry.id} key={entry.id}>{entry.short} · {entry.label}</option>)}</select></label></nav>
+        <section className="tb3-mobile-workspace-nav" aria-label="TenderMatch responsive workflow navigation">
+          <button aria-controls="tb3-mobile-workflow-tree" aria-expanded={mobileNavOpen} className="tb3-mobile-nav-toggle" onClick={() => setMobileNavOpen((current) => !current)} onKeyDown={(event) => activateNavigationFromKeyboard(event, () => setMobileNavOpen((current) => !current))}>
+            <span>WORKFLOW</span><p><b>{navGroupForView(view).short} · {navGroupForView(view).label}</b><small>{navItems.find((entry) => entry.id === view)?.label}</small></p><i aria-hidden="true">⌄</i>
+          </button>
+          {mobileNavOpen && <div id="tb3-mobile-workflow-tree"><WorkspaceNavigation compact expanded={expandedNavGroups} onToggle={toggleNavGroup} onView={(nextView) => { changeView(nextView); setMobileNavOpen(false); }} view={view} /></div>}
+        </section>
         {actionError && <div className="tb3-alert" role="alert"><b>Action needs attention</b><span>{actionError}</span><button onClick={() => setActionError("")} aria-label="Dismiss action error">×</button></div>}
 
         {view !== "dashboard" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
-          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} caseControls={caseControls} evaluatedMatches={evaluatedMatches} evidenceCount={evidenceCount} priorityMatches={priorityMatches} caseResults={caseResults} summaryMissing={summary.missing} sourceCount={sourceCount} onView={setView} onOpen={openAssessment} />}
-          {view === "radar-tenders" && <TenderRadarView tender={tender} currentAssessment={currentAssessment} allMatches={allMatches} bestMatch={selectedRadarBestMatch} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={setView} />}
-          {view === "radar-suppliers" && <SupplierRadarView supplier={supplier} filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={setView} />}
-          {view === "suppliers" && <SupplierDirectoryView view={view} allMatches={allMatches} onView={setView} onOpen={openAssessment} />}
+          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} caseControls={caseControls} evaluatedMatches={evaluatedMatches} evidenceCount={evidenceCount} priorityMatches={priorityMatches} caseResults={caseResults} summaryMissing={summary.missing} sourceCount={sourceCount} onView={changeView} onOpen={openAssessment} />}
+          {view === "radar-tenders" && <TenderRadarView tender={tender} currentAssessment={currentAssessment} allMatches={allMatches} bestMatch={selectedRadarBestMatch} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={changeView} />}
+          {view === "radar-suppliers" && <SupplierRadarView supplier={supplier} filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={changeView} />}
+          {view === "suppliers" && <SupplierDirectoryView view={view} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
           {view === "tenders" && <TenderDirectoryView allMatches={allMatches} onOpen={openAssessment} />}
-          {view === "matrix" && <MatrixView view={view} matchByKey={matchByKey} onView={setView} onOpen={openAssessment} />}
-          {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} replayProgress={replayProgress} isReplaying={isReplaying} onReplay={runReplay} onView={setView} onOpen={openAssessment} onDecision={decide} onCampaign={() => createCampaignFromAssessment(result.match, "match-matrix")} />}
-          {view === "verification" && <VerificationView view={view} supplier={supplier} allMatches={allMatches} onView={setView} onOpen={openAssessment} />}
+          {view === "matrix" && <MatrixView view={view} matchByKey={matchByKey} onView={changeView} onOpen={openAssessment} />}
+          {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} replayProgress={replayProgress} isReplaying={isReplaying} onReplay={runReplay} onView={changeView} onOpen={openAssessment} onDecision={decide} onCampaign={() => createCampaignFromAssessment(result.match, "match-matrix")} />}
+          {view === "verification" && <VerificationView view={view} supplier={supplier} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
           {view === "audit" && <AuditView result={result} />}
-          {view === "campaigns" && <CampaignsView currentAssessment={currentAssessment} campaigns={campaigns} currentCampaign={currentCampaign} currentCampaignResult={currentCampaignResult} currentCampaignTender={currentCampaignTender} currentCampaignSupplier={currentCampaignSupplier} currentCampaignAssessment={currentCampaignAssessment} matchByKey={matchByKey} composerOpen={campaignComposerOpen} createMode={campaignCreateMode} campaignTenderId={campaignTenderId} campaignSupplierId={campaignSupplierId} composerCandidates={composerCandidates} suggestedCampaigns={suggestedCampaigns} suggestionsOpen={campaignSuggestionsOpen} pipelineOpen={campaignPipelineOpen} workspaceOpen={campaignWorkspaceOpen} persistenceMessage={campaignPersistenceMessage} onView={setView} onComposerOpen={setCampaignComposerOpen} onCreateMode={setCampaignCreateMode} onTenderId={setCampaignTenderId} onSupplierId={setCampaignSupplierId} onCreate={createCampaignFromAssessment} onSuggestionsOpen={setCampaignSuggestionsOpen} onPipelineOpen={setCampaignPipelineOpen} onWorkspaceOpen={setCampaignWorkspaceOpen} onSelectCampaign={setSelectedCampaignId} onObjective={changeCampaignObjective} onChannel={changeCampaignChannel} onCopy={(draftCopy) => updateCurrentCampaign({ draftCopy }, "Consultant edited the local NOT SENT draft.")} onNote={(consultantNote) => updateCurrentCampaign({ consultantNote }, "Consultant updated the internal note.")} onSave={saveCurrentCampaign} onApproval={() => campaignAction("approval")} onSimulate={() => campaignAction("simulate")} onAdvance={campaignAction} onVerification={() => openAssessment(currentCampaignAssessment, "verification")} />}
-          {view === "followups" && <FollowupsView campaigns={campaigns} matchByKey={matchByKey} selectedCampaignId={selectedCampaignId} onView={setView} onSelectCampaign={setSelectedCampaignId} onResponse={(record) => followupAction(record, "simulate-response")} onReset={(record) => followupAction(record, "reset-response")} />}
+          {view === "campaigns" && <CampaignsView currentAssessment={currentAssessment} campaigns={campaigns} currentCampaign={currentCampaign} currentCampaignResult={currentCampaignResult} currentCampaignTender={currentCampaignTender} currentCampaignSupplier={currentCampaignSupplier} currentCampaignAssessment={currentCampaignAssessment} matchByKey={matchByKey} composerOpen={campaignComposerOpen} createMode={campaignCreateMode} campaignTenderId={campaignTenderId} campaignSupplierId={campaignSupplierId} composerCandidates={composerCandidates} suggestedCampaigns={suggestedCampaigns} suggestionsOpen={campaignSuggestionsOpen} pipelineOpen={campaignPipelineOpen} workspaceOpen={campaignWorkspaceOpen} persistenceMessage={campaignPersistenceMessage} onView={changeView} onComposerOpen={setCampaignComposerOpen} onCreateMode={setCampaignCreateMode} onTenderId={setCampaignTenderId} onSupplierId={setCampaignSupplierId} onCreate={createCampaignFromAssessment} onSuggestionsOpen={setCampaignSuggestionsOpen} onPipelineOpen={setCampaignPipelineOpen} onWorkspaceOpen={setCampaignWorkspaceOpen} onSelectCampaign={setSelectedCampaignId} onObjective={changeCampaignObjective} onChannel={changeCampaignChannel} onCopy={(draftCopy) => updateCurrentCampaign({ draftCopy }, "Consultant edited the local NOT SENT draft.")} onNote={(consultantNote) => updateCurrentCampaign({ consultantNote }, "Consultant updated the internal note.")} onSave={saveCurrentCampaign} onApproval={() => campaignAction("approval")} onSimulate={() => campaignAction("simulate")} onAdvance={campaignAction} onVerification={() => openAssessment(currentCampaignAssessment, "verification")} />}
+          {view === "followups" && <FollowupsView campaigns={campaigns} matchByKey={matchByKey} selectedCampaignId={selectedCampaignId} onView={changeView} onSelectCampaign={setSelectedCampaignId} onResponse={(record) => followupAction(record, "simulate-response")} onReset={(record) => followupAction(record, "reset-response")} />}
         </div>
       </section>
     </section>
