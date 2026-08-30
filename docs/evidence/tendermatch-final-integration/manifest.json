@@ -14,6 +14,11 @@
     "state": "pre-commit corrective working-tree candidate",
     "scope": "Overview JSX, responsive CSS, focused contract assertion, and refreshed rendered evidence only"
   },
+  "overviewPlacementCorrectionCandidate": {
+    "integrationParentCommit": "5d2559884a40debd8733450a7a7f404b581f4f88",
+    "state": "pre-commit corrective working-tree candidate",
+    "scope": "Remove the rejected Case and migration-evidence block from Overview rendering without deleting its underlying implementation"
+  },
   "preview": {
     "origin": "http://127.0.0.1:4177",
     "canonicalRoute": "/tendermatch",
@@ -99,6 +104,38 @@
       "viewport": { "width": 390, "height": 844, "layout": "responsive" },
       "imageDimensions": { "width": 375, "height": 812 },
       "sha256": "6d7e425797903b48096b4f6d5da5fcd770c14cfdc944c77b153fe2142d42e226"
+    },
+    {
+      "filename": "overview-compact-desktop-standard.jpg",
+      "route": "/tendermatch",
+      "view": "overview-ending-after-authority-boundary",
+      "viewport": { "width": 1280, "height": 768, "layout": "standard" },
+      "imageDimensions": { "width": 1265, "height": 759 },
+      "sha256": "2564012f5f894d1ea65bcf76b2019438cfb5b3ccf269faa02c004dbe59f3dc02"
+    },
+    {
+      "filename": "overview-compact-desktop-wide.jpg",
+      "route": "/tendermatch",
+      "view": "overview-ending-after-authority-boundary",
+      "viewport": { "width": 1440, "height": 900, "layout": "wide" },
+      "imageDimensions": { "width": 1440, "height": 900 },
+      "sha256": "39db182d889db92566cc42633aedd3b26b3f6dafb56dd4bebff8a694721ece11"
+    },
+    {
+      "filename": "overview-compact-tablet.jpg",
+      "route": "/tendermatch",
+      "view": "overview-ending-after-authority-boundary",
+      "viewport": { "width": 834, "height": 1112, "layout": "responsive" },
+      "imageDimensions": { "width": 819, "height": 1092 },
+      "sha256": "9651f6dc56cc5842feca13349ad681089dfbaf5276ddfdd17f067130ea9170c2"
+    },
+    {
+      "filename": "overview-compact-mobile.jpg",
+      "route": "/tendermatch",
+      "view": "overview-ending-after-authority-boundary",
+      "viewport": { "width": 390, "height": 844, "layout": "responsive" },
+      "imageDimensions": { "width": 375, "height": 812 },
+      "sha256": "67ddc0b1fdb955afa6c60f3c1e03970f7a342b087cccf35ee4dd6cd2fbdefad6"
     }
   ],
   "validation": {
@@ -140,6 +177,17 @@
       "tenViewInteractionCheck": "pass",
       "geographicMapRecheck": { "status": "pass", "clusters": 23, "markers": 16, "zoom": "120%", "snapshot": "frozen" },
       "campaignLeak": false
+    },
+    "overviewPlacementCorrection": {
+      "viewports": ["desktop-standard", "desktop-wide", "tablet", "mobile"],
+      "endsAfterAuthorityBoundary": true,
+      "caseStripOnOverview": false,
+      "migrationEvidenceOnOverview": false,
+      "consultantQueueOnOverview": false,
+      "localWorkflowOnOverview": false,
+      "horizontalOverflowFailures": 0,
+      "consoleWarningsOrErrors": 0,
+      "underlyingCaseControlsPreservedOnOperationalViews": true
     }
   }
 }

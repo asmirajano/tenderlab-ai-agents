@@ -3,12 +3,10 @@ import {
   buildAllMatches,
   chinaRadarClusters,
   createCaseResult,
-  demoSnapshot,
   demoSuppliers,
   demoTenders,
   fixtureSupplierKey,
   loadCaseResult,
-  paritySummary,
   regionsForSupplier,
   resumeCaseResult,
   saveCaseResult,
@@ -124,7 +122,6 @@ function WorkspaceNavigation({ compact = false, expanded, onToggle, onView, view
 }
 
 const decisionLabel: Record<ConsultantDecision, string> = { pending: "Pending", approved: "Approved", hold: "On hold", rejected: "Rejected" };
-const sourceCommit = "04b0b2a723223d11617837ee0e7562fa48168cd9";
 const actorId = "actor:tenderlab-consultant:local-demo";
 
 function slug(value: string) {
@@ -229,9 +226,7 @@ export default function TenderMatchApp() {
   const evaluatedMatches = allMatches.filter((entry) => entry.matchScore.value !== null);
   const priorityMatches = evaluatedMatches.filter((entry) => (entry.matchScore.value ?? -1) >= 85).sort((left, right) => (right.matchScore.value ?? 0) - (left.matchScore.value ?? 0));
   const auditedMatches = allMatches.filter((entry) => entry.auditedMatch.value !== null);
-  const evidenceCount = demoSuppliers.reduce((total, entry) => total + entry.evidence.length, 0);
   const sourceCount = new Set(demoTenders.map((entry) => entry.sourceLabel)).size;
-  const summary = paritySummary();
 
   const changeView = (nextView: WorkspaceView) => {
     const activeGroup = navGroupForView(nextView);
@@ -365,7 +360,7 @@ export default function TenderMatchApp() {
         {view !== "dashboard" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
-          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} caseControls={caseControls} evaluatedMatches={evaluatedMatches} evidenceCount={evidenceCount} priorityMatches={priorityMatches} caseResults={caseResults} summaryMissing={summary.missing} sourceCount={sourceCount} onView={changeView} onOpen={openAssessment} />}
+          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} caseResults={caseResults} onView={changeView} onOpen={openAssessment} />}
           {view === "radar-tenders" && <TenderRadarView tender={tender} currentAssessment={currentAssessment} allMatches={allMatches} bestMatch={selectedRadarBestMatch} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={changeView} />}
           {view === "radar-suppliers" && <SupplierRadarView supplier={supplier} filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={changeView} />}
           {view === "suppliers" && <SupplierDirectoryView view={view} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
@@ -380,7 +375,7 @@ export default function TenderMatchApp() {
   </main>;
 }
 
-function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatches, evidenceCount, priorityMatches, caseResults, summaryMissing, sourceCount, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; caseControls: ReactNode; evaluatedMatches: MatchAssessment[]; evidenceCount: number; priorityMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; summaryMissing: number; sourceCount: number; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityMatches, caseResults, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; evaluatedMatches: MatchAssessment[]; priorityMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
   const previewAssessment = priorityMatches.find((entry) => entry.auditedMatch.value !== null && entry.tenderFreshness.status !== "closed")
     ?? auditedMatches[0]
     ?? evaluatedMatches[0]
@@ -463,37 +458,6 @@ function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatc
       </PracticalAgentOverviewBoundary>
     </PracticalAgentOverview>
 
-    {caseControls}
-
-    <header className="tb3-demonstration-heading">
-      <span>DEMONSTRATION DATA AND MIGRATION EVIDENCE</span>
-      <h2>TenderMatch frozen matching baseline and truth controls</h2>
-      <p>The frozen matching workspace is preserved. Historical estimates remain visible, while unassessed pairs and stale data are never presented as current facts.</p>
-    </header>
-    <section className="tb3-notice" role="status"><div><span>DATED DEMONSTRATION SNAPSHOT</span><b>Frozen {dateLabel(demoSnapshot.asOf)} · source commit {sourceCommit.slice(0, 7)}</b><p>Deadlines are absolute and recalculated from the current clock. The 1,000-item radar universes are legacy simulations, not live datasets.</p></div><strong>{summaryMissing === 0 ? "MATCHING INVENTORY COMPLETE" : `${summaryMissing} MISSING`}</strong></section>
-    <section className="tb3-metrics-grid" aria-label="TenderMatch frozen-source dataset summary">
-      <Metric label="TENDERS" value={demoTenders.length} note={`${sourceCount} source labels · frozen fixture`} onClick={() => onView("tenders")} />
-      <Metric label="SUPPLIER PROFILES" value={demoSuppliers.length} note={`${evidenceCount} evidence records`} onClick={() => onView("suppliers")} />
-      <Metric label="PAIR UNIVERSE" value={allMatches.length} note="10 × 16 explicit matrix" />
-      <Metric label="EVALUATED" value={evaluatedMatches.length} note="legacy estimates 65–95" signal />
-      <Metric label="UNASSESSED" value={allMatches.length - evaluatedMatches.length} note="MISSING · never zero" />
-      <Metric label="AUDITED" value={auditedMatches.length} note={`${evaluatedMatches.length - auditedMatches.length} assessed pairs still MISSING`} />
-    </section>
-    <section className="tb3-overview-grid">
-      <article className="tb3-panel tb3-queue"><header><div><span>CONSULTANT QUEUE</span><h2>Evaluated legacy matches</h2><p>Historical scores remain estimates; open a row for the audited result and current blockers.</p></div><button onClick={() => onView("matrix")}>All 160 pairs →</button></header><div>{priorityMatches.slice(0, 6).map((assessment, index) => {
-        const rowSupplier = demoSuppliers.find((entry) => entry.id === assessment.supplierId)!;
-        const rowTender = demoTenders.find((entry) => entry.id === assessment.tenderId)!;
-        return <button key={assessment.key} onClick={() => onOpen(assessment, "match-tenders")}><span className="tb3-rank">{String(index + 1).padStart(2, "0")}</span><p><b>{rowSupplier.legalEnglishName}</b><small>{rowTender.reference} · {rowTender.country}</small></p><div>{assessment.linkedStrengths.slice(0, 2).map((claim) => <i key={claim.id}>{claim.text}</i>)}</div><strong>{assessment.matchScore.value}<small>LEGACY</small></strong><em className={`tb3-state ${assessment.tenderFreshness.status}`}>{assessment.tenderFreshness.status}</em></button>;
-      })}</div></article>
-      <aside className="tb3-panel tb3-flow"><header><span>LOCAL WORKFLOW</span><h2>Evidence to decision</h2></header>{[
-        ["01", "Tender snapshot", "16 frozen records", true],
-        ["02", "Supplier intelligence", "10 complete fixture profiles", true],
-        ["03", "Pair evaluation", "18 assessed · 142 MISSING", true],
-        ["04", "Audited support", "6 evidence-sufficient results", true],
-        ["05", "Consultant decision", `${Object.values(caseResults).filter((entry) => entry.match.consultantDecision !== "pending").length} recorded in local Cases`, false],
-      ].map(([number, title, note, done]) => <div className={done ? "done" : ""} key={String(number)}><span>{done ? "✓" : number}</span><p><b>{title}</b><small>{note}</small></p></div>)}</aside>
-    </section>
-    <section className="tb3-capability-strip"><div><span>CAPABILITY HANDOFFS</span><h2>Evidence flows into a human-controlled match result</h2></div><div><b>Tender Discovery</b><i>→</i><b>Supplier Intelligence</b><i>→</i><b className="active">TL-A031 · TenderMatch</b><i>→</i><b>Human participation decision</b></div></section>
   </>;
 }
 

@@ -305,26 +305,24 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
-  assert.match(page, /aria-label="TenderMatch frozen-source dataset summary"/);
-  assert.doesNotMatch(page, /aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
+  assert.doesNotMatch(page, /aria-label="TenderMatch frozen-source dataset summary"|aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
   assert.doesNotMatch(page, /Participation Boost proposal sent/);
   assert.doesNotMatch(page, /Command Center|\/products/);
   assert.doesNotMatch(`${page}\n${styles}`, /leaflet|openstreetmap|Special:Redirect/i);
   assert.doesNotMatch(firebase, /tenderboost-ai\.web\.app/);
 });
 
-test("orients the Overview around TenderLab's internal Company × Tender review outcome before migration evidence", async () => {
+test("ends the Overview after the approved infographic and authority boundary", async () => {
   const [page, styles] = await Promise.all([
     read("apps/tender-apps/src/tendermatch-app.tsx"),
     read("apps/tender-apps/src/tendermatch.css"),
   ]);
   const overviewStart = page.indexOf('<PracticalAgentOverview audience="consultant" className="tb3-overview-manifesto"');
-  const evidenceStart = page.indexOf('<header className="tb3-demonstration-heading"');
+  const dashboardEnd = page.indexOf("function TenderRadarView");
   assert.ok(overviewStart > -1, "product Overview must exist");
-  assert.ok(evidenceStart > overviewStart, "product orientation must precede migration evidence");
+  assert.ok(dashboardEnd > overviewStart, "DashboardView must end before the first operational view");
   const productShell = page.slice(page.indexOf('{view !== "dashboard" && <section className="tb3-product-intro"'), overviewStart);
-  const orientation = page.slice(overviewStart, evidenceStart);
-  const migrationEvidence = page.slice(evidenceStart, page.indexOf("function TenderRadarView"));
+  const orientation = page.slice(overviewStart, dashboardEnd);
 
   assert.match(productShell, /TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE/);
   assert.match(productShell, /Company × Tender evidence review for TenderLab Consultants/);
@@ -365,19 +363,22 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.match(orientation, /onKeyDown=\{\(event\)[\s\S]+event\.key === "Enter"[\s\S]+event\.key === " "/);
   assert.match(orientation, /onView\("matrix"\)/);
   assert.match(orientation, /Promotion and outreach belong to a separate future Marketing Agent/);
-  assert.match(orientation, /PracticalAgentOverviewBoundary[\s\S]+\{caseControls\}/);
+  assert.match(orientation, /PracticalAgentOverviewBoundary[\s\S]+<\/PracticalAgentOverview>[\s\S]+<\/>;/);
   assert.doesNotMatch(orientation, /HOW IT WORKS|tb3-overview-method|Select and compare|Validate available evidence/);
   assert.doesNotMatch(orientation, /tb3-product-intro/);
   assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);
-
-  assert.match(migrationEvidence, /className="tb3-demonstration-heading"[\s\S]+<h2>TenderMatch[^<]*frozen matching baseline/);
-  for (const retainedEvidence of [
+  for (const rejectedOverviewContent of [
+    "{caseControls}",
     "DEMONSTRATION DATA AND MIGRATION EVIDENCE",
+    "TenderMatch frozen matching baseline and truth controls",
     "DATED DEMONSTRATION SNAPSHOT",
+    "TenderMatch frozen-source dataset summary",
     "CONSULTANT QUEUE",
     "LOCAL WORKFLOW",
-    "CAPABILITY HANDOFFS",
-  ]) assert.match(migrationEvidence, new RegExp(retainedEvidence), retainedEvidence);
+    "Evidence to decision",
+    "Evaluated legacy matches",
+  ]) assert.doesNotMatch(orientation, new RegExp(rejectedOverviewContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), rejectedOverviewContent);
+  assert.doesNotMatch(page, /<DashboardView[^>]*caseControls=/);
 
   assert.match(page, /sublabel: "Internal matching workspace"/);
   assert.match(styles, /\.tb3-overview-story \{[^}]*grid-template-columns:/);

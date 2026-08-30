@@ -19,6 +19,15 @@ Four additional corrective screenshots retain the user-approved `d2834b2` Overvi
 - At all four widths, the illustrated pair and Agent medallion are present, the duplicate method section is absent, the primary action remains keyboard-operable, and the matching-only Marketing boundary remains visible after the action.
 - A responsive-cascade defect found during rendered QA was corrected: the high-specificity desktop story grid now yields to explicit two-column tablet and one-column mobile rules instead of clipping internal panels.
 
+## Overview placement correction
+
+The subsequent placement correction removes the entire reader-facing block after the authority boundary. The retained screenshots use the `overview-compact-` prefix and are tied to parent checkpoint `5d2559884a40debd8733450a7a7f404b581f4f88` in the manifest.
+
+- Desktop Standard and Wide, tablet, and mobile contain only the approved infographic Overview through its small authority boundary.
+- `EXPLICIT CASE`, `AUDITED / LEGACY`, Save/Load Case, migration-evidence headings, dated snapshot banner, inventory metrics, Consultant Queue, evaluated-legacy list, and Evidence to decision panel are absent from Overview.
+- The Case controls remain implemented and visible on the nine operational views; they were not deleted or relocated.
+- No target viewport has page-level horizontal overflow, clipping, or browser-console warnings/errors.
+
 ## Interaction and responsive matrix
 
 - Checked all ten registered views at desktop Standard `1280 × 768`, tablet `834 × 1112`, and mobile `390 × 844`: 30 combinations.
