@@ -2,7 +2,9 @@
 
 Status: historical knowledge retained from the TenderBoost migration. This is not a registered TenderApps product, practical product number, canonical Agent, implementation record, route, runtime, or development authorization.
 
-Campaign Studio is explicitly outside TenderMatch and `agent:TL-A031`. Before any future implementation it must independently pass the canonical 64-Agent placement audit and receive one approved disposition. No assumption is made that it requires Agent 65 or any new canonical identity.
+Campaign Studio is explicitly outside TenderMatch's canonical Company × Tender responsibility and `agent:TL-A031`. The complete TenderBoost migration baseline renders its historical browser-local workflow as a separately versioned **legacy parity module** so the source application remains functionally reviewable; this does not constitute placement, registration, production activation, or ownership. Before Campaign Studio becomes an active practical capability it must independently pass the canonical 64-Agent placement audit and receive one approved disposition. No assumption is made that it requires Agent 65 or any new canonical identity.
+
+The parity module uses schema `tenderboost-legacy-campaign/1.0.0`, stores only local drafts and simulation events, and keeps `communicationStatus: NOT_SENT`. A content approval is not activation authority. Active, follow-up, interested, and no-response demonstrations are named simulation states and require an explicit local simulation-start event; they never imply a sent message, CRM action, external response, or downstream handoff.
 
 ## Reusable historical policy
 

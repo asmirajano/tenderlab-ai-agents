@@ -6,7 +6,7 @@ Status: unified client application implemented; static deployment is not product
 
 **Tender Apps** is the single client-facing application for practical Agents. Each practical capability receives a dedicated page inside the shared application rather than a new app or origin. Current pages are **TenderBalance**, **TENDER LOGISTICS COST**, and **TenderMatch**.
 
-The page names describe client experiences, not new canonical identities. TenderBalance remains a bounded implementation of `agent:TL-A008`; TENDER LOGISTICS COST remains the user-facing name of `agent:TL-A050`; TenderMatch is the matching-only practical implementation of `agent:TL-A031`. “Agent 03” is its practical page order, not `agent:TL-A003`, and does not change the canonical 64-Agent registry. Their reusable logic remains in shared packages.
+The page names describe client experiences, not new canonical identities. TenderBalance remains a bounded implementation of `agent:TL-A008`; TENDER LOGISTICS COST remains the user-facing name of `agent:TL-A050`; TenderMatch is the practical implementation of `agent:TL-A031` for Company × Tender evaluation and consultant decision support. “Agent 03” is its practical page order, not `agent:TL-A003`, and does not change the canonical 64-Agent registry. Their reusable logic remains in shared packages.
 
 ## Surface contract
 
@@ -30,7 +30,7 @@ The Command Center launch uses an absolute HTTPS URL, opens a separate origin, a
 
 This prevents accidental shell/navigation coupling and permits separate release, domain, CSP, cache, monitoring, and identity policies. It does not by itself authorize users.
 
-TenderMatch currently uses a dated, non-confidential demonstration snapshot with absolute deadlines, explicit Case/result identity, evidence-linked legacy match inputs, audited Match Support or MISSING, and consultant-decision provenance. It does not own participation design, Bid/No-Bid, promotion, outbound action, CRM, live tender refresh, durable tenant storage, or tenant authorization. Its bounded contract is `docs/tenderboost-agent-03-integration.md`; the legacy TenderBoost package path and stable record IDs remain migration-lineage anchors only.
+TenderMatch currently presents the complete frozen TenderBoost reader-facing workspace using a dated, non-confidential demonstration snapshot with absolute deadlines, explicit Case/result identity, evidence-linked legacy match inputs, audited Match Support or MISSING, and consultant-decision provenance. The Company × Tender result remains the only `agent:TL-A031` output. Campaign Studio is present only as a separately versioned browser-local legacy parity module whose drafts and lifecycle demonstrations are explicitly `NOT SENT`; it is not assigned to TL-A031 or registered as another Agent. TenderMatch does not own participation design, Bid/No-Bid, promotion, outbound action, CRM, live tender refresh, durable tenant storage, or tenant authorization. Its bounded contract is `docs/tenderboost-agent-03-integration.md`; the legacy TenderBoost package path and stable record IDs remain migration-lineage anchors only.
 
 ## Security truth
 

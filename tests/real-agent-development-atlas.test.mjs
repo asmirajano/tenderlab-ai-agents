@@ -40,7 +40,9 @@ test("registers Real Agent implementations with stable Agent and product identit
       assert.equal(implementation.name, "TenderMatch · TenderApps Agent 03");
       assert.equal(implementation.slug, "tendermatch");
       assert.equal(implementation.ownerAgentId, "agent:TL-A031");
-      assert.doesNotMatch(JSON.stringify(implementation), /campaign|outreach|crm/i);
+      assert.doesNotMatch(implementation.primaryOutput, /campaign|outreach|crm/i);
+      assert.match(implementation.tor, /without owning[\s\S]+legacy Campaign Studio parity module/i);
+      assert.ok(implementation.knownLimitations.some((item) => /not owned by agent:TL-A031[\s\S]+not a registered real or canonical Agent/i.test(item)));
       assert.equal(implementation.maturity, "concept-or-simulation");
       assert.equal(implementation.evidenceStrength, "unit-or-synthetic-fixture");
       assert.equal(implementation.deploymentStatus, "not-deployed");

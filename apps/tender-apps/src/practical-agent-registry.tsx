@@ -46,8 +46,8 @@ const displayMetadata: readonly PracticalAgentDisplayMetadata[] = [
   {
     productId: "product:TA-TENDERBOOST",
     displayName: "TenderMatch",
-    functionalSubtitle: "Evidence-linked Company × Tender evaluation · consultant decision support",
-    description: "Compare the frozen TenderBoost estimate with an evidence-gated audited result, inspect MISSING inputs, and record the consultant’s reviewed match decision.",
+    functionalSubtitle: "Complete TenderBoost migration · evidence-linked Company × Tender review",
+    description: "Use the complete frozen TenderBoost workspace in TenderApps, with audited matching safeguards and Campaign Studio isolated as a local NOT SENT legacy module.",
     pageTitle: "Tender Apps — TenderMatch · Agent 03",
     visual: "tendermatch",
   },
