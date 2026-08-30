@@ -1,6 +1,6 @@
 # TenderMatch self-hosted map assets
 
-TenderMatch renders the frozen radar coordinates over two repository-local reference maps. They are visual context for a dated demonstration snapshot, not live tiles, routing, distance, or current geopolitical/procurement data.
+TenderMatch renders two repository-local reference maps. Current pilot tenders use supplied country identity with deterministic visual spacing around a country anchor; this is not a precise tender coordinate. Supplier markers retain the frozen demonstration coordinates. Neither map provides live tiles, routing, distance, or current geopolitical data.
 
 | Repository asset | Upstream source and attribution | License basis | Repository transformation |
 | --- | --- | --- | --- |

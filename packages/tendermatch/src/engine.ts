@@ -3,7 +3,6 @@ import {
   TENDERMATCH_DEADLINE_CONTEXT_POLICY_VERSION,
   TENDERMATCH_ENGINE_VERSION,
   TENDERMATCH_SCHEMA_VERSION,
-  TENDERBOOST_DEMO_AS_OF,
   TENDERBOOST_DEMO_SNAPSHOT_ID,
   TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
   TENDERBOOST_LEGACY_SCHEMA_VERSION,
@@ -255,7 +254,9 @@ function auditedVerificationQuality(audited: AuditedMatchResult) {
 }
 
 export function assessMatch(tender: TenderRecord, supplier: SupplierRecord, nowIso: string, decision: ConsultantDecision = "pending"): MatchAssessment {
-  const legacy = supplier.legacyTenderMatches.find((item) => item.tenderReference === tender.reference);
+  const legacy = tender.snapshotId === TENDERBOOST_DEMO_SNAPSHOT_ID
+    ? supplier.legacyTenderMatches.find((item) => item.tenderReference === tender.reference)
+    : undefined;
   const freshness = deriveTenderFreshness(tender, nowIso);
   const globalLegacyQuality = legacyVerificationQuality(supplier);
   const { linked, unsupported } = linkLegacyStrengths(supplier, legacy?.verifiedStrengths ?? []);
@@ -271,7 +272,7 @@ export function assessMatch(tender: TenderRecord, supplier: SupplierRecord, nowI
     matchScore: {
       value: score,
       valueClass: legacy ? "ESTIMATED" : "MISSING",
-      method: legacy ? "legacy TenderBoost curated pair score; formula not independently revalidated" : "pair not evaluated in the frozen TenderBoost source fixture",
+      method: legacy ? "legacy TenderBoost curated pair score; formula not independently revalidated" : "pair has not been evaluated; MISSING is not zero",
     },
     legacyBaseline: {
       policyVersion: TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
@@ -308,7 +309,7 @@ function finding(code: ReviewFinding["code"], message: string, nextAction: strin
 export function evaluateConsultantReviewSupport(match: MatchAssessment, supplier: SupplierRecord): ConsultantReviewSupport {
   const findings: ReviewFinding[] = [];
   if (!match.exactLegacyPair || match.matchScore.value === null) {
-    findings.push(finding("MATCH_UNASSESSED", "This Company × Tender pair was not evaluated in the source fixture.", "Run a separately approved pair assessment; do not convert MISSING to zero.", "agent:TL-A031"));
+    findings.push(finding("MATCH_UNASSESSED", "This Company × Tender pair has not been evaluated.", "Run a separately approved pair assessment; do not convert MISSING to zero.", "agent:TL-A031"));
   } else if (match.auditedMatch.value === null) {
     findings.push(finding("AUDITED_MATCH_REQUIRED", "The audited calculation lacks one or more required evidence components.", `Resolve: ${match.auditedMatch.missingInputs.join("; ")}.`, "agent:TL-A031"));
   }
@@ -368,7 +369,7 @@ export function createCaseResult(caseId: string, tender: TenderRecord, supplier:
     resultIdentity: { id: `result:TM:${slug(caseId)}:${version}`, version },
     tenderIdentity: { id: tender.id, version: tender.version },
     supplierIdentity: { id: supplier.id, version: supplier.version },
-    evidenceSnapshotIdentity: { id: TENDERBOOST_DEMO_SNAPSHOT_ID, version: TENDERBOOST_DEMO_AS_OF },
+    evidenceSnapshotIdentity: { id: tender.snapshotId, version: tender.snapshotAsOf },
     decisionIdentity: { id: `match-decision:TM:${slug(caseId)}:pending`, version: "v1" },
     artifactIdentities: artifacts,
     createdAt: nowIso,
@@ -377,12 +378,12 @@ export function createCaseResult(caseId: string, tender: TenderRecord, supplier:
     match,
     reviewSupport: evaluateConsultantReviewSupport(match, supplier),
     knownLimitations: [
-      "The 16-tender and 10-supplier fixture is a dated demonstration snapshot, not a live feed.",
-      "The audited policy is validated only on the bounded dated fixture; 12 of 18 assessed pairs remain MISSING because required evidence is incomplete.",
-      "Legacy Match Score and readiness remain historical estimates and are not silently overwritten by the audited result.",
+      "The tender set is a deterministic local snapshot of records current at extraction time, not a live browser connection or continuously refreshed feed.",
+      "Every Supplier × Tender pair in this pilot is unassessed and remains MISSING until a separately validated matching process evaluates it.",
+      "Supplier readiness remains a historical demonstration estimate and does not create a Match Score for the pilot tenders.",
       "Browser-local Case storage is not durable tenant-isolated persistence or a canonical Dataset write.",
       "TenderMatch provides fit explanation and consultant decision support only; Bid/No-Bid and participation design remain downstream responsibilities.",
-      "The relationship diagram is schematic and non-geospatial; it does not represent coordinates, distance, routing, or live map accuracy.",
+      "Tender markers use honest country-level placement only; they do not represent a precise tender location, distance, routing, or live map accuracy.",
     ],
     migration: {
       status: "native-current",

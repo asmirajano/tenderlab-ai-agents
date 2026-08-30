@@ -78,8 +78,8 @@ test("maps all 10 TenderMatch views exactly once into the five-family matching w
   const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\r?\n\];\r?\n\r?\nconst navItems/)?.[0] ?? "";
   const expectedViews = [
     ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
-    ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "AutoMatch by Tenders", "05B"],
-    ["match-suppliers", "AutoMatch by Suppliers", "05C"], ["audit", "Detailed Case Review", "05D"],
+    ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "Review by Tenders", "05B"],
+    ["match-suppliers", "Review by Suppliers", "05C"], ["audit", "Detailed Case Review", "05D"],
   ];
   const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"]];
 
@@ -296,12 +296,12 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(main, /"\/tendermatch\/followups": "\/tendermatch"/);
   const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
   assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
-  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*audited matching support)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*MISSING pair support)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /data-map-mode="local-geographic"/);
-  assert.match(page, /data-map-snapshot="frozen"/);
+  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "frozen"\}/);
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
@@ -341,7 +341,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "tb3-agent-medallion",
     "KEEP MISSING",
     "WHAT YOU RECEIVE",
-    "ILLUSTRATIVE FROZEN OUTPUT · NOT A LIVE DECISION",
+    "PILOT TENDER + DEMO SUPPLIER · UNASSESSED",
     "MATCH SUPPORT",
     "LINKED EVIDENCE",
     "MISSING / BLOCKER",

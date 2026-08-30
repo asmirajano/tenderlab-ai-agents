@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "tendermatch-extraction-manifest/1.0.0",
+  "snapshotId": "snapshot:TM-NEON-CURRENT-2026-08-30",
+  "snapshotPath": "packages/tendermatch/src/fixtures/central-asia-current-tenders.pilot.json",
+  "snapshotSha256": "c5f31c4fbd019c8d26312bfdd5a12c761b3bda64e05b8cccc5a222c952caecf8",
+  "sourceBranchId": "br-morning-water-atqp6w7c",
+  "sourceRole": "AUTHORITATIVE_SOURCE",
+  "databaseRole": "th_qa_readonly",
+  "transactionMode": "READ ONLY",
+  "extractedAt": "2026-08-30T19:43:42.690Z",
+  "selectionPolicyVersion": "tendermatch-central-asia-current/1.0.0",
+  "selectionPredicate": "primary country in KZ/KG/TJ/TM/UZ; deletedAt IS NULL; status OPEN; deadlineAt >= database CURRENT_TIMESTAMP",
+  "deterministicOrder": "publishedAt DESC NULLS LAST, lastSyncedAt DESC, tender UUID ASC",
+  "count": 60,
+  "countryDistribution": {
+    "KZ": 10,
+    "KG": 12,
+    "TJ": 16,
+    "TM": 0,
+    "UZ": 22
+  },
+  "statusDistribution": {
+    "OPEN": 60
+  },
+  "deadlineStateAtExtraction": {
+    "CURRENT": 60,
+    "EXPIRED": 0,
+    "UNKNOWN": 0
+  },
+  "procurementTypeDistribution": {
+    "CONSULTING": 31,
+    "GOODS": 3,
+    "OTHER": 23,
+    "SERVICES": 1,
+    "WORKS": 2
+  },
+  "sourceDistribution": {
+    "ADB": 28,
+    "AIIB": 2,
+    "EBRD": 10,
+    "ISDB": 4,
+    "WORLD_BANK": 16
+  },
+  "fieldCoverage": {
+    "sourceRef": 60,
+    "sourceNoticeUrl": 44,
+    "description": 60,
+    "buyer": 16,
+    "financierName": 60,
+    "publishedAt": 60,
+    "deadlineAt": 60,
+    "sourceUpdatedAt": 0,
+    "originatingOrganization": 0,
+    "budgetAmount": 0,
+    "budgetCurrency": 0
+  },
+  "exclusions": [
+    "raw JSON",
+    "embedding",
+    "search vector",
+    "contact details",
+    "documents",
+    "large binary or extracted text"
+  ],
+  "secretHandling": "The database credential is read only at extraction time and is never serialized."
+}

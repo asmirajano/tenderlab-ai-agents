@@ -37,7 +37,7 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("nav-market-suppliers", "navigation", "02 Market Radar / Suppliers", "Market Radar / Suppliers", "adapted-to-tenderapps-design", "Grouped responsive subnavigation retained."),
   item("nav-supplier-profiles", "navigation", "03 Suppliers / Profiles", "Suppliers / Profiles", "preserved", "All ten profiles remain reachable."),
   item("nav-supplier-verification", "navigation", "03 Suppliers / Verification", "Suppliers / Verification", "preserved", "Evidence tables and provenance remain reachable."),
-  item("nav-tenders", "navigation", "04 Tenders", "Tenders", "preserved", "All sixteen tenders remain reachable."),
+  item("nav-tenders", "navigation", "04 Tenders", "Tenders", "truth-corrected", "The active current-at-extraction pilot tender set is reachable; the 16-row source fixture remains regression-only."),
   item("nav-matrix-full", "navigation", "05 Full Match Matrix", "Match Matrix / Portfolio", "truth-corrected", "Unassessed cells show MISSING rather than zero."),
   item("nav-matrix-tenders", "navigation", "05 AutoMatch by Tenders", "Match Matrix / By tender", "adapted-to-tenderapps-design", "Tender-first ranking retained."),
   item("nav-matrix-suppliers", "navigation", "05 AutoMatch by Suppliers", "Match Matrix / By supplier", "adapted-to-tenderapps-design", "Supplier-first ranking retained."),
@@ -47,9 +47,9 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("content-workflow-route", "content", "Live activation route", "Migration workflow map", "truth-corrected", "Static/local status is explicit."),
   item("content-agent-strip", "content", "Agent stack strip", "Capability handoff strip", "truth-corrected", "The active strip ends at the human-controlled participation decision."),
   item("content-tender-radar-heading", "content", "Global Tender Demand", "Global Tender Demand", "preserved", "Explanatory copy retained with simulation labelling."),
-  item("content-tender-radar-kpis", "content", "Tender radar KPIs", "Tender radar KPIs", "truth-corrected", "Universe figures are labelled simulated/assumed."),
-  item("content-tender-radar-flow", "content", "Tender-supplier radar flow", "Tender-supplier radar flow", "preserved", "Original 1,000/16/10 conceptual flow remains visible."),
-  item("content-tender-map", "content", "World density map", "Local geographic tender map", "truth-corrected", "Frozen world geometry and marker placement are restored from a self-hosted source asset; no external tiles or live feed."),
+  item("content-tender-radar-kpis", "content", "Tender radar KPIs", "Current pilot KPI summary", "truth-corrected", "Counts derive from the extracted artifact; all pairs remain unassessed/MISSING."),
+  item("content-tender-radar-flow", "content", "Tender-supplier radar flow", "Current pilot review flow", "truth-corrected", "The active tender and pair counts derive from runtime data rather than the legacy simulated universe."),
+  item("content-tender-map", "content", "World density map", "Local country-level pilot map", "truth-corrected", "Self-hosted geometry and country-level marker placement are explicit; no precise coordinates, external tiles, or live feed."),
   item("content-tender-map-legend", "content", "Tender map legend and geometry attribution", "Tender map legend and geometry attribution", "preserved", "Potential-cluster and focus-tender symbols plus Wikimedia geometry credit are visible."),
   item("content-tender-focus-signal", "content", "TenderLab focus signal", "TenderLab focus signal", "truth-corrected", "The signal identifies the universe as frozen and simulated."),
   item("content-tender-detail", "content", "Focus tender detail", "Focus tender detail", "truth-corrected", "Absolute deadline and evaluated/MISSING match state replace relative-only data."),
@@ -60,10 +60,10 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("content-supplier-focus-signal", "content", "Supplier activation-target signal", "Supplier matching-target signal", "truth-corrected", "The visual cue is restored as a matching target without an external-action claim."),
   item("content-supplier-detail", "content", "Target supplier detail", "Target supplier detail", "truth-corrected", "The historical false action-status field was removed; the active surface shows matching evidence only."),
   item("content-supplier-directory", "content", "Supplier directory", "Supplier directory", "preserved", "Readiness, markets, verification, and action retained."),
-  item("content-tender-directory", "content", "Open tender directory", "Tender snapshot directory", "truth-corrected", "Open/closed and freshness derive from absolute deadlines."),
-  item("content-full-matrix", "content", "10 × 16 matrix", "10 × 16 matrix", "truth-corrected", "18 evaluated cells and 142 MISSING cells remain distinct."),
-  item("content-tender-ranked-list", "content", "Tender-first supplier ranking", "Tender-first supplier ranking", "truth-corrected", "Audited support, legacy score, and MISSING remain distinct."),
-  item("content-supplier-ranked-list", "content", "Supplier-first tender ranking", "Supplier-first tender ranking", "truth-corrected", "Deadline freshness is recalculated from the supplied clock."),
+  item("content-tender-directory", "content", "Open tender directory", "Current pilot tender directory", "truth-corrected", "The selected set was OPEN/current at extraction; freshness is recalculated from absolute deadlines."),
+  item("content-full-matrix", "content", "10 × 16 matrix", "Runtime-derived supplier × tender matrix", "truth-corrected", "Every current pilot pair is explicit and MISSING; no score is generated."),
+  item("content-tender-ranked-list", "content", "Tender-first supplier ranking", "Tender-first review list", "truth-corrected", "Every pilot pair remains MISSING pending a validated assessment."),
+  item("content-supplier-ranked-list", "content", "Supplier-first tender ranking", "Supplier-first review list", "truth-corrected", "Every pilot pair remains MISSING and deadline freshness is recalculated from the supplied clock."),
   item("content-match-review", "content", "Selected match review", "Selected Case match review", "truth-corrected", "Uses the versioned canonical Case result and evidence links."),
   item("content-evidence-profile", "content", "Supplier identity and evidence", "Supplier identity and evidence", "preserved", "Every fixture evidence record is displayed."),
   item("content-evidence-audit", "content", "Profile provenance summary", "Profile provenance summary", "preserved", "Status, confidence, source and retrieval date retained."),
@@ -86,15 +86,15 @@ export const tenderBoostParityManifest: LegacyParityItem[] = [
   item("state-errors", "state", "Implicit action failures", "Visible action and persistence errors", "adapted-to-tenderapps-design", "Errors use role=alert."),
   item("state-case-save-error", "state", "No frozen-source equivalent", "Guarded explicit Case save", "adapted-to-tenderapps-design", "Storage failure is surfaced with role=alert and the active Case remains in memory.", "No frozen-source equivalent; Stage 1/2 integrity addition"),
   item("state-statuses", "state", "Pending/approved/hold/rejected", "Pending/approved/hold/rejected", "preserved", "Match decisions remain separate from scores."),
-  item("data-tenders", "data", "16 tender records", "16 tender records", "preserved", "Titles, objects, buyers, countries, sources, budgets and tags retained."),
+  item("data-tenders", "data", "16 tender records", "Deterministic current Central Asia pilot snapshot", "truth-corrected", "The source fixture remains regression-only; runtime tender count and fields come from the sanitized authorized extraction."),
   item("data-deadlines", "data", "Relative daysLeft", "Absolute deadlineAt", "truth-corrected", "Days remaining and urgency are derived from the current/injected clock."),
   item("data-deadline-baseline-vector", "data", "Frozen daysLeft vector", "Deterministic whole-day deadline conversion", "truth-corrected", "At the frozen as-of instant, floor((end-of-day deadline - clock)/24h) reproduces [1,1,2,2,5,5,8,8,8,8,9,11,15,16,116,135].", "04b0b2a:app/tenderboost-ai/page.tsx:137-153 · tenders[].daysLeft"),
   item("data-suppliers", "data", "10 supplier records", "10 supplier records", "preserved", "Frozen JSON blob is byte-identical."),
   item("data-evidence", "data", "Supplier evidence fields", "Versioned evidence records", "truth-corrected", "Source role, value class and review status are explicit."),
-  item("data-matches", "data", "18 assessed pairs", "18 evaluated legacy pairs", "preserved", "Scores 65–95 remain historical estimates."),
-  item("data-unassessed", "data", "142 implicit zero pairs", "142 explicit MISSING pairs", "truth-corrected", "A future evaluated zero remains distinguishable."),
+  item("data-matches", "data", "18 assessed pairs", "No pilot pair assessments", "truth-corrected", "The historical scores remain regression-only and cannot attach to Neon tender identities."),
+  item("data-unassessed", "data", "142 implicit zero pairs", "All runtime pairs explicitly MISSING", "truth-corrected", "Runtime cardinality is derived from tender and supplier data; a future evaluated zero remains distinguishable."),
   item("data-radar-universe", "data", "1,000/86/15 universe metrics", "Dated simulated universe annotations", "truth-corrected", "Not represented as sourced live data."),
-  item("data-radar-geometry", "data", "Fixed world geometry and supplier tile map", "Self-hosted world and China geographic geometry", "truth-corrected", "Frozen marker coordinates remain unchanged; map assets are local and CSP is unchanged."),
+  item("data-radar-geometry", "data", "Fixed world geometry and supplier tile map", "Self-hosted world and China geographic geometry", "truth-corrected", "Tender markers use country-level anchors and labelled visual spacing; supplier demonstration coordinates and local assets remain unchanged."),
   item("data-legacy-provenance", "data", "TenderBoost source identity", "TenderBoost migration provenance", "preserved", "Commit 04b0b2a and snapshot identity remain visible."),
   item("data-product-identity", "data", "TenderBoost AI", "TenderMatch · legacy TenderBoost baseline", "adapted-to-tenderapps-design", "Both branding layers remain traceable."),
 ];
@@ -185,6 +185,36 @@ export const tenderRadarCoordinates: Record<string, RadarCoordinate> = {
   "ZR-SPACE-252528-GO-RFB": { x: 56, y: 63, group: "Africa" },
   "RFQ/ALB/14/2025": { x: 54, y: 35, group: "Europe" },
 };
+
+const centralAsiaCountryCoordinates: Record<string, RadarCoordinate> = {
+  KZ: { x: 64.5, y: 34.5, group: "Kazakhstan" },
+  KG: { x: 68.5, y: 39.5, group: "Kyrgyzstan" },
+  TJ: { x: 68.5, y: 42.5, group: "Tajikistan" },
+  TM: { x: 64, y: 43, group: "Turkmenistan" },
+  UZ: { x: 65.5, y: 40.5, group: "Uzbekistan" },
+};
+
+/**
+ * Current-pilot tenders have country data, not precise coordinates. The small,
+ * deterministic visual offset prevents coincident controls while retaining a
+ * country-level marker contract; it must not be read as a tender location.
+ */
+export function tenderRadarCoordinate(tender: TenderRecord, index: number): RadarCoordinate {
+  const base = tender.countryCode ? centralAsiaCountryCoordinates[tender.countryCode] : undefined;
+  if (!base) return tenderRadarCoordinates[tender.reference] ?? { x: 67, y: 39, group: tender.country };
+  const column = (index % 5) - 2;
+  const row = (Math.floor(index / 5) % 3) - 1;
+  return { x: base.x + column * .42, y: base.y + row * .42, group: base.group };
+}
+
+export function countryTenderRadarClusters(tenders: TenderRecord[]): RadarCluster[] {
+  return Object.entries(centralAsiaCountryCoordinates).map(([countryCode, coordinate]) => ({
+    id: `pilot-${countryCode.toLowerCase()}`,
+    label: coordinate.group,
+    count: tenders.filter((tender) => tender.countryCode === countryCode).length,
+    ...coordinate,
+  }));
+}
 
 export const supplierRadarCoordinates: Record<string, RadarCoordinate> = {
   yutong: { x: 58, y: 40, group: "Central China" },

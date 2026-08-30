@@ -1,6 +1,6 @@
 # TenderMatch — TenderApps Agent 03 integration and placement record
 
-Status: local frozen-source matching baseline over a dated fixture, 2026-08-30. This playbook preserves the frozen TenderBoost source as migration provenance while defining the active TenderMatch contract. Campaign Studio and follow-up workflows were removed from TenderMatch after product-boundary review. It does not modify the canonical 64-Agent registry or authorize deployment.
+Status: local current-tender pilot over a deterministic read-only Central Asia snapshot, 2026-08-30. The active tender runtime is documented in `docs/tendermatch-central-asia-current-pilot.md`; the older 16-tender TenderBoost fixture and formula experiment below remain historical regression evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
 
 ## Mandatory placement re-audit
 
@@ -104,9 +104,9 @@ Negative scope of the **TL-A031 result and authority**:
 
 The historical **Campaign Studio** concept remains an unplaced future capability candidate in `docs/campaign-studio-future-capability-candidate.md`. It is not rendered inside `/tendermatch`, has no reachable view or control, and has no active package export or TenderMatch persistence key. Historical implementation evidence remains in Git and the untouched frozen standalone source. No Marketing Agent is created in this stage.
 
-## Source, value, and identity policy
+## Historical Stage 1/2 source, value, and identity policy
 
-The authorized source is a dated non-confidential demonstration fixture: 16 tenders, 10 company records, and 18 evaluated pair records from the frozen TenderBoost source. Tender and company rows are `SUPPORTING_DOCUMENT` inputs; pair-to-evidence assignments are reviewed `USER_ASSERTION` records for the bounded experiment.
+The historical regression source is a dated non-confidential demonstration fixture: 16 tenders, 10 company records, and 18 evaluated pair records from the frozen TenderBoost source. Those tender rows no longer power runtime views. They remain `SUPPORTING_DOCUMENT` inputs for legacy regression tests; pair-to-evidence assignments remain reviewed `USER_ASSERTION` records for that bounded historical experiment.
 
 Every material value remains one of `SOURCE`, `CALCULATED`, `ESTIMATED`, `ASSUMED`, or `MISSING`. The 142 absent Company × Tender combinations are unassessed and MISSING, never numeric zero. A future genuine evaluated zero remains a separate numeric value.
 

@@ -13,6 +13,7 @@ export const TENDERBOOST_STAGE_2_SCHEMA_VERSION = "2.0.0" as const;
 export const TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION = "tenderboost-legacy-baseline/1.0.0" as const;
 export const TENDERBOOST_DEMO_SNAPSHOT_ID = "snapshot:TB-DEMO-2026-08-15" as const;
 export const TENDERBOOST_DEMO_AS_OF = "2026-08-15T00:00:00+05:00" as const;
+export const TENDERMATCH_PILOT_SNAPSHOT_SCHEMA_VERSION = "tendermatch-tender-snapshot/1.0.0" as const;
 
 export type SourceRole =
   | "AUTHORITATIVE_SOURCE"
@@ -49,16 +50,33 @@ export type TenderFreshness = {
 
 export type TenderRecord = VersionedIdentity & {
   reference: string;
+  externalRef?: string;
+  sourceRef?: string | null;
+  sourceNoticeUrl?: string | null;
   title: string;
   object: string;
+  description?: string | null;
+  procurementType?: string;
+  databaseStatus?: "OPEN" | "CLOSED" | "AWARDED" | "CANCELLED" | "UNKNOWN";
   buyer: string;
+  financierName?: string | null;
   country: string;
+  countryCode?: "KZ" | "KG" | "TJ" | "TM" | "UZ";
   region: string;
   sourceLabel: string;
+  sourceIdentity?: { id: string; code: string; name: string; type: string };
+  feedIdentity?: { id: string; code: string; name: string; adapterType: string };
   budgetLabel: string;
+  budget?: { amount: string | null; currency: string | null; usd: string | null; disclosure: "DISCLOSED" | "NOT_DISCLOSED" };
+  publishedAt?: string;
   deadlineAt: string;
-  snapshotId: typeof TENDERBOOST_DEMO_SNAPSHOT_ID;
-  snapshotAsOf: typeof TENDERBOOST_DEMO_AS_OF;
+  snapshotId: string;
+  snapshotAsOf: string;
+  contentHash?: string;
+  dataVersion?: number;
+  lastSyncedAt?: string;
+  syncState?: string;
+  provenance?: Record<string, string>;
   sourceRole: SourceRole;
   valueClass: ValueClass;
   tags: string[];

@@ -19,7 +19,7 @@ const snapshotNow = "2026-08-15T12:00:00+05:00";
 
 test("accounts for every active frozen matching surface with no missing items", () => {
   assert.equal(tenderBoostParityManifest.length, 65);
-  assert.deepEqual(paritySummary(), { preserved: 24, "adapted-to-tenderapps-design": 11, "truth-corrected": 30, missing: 0 });
+  assert.deepEqual(paritySummary(), { preserved: 20, "adapted-to-tenderapps-design": 11, "truth-corrected": 34, missing: 0 });
   assert.equal(new Set(tenderBoostParityManifest.map((item) => item.id)).size, tenderBoostParityManifest.length);
   assert.equal(tenderBoostParityManifest.some((item) => item.status === "missing"), false);
   for (const source of ["01 Dashboard", "02 Market Radar / Tenders", "02 Market Radar / Suppliers", "03 Suppliers / Profiles", "03 Suppliers / Verification", "04 Tenders", "05 Full Match Matrix", "05 AutoMatch by Tenders", "05 AutoMatch by Suppliers"]) {
@@ -47,19 +47,20 @@ test("keeps the frozen fixture cardinalities and explicit MISSING matrix cells",
 test("renders every matching view and no Campaign Studio runtime or styling", async () => {
   const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
   const styles = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch.css"), "utf8");
-  for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "AutoMatch by Tenders", "AutoMatch by Suppliers", "Detailed Case Review"]) assert.match(page, new RegExp(label));
-  for (const content of ["Global Tender Demand", "Global Supplier Market", "Full Match Matrix", "AutoMatch by Tenders", "AutoMatch by Suppliers", "Case save failed"]) assert.match(page, new RegExp(content));
+  for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "Review by Tenders", "Review by Suppliers", "Detailed Case Review"]) assert.match(page, new RegExp(label));
+  for (const content of ["Current Tender Radar", "Global Supplier Market", "Full Match Matrix", "Review by Tenders", "Review by Suppliers", "Case save failed"]) assert.match(page, new RegExp(content));
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.match(page, /role="alert"/);
   assert.match(page, /MISSING—not 0\/100/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
   assert.match(page, /data-map-mode="local-geographic"/);
-  assert.match(page, /data-map-snapshot="frozen"/);
-  assert.match(page, /GLOBAL OPPORTUNITY DENSITY · FROZEN/);
+  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "frozen"\}/);
+  assert.match(page, /CENTRAL ASIA CURRENT-TENDER SNAPSHOT/);
+  assert.match(page, /COUNTRY-LEVEL PLACEMENT · VISUAL SPACING ONLY/);
   assert.match(page, /GEOGRAPHIC SUPPLIER DENSITY · FROZEN/);
   assert.match(page, /Map geometry · Wikimedia Commons/);
   assert.match(page, /Use arrow keys or drag to pan after zooming/);
-  assert.match(page, /TenderLab focus/);
+  assert.match(page, /Location boundary/);
   assert.match(page, /Matching target/);
   assert.match(styles, /url\("\/tendermatch\/maps\/world-map\.png"\)/);
   assert.match(styles, /url\("\/tendermatch\/maps\/china-prefectures\.png"\)/);

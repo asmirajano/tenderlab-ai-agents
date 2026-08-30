@@ -30,9 +30,10 @@ test("registers all practical Agents as pages in one Tender Apps product", () =>
   assert.equal(tenderMatchProduct.ownerAgentId, "agent:TL-A031");
   assert.equal(tenderMatchProduct.name, "TenderMatch");
   assert.equal(tenderMatchProduct.clientRoute, "/tendermatch");
-  assert.match(tenderMatchProduct.surfaceStatus, /Frozen matching workspace/);
+  assert.match(tenderMatchProduct.surfaceStatus, /Read-only pilot snapshot/);
   assert.match(tenderMatchProduct.surfaceStatus, /evidence review and human disposition/);
-  assert.match(tenderMatchProduct.dataNotice, /18 evaluated and 142 MISSING pairs/);
+  assert.match(tenderMatchProduct.dataNotice, /all pairs unassessed\/MISSING/);
+  assert.match(tenderMatchProduct.dataNotice, /no live browser database connection/);
   assert.doesNotMatch(`${tenderMatchProduct.descriptor} ${tenderMatchProduct.surfaceStatus} ${tenderMatchProduct.dataNotice}`, /draft|campaign|outreach|not[_ -]?sent|delivery|CRM|response tracking/i);
   assert.equal(tenderBalanceProduct.access.commandCenterAudience, "team-admin-only");
   assert.equal(tenderBalanceProduct.access.clientAppToCommandCenter, false);
