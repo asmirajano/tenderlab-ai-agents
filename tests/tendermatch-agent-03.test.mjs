@@ -279,11 +279,11 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
     read("apps/tender-apps/src/tendermatch-app.tsx"),
     read("apps/tender-apps/src/tendermatch.css"),
   ]);
-  const overviewStart = page.indexOf('<section className="tb3-overview-manifesto"');
+  const overviewStart = page.indexOf('<PracticalAgentOverview audience="consultant" className="tb3-overview-manifesto"');
   const evidenceStart = page.indexOf('<header className="tb3-demonstration-heading"');
   assert.ok(overviewStart > -1, "product Overview must exist");
   assert.ok(evidenceStart > overviewStart, "product orientation must precede migration evidence");
-  const productShell = page.slice(page.indexOf('<section className="tb3-product-intro"'), overviewStart);
+  const productShell = page.slice(page.indexOf('{view !== "dashboard" && <section className="tb3-product-intro"'), overviewStart);
   const orientation = page.slice(overviewStart, evidenceStart);
   const migrationEvidence = page.slice(evidenceStart, page.indexOf("function TenderRadarView"));
 
@@ -291,10 +291,11 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
   assert.match(productShell, /Company × Tender evidence review for TenderLab Consultants/);
   assert.match(productShell, /MATCH SUPPORT · HUMAN DECISION · NO OUTREACH/);
   assert.match(productShell, /TenderMatch workspace/);
+  assert.match(productShell, /view !== "dashboard" && caseControls/);
   assert.doesNotMatch(productShell, /COMPLETE MIGRATION BASELINE|SOURCE BASELINE|Complete frozen TenderBoost workspace/);
 
   for (const content of [
-    "TENDERLAB CONSULTANT WORKSPACE · TENDERAPPS AGENT 03",
+    "TENDERMATCH · TENDERLAB CONSULTANT WORKSPACE · AGENT 03",
     "reviewable match result",
     "WHAT YOU PROVIDE",
     "Tender snapshot",
@@ -316,11 +317,18 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
 
   assert.ok(orientation.indexOf("WHAT YOU PROVIDE") < orientation.indexOf("WHAT TENDERMATCH DOES"));
   assert.ok(orientation.indexOf("WHAT TENDERMATCH DOES") < orientation.indexOf("WHAT YOU RECEIVE"));
+  assert.ok(orientation.indexOf('part="outcome-promise"') < orientation.indexOf('part="input"'));
+  assert.ok(orientation.indexOf('part="input"') < orientation.indexOf('part="agent-transformation"'));
+  assert.ok(orientation.indexOf('part="agent-transformation"') < orientation.indexOf('part="finished-output"'));
+  assert.ok(orientation.indexOf('part="finished-output"') < orientation.indexOf('part="primary-action"'));
   assert.match(orientation, /MISSING<\/b>—never silently converted to zero/);
   assert.match(orientation, /onOpen\(previewAssessment, "match-tenders"\)/);
+  assert.match(orientation, /onKeyDown=\{\(event\)[\s\S]+event\.key === "Enter"[\s\S]+event\.key === " "/);
   assert.match(orientation, /onView\("matrix"\)/);
   assert.match(orientation, /separate TenderMarketing or promotion capability/);
   assert.match(orientation, /No tender promotion, supplier contact, message delivery, CRM action, response tracking, participation authorization, or Bid\/No-Bid decision occurs in TenderMatch/);
+  assert.match(orientation, /PracticalAgentOverviewBoundary[\s\S]+\{caseControls\}/);
+  assert.doesNotMatch(orientation, /tb3-product-intro/);
   assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);
 
   assert.match(migrationEvidence, /className="tb3-demonstration-heading"[\s\S]+<h2>TenderMatch[^<]*frozen-source parity/);
@@ -334,6 +342,8 @@ test("orients the Overview around TenderLab's internal Company × Tender review 
 
   assert.match(page, /sublabel: "Internal matching workspace"/);
   assert.match(styles, /\.tb3-overview-story \{[^}]*grid-template-columns:/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-overview-heading h1/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-overview-actions/);
   assert.match(styles, /@media \(max-width: 1200px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: 1fr; \}/);
 });

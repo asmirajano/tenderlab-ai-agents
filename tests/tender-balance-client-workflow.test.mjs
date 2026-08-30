@@ -44,7 +44,8 @@ test("TenderBalance makes upload the only required client action before the resu
 test("TenderBalance declares input, transformation, and the tangible finished product before intake", async () => {
   const [source, manifesto] = await Promise.all([readFile(appUrl, "utf8"), readFile(manifestoUrl, "utf8")]);
 
-  assert.match(manifesto, /client material -> compact agent transformation -> tangible client product/);
+  assert.match(manifesto, /audience-neutral practical-/);
+  assert.match(manifesto, /part="outcome-promise"[\s\S]*part="input"[\s\S]*part="agent-transformation"[\s\S]*part="finished-output"[\s\S]*part="primary-action"/);
   assert.match(manifesto, /Client input, agent transformation, and finished product/);
   assert.match(source, /WHAT YOU PROVIDE/);
   assert.match(source, /Read[\s\S]*Identify[\s\S]*Extract[\s\S]*Structure[\s\S]*Check/);

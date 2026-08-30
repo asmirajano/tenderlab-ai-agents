@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "1.0.0",
+  "testedAt": "2026-08-30",
+  "buildSource": "local TenderApps production build from c8fdacb naming baseline plus Overview contract 2.1.0 working tree",
+  "measurement": "Rendered getBoundingClientRect measurements from data-practical-agent-overview semantic hooks at 100% zoom; visible means the part intersects the initial viewport before scrolling.",
+  "requiredFirstViewportParts": [
+    "outcome-promise",
+    "input",
+    "agent-transformation",
+    "finished-output"
+  ],
+  "finishedOutputMinimumAreaRatio": 1.25,
+  "browserConsoleWarningsOrErrors": 0,
+  "tenderMatchResponsiveReview": {
+    "route": "/tendermatch",
+    "directRefreshPassed": true,
+    "allTwelveOperationalViewsReachable": true,
+    "primaryAction": {
+      "pointerActivationPassed": true,
+      "enterActivationPassed": true,
+      "spaceActivationPassed": true,
+      "destination": "By Tender workspace"
+    },
+    "focusOrder": "Outcome promise, input, Agent transformation, finished output, primary action, trust boundary, explicit Case controls, then migration evidence.",
+    "viewports": [
+      {
+        "mode": "Standard",
+        "width": 1280,
+        "height": 768,
+        "semanticOrderPassed": true,
+        "outputVisuallyDominant": true,
+        "horizontalOverflowPx": 0
+      },
+      {
+        "mode": "Wide",
+        "width": 1440,
+        "height": 900,
+        "semanticOrderPassed": true,
+        "outputVisuallyDominant": true,
+        "horizontalOverflowPx": 0
+      },
+      {
+        "mode": "responsive",
+        "width": 1024,
+        "height": 768,
+        "semanticOrderPassed": true,
+        "outputVisuallyDominant": true,
+        "horizontalOverflowPx": 0
+      },
+      {
+        "mode": "responsive",
+        "width": 390,
+        "height": 844,
+        "semanticOrderPassed": true,
+        "outputVisuallyDominant": true,
+        "horizontalOverflowPx": 0
+      }
+    ]
+  },
+  "products": [
+    {
+      "productId": "product:TA-BALANCE",
+      "route": "/balance-sheet-review",
+      "trustBoundaryPresent": true,
+      "viewports": [
+        {
+          "width": 1280,
+          "height": 720,
+          "firstViewportPartsVisible": true,
+          "outputAreaRatioToInput": 2.43,
+          "outputAreaRatioToTransformation": 3.93,
+          "primaryActionVisible": false,
+          "horizontalOverflowPx": 0
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "firstViewportPartsVisible": true,
+          "outputAreaRatioToInput": 2.43,
+          "outputAreaRatioToTransformation": 3.93,
+          "primaryActionVisible": false,
+          "horizontalOverflowPx": 0
+        }
+      ]
+    },
+    {
+      "productId": "product:TA-LANDED-COST",
+      "route": "/landed-cost",
+      "trustBoundaryPresent": true,
+      "viewports": [
+        {
+          "width": 1280,
+          "height": 720,
+          "firstViewportPartsVisible": true,
+          "outputAreaRatioToInput": 2.5,
+          "outputAreaRatioToTransformation": 7.65,
+          "primaryActionVisible": false,
+          "horizontalOverflowPx": 0
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "firstViewportPartsVisible": true,
+          "outputAreaRatioToInput": 2.5,
+          "outputAreaRatioToTransformation": 8.61,
+          "primaryActionVisible": false,
+          "horizontalOverflowPx": 0
+        }
+      ]
+    },
+    {
+      "productId": "product:TA-TENDERBOOST",
+      "route": "/tendermatch",
+      "trustBoundaryPresent": true,
+      "viewports": [
+        {
+          "width": 1280,
+          "height": 720,
+          "firstViewportPartsVisible": true,
+          "outputAreaRatioToInput": 2.14,
+          "outputAreaRatioToTransformation": 2.09,
+          "primaryActionVisible": true,
+          "horizontalOverflowPx": 0
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "firstViewportPartsVisible": true,
+          "outputAreaRatioToInput": 2.17,
+          "outputAreaRatioToTransformation": 2.17,
+          "primaryActionVisible": true,
+          "horizontalOverflowPx": 0
+        }
+      ]
+    }
+  ]
+}

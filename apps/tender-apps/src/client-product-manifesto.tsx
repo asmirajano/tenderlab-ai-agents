@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
+import {
+  PracticalAgentOverview,
+  PracticalAgentOverviewPart,
+  type PracticalAgentOverviewAudience,
+} from "./practical-agent-overview.tsx";
 import "./client-product-manifesto.css";
 
 type ClientProductManifestoProps = {
+  audience: PracticalAgentOverviewAudience;
   eyebrow: ReactNode;
   title: ReactNode;
   promise: ReactNode;
@@ -9,13 +15,15 @@ type ClientProductManifestoProps = {
   transformation: ReactNode;
   output: ReactNode;
   actions: ReactNode;
+  productId: string;
 };
 
 /**
- * Shared first-screen pattern for practical client agents:
- * client material -> compact agent transformation -> tangible client product.
+ * TenderBalance compatibility composition over the audience-neutral practical-
+ * Agent Overview contract. The existing client visual remains unchanged.
  */
 export function ClientProductManifesto({
+  audience,
   eyebrow,
   title,
   promise,
@@ -23,22 +31,23 @@ export function ClientProductManifesto({
   transformation,
   output,
   actions,
+  productId,
 }: ClientProductManifestoProps) {
   return (
-    <section className="client-product-manifesto" aria-labelledby="client-product-manifesto-title">
-      <header className="client-product-manifesto__header">
+    <PracticalAgentOverview audience={audience} className="client-product-manifesto" productId={productId} aria-labelledby="client-product-manifesto-title">
+      <PracticalAgentOverviewPart as="header" className="client-product-manifesto__header" part="outcome-promise">
         <div>{eyebrow}</div>
         <h1 id="client-product-manifesto-title">{title}</h1>
         <p>{promise}</p>
-      </header>
+      </PracticalAgentOverviewPart>
 
       <div className="client-product-manifesto__story" aria-label="Client input, agent transformation, and finished product">
-        <div className="client-product-manifesto__input">{input}</div>
-        <div className="client-product-manifesto__transform">{transformation}</div>
-        <div className="client-product-manifesto__output">{output}</div>
+        <PracticalAgentOverviewPart className="client-product-manifesto__input" part="input">{input}</PracticalAgentOverviewPart>
+        <PracticalAgentOverviewPart className="client-product-manifesto__transform" part="agent-transformation">{transformation}</PracticalAgentOverviewPart>
+        <PracticalAgentOverviewPart className="client-product-manifesto__output" part="finished-output">{output}</PracticalAgentOverviewPart>
       </div>
 
-      <div className="client-product-manifesto__actions">{actions}</div>
-    </section>
+      <PracticalAgentOverviewPart className="client-product-manifesto__actions" part="primary-action">{actions}</PracticalAgentOverviewPart>
+    </PracticalAgentOverview>
   );
 }

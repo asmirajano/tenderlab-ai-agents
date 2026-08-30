@@ -9,7 +9,7 @@ const readPolicy = async () => JSON.parse(await readFile(policyUrl, "utf8"));
 
 test("keeps the approved methodology separate from strategy and Agent-specific knowledge", async () => {
   const policy = await readPolicy();
-  assert.equal(policy.schemaVersion, "2.0.0");
+  assert.equal(policy.schemaVersion, "2.1.0");
   assert.equal(policy.status, "approved-consolidated-methodology");
   assert.deepEqual(policy.knowledgeLayers.map((layer) => layer.id), [
     "agent-strategy-and-simulation",
@@ -110,6 +110,36 @@ test("separates persistence, approval, and release while preserving truthful par
   assert.ok(policy.semanticBlockingRule.neverTreatAsMissing.includes("available deterministic calculation"));
 });
 
+test("requires an audience-neutral rendered practical-Agent Overview gate", async () => {
+  const policy = await readPolicy();
+  const overview = policy.practicalAgentOverviewContract;
+  assert.equal(overview.audienceNeutral, true);
+  assert.deepEqual(overview.requiredOrderedParts, [
+    "outcome-promise",
+    "input",
+    "agent-transformation",
+    "finished-output",
+    "primary-action",
+    "trust-boundary",
+  ]);
+  assert.deepEqual(overview.representativeDesktopViewports, [
+    { width: 1280, height: 720 },
+    { width: 1440, height: 900 },
+  ]);
+  assert.deepEqual(overview.firstViewportRequiredParts, [
+    "outcome-promise",
+    "input",
+    "agent-transformation",
+    "finished-output",
+  ]);
+  assert.equal(overview.finishedOutputMinimumAreaRatio, 1.25);
+  assert.equal(overview.finishedOutputVisualDominanceRequired, true);
+  assert.equal(overview.trustAndNegativeScopeBoundaryMustBeVisible, true);
+  assert.equal(overview.renderedBrowserEvidenceRequired, true);
+  assert.equal(overview.sourceStringPresenceIsSufficient, false);
+  assert.equal(overview.overviewCompleteWithoutGateAllowed, false);
+});
+
 test("diagnoses pipeline phases and binds release claims to artifact parity", async () => {
   const policy = await readPolicy();
   assert.ok(policy.failureLayers.includes("ASSET_OR_MODULE_LOADING"));
@@ -139,6 +169,7 @@ test("protects the consolidated regression families and general invariants", asy
     "semantic-blocking-only",
     "explicit-case-identity-no-latest-fallback",
     "persistence-approval-release-separation",
+    "audience-neutral-practical-agent-overview-first-viewport",
     "multidimensional-trust",
     "artifact-parity-and-release-freshness",
     "deployed-equivalent-replay",
@@ -151,6 +182,8 @@ test("protects the consolidated regression families and general invariants", asy
     "preliminary-approval-release-transitions",
     "artifact-identity-and-stale-release-evidence",
     "deployed-equivalent-replay",
+    "registry-driven-practical-agent-overview-contract",
+    "rendered-first-viewport-output-dominance",
   ]) assert.ok(policy.minimumTestFamilies.includes(family), family);
 });
 
@@ -165,5 +198,7 @@ test("keeps the methodology discoverable without moving financial or logistics r
   assert.match(methodology, /balance-sheet-digitization-mvp\.md/);
   assert.match(methodology, /contract-logistics-incoterms-architecture\.md/);
   assert.match(methodology, /What happened → Root cause → Correction → Reusable rule → Regression evidence/);
+  assert.match(methodology, /TenderMatch contained the correct input → Agent work → output story/);
+  assert.match(agents, /do not mark an Overview complete from source copy alone/);
   assert.match(methodology, /FIN mappings, accounting equations, Incoterm logic/);
 });

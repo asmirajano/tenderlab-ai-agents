@@ -16,6 +16,7 @@ import {
 import { syntheticBalanceSheetReviews, syntheticFixtureLabels } from "../../../packages/tender-balance/src/fixtures.ts";
 import "../../../packages/design-system/src/tokens.css";
 import { ClientProductManifesto } from "./client-product-manifesto.tsx";
+import { PracticalAgentOverviewBoundary } from "./practical-agent-overview.tsx";
 import {
   balanceNavigationHref,
   isCaseSurface,
@@ -665,7 +666,9 @@ function BalanceSheetWorkspace() {
       <main className="bs-page bs-client-start">
         {clientNav}
         <ClientProductManifesto
+          audience="client"
           eyebrow={<p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>}
+          productId="product:TA-BALANCE"
           title={<>Raw statements become a<br /><em>finished digital balance sheet.</em></>}
           promise={<>You provide the source. TenderBalance finds the statement, digitizes every readable value, checks the arithmetic, reports genuine findings, and saves the completed result.</>}
           input={(
@@ -720,7 +723,7 @@ function BalanceSheetWorkspace() {
           )}
         />
 
-        <details className="bs-landing-details">
+        <PracticalAgentOverviewBoundary as="details" className="bs-landing-details" productId="product:TA-BALANCE">
           <summary>How it works, accepted inputs, and scope</summary>
           <div className="bs-client-journey" aria-label="How TenderBalance works">
             <article><span>01</span><strong>Upload statements</strong><p>Add one balance sheet or several related source documents.</p></article>
@@ -733,7 +736,7 @@ function BalanceSheetWorkspace() {
             <p>The product preserves original reported values and keeps corrections separate. It does not assess income statements, cash flows, audit opinions, financial health, supplier suitability, or final tender eligibility.</p>
             <button onClick={openDemo} type="button">Open a clearly labelled demo</button>
           </section>
-        </details>
+        </PracticalAgentOverviewBoundary>
         <footer className="bs-footer"><span>Tender Apps · TenderBalance</span><span>Private client workspace · no Command Center access</span></footer>
       </main>
     );

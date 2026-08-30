@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "2.1.0",
   "name": "Real Tender Agent Development",
   "status": "approved-consolidated-methodology",
   "knowledgeLayers": [
@@ -28,7 +28,7 @@
   ],
   "lifecycle": [
     { "id": "knowledge-layer-and-placement-gate", "exitEvidence": ["canonical placement", "preserved strategy boundary", "Agent-specific owner"] },
-    { "id": "purpose-and-authority-contract", "exitEvidence": ["TOR and negative scope", "primary client purpose", "human authority boundary"] },
+    { "id": "purpose-and-authority-contract", "exitEvidence": ["TOR and negative scope", "primary user outcome and audience", "human authority boundary"] },
     { "id": "real-input-output-contract", "exitEvidence": ["real input contract", "primary finished product", "consumer and handoff"] },
     { "id": "canonical-data-contract", "exitEvidence": ["source roles and value classes", "Case and result identities", "workflow and artifact states"] },
     { "id": "evidence-plan", "exitEvidence": ["authorized realistic evidence", "clearly labelled synthetic edge cases", "comparison and confidentiality plan"] },
@@ -38,8 +38,8 @@
     { "id": "correct-and-repeat", "exitEvidence": ["general correction", "representative evidence re-run", "no document-specific shortcut"] },
     { "id": "methodology-approval", "exitEvidence": ["approved method", "accepted limitations and thresholds", "bounded production permission"] },
     { "id": "production-integration", "exitEvidence": ["complete canonical result integration", "explicit Case identity", "exports and handoffs"] },
-    { "id": "human-workflow-integration", "exitEvidence": ["actionable blockers", "truthful workflow states", "persistence and recovery paths"] },
-    { "id": "production-verification", "exitEvidence": ["realistic case replay", "focused and proportionate full tests", "generated artifact inspection"] },
+    { "id": "human-workflow-integration", "exitEvidence": ["actionable blockers", "truthful workflow states", "persistence and recovery paths", "audience-neutral practical-Agent Overview contract"] },
+    { "id": "production-verification", "exitEvidence": ["realistic case replay", "focused and proportionate full tests", "generated artifact inspection", "rendered first-viewport Overview evidence"] },
     { "id": "release-evidence-gate", "exitEvidence": ["revision and artifact identities", "fresh validation and documentation", "authorization and limitations"] },
     { "id": "authorized-deployment", "exitEvidence": ["deployment authorization", "exact deployed revision", "live route asset and security verification"] },
     { "id": "deployed-equivalent-replay", "exitEvidence": ["authorized representative replay", "artifact parity verdict", "archived observations and recovery evidence"] },
@@ -94,6 +94,34 @@
     "persistenceApprovalAndReleaseAreSeparate": true,
     "truthfulPartialPersistenceAllowedByProductContract": true,
     "exportIsSecondaryToSavedCase": true
+  },
+  "practicalAgentOverviewContract": {
+    "audienceNeutral": true,
+    "requiredOrderedParts": [
+      "outcome-promise",
+      "input",
+      "agent-transformation",
+      "finished-output",
+      "primary-action",
+      "trust-boundary"
+    ],
+    "firstViewportRequiredParts": [
+      "outcome-promise",
+      "input",
+      "agent-transformation",
+      "finished-output"
+    ],
+    "representativeDesktopViewports": [
+      { "width": 1280, "height": 720 },
+      { "width": 1440, "height": 900 }
+    ],
+    "finishedOutputMinimumAreaRatio": 1.25,
+    "finishedOutputVisualDominanceRequired": true,
+    "trustAndNegativeScopeBoundaryMustBeVisible": true,
+    "renderedBrowserEvidenceRequired": true,
+    "sourceStringPresenceIsSufficient": false,
+    "agentSpecificNavigationAndWorkflowMustRemainDistinct": true,
+    "overviewCompleteWithoutGateAllowed": false
   },
   "failureLayers": [
     "ASSET_OR_MODULE_LOADING",
@@ -168,6 +196,7 @@
     "semantic-blocking-only",
     "experiment-first-for-uncertain-intelligence",
     "purpose-led-primary-result",
+    "audience-neutral-practical-agent-overview-first-viewport",
     "case-agent-page-separation",
     "explicit-case-identity-no-latest-fallback",
     "visualizations-explain-results",
@@ -194,6 +223,8 @@
     "recovery-and-truthful-terminal-state",
     "artifact-identity-and-stale-release-evidence",
     "deployed-equivalent-replay",
-    "responsive-and-accessible-result"
+    "responsive-and-accessible-result",
+    "registry-driven-practical-agent-overview-contract",
+    "rendered-first-viewport-output-dominance"
   ]
 }

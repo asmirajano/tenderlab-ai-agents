@@ -33,6 +33,7 @@ import {
 } from "../../../packages/logistics-costing/src";
 import { readClientDocument, type DocumentProcessingStage } from "./client-document-extraction";
 import { logisticsCalculationExcelFileName, logisticsCalculationToExcel, type LogisticsCalculationWorkbookModel } from "./logistics-calculation-excel";
+import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 
 type WorkspaceMode = "conversion" | "logistics";
 type ClientSurface = "welcome" | "intake" | "result" | "cases" | "audit";
@@ -1240,15 +1241,15 @@ export default function LogisticsCostingApp() {
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
-        <section className="cost-product-manifesto">
-          <header className="cost-product-heading">
+        <PracticalAgentOverview audience="client" className="cost-product-manifesto" productId="product:TA-LANDED-COST">
+          <PracticalAgentOverviewPart as="header" className="cost-product-heading" part="outcome-promise">
             <p className="costing-eyebrow"><span /> Tender Logistics Cost · Reviewed Cost Evidence</p>
             <h1>Raw commercial inputs become a{" "}<br /><em>decision-ready delivery cost.</em></h1>
             <p>See how commercial source evidence becomes one defensible logistics estimate with transport capacity, cost logic, confidence and traceable assumptions.</p>
-          </header>
+          </PracticalAgentOverviewPart>
 
           <div className="cost-product-story" aria-label="Commercial inputs transformed into a reviewed delivery cost estimate">
-            <article className="raw-cost-inputs">
+            <PracticalAgentOverviewPart as="article" className="raw-cost-inputs" part="input">
               <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>Raw commercial + shipment information</small></div></header>
               <div className="cost-document-stack" aria-label="Quotation, packing list and freight quote">
                 <div className="cost-document document-back"><span>FREIGHT QUOTE</span><b>Rail rate</b><i>Origin · destination</i></div>
@@ -1262,18 +1263,18 @@ export default function LogisticsCostingApp() {
                 <div><dt>COSTS</dt><dd>Known rates + open gaps</dd></div>
               </dl>
               <footer><span>PDF</span><span>XLSX</span><span>CSV / JSON</span><span>Manual input</span></footer>
-            </article>
+            </PracticalAgentOverviewPart>
 
-            <div className="cost-transformation-bridge" aria-label="Tender Logistics Cost transformation">
+            <PracticalAgentOverviewPart className="cost-transformation-bridge" part="agent-transformation" aria-label="Tender Logistics Cost transformation">
               <span className="story-arrow" aria-hidden="true">→</span>
               <div className="cost-agent-medallion"><small>TENDER APPS</small><strong>TENDER</strong><b>LOGISTICS<br />COST</b></div>
               <ol>
                 <li>READ</li><li>STRUCTURE</li><li>ESTIMATE CARGO</li><li>SIZE TRANSPORT</li><li>PRICE LOGISTICS</li><li>EXPLAIN</li>
               </ol>
               <span className="story-arrow" aria-hidden="true">→</span>
-            </div>
+            </PracticalAgentOverviewPart>
 
-            <article className="finished-cost-preview">
+            <PracticalAgentOverviewPart as="article" className="finished-cost-preview" part="finished-output">
               <header>
                 <div><span>03 · WHAT YOU RECEIVE</span><small>ILLUSTRATIVE DEMO · NOT CLIENT DATA</small></div>
                 <b>FINISHED PRODUCT</b>
@@ -1298,18 +1299,18 @@ export default function LogisticsCostingApp() {
                 <li>✓ Cargo evidence separated from proxies</li><li>✓ Transport capacity calculated</li><li>✓ Freight benchmark labelled</li><li>✓ Insurance disclosed separately</li><li>✓ Assumptions traceable</li><li>✓ One current estimate</li>
               </ul>
               <footer><div><span>APPROVED RESULT</span><strong>Ready for commercial / tender decision</strong></div><span aria-hidden="true">→</span></footer>
-            </article>
+            </PracticalAgentOverviewPart>
           </div>
 
-          <footer className="cost-product-actions">
+          <PracticalAgentOverviewPart as="footer" className="cost-product-actions" part="primary-action">
             <div><strong>You provide the transaction evidence.</strong><span>Tender Logistics Cost turns it into one calculation you can review, understand, and approve.</span></div>
             <div className="welcome-actions">
               <button className="primary-client-action" onClick={startNewCalculation} type="button">Start a logistics calculation <span>→</span></button>
               <button className="secondary-client-action" onClick={openDemoScenario} type="button">Open labelled methodology example</button>
               <button className="secondary-client-action" onClick={() => { setSelectedCaseId(null); setClientSurface("cases"); }} type="button">Open saved cases</button>
             </div>
-          </footer>
-        </section>
+          </PracticalAgentOverviewPart>
+        </PracticalAgentOverview>
 
         <section className="overview-support" aria-label="How Tender Logistics Cost works">
           <article className="guided-consultation-card">
@@ -1327,7 +1328,7 @@ export default function LogisticsCostingApp() {
             <article><span>03</span><strong>Commercial summary</strong><p>Keep the logistics addition primary and the revised commercial total secondary.</p></article>
           </div>
         </section>
-        <section className="client-trust-note">
+        <PracticalAgentOverviewBoundary className="client-trust-note" productId="product:TA-LANDED-COST">
           <strong>How it works</strong>
           <p>The calculation is deterministic and runs locally in your browser. No AI tokens are used. Missing cargo and rate values may be estimated only from visible, versioned proxies and benchmarks; they are never presented as source facts or live quotations.</p>
           <details className="calculation-architecture-overview">
@@ -1339,7 +1340,7 @@ export default function LogisticsCostingApp() {
               <article><span>04 · REVIEW</span><strong>Client control remains explicit</strong><p>Estimated values stay editable; missing or uncertain inputs remain visible and approval is a separate action.</p></article>
             </div>
           </details>
-        </section>
+        </PracticalAgentOverviewBoundary>
         <footer className="costing-footer"><div><strong>TenderApps</strong><span>Tender Logistics Cost · guided and auditable</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
       </main>
     );

@@ -44,6 +44,7 @@ import {
   type TenderMatchCaseResult,
   type TenderRecord,
 } from "../../../packages/tendermatch/src";
+import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 
 type WorkspaceView =
   | "dashboard"
@@ -451,11 +452,17 @@ export default function TenderMatchApp() {
   const visibleSupplierClusters = supplierRadarFilter === "All regions" ? chinaRadarClusters : chinaRadarClusters.filter((entry) => entry.group === supplierRadarFilter);
   const visibleSuppliers = supplierRadarFilter === "All regions" ? demoSuppliers : demoSuppliers.filter((entry) => supplierRadarCoordinates[fixtureSupplierKey(entry)]?.group === supplierRadarFilter);
 
-  return <main className="tb3-page">
-    <section className="tb3-product-intro">
+  const caseControls = <section className="tb3-case-strip">
+    <div><span>EXPLICIT CASE</span><code>{result.caseIdentity.id}</code><small>{supplier.legalEnglishName} × {tender.reference}</small></div>
+    <div><span>AUDITED / LEGACY</span><b>{result.match.auditedMatch.value ?? "MISSING"} <i>/</i> {result.match.matchScore.value ?? "MISSING"}</b><small>{result.match.tenderFreshness.status} · {result.match.tenderFreshness.freshness} · {result.match.tenderFreshness.daysRemaining}d</small></div>
+    <div className="tb3-case-actions"><button onClick={saveCase}>Save Case</button><button onClick={loadCase}>Load Case</button><small>{persistenceMessage}</small></div>
+  </section>;
+
+  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : ""}`}>
+    {view !== "dashboard" && <section className="tb3-product-intro">
       <div><p><i /> TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE</p><h1>Tender<em>Match</em></h1><h2>Company × Tender evidence review for TenderLab Consultants.</h2><span>Select an explicit pair, inspect evidence-linked match support, gaps and freshness, then keep the consultant’s match disposition visible and human-controlled.</span></div>
       <aside><span>OPERATING ROLE</span><b>TL-A031</b><small>Company-to-Tender Match Score Agent · internal consultant workspace</small><strong>MATCH SUPPORT · HUMAN DECISION · NO OUTREACH</strong></aside>
-    </section>
+    </section>}
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
@@ -468,14 +475,10 @@ export default function TenderMatchApp() {
         <nav className="tb3-mobile-workspace-nav" aria-label="TenderMatch current view"><label><span>WORKSPACE VIEW</span><select value={view} onChange={(event) => setView(event.target.value as WorkspaceView)}>{navItems.map((entry) => <option value={entry.id} key={entry.id}>{entry.short} · {entry.label}</option>)}</select></label></nav>
         {actionError && <div className="tb3-alert" role="alert"><b>Action needs attention</b><span>{actionError}</span><button onClick={() => setActionError("")} aria-label="Dismiss action error">×</button></div>}
 
-        <section className="tb3-case-strip">
-          <div><span>EXPLICIT CASE</span><code>{result.caseIdentity.id}</code><small>{supplier.legalEnglishName} × {tender.reference}</small></div>
-          <div><span>AUDITED / LEGACY</span><b>{result.match.auditedMatch.value ?? "MISSING"} <i>/</i> {result.match.matchScore.value ?? "MISSING"}</b><small>{result.match.tenderFreshness.status} · {result.match.tenderFreshness.freshness} · {result.match.tenderFreshness.daysRemaining}d</small></div>
-          <div className="tb3-case-actions"><button onClick={saveCase}>Save Case</button><button onClick={loadCase}>Load Case</button><small>{persistenceMessage}</small></div>
-        </section>
+        {view !== "dashboard" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
-          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} evidenceCount={evidenceCount} priorityMatches={priorityMatches} caseResults={caseResults} summaryMissing={summary.missing} sourceCount={sourceCount} onView={setView} onOpen={openAssessment} />}
+          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} caseControls={caseControls} evaluatedMatches={evaluatedMatches} evidenceCount={evidenceCount} priorityMatches={priorityMatches} caseResults={caseResults} summaryMissing={summary.missing} sourceCount={sourceCount} onView={setView} onOpen={openAssessment} />}
           {view === "radar-tenders" && <TenderRadarView tender={tender} currentAssessment={currentAssessment} allMatches={allMatches} bestMatch={selectedRadarBestMatch} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={setView} />}
           {view === "radar-suppliers" && <SupplierRadarView supplier={supplier} filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={setView} />}
           {view === "suppliers" && <SupplierDirectoryView view={view} allMatches={allMatches} onView={setView} onOpen={openAssessment} />}
@@ -492,7 +495,7 @@ export default function TenderMatchApp() {
   </main>;
 }
 
-function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceCount, priorityMatches, caseResults, summaryMissing, sourceCount, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; evaluatedMatches: MatchAssessment[]; evidenceCount: number; priorityMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; summaryMissing: number; sourceCount: number; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+function DashboardView({ allMatches, auditedMatches, caseControls, evaluatedMatches, evidenceCount, priorityMatches, caseResults, summaryMissing, sourceCount, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; caseControls: ReactNode; evaluatedMatches: MatchAssessment[]; evidenceCount: number; priorityMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; summaryMissing: number; sourceCount: number; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
   const previewAssessment = priorityMatches.find((entry) => entry.auditedMatch.value !== null && entry.tenderFreshness.status !== "closed")
     ?? auditedMatches[0]
     ?? evaluatedMatches[0]
@@ -502,11 +505,11 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceC
   const previewDecision = caseResults[previewAssessment.key]?.match.consultantDecision ?? previewAssessment.consultantDecision;
 
   return <>
-    <section className="tb3-overview-manifesto" aria-labelledby="tendermatch-overview-title">
-      <header className="tb3-overview-heading">
+    <PracticalAgentOverview audience="consultant" className="tb3-overview-manifesto" productId="product:TA-TENDERBOOST" aria-labelledby="tendermatch-overview-title">
+      <PracticalAgentOverviewPart as="header" className="tb3-overview-heading" part="outcome-promise">
         <div>
-          <span>TENDERLAB CONSULTANT WORKSPACE · TENDERAPPS AGENT 03</span>
-          <h1 id="tendermatch-overview-title">Turn tender and company evidence into a <em>reviewable match result.</em></h1>
+          <span>TENDERMATCH · TENDERLAB CONSULTANT WORKSPACE · AGENT 03</span>
+          <h1 id="tendermatch-overview-title">Turn one Tender × Company pair into a <em>reviewable match result.</em></h1>
           <p>TenderMatch is TenderLab Consultants’ internal workspace for comparing a specific supplier or company with a specific tender, explaining the available support and gaps, and keeping the consultant’s judgment explicit.</p>
         </div>
         <aside aria-label="TenderMatch operating role">
@@ -515,10 +518,10 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceC
           <p>Canonical owner <b>TL-A031</b><br />Company × Tender decision support</p>
           <small>NO PROMOTION · NO OUTREACH · NO BID/NO-BID AUTHORITY</small>
         </aside>
-      </header>
+      </PracticalAgentOverviewPart>
 
       <div className="tb3-overview-story" aria-label="Tender snapshot and company evidence transformed into a reviewable match result">
-        <article className="tb3-story-input">
+        <PracticalAgentOverviewPart as="article" className="tb3-story-input" part="input">
           <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>An explicit pair and its evidence</small></div></header>
           <div className="tb3-input-stack" aria-label="TenderMatch inputs">
             <div><span>TENDER</span><b>Tender snapshot</b><small>Scope · buyer · deadline · source</small></div>
@@ -526,9 +529,9 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceC
             <div><span>EVIDENCE</span><b>Supporting records</b><small>Sources · dates · confidence</small></div>
           </div>
           <p>Inputs remain separately identified and dated. An absent evaluation or unsupported value stays <b>MISSING</b>—never silently converted to zero.</p>
-        </article>
+        </PracticalAgentOverviewPart>
 
-        <article className="tb3-story-work">
+        <PracticalAgentOverviewPart as="article" className="tb3-story-work" part="agent-transformation">
           <header><span>02</span><div><b>WHAT TENDERMATCH DOES</b><small>Evidence-aware pair review</small></div></header>
           <ol>
             <li><span>1</span><p><b>Select and compare</b><small>One tender with one company</small></p></li>
@@ -536,9 +539,9 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceC
             <li><span>3</span><p><b>Assess and explain</b><small>Strengths, gaps, blockers and freshness</small></p></li>
             <li><span>4</span><p><b>Leave the decision human</b><small>Consultant disposition remains explicit</small></p></li>
           </ol>
-        </article>
+        </PracticalAgentOverviewPart>
 
-        <article className="tb3-story-output">
+        <PracticalAgentOverviewPart as="article" className="tb3-story-output" part="finished-output">
           <header><div><span>03 · WHAT YOU RECEIVE</span><small>ILLUSTRATIVE FROZEN OUTPUT · NOT A LIVE DECISION</small></div><b>REVIEWABLE RESULT</b></header>
           <div className="tb3-preview-identities">
             <div><span>COMPANY</span><strong>{previewSupplier.legalEnglishName}</strong><small>{supplierActivity(previewSupplier)}</small></div>
@@ -556,18 +559,24 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceC
             <div><span>MISSING / BLOCKERS</span>{previewAssessment.gaps.slice(0, 2).map((gap) => <p key={gap}>? {gap}</p>)}</div>
           </div>
           <p className="tb3-preview-note">Legacy Match Score {previewAssessment.matchScore.value ?? "MISSING"} remains a separate historical estimate. Readiness, evidence quality, freshness, audited support, and consultant decision are not blended into one claim.</p>
-        </article>
+        </PracticalAgentOverviewPart>
       </div>
 
-      <footer className="tb3-overview-actions">
-        <div><strong>Start with an existing pair in the frozen workspace.</strong><span>Open its evidence-linked result, inspect gaps and freshness, then record only the match disposition you are authorized to make.</span></div>
+      <PracticalAgentOverviewPart as="footer" className="tb3-overview-actions" part="primary-action">
+        <div><strong>Review the result—never activate outreach here.</strong><span>Open an evidence-linked pair, inspect gaps and freshness, and retain the consultant decision as a separate human judgment.</span></div>
         <div>
-          <button className="primary" type="button" onClick={() => onOpen(previewAssessment, "match-tenders")}>Open existing match for review <span aria-hidden="true">→</span></button>
+          <button className="primary" type="button" onClick={() => onOpen(previewAssessment, "match-tenders")} onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onOpen(previewAssessment, "match-tenders");
+            }
+          }}>Open existing match for review <span aria-hidden="true">→</span></button>
           <button type="button" onClick={() => onView("matrix")}>Open Full Matrix</button>
         </div>
-      </footer>
+      </PracticalAgentOverviewPart>
+    </PracticalAgentOverview>
 
-      <section className="tb3-overview-method" aria-label="How TenderMatch works and where its authority ends">
+    <PracticalAgentOverviewBoundary className="tb3-overview-method" productId="product:TA-TENDERBOOST" aria-label="How TenderMatch works and where its authority ends">
         <div>
           <span>HOW IT WORKS</span>
           <ol><li><b>1</b>Select an explicit pair</li><li><b>2</b>Review linked evidence</li><li><b>3</b>Explain support and gaps</li><li><b>4</b>Record consultant disposition</li></ol>
@@ -577,8 +586,9 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceC
           <strong>Matched tenders may later inform a separate TenderMarketing or promotion capability.</strong>
           <p>No tender promotion, supplier contact, message delivery, CRM action, response tracking, participation authorization, or Bid/No-Bid decision occurs in TenderMatch.</p>
         </aside>
-      </section>
-    </section>
+    </PracticalAgentOverviewBoundary>
+
+    {caseControls}
 
     <header className="tb3-demonstration-heading">
       <span>DEMONSTRATION DATA AND MIGRATION EVIDENCE</span>

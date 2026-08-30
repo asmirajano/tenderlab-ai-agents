@@ -5,7 +5,7 @@ import {
   realAgentPatternIdPattern,
 } from "../../catalog-schema/src/index.ts";
 import { actorTypes, tenderSides } from "./actors.ts";
-import { clientProducts } from "./client-products.ts";
+import { clientProducts, practicalAgentOverviewRequiredParts } from "./client-products.ts";
 import { dataFamilies, dataSources, tenderDatasets } from "./datasets.ts";
 import { glossaryTerms } from "./glossary.ts";
 import { validateAgentDatasetRelationships } from "./agent-dataset-relations.ts";
@@ -43,6 +43,11 @@ export function validateRealAgentDevelopmentKnowledge() {
   for (const product of clientProducts) {
     if (!agentIds.has(product.ownerAgentId)) throw new Error(`${product.id} references unknown Agent ${product.ownerAgentId}`);
     if (!product.surfaceStatus || !product.dataNotice) throw new Error(`${product.id} needs truthful surface and data status metadata.`);
+    const overview = product.overviewContract;
+    if (!overview?.implementationSourcePath || !overview.compositionSourcePath || !overview.renderedEvidencePath) throw new Error(`${product.id} needs a practical-Agent Overview implementation and rendered-evidence contract.`);
+    if (overview.requiredParts.join("|") !== practicalAgentOverviewRequiredParts.join("|")) throw new Error(`${product.id} practical-Agent Overview parts are missing or out of order.`);
+    if (overview.renderedGate.finishedOutputMinimumAreaRatio < 1.25) throw new Error(`${product.id} practical-Agent Overview output is not required to be visually dominant.`);
+    if (overview.renderedGate.desktopViewports.length < 2 || !overview.renderedGate.trustBoundaryMustBeVisible) throw new Error(`${product.id} practical-Agent Overview lacks rendered browser gates.`);
   }
 
   for (const item of realAgentImplementations) {
