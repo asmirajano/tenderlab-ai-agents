@@ -227,6 +227,70 @@ test("uses canonical and compatibility routes with a complete truthful parity su
   assert.doesNotMatch(firebase, /tenderboost-ai\.web\.app/);
 });
 
+test("orients the Overview around TenderLab's internal Company × Tender review outcome before migration evidence", async () => {
+  const [page, styles] = await Promise.all([
+    read("apps/tender-apps/src/tenderboost-app.tsx"),
+    read("apps/tender-apps/src/tenderboost.css"),
+  ]);
+  const overviewStart = page.indexOf('<section className="tb3-overview-manifesto"');
+  const evidenceStart = page.indexOf('<header className="tb3-demonstration-heading"');
+  assert.ok(overviewStart > -1, "product Overview must exist");
+  assert.ok(evidenceStart > overviewStart, "product orientation must precede migration evidence");
+  const productShell = page.slice(page.indexOf('<section className="tb3-product-intro"'), overviewStart);
+  const orientation = page.slice(overviewStart, evidenceStart);
+  const migrationEvidence = page.slice(evidenceStart, page.indexOf("function TenderRadarView"));
+
+  assert.match(productShell, /TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE/);
+  assert.match(productShell, /Company × Tender evidence review for TenderLab Consultants/);
+  assert.match(productShell, /MATCH SUPPORT · HUMAN DECISION · NO OUTREACH/);
+  assert.match(productShell, /TenderMatch workspace/);
+  assert.doesNotMatch(productShell, /COMPLETE MIGRATION BASELINE|SOURCE BASELINE|Complete frozen TenderBoost workspace/);
+
+  for (const content of [
+    "TENDERLAB CONSULTANT WORKSPACE · TENDERAPPS AGENT 03",
+    "reviewable match result",
+    "WHAT YOU PROVIDE",
+    "Tender snapshot",
+    "Supplier profile",
+    "Supporting records",
+    "WHAT TENDERMATCH DOES",
+    "WHAT YOU RECEIVE",
+    "ILLUSTRATIVE FROZEN OUTPUT · NOT A LIVE DECISION",
+    "AUDITED MATCH SUPPORT",
+    "LINKED EVIDENCE",
+    "MISSING / BLOCKERS",
+    "DEADLINE FRESHNESS",
+    "CONSULTANT DECISION",
+    "Open existing match for review",
+    "Open Full Matrix",
+    "HOW IT WORKS",
+    "DOWNSTREAM BOUNDARY",
+  ]) assert.match(orientation, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), content);
+
+  assert.ok(orientation.indexOf("WHAT YOU PROVIDE") < orientation.indexOf("WHAT TENDERMATCH DOES"));
+  assert.ok(orientation.indexOf("WHAT TENDERMATCH DOES") < orientation.indexOf("WHAT YOU RECEIVE"));
+  assert.match(orientation, /MISSING<\/b>—never silently converted to zero/);
+  assert.match(orientation, /onOpen\(previewAssessment, "match-tenders"\)/);
+  assert.match(orientation, /onView\("matrix"\)/);
+  assert.match(orientation, /separate TenderMarketing or promotion capability/);
+  assert.match(orientation, /No tender promotion, supplier contact, message delivery, CRM action, response tracking, participation authorization, or Bid\/No-Bid decision occurs in TenderMatch/);
+  assert.doesNotMatch(orientation, /onView\("campaigns"\)|onView\("followups"\)/);
+
+  for (const retainedEvidence of [
+    "DEMONSTRATION DATA AND MIGRATION EVIDENCE",
+    "TenderBoost parity, with TenderMatch truth controls",
+    "DATED DEMONSTRATION SNAPSHOT",
+    "CONSULTANT QUEUE",
+    "LOCAL WORKFLOW",
+    "CAPABILITY HANDOFFS",
+  ]) assert.match(migrationEvidence, new RegExp(retainedEvidence), retainedEvidence);
+
+  assert.match(page, /sublabel: "Internal matching workspace"/);
+  assert.match(styles, /\.tb3-overview-story \{[^}]*grid-template-columns:/);
+  assert.match(styles, /@media \(max-width: 1200px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
+  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.tb3-overview-story \{ grid-template-columns: 1fr; \}/);
+});
+
 test("renders Campaign Studio only as an unregistered legacy parity module and future capability candidate", async () => {
   const candidate = await read("docs/campaign-studio-future-capability-candidate.md");
   assert.match(candidate, /unplaced future capability candidate/i);

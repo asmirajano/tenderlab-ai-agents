@@ -62,7 +62,7 @@ type WorkspaceView =
 type NavItem = { id: WorkspaceView; label: string; short: string; family: "overview" | "intelligence" | "analysis" | "legacy"; sublabel: string };
 
 const navItems: NavItem[] = [
-  { id: "dashboard", label: "Overview", short: "01", family: "overview", sublabel: "Migration baseline" },
+  { id: "dashboard", label: "Overview", short: "01", family: "overview", sublabel: "Internal matching workspace" },
   { id: "radar-tenders", label: "Radar · Tenders", short: "02A", family: "intelligence", sublabel: "Global demand" },
   { id: "radar-suppliers", label: "Radar · Suppliers", short: "02B", family: "intelligence", sublabel: "Supplier market" },
   { id: "suppliers", label: "Supplier Profiles", short: "03A", family: "intelligence", sublabel: "10 companies" },
@@ -453,15 +453,15 @@ export default function TenderMatchApp() {
 
   return <main className="tb3-page">
     <section className="tb3-product-intro">
-      <div><p><i /> TENDERAPPS AGENT 03 · COMPLETE MIGRATION BASELINE</p><h1>Tender<em>Match</em></h1><h2>Complete frozen TenderBoost workspace, adapted to the TenderApps design system.</h2><span>Company × Tender evaluation remains owned by TL-A031. Campaign Studio is retained only as an isolated local legacy module pending its own placement audit.</span></div>
-      <aside><span>SOURCE BASELINE</span><b>04b0b2a</b><small>16 tenders · 10 companies · dated 15 Aug 2026</small><strong>LOCAL · NO SEND · NO CRM</strong></aside>
+      <div><p><i /> TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE</p><h1>Tender<em>Match</em></h1><h2>Company × Tender evidence review for TenderLab Consultants.</h2><span>Select an explicit pair, inspect evidence-linked match support, gaps and freshness, then keep the consultant’s match disposition visible and human-controlled.</span></div>
+      <aside><span>OPERATING ROLE</span><b>TL-A031</b><small>Company-to-Tender Match Score Agent · internal consultant workspace</small><strong>MATCH SUPPORT · HUMAN DECISION · NO OUTREACH</strong></aside>
     </section>
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKSPACE</span><b>Complete migration</b><small>{navItems.length} reachable views</small></header>
+        <header><span>WORKSPACE</span><b>TenderMatch workspace</b><small>{navItems.length} reachable views</small></header>
         <nav aria-label="TenderMatch workspace sections">{navItems.map((entry) => <button aria-current={view === entry.id ? "page" : undefined} className={`${view === entry.id ? "active " : ""}family-${entry.family}`} key={entry.id} onClick={() => setView(entry.id)}><span>{entry.short}</span><p><b>{entry.label}</b><small>{entry.sublabel}</small></p><i aria-hidden="true">→</i></button>)}</nav>
-        <div className="tb3-owner-note"><span>CANONICAL OWNER</span><b>agent:TL-A031</b><p>Company-to-Tender Match Score Agent</p><small>Campaign module excluded from ownership</small></div>
+        <div className="tb3-owner-note"><span>CANONICAL OWNER</span><b>agent:TL-A031</b><p>Company-to-Tender Match Score Agent</p><small>Campaign Studio: isolated local legacy module · excluded from ownership</small></div>
       </aside>
 
       <section className="tb3-content">
@@ -493,8 +493,98 @@ export default function TenderMatchApp() {
 }
 
 function DashboardView({ allMatches, auditedMatches, evaluatedMatches, evidenceCount, priorityMatches, caseResults, summaryMissing, sourceCount, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; evaluatedMatches: MatchAssessment[]; evidenceCount: number; priorityMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; summaryMissing: number; sourceCount: number; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+  const previewAssessment = priorityMatches.find((entry) => entry.auditedMatch.value !== null && entry.tenderFreshness.status !== "closed")
+    ?? auditedMatches[0]
+    ?? evaluatedMatches[0]
+    ?? allMatches[0]!;
+  const previewSupplier = demoSuppliers.find((entry) => entry.id === previewAssessment.supplierId) ?? demoSuppliers[0]!;
+  const previewTender = demoTenders.find((entry) => entry.id === previewAssessment.tenderId) ?? demoTenders[0]!;
+  const previewDecision = caseResults[previewAssessment.key]?.match.consultantDecision ?? previewAssessment.consultantDecision;
+
   return <>
-    <ViewHeader eyebrow="01 · MIGRATION OVERVIEW" title="TenderBoost parity, with TenderMatch truth controls" description="Every original reader-facing workspace is restored. Historical estimates remain visible, but unassessed pairs, stale data, and local campaign simulations are no longer presented as live facts." aside={<button className="tb3-primary-action" onClick={() => onView("matrix")}>Open Full Matrix →</button>} />
+    <section className="tb3-overview-manifesto" aria-labelledby="tendermatch-overview-title">
+      <header className="tb3-overview-heading">
+        <div>
+          <span>TENDERLAB CONSULTANT WORKSPACE · TENDERAPPS AGENT 03</span>
+          <h1 id="tendermatch-overview-title">Turn tender and company evidence into a <em>reviewable match result.</em></h1>
+          <p>TenderMatch is TenderLab Consultants’ internal workspace for comparing a specific supplier or company with a specific tender, explaining the available support and gaps, and keeping the consultant’s judgment explicit.</p>
+        </div>
+        <aside aria-label="TenderMatch operating role">
+          <span>OPERATING ROLE TODAY</span>
+          <strong>Internal matching</strong>
+          <p>Canonical owner <b>TL-A031</b><br />Company × Tender decision support</p>
+          <small>NO PROMOTION · NO OUTREACH · NO BID/NO-BID AUTHORITY</small>
+        </aside>
+      </header>
+
+      <div className="tb3-overview-story" aria-label="Tender snapshot and company evidence transformed into a reviewable match result">
+        <article className="tb3-story-input">
+          <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>An explicit pair and its evidence</small></div></header>
+          <div className="tb3-input-stack" aria-label="TenderMatch inputs">
+            <div><span>TENDER</span><b>Tender snapshot</b><small>Scope · buyer · deadline · source</small></div>
+            <div><span>COMPANY</span><b>Supplier profile</b><small>Identity · capability · readiness</small></div>
+            <div><span>EVIDENCE</span><b>Supporting records</b><small>Sources · dates · confidence</small></div>
+          </div>
+          <p>Inputs remain separately identified and dated. An absent evaluation or unsupported value stays <b>MISSING</b>—never silently converted to zero.</p>
+        </article>
+
+        <article className="tb3-story-work">
+          <header><span>02</span><div><b>WHAT TENDERMATCH DOES</b><small>Evidence-aware pair review</small></div></header>
+          <ol>
+            <li><span>1</span><p><b>Select and compare</b><small>One tender with one company</small></p></li>
+            <li><span>2</span><p><b>Validate available evidence</b><small>Preserve provenance and MISSING values</small></p></li>
+            <li><span>3</span><p><b>Assess and explain</b><small>Strengths, gaps, blockers and freshness</small></p></li>
+            <li><span>4</span><p><b>Leave the decision human</b><small>Consultant disposition remains explicit</small></p></li>
+          </ol>
+        </article>
+
+        <article className="tb3-story-output">
+          <header><div><span>03 · WHAT YOU RECEIVE</span><small>ILLUSTRATIVE FROZEN OUTPUT · NOT A LIVE DECISION</small></div><b>REVIEWABLE RESULT</b></header>
+          <div className="tb3-preview-identities">
+            <div><span>COMPANY</span><strong>{previewSupplier.legalEnglishName}</strong><small>{supplierActivity(previewSupplier)}</small></div>
+            <i aria-hidden="true">×</i>
+            <div><span>TENDER</span><strong>{previewTender.title}</strong><small>{previewTender.reference} · {previewTender.country}</small></div>
+          </div>
+          <dl className="tb3-preview-metrics">
+            <div><dt>AUDITED MATCH SUPPORT</dt><dd>{previewAssessment.auditedMatch.value ?? "MISSING"}<small>{previewAssessment.auditedMatch.value === null ? "Insufficient linked evidence" : `${previewAssessment.auditedMatch.valueClass} · ${previewAssessment.auditedMatch.policyVersion}`}</small></dd></div>
+            <div><dt>LINKED EVIDENCE</dt><dd>{previewAssessment.auditedMatch.evidenceIds.length}<small>{previewAssessment.auditedMatch.evidenceIds.length ? "Traceable record identities" : "MISSING"}</small></dd></div>
+            <div><dt>DEADLINE FRESHNESS</dt><dd>{previewAssessment.tenderFreshness.status}<small>{dateLabel(previewTender.deadlineAt)} · {previewAssessment.tenderFreshness.freshness}</small></dd></div>
+            <div><dt>CONSULTANT DECISION</dt><dd>{decisionLabel[previewDecision]}<small>Human-controlled match disposition</small></dd></div>
+          </dl>
+          <div className="tb3-preview-findings">
+            <div><span>MATCH SUPPORT</span>{previewAssessment.linkedStrengths.slice(0, 2).map((claim) => <p key={claim.id}>✓ {claim.text}<small>{claim.evidenceIds.join(" · ")}</small></p>)}</div>
+            <div><span>MISSING / BLOCKERS</span>{previewAssessment.gaps.slice(0, 2).map((gap) => <p key={gap}>? {gap}</p>)}</div>
+          </div>
+          <p className="tb3-preview-note">Legacy Match Score {previewAssessment.matchScore.value ?? "MISSING"} remains a separate historical estimate. Readiness, evidence quality, freshness, audited support, and consultant decision are not blended into one claim.</p>
+        </article>
+      </div>
+
+      <footer className="tb3-overview-actions">
+        <div><strong>Start with an existing pair in the frozen workspace.</strong><span>Open its evidence-linked result, inspect gaps and freshness, then record only the match disposition you are authorized to make.</span></div>
+        <div>
+          <button className="primary" type="button" onClick={() => onOpen(previewAssessment, "match-tenders")}>Open existing match for review <span aria-hidden="true">→</span></button>
+          <button type="button" onClick={() => onView("matrix")}>Open Full Matrix</button>
+        </div>
+      </footer>
+
+      <section className="tb3-overview-method" aria-label="How TenderMatch works and where its authority ends">
+        <div>
+          <span>HOW IT WORKS</span>
+          <ol><li><b>1</b>Select an explicit pair</li><li><b>2</b>Review linked evidence</li><li><b>3</b>Explain support and gaps</li><li><b>4</b>Record consultant disposition</li></ol>
+        </div>
+        <aside>
+          <span>DOWNSTREAM BOUNDARY</span>
+          <strong>Matched tenders may later inform a separate TenderMarketing or promotion capability.</strong>
+          <p>No tender promotion, supplier contact, message delivery, CRM action, response tracking, participation authorization, or Bid/No-Bid decision occurs in TenderMatch.</p>
+        </aside>
+      </section>
+    </section>
+
+    <header className="tb3-demonstration-heading">
+      <span>DEMONSTRATION DATA AND MIGRATION EVIDENCE</span>
+      <h2>TenderBoost parity, with TenderMatch truth controls</h2>
+      <p>Every original reader-facing workspace is restored. Historical estimates remain visible, but unassessed pairs, stale data, and local campaign simulations are no longer presented as live facts.</p>
+    </header>
     <section className="tb3-notice" role="status"><div><span>DATED DEMONSTRATION SNAPSHOT</span><b>Frozen {dateLabel(demoSnapshot.asOf)} · source commit {sourceCommit.slice(0, 7)}</b><p>Deadlines are absolute and recalculated from the current clock. The 1,000-item radar universes are legacy simulations, not live datasets.</p></div><strong>{summaryMissing === 0 ? "PARITY MATRIX COMPLETE" : `${summaryMissing} MISSING`}</strong></section>
     <section className="tb3-metrics-grid" aria-label="TenderBoost migration dataset summary">
       <Metric label="TENDERS" value={demoTenders.length} note={`${sourceCount} source labels · frozen fixture`} onClick={() => onView("tenders")} />
