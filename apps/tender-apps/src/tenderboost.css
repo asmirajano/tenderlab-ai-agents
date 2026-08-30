@@ -77,6 +77,8 @@
 .tb3-owner-note small { color: #8b5a1a; line-height: 1.35; }
 
 .tb3-content { min-width: 0; }
+.tb3-view-surface { min-width: 0; }
+.tb3-view-surface:focus { outline: none; }
 .tb3-mobile-workspace-nav { display: none; }
 .tb3-alert { align-items: center; background: #fff0ed; border: 1px solid #e8b7ae; border-radius: 12px; display: grid; gap: 5px 14px; grid-template-columns: auto 1fr auto; margin-bottom: 14px; padding: 14px 16px; }
 .tb3-alert b { color: #8a342b; }

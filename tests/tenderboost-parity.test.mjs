@@ -153,6 +153,7 @@ test("renders every original view family in the TenderApps page without standalo
   assert.match(page, /data-map-mode="schematic-non-geospatial"/);
   assert.match(page, /viewSurfaceRef\.current\?\.focus\(\)/);
   assert.match(page, /role="region"[\s\S]+tabIndex=\{-1\}/);
+  assert.match(styles, /\.tb3-view-surface:focus \{ outline: none; \}/);
   assert.match(styles, /\.tb3-product-intro aside > b \{ grid-column: 2; grid-row: 1; \}/);
   assert.match(styles, /\.tb3-product-intro aside strong \{ grid-column: 2; grid-row: 2; \}/);
   assert.doesNotMatch(page, /Agent Command Center|tb-topbar|tb-sidebar/);
