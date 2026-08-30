@@ -1,5 +1,9 @@
-export const TENDERBOOST_SCHEMA_VERSION = "1.0.0" as const;
-export const TENDERBOOST_ENGINE_VERSION = "tenderboost-match-campaign/1.0.0" as const;
+export const TENDERBOOST_SCHEMA_VERSION = "2.0.0" as const;
+export const TENDERBOOST_LEGACY_SCHEMA_VERSION = "1.0.0" as const;
+export const TENDERBOOST_ENGINE_VERSION = "tenderboost-match-campaign/2.0.0" as const;
+export const TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION = "tenderboost-legacy-baseline/1.0.0" as const;
+export const TENDERBOOST_AUDITED_MATCH_POLICY_VERSION = "tenderboost-audited-match/2.0.0" as const;
+export const TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION = "tenderboost-campaign-priority/2.0.0" as const;
 export const TENDERBOOST_DEMO_SNAPSHOT_ID = "snapshot:TB-DEMO-2026-08-15" as const;
 export const TENDERBOOST_DEMO_AS_OF = "2026-08-15T00:00:00+05:00" as const;
 
@@ -112,6 +116,77 @@ export type EvidenceLinkedClaim = {
   externalClaimEligible: boolean;
 };
 
+export type AuditedComponentCode = "technical-relevance" | "market-delivery";
+export type AuditedSemanticBand = 60 | 80 | 100;
+export type AuditedReasonCode =
+  | "AUDITED_MATCH_AVAILABLE"
+  | "PAIR_UNASSESSED"
+  | "TECHNICAL_EVIDENCE_MISSING"
+  | "MARKET_EVIDENCE_MISSING"
+  | "EVIDENCE_RECORD_NOT_FOUND"
+  | "EVIDENCE_NOT_VERIFIED"
+  | "EVIDENCE_CONFIDENCE_BELOW_THRESHOLD"
+  | "EVIDENCE_RECORD_REUSED"
+  | "LEGACY_SCORE_NOT_REPRODUCED";
+
+export type AuditedEvidenceAssignment = {
+  component: AuditedComponentCode;
+  semanticBand: AuditedSemanticBand;
+  evidenceIds: string[];
+  rationale: string;
+};
+
+export type AuditedPairEvidenceMapping = {
+  key: string;
+  sourceRole: "USER_ASSERTION";
+  reviewStatus: "REVIEWED";
+  reviewedAt: string;
+  assignments: AuditedEvidenceAssignment[];
+};
+
+export type AuditedScoreComponent = {
+  code: AuditedComponentCode;
+  value: number | null;
+  valueClass: "ESTIMATED" | "MISSING";
+  weight: number;
+  evidenceIds: string[];
+  evidenceConfidence: number | null;
+  reasonCodes: AuditedReasonCode[];
+  rationale: string;
+};
+
+export type AuditedMatchResult = {
+  policyVersion: typeof TENDERBOOST_AUDITED_MATCH_POLICY_VERSION;
+  value: number | null;
+  valueClass: "ESTIMATED" | "MISSING";
+  label: "strong" | "review" | "weak" | "insufficient-evidence";
+  components: AuditedScoreComponent[];
+  evidenceIds: string[];
+  reasonCodes: AuditedReasonCode[];
+  missingInputs: string[];
+  legacyScore: number | null;
+  legacyDelta: number | null;
+  method: string;
+};
+
+export type LegacyBaselineMetrics = {
+  policyVersion: typeof TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION;
+  matchScore: number | null;
+  supplierReadiness: number;
+  globalVerificationQuality: number;
+  campaignPriority: number | null;
+  method: string;
+};
+
+export type CalculatedMetric = {
+  value: number | null;
+  valueClass: "CALCULATED" | "MISSING";
+  policyVersion: string;
+  evidenceIds: string[];
+  reasonCodes: string[];
+  method: string;
+};
+
 export type MatchDecisionRecord = VersionedIdentity & {
   decision: ConsultantDecision;
   actorId: string;
@@ -127,9 +202,12 @@ export type MatchAssessment = VersionedIdentity & {
   supplierId: string;
   exactLegacyPair: boolean;
   matchScore: { value: number | null; valueClass: "ESTIMATED" | "MISSING"; method: string };
+  legacyBaseline: LegacyBaselineMetrics;
+  auditedMatch: AuditedMatchResult;
   supplierReadiness: { value: number; valueClass: "ESTIMATED"; method: string };
-  verificationQuality: { value: number; valueClass: "CALCULATED"; method: string };
-  campaignPriority: { value: number | null; valueClass: "CALCULATED"; method: string };
+  verificationQuality: CalculatedMetric;
+  deadlineUrgency: CalculatedMetric;
+  campaignPriority: CalculatedMetric;
   consultantDecision: ConsultantDecision;
   decisionHistory: MatchDecisionRecord[];
   linkedStrengths: EvidenceLinkedClaim[];
@@ -142,6 +220,7 @@ export type MatchAssessment = VersionedIdentity & {
 
 export type CampaignBlockerCode =
   | "MATCH_UNASSESSED"
+  | "AUDITED_MATCH_REQUIRED"
   | "ZERO_MATCH"
   | "MATCH_REJECTED"
   | "TENDER_CLOSED"
@@ -183,6 +262,7 @@ export type CampaignDraft = VersionedIdentity & {
   approvedAt: string | null;
   approvedBy: string | null;
   currentStatus: string;
+  policyVersion: typeof TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION;
 };
 
 export type CampaignEventMode = "integration" | "manual-record" | "simulation";
@@ -216,6 +296,12 @@ export type TenderBoostCaseResult = {
   simulationEvents: CampaignEvent[];
   activation: CampaignEligibility;
   knownLimitations: string[];
+  migration: {
+    status: "native-current" | "compatible-historical";
+    fromSchemaVersion: string | null;
+    migratedAt: string | null;
+    note: string;
+  };
 };
 
 export type LegacySupplierFixture = {

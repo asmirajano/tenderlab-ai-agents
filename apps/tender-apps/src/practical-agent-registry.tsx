@@ -46,8 +46,8 @@ const displayMetadata: readonly PracticalAgentDisplayMetadata[] = [
   {
     productId: "product:TA-TENDERBOOST",
     displayName: "TenderBoost AI",
-    functionalSubtitle: "Company × Tender Match Score · consultant-controlled campaigns",
-    description: "Review an evidence-linked Company × Tender fit, record the consultant decision, and prepare truthful campaign drafts without sending outreach.",
+    functionalSubtitle: "Audited Company × Tender evidence support · consultant-controlled campaigns",
+    description: "Compare a frozen legacy score with an evidence-gated audited result, record the consultant decision, and prepare truthful campaign drafts without sending outreach.",
     pageTitle: "Tender Apps — TenderBoost AI · Agent 03",
     visual: "tenderboost",
   },

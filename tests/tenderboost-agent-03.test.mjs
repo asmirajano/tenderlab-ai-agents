@@ -34,8 +34,8 @@ async function read(relativePath) {
 }
 
 function selectedPositive(now = snapshotNow) {
-  const match = buildAllMatches(demoTenders, demoSuppliers, now).find((candidate) => (candidate.matchScore.value ?? -1) > 0 && candidate.linkedStrengths.length > 0 && candidate.tenderFreshness.status !== "closed");
-  assert.ok(match, "expected an open positive pair with evidence links");
+  const match = buildAllMatches(demoTenders, demoSuppliers, now).find((candidate) => (candidate.auditedMatch.value ?? -1) > 0 && candidate.linkedStrengths.length > 0 && candidate.tenderFreshness.status !== "closed");
+  assert.ok(match, "expected an open audited-positive pair with evidence links");
   const tender = demoTenders.find((candidate) => candidate.id === match.tenderId);
   const supplier = demoSuppliers.find((candidate) => candidate.id === match.supplierId);
   assert.ok(tender && supplier);
@@ -71,6 +71,7 @@ test("registers TenderBoost as practical page 03 under TL-A031 without creating 
   assert.equal(implementation?.maturity, "concept-or-simulation");
   assert.equal(implementation?.deploymentStatus, "not-deployed");
   assert.ok(implementation?.playbookRefs.includes("docs/tenderboost-agent-03-integration.md"));
+  assert.ok(implementation?.playbookRefs.includes("docs/tenderboost-scoring-model-card.md"));
 
   const agents = await read("packages/catalog-data/src/agents.ts");
   assert.equal((agents.match(/id:\s*31, name:\s*"Company-to-Tender Match Score Agent"/g) ?? []).length, 1);
@@ -88,6 +89,9 @@ test("retains the 16-tender and 10-supplier fixture only as a dated demonstratio
   assert.equal(matches.filter((item) => item.matchScore.value !== null).length, 18);
   assert.equal(matches.filter((item) => item.matchScore.value === null && item.matchScore.valueClass === "MISSING").length, 142);
   assert.equal(matches.filter((item) => item.matchScore.value === 0).length, 0, "the source fixture contains no genuine evaluated zero");
+  assert.equal(matches.filter((item) => item.auditedMatch.value !== null).length, 6);
+  assert.equal(matches.filter((item) => item.exactLegacyPair && item.auditedMatch.value === null).length, 12);
+  assert.equal(matches.filter((item) => !item.exactLegacyPair && item.auditedMatch.value === null).length, 142);
 });
 
 test("derives urgency from absolute deadlines and blocks stale or closed tender state", () => {
@@ -108,15 +112,19 @@ test("derives urgency from absolute deadlines and blocks stale or closed tender 
   assert.ok(eligibility.blockers.some((item) => item.code === "SNAPSHOT_STALE"));
 });
 
-test("keeps Match, Readiness, Verification, Priority, and Decision distinct and links strengths to evidence IDs", () => {
+test("keeps legacy Match, audited Match, Readiness, Evidence Quality, Urgency, Priority, and Decision distinct", () => {
   const { match, supplier } = selectedPositive();
   assert.equal(match.matchScore.valueClass, "ESTIMATED");
   assert.equal(match.supplierReadiness.valueClass, "ESTIMATED");
   assert.equal(match.verificationQuality.valueClass, "CALCULATED");
+  assert.equal(match.deadlineUrgency.valueClass, "CALCULATED");
   assert.equal(match.campaignPriority.valueClass, "CALCULATED");
   assert.equal(match.consultantDecision, "pending");
   assert.notEqual(match.matchScore.method, match.supplierReadiness.method);
+  assert.notEqual(match.matchScore.value, match.auditedMatch.value);
   assert.notEqual(match.campaignPriority.value, match.consultantDecision);
+  assert.ok(match.auditedMatch.components.every((component) => component.evidenceIds.length > 0));
+  assert.equal(new Set(match.auditedMatch.evidenceIds).size, match.auditedMatch.evidenceIds.length);
   assert.ok(match.linkedStrengths.length > 0);
   const evidenceIds = new Set(supplier.evidence.map((item) => item.id));
   for (const claim of match.linkedStrengths) {
@@ -150,6 +158,12 @@ test("keeps unassessed distinct from genuine zero and excludes both plus rejecte
   const suppressedSupplier = { ...supplier, suppressionStatus: "SUPPRESSED" };
   const positive = assessMatch(tender, suppressedSupplier, snapshotNow);
   assert.equal(evaluateCampaignEligibility(positive, suppressedSupplier).canPrepareDraft, false);
+
+  const partial = buildAllMatches(demoTenders, demoSuppliers, snapshotNow).find((item) => item.exactLegacyPair && item.auditedMatch.value === null);
+  assert.ok(partial);
+  const partialSupplier = demoSuppliers.find((item) => item.id === partial.supplierId);
+  assert.ok(partialSupplier);
+  assert.ok(evaluateCampaignEligibility(partial, partialSupplier).blockers.some((item) => item.code === "AUDITED_MATCH_REQUIRED"));
 
   assert.deepEqual(campaignSuggestions(demoTenders, demoSuppliers, currentNow), [], "every dated demo pair remains blocked by freshness, evidence, consent, or suppression review");
 });
@@ -278,6 +292,7 @@ test("generates truthful no-send copy from the canonical Case result", () => {
   result = createCampaignDraft(result, tender, supplier, snapshotNow, "LinkedIn");
   assert.match(result.campaign.copy, /LINKEDIN DRAFT · NOT SENT/);
   assert.match(result.campaign.copy, /Absolute deadline:/);
+  assert.match(result.campaign.copy, /Audited Match Support:/);
   assert.match(result.campaign.copy, /No current reviewed evidence is approved for external use/);
   assert.doesNotMatch(result.campaign.copy, /proposal sent|message sent|response received/i);
   assert.equal(result.campaign.copyEvidenceIds.length, 0);
@@ -296,6 +311,7 @@ test("persists and reconstructs only the explicitly requested Case ID", () => {
   assert.equal(secondLoaded?.caseIdentity.id, second.caseIdentity.id);
   assert.equal(firstLoaded?.resultIdentity.version, "v2", "resuming produces an explicit result revision");
   assert.equal(firstLoaded?.match.version, "v2", "clock-derived match state is revisioned");
+  assert.equal(firstLoaded?.migration.status, "native-current");
   assert.equal(loadCaseResult(storage, "case:TB-TEST:MISSING", { tender, supplier, nowIso: snapshotNow }), null);
   assert.equal([...storage.values.keys()].some((key) => /latest/i.test(key)), false);
 });
@@ -331,7 +347,10 @@ test("integrates the route and shared shell without a Command Center backlink or
   assert.match(main, /"\/tenderboost-ai": "\/tenderboost"/);
   assert.match(main, /route\.surfaceStatus/);
   assert.match(registry, /productId: "product:TA-TENDERBOOST"/);
-  assert.match(registry, /Evidence-linked match to campaign brief/);
+  assert.match(registry, /Audited Company × Tender evidence support/);
+  assert.match(page, /LEGACY BASELINE · 1\.0\.0/);
+  assert.match(page, /AUDITED SUPPORT · 2\.0\.0/);
+  assert.match(page, /insufficient evidence/i);
   assert.match(page, /data-map-mode="schematic-non-geospatial"/);
   assert.match(page, /SCHEMATIC · NON-GEOSPATIAL/);
   assert.match(page, /not a live map, distance model, coordinate plot, or routing result/);

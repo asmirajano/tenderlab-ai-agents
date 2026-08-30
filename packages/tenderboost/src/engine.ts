@@ -1,8 +1,17 @@
 import {
+  TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+  TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
   TENDERBOOST_DEMO_AS_OF,
   TENDERBOOST_DEMO_SNAPSHOT_ID,
   TENDERBOOST_ENGINE_VERSION,
+  TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
+  TENDERBOOST_LEGACY_SCHEMA_VERSION,
   TENDERBOOST_SCHEMA_VERSION,
+  type AuditedComponentCode,
+  type AuditedMatchResult,
+  type AuditedPairEvidenceMapping,
+  type AuditedReasonCode,
+  type AuditedScoreComponent,
   type CampaignBlocker,
   type CampaignChannel,
   type CampaignDraft,
@@ -20,6 +29,7 @@ import {
   type TenderFreshness,
   type TenderRecord,
 } from "./types.ts";
+import { auditedDemoPairMappingByKey } from "./experiment-data.ts";
 
 const DAY_MS = 86_400_000;
 const STOP_WORDS = new Set(["and", "the", "for", "with", "from", "has", "have", "company", "supplier", "tender", "verified"]);
@@ -98,18 +108,185 @@ function linkLegacyStrengths(supplier: SupplierRecord, strengths: string[]) {
   return { linked, unsupported };
 }
 
-function verificationQuality(supplier: SupplierRecord) {
+function legacyVerificationQuality(supplier: SupplierRecord) {
   if (!supplier.evidence.length) return 0;
   const legacyVerified = supplier.evidence.filter((item) => item.reviewStatus === "LEGACY_VERIFIED").length;
   const inferred = supplier.evidence.filter((item) => item.reviewStatus === "INFERRED").length;
   return Math.round(((legacyVerified + inferred * 0.35) / supplier.evidence.length) * 100);
 }
 
-function priorityValue(matchScore: number | null, readiness: number, verification: number, freshness: TenderFreshness, decision: ConsultantDecision) {
+export function calculateLegacyBaselinePriority(matchScore: number | null, readiness: number, verification: number, freshness: TenderFreshness, decision: ConsultantDecision) {
   if (matchScore === null || matchScore <= 0 || decision === "rejected" || freshness.status === "closed") return null;
   const urgency = freshness.daysRemaining <= 3 ? 45 : freshness.daysRemaining <= 14 ? 100 : freshness.daysRemaining <= 30 ? 82 : 48;
   const humanRelevance = decision === "approved" ? 100 : decision === "hold" ? 20 : 60;
   return Math.round(matchScore * 0.48 + readiness * 0.18 + verification * 0.16 + urgency * 0.11 + humanRelevance * 0.07);
+}
+
+const AUDITED_COMPONENT_WEIGHTS: Record<AuditedComponentCode, number> = {
+  "technical-relevance": 0.7,
+  "market-delivery": 0.3,
+};
+
+const AUDITED_COMPONENT_MISSING: Record<AuditedComponentCode, { reason: AuditedReasonCode; input: string }> = {
+  "technical-relevance": { reason: "TECHNICAL_EVIDENCE_MISSING", input: "Distinct reviewed evidence for technical relevance" },
+  "market-delivery": { reason: "MARKET_EVIDENCE_MISSING", input: "Distinct reviewed evidence for market or delivery relevance" },
+};
+
+function mean(values: number[]) {
+  return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
+}
+
+function missingComponent(code: AuditedComponentCode, rationale: string, reasonCodes: AuditedReasonCode[] = [AUDITED_COMPONENT_MISSING[code].reason]): AuditedScoreComponent {
+  return {
+    code,
+    value: null,
+    valueClass: "MISSING",
+    weight: AUDITED_COMPONENT_WEIGHTS[code],
+    evidenceIds: [],
+    evidenceConfidence: null,
+    reasonCodes,
+    rationale,
+  };
+}
+
+function evaluateAssignment(
+  code: AuditedComponentCode,
+  mapping: AuditedPairEvidenceMapping | undefined,
+  supplier: SupplierRecord,
+): AuditedScoreComponent {
+  const assignment = mapping?.assignments.find((item) => item.component === code);
+  if (!assignment) return missingComponent(code, AUDITED_COMPONENT_MISSING[code].input);
+  const records = assignment.evidenceIds.map((id) => supplier.evidence.find((item) => item.id === id));
+  const reasons: AuditedReasonCode[] = [];
+  if (records.some((record) => !record)) reasons.push("EVIDENCE_RECORD_NOT_FOUND");
+  if (records.some((record) => record && !["LEGACY_VERIFIED", "REVIEWED"].includes(record.reviewStatus))) reasons.push("EVIDENCE_NOT_VERIFIED");
+  if (records.some((record) => record && record.confidence < 75)) reasons.push("EVIDENCE_CONFIDENCE_BELOW_THRESHOLD");
+  if (reasons.length) return missingComponent(code, assignment.rationale, reasons);
+  const validRecords = records.filter((record): record is NonNullable<typeof record> => Boolean(record));
+  return {
+    code,
+    value: assignment.semanticBand,
+    valueClass: "ESTIMATED",
+    weight: AUDITED_COMPONENT_WEIGHTS[code],
+    evidenceIds: validRecords.map((record) => record.id),
+    evidenceConfidence: mean(validRecords.map((record) => record.confidence)),
+    reasonCodes: [],
+    rationale: assignment.rationale,
+  };
+}
+
+export function evaluateAuditedMatch(
+  tender: TenderRecord,
+  supplier: SupplierRecord,
+  legacyScore: number | null,
+  mapping: AuditedPairEvidenceMapping | undefined = auditedDemoPairMappingByKey.get(`${tender.reference}::${supplier.id}`),
+): AuditedMatchResult {
+  if (legacyScore === null) {
+    return {
+      policyVersion: TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+      value: null,
+      valueClass: "MISSING",
+      label: "insufficient-evidence",
+      components: [missingComponent("technical-relevance", "The Company × Tender pair was not assessed in the frozen fixture."), missingComponent("market-delivery", "The Company × Tender pair was not assessed in the frozen fixture.")],
+      evidenceIds: [],
+      reasonCodes: ["PAIR_UNASSESSED"],
+      missingInputs: ["A reviewed Company × Tender assessment"],
+      legacyScore: null,
+      legacyDelta: null,
+      method: "No audited score is calculated for an unassessed pair; MISSING is not zero.",
+    };
+  }
+  let components = (["technical-relevance", "market-delivery"] as AuditedComponentCode[]).map((code) => evaluateAssignment(code, mapping, supplier));
+  const used = new Set<string>();
+  const reused = new Set<string>();
+  for (const component of components) {
+    for (const id of component.evidenceIds) {
+      if (used.has(id)) reused.add(id);
+      used.add(id);
+    }
+  }
+  if (reused.size) {
+    components = components.map((component) => component.evidenceIds.some((id) => reused.has(id))
+      ? missingComponent(component.code, component.rationale, ["EVIDENCE_RECORD_REUSED"])
+      : component);
+  }
+  const missingInputs = components.filter((component) => component.value === null).map((component) => AUDITED_COMPONENT_MISSING[component.code].input);
+  const componentReasons = components.flatMap((component) => component.reasonCodes);
+  const canCalculate = missingInputs.length === 0;
+  const value = canCalculate
+    ? Math.round(components.reduce((sum, component) => sum + (component.value ?? 0) * component.weight, 0))
+    : null;
+  const evidenceIds = [...new Set(components.flatMap((component) => component.evidenceIds))];
+  return {
+    policyVersion: TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+    value,
+    valueClass: value === null ? "MISSING" : "ESTIMATED",
+    label: value === null ? "insufficient-evidence" : value >= 85 ? "strong" : value >= 70 ? "review" : "weak",
+    components,
+    evidenceIds,
+    reasonCodes: value === null ? [...new Set(componentReasons)] : ["AUDITED_MATCH_AVAILABLE", "LEGACY_SCORE_NOT_REPRODUCED"],
+    missingInputs,
+    legacyScore,
+    legacyDelta: value === null ? null : value - legacyScore,
+    method: "Audited semantic bands: technical relevance 70% + market/delivery relevance 30%; both require distinct reviewed evidence records.",
+  };
+}
+
+export function calculateDeadlineUrgency(freshness: TenderFreshness) {
+  if (freshness.status === "closed") {
+    return {
+      value: null,
+      valueClass: "MISSING" as const,
+      policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+      evidenceIds: [],
+      reasonCodes: ["TENDER_CLOSED"],
+      method: "Closed tenders have no current campaign urgency value.",
+    };
+  }
+  const value = Math.max(25, Math.min(100, Math.round(102.5 - freshness.daysRemaining * 2.5)));
+  return {
+    value,
+    valueClass: "CALCULATED" as const,
+    policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+    evidenceIds: [],
+    reasonCodes: [],
+    method: "Monotonic deadline urgency: 100 at one day, declining 2.5 points per additional day, floored at 25.",
+  };
+}
+
+function auditedVerificationQuality(audited: AuditedMatchResult) {
+  const usableComponents = audited.components.filter((component) => component.evidenceConfidence !== null);
+  const evidenceIds = [...new Set(usableComponents.flatMap((component) => component.evidenceIds))];
+  const value = mean(usableComponents.map((component) => component.evidenceConfidence as number));
+  return {
+    value,
+    valueClass: value === null ? "MISSING" as const : "CALCULATED" as const,
+    policyVersion: TENDERBOOST_AUDITED_MATCH_POLICY_VERSION,
+    evidenceIds,
+    reasonCodes: value === null ? ["PAIR_RELEVANT_EVIDENCE_MISSING"] : [],
+    method: "Mean confidence of distinct evidence records accepted for the audited pair components; not global supplier coverage.",
+  };
+}
+
+export function calculateCampaignPriority(audited: AuditedMatchResult, verification: ReturnType<typeof auditedVerificationQuality>, urgency: ReturnType<typeof calculateDeadlineUrgency>) {
+  if (audited.value === null || verification.value === null || urgency.value === null) {
+    return {
+      value: null,
+      valueClass: "MISSING" as const,
+      policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+      evidenceIds: [...new Set([...audited.evidenceIds, ...verification.evidenceIds])],
+      reasonCodes: ["REQUIRED_PRIORITY_OPERAND_MISSING"],
+      method: "Priority remains MISSING until audited match, pair verification, and open-tender urgency are all available.",
+    };
+  }
+  return {
+    value: Math.round(audited.value * 0.65 + verification.value * 0.2 + urgency.value * 0.15),
+    valueClass: "CALCULATED" as const,
+    policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
+    evidenceIds: [...new Set([...audited.evidenceIds, ...verification.evidenceIds])],
+    reasonCodes: [],
+    method: "Audited match 65% + pair-specific verification 20% + deadline urgency 15%; readiness and consultant decision are deliberately excluded.",
+  };
 }
 
 export function assessMatch(
@@ -120,9 +297,13 @@ export function assessMatch(
 ): MatchAssessment {
   const legacy = supplier.legacyTenderMatches.find((item) => item.tenderReference === tender.reference);
   const freshness = deriveTenderFreshness(tender, nowIso);
-  const quality = verificationQuality(supplier);
+  const globalLegacyQuality = legacyVerificationQuality(supplier);
   const { linked, unsupported } = linkLegacyStrengths(supplier, legacy?.verifiedStrengths ?? []);
   const score = legacy?.score ?? null;
+  const auditedMatch = evaluateAuditedMatch(tender, supplier, score);
+  const quality = auditedVerificationQuality(auditedMatch);
+  const deadlineUrgency = calculateDeadlineUrgency(freshness);
+  const campaignPriority = calculateCampaignPriority(auditedMatch, quality, deadlineUrgency);
   return {
     id: `match:TB:${slug(tender.reference)}:${slug(supplier.id)}`,
     version: "v1",
@@ -135,17 +316,19 @@ export function assessMatch(
       valueClass: legacy ? "ESTIMATED" : "MISSING",
       method: legacy ? "legacy TenderBoost curated pair score; formula not yet independently revalidated" : "pair not evaluated in the frozen TenderBoost source fixture",
     },
+    legacyBaseline: {
+      policyVersion: TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
+      matchScore: score,
+      supplierReadiness: supplier.readiness.value,
+      globalVerificationQuality: globalLegacyQuality,
+      campaignPriority: calculateLegacyBaselinePriority(score, supplier.readiness.value, globalLegacyQuality, freshness, decision),
+      method: "Frozen Stage 1 behavior: match 48% + readiness 18% + global evidence coverage 16% + urgency band 11% + consultant decision 7%.",
+    },
+    auditedMatch,
     supplierReadiness: supplier.readiness,
-    verificationQuality: {
-      value: quality,
-      valueClass: "CALCULATED",
-      method: "legacy evidence-status coverage; not current source verification",
-    },
-    campaignPriority: {
-      value: priorityValue(score, supplier.readiness.value, quality, freshness, decision),
-      valueClass: "CALCULATED",
-      method: "match 48% + readiness 18% + verification 16% + urgency 11% + consultant decision 7%",
-    },
+    verificationQuality: quality,
+    deadlineUrgency,
+    campaignPriority,
     consultantDecision: decision,
     decisionHistory: [],
     linkedStrengths: linked,
@@ -171,6 +354,7 @@ function operationalBlockers(match: MatchAssessment, supplier: SupplierRecord): 
   const blockers: CampaignBlocker[] = [];
   if (!match.exactLegacyPair || match.matchScore.value === null) blockers.push(blocker("MATCH_UNASSESSED", "This Company × Tender pair was not evaluated in the source fixture.", "Select an evaluated pair or run a separately approved assessment method."));
   else if (match.matchScore.value === 0) blockers.push(blocker("ZERO_MATCH", "This evaluated Company × Tender pair has a genuine zero score.", "Select a positive evidence-backed pair."));
+  else if (match.auditedMatch.value === null) blockers.push(blocker("AUDITED_MATCH_REQUIRED", "The audited formula is missing one or more required evidence components.", `Resolve: ${match.auditedMatch.missingInputs.join("; ")}.`));
   if (match.consultantDecision === "rejected") blockers.push(blocker("MATCH_REJECTED", "The consultant rejected this match.", "Choose another match or record a new reviewed decision."));
   if (match.tenderFreshness.status === "closed") blockers.push(blocker("TENDER_CLOSED", "The tender deadline has passed.", "Refresh the tender record and select an open opportunity."));
   if (match.tenderFreshness.freshness === "stale") blockers.push(blocker("SNAPSHOT_STALE", "The demonstration tender snapshot is stale.", "Refresh from an authorized source before activation."));
@@ -223,15 +407,15 @@ export function campaignSuggestions(tenders: TenderRecord[], suppliers: Supplier
 }
 
 function recommendedObjective(match: MatchAssessment): CampaignObjective {
-  if (match.gaps.length || match.verificationQuality.value < 70) return "eligibility-readiness";
-  if (match.consultantDecision === "approved" && (match.matchScore.value ?? 0) >= 85) return "participation-services";
-  if ((match.matchScore.value ?? 0) >= 80) return "tender-opportunity";
+  if (match.auditedMatch.value === null || match.gaps.length || (match.verificationQuality.value ?? 0) < 70) return "eligibility-readiness";
+  if (match.consultantDecision === "approved" && match.auditedMatch.value >= 85) return "participation-services";
+  if (match.auditedMatch.value >= 80) return "tender-opportunity";
   return "tender-intelligence";
 }
 
 export function recommendedChannel(match: MatchAssessment): CampaignChannel {
   if (match.tenderFreshness.daysRemaining <= 7) return "Telephone";
-  if ((match.matchScore.value ?? 0) >= 85) return "Email";
+  if ((match.auditedMatch.value ?? 0) >= 85) return "Email";
   return "LinkedIn";
 }
 
@@ -247,8 +431,9 @@ export function generateCampaignCopy(
     ? eligibleClaims.map((claim) => `• ${claim.text} [${claim.evidenceIds.join(", ")}]`).join("\n")
     : "• No current reviewed evidence is approved for external use.";
   const heading = channel === "Telephone" ? "CONSULTANT CALL BRIEF" : `${channel.toUpperCase()} DRAFT`;
-  const scoreLabel = match.matchScore.value === null ? "MISSING · not evaluated" : `${match.matchScore.value}/100 (${match.matchScore.valueClass.toLowerCase()})`;
-  return `${heading} · NOT SENT\n\nObjective: ${objective}\nSupplier: ${supplier.legalEnglishName}\nTender: ${tender.title}\nReference: ${tender.reference}\nAbsolute deadline: ${tender.deadlineAt}\n\nTenderBoost legacy Match Score: ${scoreLabel}\n\nEvidence-approved claims:\n${claimLines}\n\nConsultant note:\nThis dated demonstration snapshot may support internal preparation only. Refresh the tender, evidence, suppression, consent, and compliance checks before any external activation.`;
+  const legacyLabel = match.matchScore.value === null ? "MISSING · not evaluated" : `${match.matchScore.value}/100 (${match.matchScore.valueClass.toLowerCase()})`;
+  const auditedLabel = match.auditedMatch.value === null ? `MISSING · ${match.auditedMatch.missingInputs.join("; ")}` : `${match.auditedMatch.value}/100 (${match.auditedMatch.label})`;
+  return `${heading} · NOT SENT\n\nObjective: ${objective}\nSupplier: ${supplier.legalEnglishName}\nTender: ${tender.title}\nReference: ${tender.reference}\nAbsolute deadline: ${tender.deadlineAt}\n\nTenderBoost legacy Match Score: ${legacyLabel}\nAudited Match Support: ${auditedLabel}\n\nEvidence-approved claims:\n${claimLines}\n\nConsultant note:\nThis dated demonstration snapshot may support internal preparation only. Refresh the tender, evidence, suppression, consent, and compliance checks before any external activation.`;
 }
 
 function identities(caseId: string, resultVersion: number, hasCampaign: boolean) {
@@ -265,6 +450,8 @@ function reviseResult(result: TenderBoostCaseResult, changes: Partial<TenderBoos
   const activation = evaluateCampaignEligibility(merged.match, supplier, merged.campaign, merged.campaignEvents);
   return {
     ...merged,
+    schemaVersion: TENDERBOOST_SCHEMA_VERSION,
+    engineVersion: TENDERBOOST_ENGINE_VERSION,
     caseIdentity: { ...merged.caseIdentity, version },
     resultIdentity: { id: `result:TB:${slug(merged.caseIdentity.id)}:${version}`, version },
     artifactIdentities: artifacts,
@@ -302,11 +489,18 @@ export function createCaseResult(
     activation: evaluateCampaignEligibility(match, supplier),
     knownLimitations: [
       "The 16-tender and 10-supplier fixture is a dated demonstration snapshot, not a live feed.",
-      "Legacy match and readiness scores have not completed an independent realistic-evidence experiment.",
+      "The audited policy is validated only on the bounded dated fixture; 12 of 18 assessed pairs remain MISSING because required evidence is incomplete.",
+      "Legacy Match Score and readiness remain historical estimates and are not silently overwritten by the audited result.",
       "Browser-local Case storage is not durable tenant-isolated persistence.",
       "No sending, CRM, consent, suppression, or response integration is connected.",
       "The relationship diagram is schematic and non-geospatial; it does not represent coordinates, distance, routing, or live map accuracy.",
     ],
+    migration: {
+      status: "native-current",
+      fromSchemaVersion: null,
+      migratedAt: null,
+      note: "Created under the current audited scoring schema.",
+    },
   };
   return result;
 }
@@ -336,9 +530,9 @@ export function setConsultantDecision(
     consultantDecision: decision,
     decisionHistory: [...result.match.decisionHistory, decisionRecord],
     trust: { ...result.match.trust, humanReview: decision === "pending" ? "unknown" : "medium" },
-    campaignPriority: {
-      ...result.match.campaignPriority,
-      value: priorityValue(result.match.matchScore.value, result.match.supplierReadiness.value, result.match.verificationQuality.value, result.match.tenderFreshness, decision),
+    legacyBaseline: {
+      ...result.match.legacyBaseline,
+      campaignPriority: calculateLegacyBaselinePriority(result.match.matchScore.value, result.match.supplierReadiness.value, result.match.legacyBaseline.globalVerificationQuality, result.match.tenderFreshness, decision),
     },
   };
   const campaign = decision === "rejected" && result.campaign ? { ...result.campaign, version: nextVersion(result.campaign.version), lifecycle: "rejected" as const, currentStatus: "Rejected · no outreach permitted" } : result.campaign;
@@ -371,6 +565,7 @@ export function createCampaignDraft(
     approvedAt: null,
     approvedBy: null,
     currentStatus: "Draft only · no message sent",
+    policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION,
   };
   return reviseResult(result, { campaign }, supplier, nowIso);
 }
@@ -459,17 +654,15 @@ export function resumeCaseResult(
   nowIso: string,
 ) {
   if (result.tenderIdentity.id !== tender.id || result.supplierIdentity.id !== supplier.id) throw new Error("Resume context does not match the persisted TenderBoost Case identities.");
-  const tenderFreshness = deriveTenderFreshness(tender, nowIso);
+  const reassessed = assessMatch(tender, supplier, nowIso, result.match.consultantDecision);
   const match: MatchAssessment = {
-    ...result.match,
+    ...reassessed,
     version: nextVersion(result.match.version),
-    tenderFreshness,
-    campaignPriority: {
-      ...result.match.campaignPriority,
-      value: priorityValue(result.match.matchScore.value, result.match.supplierReadiness.value, result.match.verificationQuality.value, tenderFreshness, result.match.consultantDecision),
-    },
+    consultantDecision: result.match.consultantDecision,
+    decisionHistory: result.match.decisionHistory ?? [],
   };
-  return reviseResult(result, { match }, supplier, nowIso);
+  const campaign = result.campaign ? { ...result.campaign, policyVersion: TENDERBOOST_CAMPAIGN_PRIORITY_POLICY_VERSION } : null;
+  return reviseResult(result, { match, campaign }, supplier, nowIso);
 }
 
 export function loadCaseResult(
@@ -479,11 +672,27 @@ export function loadCaseResult(
 ): TenderBoostCaseResult | null {
   const raw = storage.getItem(storageKey(caseId));
   if (!raw) return null;
-  const parsed = JSON.parse(raw) as TenderBoostCaseResult;
-  if (parsed.schemaVersion !== TENDERBOOST_SCHEMA_VERSION) throw new Error("This TenderBoost Case requires an explicit schema migration.");
+  const parsed = JSON.parse(raw) as Omit<TenderBoostCaseResult, "schemaVersion"> & { schemaVersion: string };
   if (parsed.caseIdentity.id !== caseId) throw new Error("Persisted Case identity does not match the requested Case.");
   if (!parsed.resultIdentity?.id || !parsed.match?.id) throw new Error("Persisted TenderBoost Case is incomplete.");
-  return resumeCaseResult(parsed, context.tender, context.supplier, context.nowIso);
+  if (parsed.schemaVersion !== TENDERBOOST_SCHEMA_VERSION && parsed.schemaVersion !== TENDERBOOST_LEGACY_SCHEMA_VERSION) {
+    throw new Error(`TenderBoost Case schema ${parsed.schemaVersion} is unsupported and requires an explicit migration.`);
+  }
+  if (parsed.schemaVersion === TENDERBOOST_LEGACY_SCHEMA_VERSION) {
+    const legacy = parsed as unknown as TenderBoostCaseResult;
+    return resumeCaseResult({
+      ...legacy,
+      schemaVersion: TENDERBOOST_SCHEMA_VERSION,
+      engineVersion: TENDERBOOST_ENGINE_VERSION,
+      migration: {
+        status: "compatible-historical",
+        fromSchemaVersion: TENDERBOOST_LEGACY_SCHEMA_VERSION,
+        migratedAt: context.nowIso,
+        note: "Historical legacy values and human/event provenance were retained; audited derived fields were recomputed from the supplied Tender, Supplier, and clock.",
+      },
+    }, context.tender, context.supplier, context.nowIso);
+  }
+  return resumeCaseResult({ ...parsed, schemaVersion: TENDERBOOST_SCHEMA_VERSION }, context.tender, context.supplier, context.nowIso);
 }
 
 export function removeCaseResult(storage: StorageLike, caseId: string) {

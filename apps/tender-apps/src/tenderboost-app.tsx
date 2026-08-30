@@ -41,8 +41,8 @@ function statusLabel(result: TenderBoostCaseResult) {
 export default function TenderBoostApp() {
   const sessionNow = useMemo(() => new Date().toISOString(), []);
   const allMatches = useMemo(() => buildAllMatches(demoTenders, demoSuppliers, sessionNow), [sessionNow]);
-  const initialMatch = allMatches.find((item) => (item.matchScore.value ?? -1) > 0 && item.tenderFreshness.status !== "closed")
-    ?? allMatches.find((item) => (item.matchScore.value ?? -1) > 0)
+  const initialMatch = allMatches.find((item) => (item.auditedMatch.value ?? -1) > 0 && item.tenderFreshness.status !== "closed")
+    ?? allMatches.find((item) => (item.auditedMatch.value ?? -1) > 0)
     ?? allMatches[0];
   const initialTender = demoTenders.find((item) => item.id === initialMatch.tenderId) ?? demoTenders[0];
   const initialSupplier = demoSuppliers.find((item) => item.id === initialMatch.supplierId) ?? demoSuppliers[0];
@@ -56,7 +56,8 @@ export default function TenderBoostApp() {
   const supplier = demoSuppliers.find((item) => item.id === result.supplierIdentity.id) ?? initialSupplier;
   const evaluatedPairs = allMatches.filter((item) => item.matchScore.value !== null).length;
   const unassessedPairs = allMatches.length - evaluatedPairs;
-  const linkedEvidenceCount = allMatches.reduce((count, item) => count + item.linkedStrengths.reduce((sum, claim) => sum + claim.evidenceIds.length, 0), 0);
+  const auditedPairs = allMatches.filter((item) => item.auditedMatch.value !== null).length;
+  const incompleteAuditedPairs = allMatches.filter((item) => item.exactLegacyPair && item.auditedMatch.value === null).length;
   const externalClaimCount = result.match.linkedStrengths.filter((claim) => claim.externalClaimEligible).length;
 
   const runAction = (action: () => TenderBoostCaseResult) => {
@@ -129,11 +130,12 @@ export default function TenderBoostApp() {
         </div>
         <aside className="tb3-result-card">
           <span>PRIMARY CASE RESULT</span>
-          <div className="tb3-score-orbit"><strong>{result.match.matchScore.value ?? "—"}</strong><small>{result.match.matchScore.value === null ? "MISSING" : "/100"}</small></div>
+          <div className="tb3-score-orbit"><strong>{result.match.auditedMatch.value ?? "—"}</strong><small>{result.match.auditedMatch.value === null ? "MISSING" : "/100"}</small></div>
           <h2>{supplier.legalEnglishName}</h2>
           <p>{tender.reference} · {tender.object}</p>
           <dl>
-            <div><dt>Match Score</dt><dd>{result.match.matchScore.value === null ? "Not evaluated · MISSING" : `${result.match.matchScore.value} · estimated`}</dd></div>
+            <div><dt>Audited Match Support</dt><dd>{result.match.auditedMatch.value === null ? "Insufficient evidence · MISSING" : `${result.match.auditedMatch.value} · ${result.match.auditedMatch.label}`}</dd></div>
+            <div><dt>Legacy Match Score</dt><dd>{result.match.matchScore.value === null ? "Not evaluated · MISSING" : `${result.match.matchScore.value} · historical estimate`}</dd></div>
             <div><dt>Consultant decision</dt><dd>{result.match.consultantDecision}</dd></div>
             <div><dt>Workflow</dt><dd>{result.workflowState}</dd></div>
             <div><dt>Communication</dt><dd>{statusLabel(result)}</dd></div>
@@ -151,7 +153,7 @@ export default function TenderBoostApp() {
         <article><span>01</span><b>{demoSnapshot.tenderCount}</b><p>Tenders in dated snapshot</p></article>
         <article><span>02</span><b>{demoSnapshot.supplierCount}</b><p>Supplier profiles</p></article>
         <article><span>03</span><b>{evaluatedPairs}</b><p>Evaluated pairs · {unassessedPairs} not evaluated</p></article>
-        <article><span>04</span><b>{linkedEvidenceCount}</b><p>Claim-to-evidence links</p></article>
+        <article><span>04</span><b>{auditedPairs}</b><p>Audited scores · {incompleteAuditedPairs} assessed pairs remain MISSING</p></article>
       </section>
 
       <section className="tb3-case-controls">
@@ -169,7 +171,7 @@ export default function TenderBoostApp() {
 
       {tab === "overview" && <section className="tb3-workspace tb3-overview">
         <article className="tb3-flow-card">
-          <header><span>CLIENT OUTCOME</span><h2>One explicit Case, five distinct judgments</h2></header>
+          <header><span>CLIENT OUTCOME</span><h2>One explicit Case, six distinct judgments</h2></header>
           <div className="tb3-flow">
             <div><span>01</span><b>Tender + Supplier</b><small>Versioned dated inputs</small></div><i>→</i>
             <div><span>02</span><b>Evidence-linked match</b><small>Strengths and gaps</small></div><i>→</i>
@@ -177,9 +179,10 @@ export default function TenderBoostApp() {
             <div><span>04</span><b>Campaign brief</b><small>Draft only · no sending</small></div>
           </div>
           <div className="tb3-dimension-grid">
-            <div><span>MATCH SCORE</span><strong>{result.match.matchScore.value ?? "—"}</strong><small>{result.match.matchScore.value === null ? "MISSING · not evaluated" : "Estimated pair fit"}</small></div>
+            <div><span>AUDITED MATCH</span><strong>{result.match.auditedMatch.value ?? "—"}</strong><small>{result.match.auditedMatch.value === null ? "MISSING · insufficient evidence" : `${result.match.auditedMatch.label} support`}</small></div>
             <div><span>READINESS</span><strong>{result.match.supplierReadiness.value}</strong><small>Legacy supplier estimate</small></div>
-            <div><span>VERIFICATION</span><strong>{result.match.verificationQuality.value}</strong><small>Calculated legacy coverage</small></div>
+            <div><span>EVIDENCE QUALITY</span><strong>{result.match.verificationQuality.value ?? "—"}</strong><small>Pair-specific · distinct records</small></div>
+            <div><span>DEADLINE URGENCY</span><strong>{result.match.deadlineUrgency.value ?? "—"}</strong><small>Calculated from absolute deadline</small></div>
             <div><span>PRIORITY</span><strong>{result.match.campaignPriority.value ?? "—"}</strong><small>Calculated, not a decision</small></div>
             <div><span>DECISION</span><strong className="word">{result.match.consultantDecision}</strong><small>Consultant-controlled</small></div>
           </div>
@@ -198,13 +201,18 @@ export default function TenderBoostApp() {
       {tab === "match" && <section className="tb3-workspace tb3-match-review">
         <article className="tb3-match-main">
           <header><div><span>COMPANY × TENDER</span><h2>{supplier.legalEnglishName}</h2><p>{tender.title}</p></div><div className="tb3-deadline"><span>ABSOLUTE DEADLINE</span><strong>{deadlineLabel(tender.deadlineAt)}</strong><small>{result.match.tenderFreshness.daysRemaining} days remaining · {result.match.tenderFreshness.freshness}</small></div></header>
+          <div className="tb3-formula-comparison">
+            <div><span>LEGACY BASELINE · 1.0.0</span><strong>{result.match.matchScore.value ?? "—"}</strong><small>Historical curated estimate · never overwritten</small></div>
+            <i>→</i>
+            <div><span>AUDITED SUPPORT · 2.0.0</span><strong>{result.match.auditedMatch.value ?? "MISSING"}</strong><small>{result.match.auditedMatch.value === null ? result.match.auditedMatch.missingInputs.join(" · ") : `Difference from legacy: ${result.match.auditedMatch.legacyDelta! > 0 ? "+" : ""}${result.match.auditedMatch.legacyDelta}`}</small></div>
+          </div>
           <div className="tb3-evidence-columns">
-            <section><span>LINKED LEGACY STRENGTHS</span>{result.match.linkedStrengths.length ? result.match.linkedStrengths.map((claim) => <article key={claim.id}><b>{claim.text}</b><div>{claim.evidenceIds.map((id) => <code key={id}>{id}</code>)}</div><small>{claim.externalClaimEligible ? "Eligible for external claim" : "Refresh required before external use"}</small></article>) : <p>No legacy strength could be linked to a specific evidence record.</p>}</section>
-            <section><span>GAPS / UNSUPPORTED</span>{result.match.gaps.length ? result.match.gaps.map((gap) => <p key={gap}>? {gap}</p>) : <p>No recorded gaps in the legacy fixture.</p>}</section>
+            <section><span>AUDITED COMPONENTS</span>{result.match.auditedMatch.components.map((component) => <article className={component.value === null ? "missing" : ""} key={component.code}><b>{component.code.replaceAll("-", " ")} · {component.value ?? "MISSING"}</b><p>{component.rationale}</p><div>{component.evidenceIds.map((id) => <code key={id}>{id}</code>)}</div><small>{component.value === null ? component.reasonCodes.join(" · ") : `Weight ${component.weight * 100}% · evidence confidence ${component.evidenceConfidence}`}</small></article>)}</section>
+            <section><span>MISSING / GAPS / LEGACY CLAIMS</span>{result.match.auditedMatch.reasonCodes.map((reason) => <p key={reason}>! {reason.replaceAll("_", " ")}</p>)}{result.match.gaps.length ? result.match.gaps.map((gap) => <p key={gap}>? {gap}</p>) : <p>No recorded gaps in the legacy fixture.</p>}<details><summary>Historical lexical claim links</summary>{result.match.linkedStrengths.map((claim) => <article key={claim.id}><b>{claim.text}</b><div>{claim.evidenceIds.map((id) => <code key={id}>{id}</code>)}</div><small>Historical linkage only · refresh required before external use</small></article>)}</details></section>
           </div>
         </article>
         <aside className="tb3-decision-panel">
-          <span>HUMAN AUTHORITY</span><h2>Consultant decision</h2><p>The decision is distinct from Match Score and campaign priority.</p>
+          <span>HUMAN AUTHORITY</span><h2>Consultant decision</h2><p>The decision is distinct from legacy score, audited support, readiness, evidence quality, urgency, and campaign priority.</p>
           <div className="tb3-decision-actions"><button className={result.match.consultantDecision === "approved" ? "selected" : ""} onClick={() => decide("approved")}>Approve match</button><button className={result.match.consultantDecision === "hold" ? "selected" : ""} onClick={() => decide("hold")}>Hold</button><button className={result.match.consultantDecision === "rejected" ? "selected reject" : ""} onClick={() => decide("rejected")}>Reject</button></div>
           <dl>{Object.entries(result.match.trust).map(([key, value]) => <div key={key}><dt>{key.replace(/([A-Z])/g, " $1")}</dt><dd>{value}</dd></div>)}</dl>
         </aside>
@@ -226,9 +234,9 @@ export default function TenderBoostApp() {
 
       {tab === "audit" && <section className="tb3-workspace tb3-audit">
         <article><span>IDENTITY CHAIN</span><h2>One composite result</h2><dl><div><dt>Case</dt><dd>{result.caseIdentity.id} · {result.caseIdentity.version}</dd></div><div><dt>Result</dt><dd>{result.resultIdentity.id}</dd></div><div><dt>Tender</dt><dd>{result.tenderIdentity.id}</dd></div><div><dt>Supplier</dt><dd>{result.supplierIdentity.id}</dd></div><div><dt>Match</dt><dd>{result.match.id} · {result.match.version}</dd></div><div><dt>Evidence snapshot</dt><dd>{result.evidenceSnapshotIdentity.id}</dd></div><div><dt>Decision</dt><dd>{result.decisionIdentity.id} · {result.match.decisionHistory.length} recorded</dd></div>{result.campaign && <div><dt>Campaign</dt><dd>{result.campaign.id} · {result.campaign.version} · {result.campaign.lifecycle}</dd></div>}</dl></article>
-        <article><span>SOURCE + VALUE POLICY</span><h2>Dated inputs, explicit meanings</h2><p>Tender and supplier fixture values are supporting demonstration inputs. Match and readiness are estimated; verification and priority are calculated; missing consent is not converted to approval.</p><div className="tb3-value-classes">{["SOURCE", "CALCULATED", "ESTIMATED", "ASSUMED", "MISSING"].map((item) => <b key={item}>{item}</b>)}</div><p><strong>{externalClaimCount}</strong> current reviewed claims are eligible for external copy in this Case.</p></article>
+        <article><span>SOURCE + VALUE POLICY</span><h2>Dated inputs, explicit meanings</h2><p>Legacy score and readiness remain historical estimates. Audited Match Support is calculated only when both evidence components qualify; otherwise it remains MISSING, never zero. Evidence quality, deadline urgency, priority, and the consultant decision stay separate.</p><div className="tb3-value-classes">{["SOURCE", "CALCULATED", "ESTIMATED", "ASSUMED", "MISSING"].map((item) => <b key={item}>{item}</b>)}</div><p><strong>{externalClaimCount}</strong> current reviewed claims are eligible for external copy in this Case.</p><p><strong>Policies:</strong> {result.match.auditedMatch.policyVersion} · {result.match.campaignPriority.policyVersion}</p></article>
         <article><span>EVENT + DECISION TRUTH</span><h2>Recorded versus simulated</h2><dl><div><dt>Real campaign events</dt><dd>{result.campaignEvents.length}</dd></div><div><dt>Simulation-only events</dt><dd>{result.simulationEvents.length}</dd></div><div><dt>Communication status</dt><dd>{statusLabel(result)}</dd></div></dl><p>Simulation events never advance the real campaign lifecycle.</p><div className="tb3-decision-history">{result.match.decisionHistory.length ? result.match.decisionHistory.map((item) => <div key={item.id}><b>{item.decision}</b><span>{item.actorId} · {item.decidedAt}</span><p>{item.rationale}</p></div>) : <small>No consultant decision event recorded.</small>}</div></article>
-        <article><span>KNOWN LIMITATIONS</span><h2>Current safe boundary</h2>{result.knownLimitations.map((item) => <p key={item}>— {item}</p>)}</article>
+        <article><span>KNOWN LIMITATIONS</span><h2>Current safe boundary</h2>{result.knownLimitations.map((item) => <p key={item}>— {item}</p>)}<p><strong>Case compatibility:</strong> {result.migration.status} · {result.migration.note}</p></article>
       </section>}
     </main>
   );

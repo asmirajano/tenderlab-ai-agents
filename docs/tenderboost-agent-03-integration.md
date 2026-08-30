@@ -1,6 +1,6 @@
 # TenderBoost AI — TenderApps Agent 03 integration contract
 
-Status: local first-stage integration, dated 2026-08-30. This document records a reversible practical-product placement and implementation boundary. It does not alter the canonical 64-Agent registry and does not authorize deployment or outreach.
+Status: local Stage 2 audited-fixture integration, dated 2026-08-30. This document records a reversible practical-product placement, bounded formula experiment, and implementation boundary. It does not alter the canonical 64-Agent registry and does not authorize deployment or outreach.
 
 ## Identity and placement
 
@@ -40,7 +40,7 @@ TenderBoost helps a consultant review one supplier against one tender, understan
 The primary finished product is one versioned, explicit TenderBoost Case result containing:
 
 1. the selected Tender, Supplier, Evidence snapshot, Match, and Decision identities;
-2. distinct Match Score, supplier readiness, legacy-verification quality, campaign priority, and consultant decision;
+2. distinct historical Match Score, audited Match Support, supplier readiness, pair Evidence Quality, deadline urgency, campaign priority, and consultant decision;
 3. evidence-linked strengths, unsupported claims, gaps, and trust dimensions;
 4. one optional campaign draft and its exact evidence references;
 5. activation blockers, campaign events, simulation-only events, artifacts, limitations, and workflow state.
@@ -89,7 +89,9 @@ Material values retain one of these meanings:
 - `ASSUMED`: explicit unverified legacy or user premise;
 - `MISSING`: no supported value; never converted to zero.
 
-The fixture contains 18 evaluated Company × Tender pairs with legacy scores from 65–95. The other 142 combinations are `MISSING / not evaluated`, not `0/100`; they are excluded from evaluated-match and campaign results. A future genuine evaluated zero remains a distinct numeric score and blocker. The legacy match and readiness values are `ESTIMATED`, not authoritative facts. Verification quality and campaign priority are `CALCULATED`. Tender facts and old supplier facts are treated as dated supporting inputs until refreshed. Evidence links are stable, but legacy-verification status is not automatically eligible for external claims.
+The fixture contains 18 evaluated Company × Tender pairs with legacy scores from 65–95. The other 142 combinations are `MISSING / not evaluated`, not `0/100`; they are excluded from evaluated-match and campaign results. A future genuine evaluated zero remains a distinct numeric score and blocker. The legacy match and readiness values are `ESTIMATED`, not authoritative facts. Stage 2 calculates Audited Match Support for only 6 of the 18 assessed pairs; the other 12 remain `MISSING` because one of two required distinct evidence components is unsupported. Pair Evidence Quality, deadline urgency, and campaign priority are separate `CALCULATED` values when their required operands exist. Tender facts and old supplier facts are treated as dated supporting inputs until refreshed. Evidence links are stable, but legacy-verification status is not automatically eligible for external claims.
+
+The full formula, evidence manifest contract, output audit, and 18-pair comparison are in `docs/tenderboost-scoring-model-card.md`. Historical Stage 1 calculations remain available under `tenderboost-legacy-baseline/1.0.0`; they are not silently rewritten.
 
 Recognition, structural, semantic, arithmetic/domain, and human-review confidence are independent. A readable fixture does not prove that its match formula, eligibility interpretation, or external claims are current.
 
@@ -125,7 +127,7 @@ The page recommends an objective and channel but preserves consultant control. G
 
 The current page stores one complete Case result in browser local storage under a key containing the explicit Case ID. Loading requires that same ID. There is no latest-Case key or fallback.
 
-This is browser-local operational state, not a write to `COMPANY-TENDER-OPPORTUNITY-ASSESSMENTS` or any other canonical Dataset. A future durable implementation would require record identity, tenant authorization, approval conditions, versioning, provenance, retention, and migration policy before writing Match, Campaign, Event, consent, suppression, or delivery records.
+This is browser-local operational state, not a write to `COMPANY-TENDER-OPPORTUNITY-ASSESSMENTS` or any other canonical Dataset. Schema `2.0.0` Cases recompute audited derived values and clock state on resume. Schema `1.0.0` Cases use an explicit `compatible-historical` migration that retains legacy values and human/event provenance while recomputing audited fields; unknown versions fail explicitly. A future durable implementation would require record identity, tenant authorization, approval conditions, versioning, provenance, retention, and migration policy before writing Match, Campaign, Event, consent, suppression, or delivery records.
 
 ## Runtime and security classification
 
@@ -144,7 +146,7 @@ Selectively reused and adapted:
 - the original TenderBoost page as a workflow and terminology reference;
 - the scoped visual language as design inspiration;
 - the 16-tender and 10-supplier fixture as explicitly dated demonstration data;
-- deterministic pair lookup, score separation, campaign-priority factors, objective/channel recommendation, channel-copy structure, and lifecycle concepts;
+- deterministic pair lookup, historical score separation, objective/channel recommendation, channel-copy structure, and lifecycle concepts; the Stage 1 priority factors are retained only as a frozen compatibility baseline;
 - the rule that only relevant verified evidence may support external claims.
 
 Deliberately excluded:
@@ -172,9 +174,15 @@ The integrated page uses a self-contained **schematic, non-geospatial** relation
 | Match decisions and Campaign state changes were described as versioned without revision behavior. | Schema version and mutable-record revision were conflated. | Keep the schema version global, increment Match/Campaign/Case/result revisions on state-changing updates, and append immutable decision provenance. | Versioned records need explicit revision semantics and actor/time/rationale evidence. | Decision-history and revision assertions. |
 | Leaflet and external tiles conflicted with the shared CSP, while fixed geometry could imply accuracy. | The standalone page owned its asset policy and the replacement visual changed labels over fixed shapes. | Use a visibly labelled schematic, non-geospatial relationship diagram and document the deferred map capability. | A child page follows the shared security boundary and must not imply geographic fidelity it cannot provide. | Schematic-label and CSP assertions. |
 | The rendered TenderBoost title sat underneath the shared two-row header at tablet and mobile widths. | The new page retained a desktop content offset while the shared navigation becomes a second fixed row below 1040px. | Add page-specific responsive top clearance aligned to the shared header breakpoints. | Responsive verification must start from the actual rendered route and fixed-shell geometry. | Browser checks at 1440×1000, 900×900, and 390×844 plus responsive CSS assertions. |
+| A curated legacy Match Score looked like a reproducible calculation. | The fixture retained final scores but not the original formula or requirement-level operands. | Freeze legacy behavior and add a separately versioned audited result that calculates only from qualifying evidence components. | Never reverse-engineer evidence to reproduce a historical score. | Legacy compatibility, 18-pair experiment, and legacy-versus-audited difference regressions. |
+| Supplier-wide evidence-status coverage was presented as pair verification. | The formula counted all records regardless of relevance to the selected tender. | Calculate pair Evidence Quality only from distinct records accepted for audited components. | Global completeness and pair-specific verification are different metrics. | Pair-relevance and irrelevant-evidence invariance tests. |
+| One evidence record could support multiple claims and be counted more than once. | Lexical matching had no assignment exclusivity rule. | Reject an audited calculation when one record is assigned to both weighted components. | A score must declare and enforce evidence contribution cardinality. | Duplicate-evidence rejection regression. |
+| Consultant approval changed Campaign Priority. | Human authority was also used as a numeric relevance operand. | Remove the decision from the audited priority formula and keep it as a separate eligibility gate. | A human decision must not circularly manufacture the score it is reviewing. | Decision-independence and activation-gate tests. |
+| The deadline factor fell from 100 to 45 in the final three days. | Discontinuous bands mixed urgency with an unstated actionability penalty. | Use a named monotonic urgency calculation for open tenders and `MISSING` after closure. | Penalties and urgency must not be hidden in the same metric. | Deadline monotonicity, boundary, and closed-state tests. |
+| A missing audited component could have been interpreted as weak fit. | Numeric scoring lacked a calculation eligibility gate. | Require both technical and market/delivery evidence; return reason-coded `MISSING` otherwise. | Absence of evidence is neither zero nor negative evidence. | Six calculated / twelve incomplete / 142 unassessed count regressions. |
 
 ## Current completion and next gate
 
-This stage is complete only when the local package, TenderApps page, registries, projections, focused tests, full build, and proportionate suite pass on the named integration branch. It remains a simulation until authorized realistic supplier/tender evidence is refreshed and audited through the isolated experiment, actual-output audit, failure-correction, and method-approval gates.
+Stage 2 is complete only when the audited package, TenderApps explanation surface, registries, model card, saved-Case migration, focused tests, full build, responsive QA, and proportionate suite pass on the named integration branch. The bounded fixture experiment does not increase maturity beyond `concept-or-simulation`: underlying source documents were not freshly replayed, and method approval for production evidence remains outstanding.
 
 Deployment, external integrations, confidential data, canonical Dataset writes, and live representative replay remain separately authorized later stages.

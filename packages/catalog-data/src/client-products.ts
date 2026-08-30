@@ -82,7 +82,7 @@ export const clientProducts: ClientProduct[] = [
     family: "Tender Apps",
     name: "TenderBoost AI",
     descriptor: "Evidence-linked Company × Tender matching and consultant-controlled campaign preparation",
-    surfaceStatus: "Dated demo snapshot · consultant-controlled preparation",
+    surfaceStatus: "Audited fixture experiment · consultant-controlled preparation",
     dataNotice: "Dated demonstration snapshot only",
     status: "mvp-simulation",
     ownerAgentId: "agent:TL-A031",
