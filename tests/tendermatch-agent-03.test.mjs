@@ -71,15 +71,14 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.match(JSON.stringify(implementation), /Historical Campaign Studio and follow-up simulation pages were removed/);
   assert.match(implementation?.tor ?? "", /matching-only human-review workspace/);
 });
-
-test("maps all 10 TenderMatch views exactly once into the five-family matching workflow", async () => {
+test("maps all 9 TenderMatch views exactly once into the five-family matching workflow", async () => {
   const page = await read("apps/tender-apps/src/tendermatch-app.tsx");
   const styles = await read("apps/tender-apps/src/tendermatch.css");
   const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\r?\n\];\r?\n\r?\nconst navItems/)?.[0] ?? "";
   const expectedViews = [
     ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
     ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "Review by Tenders", "05B"],
-    ["match-suppliers", "Review by Suppliers", "05C"], ["audit", "Detailed Case Review", "05D"],
+    ["match-suppliers", "Review by Suppliers", "05C"],
   ];
   const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"]];
 
@@ -94,6 +93,10 @@ test("maps all 10 TenderMatch views exactly once into the five-family matching w
     priorIndex = index;
   }
   assert.doesNotMatch(registry, /Legacy Campaign Studio|campaigns|followups|06A|06B/);
+  assert.doesNotMatch(registry, /Detailed Case Review|id: "audit"|05D/);
+  assert.match(page, /candidate === "audit"\) return "matrix"/);
+  assert.doesNotMatch(page, /CANONICAL OWNER|tb3-owner-note/);
+  assert.doesNotMatch(page, /<aside className="tb3-radar-detail"/);
   assert.match(page, /resolveTenderMatchWorkspaceView[\s\S]+workspaceViewIds\.has[\s\S]+"dashboard"/);
   assert.match(page, /url\.searchParams\.get\("view"\)[\s\S]+hashView/);
   assert.match(page, /aria-controls=\{`tb3-nav-children-/);

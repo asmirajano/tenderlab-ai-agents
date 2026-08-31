@@ -4,7 +4,7 @@
 
 - Frozen source: `04b0b2a723223d11617837ee0e7562fa48168cd9`, `app/tenderboost-ai/page.tsx`.
 - Reference screenshot: cropped frozen-source TenderBoost workflow navigation.
-- Current target: all 10 matching `WorkspaceView` surfaces in `apps/tender-apps/src/tendermatch-app.tsx`.
+- Current target: all 9 matching `WorkspaceView` surfaces in `apps/tender-apps/src/tendermatch-app.tsx`.
 - Scope: navigation hierarchy, order, active/expanded states, and operational page shell. Campaign Studio and Follow-ups were subsequently removed from TenderMatch by product-boundary decision.
 
 ## One-to-one mapping
@@ -20,7 +20,6 @@
 | 05 Match Matrix | `fullmatrix` | `matrix` | Full Match Matrix | Nested portfolio view |
 | 05 Match Matrix | `automatch` | `match-tenders` | AutoMatch by Tenders | Nested tender-first view |
 | 05 Match Matrix | `automatchcompanies` | `match-suppliers` | AutoMatch by Suppliers | Nested supplier-first view |
-| 05 Match Matrix | no separate source navigation item | `audit` | Detailed Case Review | Existing TenderMatch Case/audit surface, nested once after the matching views |
 
 The frozen source's `campaign` and `outreach` pages have no TenderMatch target. Promotion, outreach, CRM action, and response tracking belong to a separately audited future capability; they are not registered or implemented here.
 
@@ -32,7 +31,7 @@ The frozen source's `campaign` and `outreach` pages have no TenderMatch target. 
 - Navigating to a child expands its family. The active family may still be intentionally collapsed without hiding the current family label.
 - Desktop uses a sticky, internally scrollable workflow rail. Tablet and mobile use a separate collapsed workflow drawer rather than a compressed desktop sidebar.
 - The responsive drawer identifies the current family and page while closed, closes after a destination is selected, and preserves the same five-family order.
-- Removed or unknown `view` query/hash values resolve to Overview; no Campaign page can be restored from stale navigation state.
+- Removed `audit` values resolve to Full Match Matrix; removed Campaign/Follow-up or unknown values resolve to Overview without deleting unrelated saved Case data.
 
 ## Rendered production-preview evidence
 
@@ -48,7 +47,7 @@ Interaction and route checks:
 
 - Pointer and keyboard activation both changed the active child, current parent family, focus target, and rendered workspace.
 - An active family remained identified by its current child label when collapsed.
-- All 10 matching views were opened once from the navigation; every view produced one `aria-current="page"`, the expected workspace region, and 0 px page overflow.
+- The prior ten-view evidence is historical. The current nine-view contract removes Detailed Case Review; refreshed evidence is recorded with the corrective checkpoint.
 - The explicit Case ID remained `case:TM-DEMO:zr-space-252528-go-rfb:supplier-tb-chery` before and after the 12-view traversal.
 - `/tendermatch`, `/tenderboost`, and `/tenderboost-ai` loaded and refreshed directly with the TenderMatch product navigation active and Overview selected; browser back/forward preserved route history.
 - Browser console warning/error count was zero during desktop, tablet, mobile, disclosure, and route checks.

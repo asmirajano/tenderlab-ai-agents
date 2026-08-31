@@ -30,7 +30,7 @@ The subsequent placement correction removes the entire reader-facing block after
 
 ## Interaction and responsive matrix
 
-- Checked all ten registered views at desktop Standard `1280 × 768`, tablet `834 × 1112`, and mobile `390 × 844`: 30 combinations.
+- Historical evidence at the referenced integration commit checked ten registered views before Detailed Case Review was removed. The current contract has nine views; this statement is retained only as provenance and must not be read as current-state evidence.
 - Every view rendered its expected heading exactly once, with no page-level horizontal overflow and no browser console warning or error.
 - At desktop Wide `1440 × 900`, the Overview retained its ordered product contract. The finished-output panel was wider than either the input or transformation panel, and the primary action remained visible before the trust boundary.
 - The tender map rendered 23 clusters and 16 tender markers. The Africa filter reduced that view to five clusters and two markers; zoom reached 120%; the legend, frozen-state label, TenderLab focus signal, and Commons attribution remained visible.

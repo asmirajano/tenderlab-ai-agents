@@ -18,8 +18,8 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const snapshotNow = "2026-08-15T12:00:00+05:00";
 
 test("accounts for every active frozen matching surface with no missing items", () => {
-  assert.equal(tenderBoostParityManifest.length, 65);
-  assert.deepEqual(paritySummary(), { preserved: 20, "adapted-to-tenderapps-design": 11, "truth-corrected": 34, missing: 0 });
+  assert.equal(tenderBoostParityManifest.length, 62);
+  assert.deepEqual(paritySummary(), { preserved: 19, "adapted-to-tenderapps-design": 11, "truth-corrected": 32, missing: 0 });
   assert.equal(new Set(tenderBoostParityManifest.map((item) => item.id)).size, tenderBoostParityManifest.length);
   assert.equal(tenderBoostParityManifest.some((item) => item.status === "missing"), false);
   for (const source of ["01 Dashboard", "02 Market Radar / Tenders", "02 Market Radar / Suppliers", "03 Suppliers / Profiles", "03 Suppliers / Verification", "04 Tenders", "05 Full Match Matrix", "05 AutoMatch by Tenders", "05 AutoMatch by Suppliers"]) {
@@ -29,7 +29,6 @@ test("accounts for every active frozen matching surface with no missing items", 
   assert.equal(tenderBoostParityManifest.find((item) => item.id === "data-deadline-baseline-vector")?.sourceEvidence, "04b0b2a:app/tenderboost-ai/page.tsx:137-153 · tenders[].daysLeft");
   assert.equal(tenderBoostParityManifest.some((item) => item.sourceEvidence?.includes("tenderData")), false);
 });
-
 test("reconstructs the exact frozen relative-deadline vector from absolute end-of-day deadlines", () => {
   assert.deepEqual(demoTenders.map((tender) => deriveTenderFreshness(tender, TENDERBOOST_DEMO_AS_OF).daysRemaining), [1, 1, 2, 2, 5, 5, 8, 8, 8, 8, 9, 11, 15, 16, 116, 135]);
 });
@@ -47,7 +46,7 @@ test("keeps the frozen fixture cardinalities and explicit MISSING matrix cells",
 test("renders every matching view and no Campaign Studio runtime or styling", async () => {
   const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
   const styles = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch.css"), "utf8");
-  for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "Review by Tenders", "Review by Suppliers", "Detailed Case Review"]) assert.match(page, new RegExp(label));
+  for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "Review by Tenders", "Review by Suppliers"]) assert.match(page, new RegExp(label));
   for (const content of ["Current Tender Radar", "Global Supplier Market", "Full Match Matrix", "Review by Tenders", "Review by Suppliers", "Case save failed"]) assert.match(page, new RegExp(content));
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.match(page, /role="alert"/);
@@ -60,10 +59,12 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   assert.match(page, /GEOGRAPHIC SUPPLIER DENSITY · FROZEN/);
   assert.match(page, /Map geometry · Wikimedia Commons/);
   assert.match(page, /Use arrow keys or drag to pan after zooming/);
-  assert.match(page, /Location boundary/);
-  assert.match(page, /Matching target/);
+  assert.doesNotMatch(page, /<aside className="tb3-radar-detail"|Detailed Case Review/);
+  assert.match(page, /tb3-radar-layout aggregate/);
   assert.match(styles, /url\("\/tendermatch\/maps\/world-map\.png"\)/);
   assert.match(styles, /url\("\/tendermatch\/maps\/china-prefectures\.png"\)/);
+  assert.match(styles, /\.tb3-geo-map-shell\.china \.tb3-geo-map-geometry[^}]+opacity: \.86/);
+  assert.match(styles, /\.tb3-directory-row\.tender[^}]+min-height: 112px/);
   assert.match(page, /viewSurfaceRef\.current\?\.focus\(\)/);
   assert.match(page, /role="region"[\s\S]+tabIndex=\{-1\}/);
   assert.doesNotMatch(page, /Legacy Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|Create legacy local draft|SIMULATION_STARTED/);

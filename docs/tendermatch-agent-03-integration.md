@@ -147,7 +147,7 @@ Browser-local state is operational demonstration state, not a canonical `COMPANY
 | Playbook and model card | TL-A031 matching TOR, frozen matching-source contract, explicit downstream exclusion, lineage, formula 3.0.0. |
 | Client-product registry | Display name TenderMatch, order 03, TL-A031, `/tendermatch`; stable migrated product ID retained. |
 | Real implementation registry | TenderMatch name/slug/TOR/output/limitations; stable migrated implementation ID retained. |
-| Practical UI registry and shared shell | TenderMatch card, five navigation families, ten reachable views, concept visual, title, shared Standard/Wide control. |
+| Practical UI registry and shared shell | TenderMatch card, five navigation families, nine reachable views, concept visual, title, shared Standard/Wide control. |
 | Routes | `/tendermatch` canonical; both legacy paths normalize to it and activate the same navigation item. |
 | Command Center Products and Atlas | Both derive their projections from the shared product/implementation registries. |
 | Domain engine and Case result | Matching, evidence explanation, deadline context, review findings, decision provenance, and explicit Case persistence only. |
@@ -166,7 +166,7 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 | --- | --- | --- | --- |
 | 01 Dashboard | Overview | truth-corrected | Activation wording becomes dated/local; six metrics separate evaluated, audited, and MISSING. |
 | 02 Market Radar / Tenders | Radar · Tenders | truth-corrected | Original 1,000/86/16 metrics, filters, local world geography, clusters, markers, zoom, legend, attribution, focus signal and drill-down remain; data are frozen/simulated. |
-| 02 Market Radar / Suppliers | Radar · Suppliers | truth-corrected | Original 1,000/15/10/11 metrics, filters, local China geography, clusters, coordinates, zoom/pan, legend, attribution, target signal and drill-down remain; external tiles and false action claims do not. |
+| 02 Market Radar / Suppliers | Radar · Suppliers | truth-corrected | Original 1,000/15/10/11 metrics, filters, visible local China geography, clusters, coordinates, zoom/pan, legend, attribution and drill-down remain; the persistent one-supplier side panel, external tiles and false action claims do not. |
 | 03 Suppliers / Profiles | Supplier Profiles | preserved | All ten rows, identity, activity, readiness, markets, verification counts, and drill-down remain. |
 | 03 Suppliers / Verification | Verification | preserved | Every evidence row, status, confidence, source, retrieval date, risk, question, website, and back action remains. |
 | 04 Open Tenders | Tender Snapshot | truth-corrected | All sixteen source rows and displayed fields remain; absolute deadline and derived status replace relative-only days. |
