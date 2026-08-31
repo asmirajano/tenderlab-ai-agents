@@ -385,7 +385,8 @@ test("ends the Overview after the approved infographic and authority boundary", 
   for (const roleContent of ["Tender matching workspace", "Turn an open tender and supplier evidence into a reviewable match", "#Discover", "#Compare", "#Explain"]) {
     assert.match(orientation, new RegExp(roleContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), roleContent);
   }
-  assert.match(orientation, /className="tb3-role-illustration"[\s\S]+role="img"[\s\S]+TenderLab analyst reviewing tender and supplier evidence/);
+  assert.match(orientation, /className="tb3-role-portrait"[\s\S]+src="\/tendermatch\/illustrations\/tendermatch-consultant\.png"[\s\S]+alt="TenderLab analyst reviewing tender and supplier evidence"/);
+  assert.doesNotMatch(orientation, /className="tb3-role-illustration"|<svg[^>]+TenderLab analyst/);
   assert.doesNotMatch(orientation, /INTERNAL WORKSPACE|Human-reviewed matching|MATCH SUPPORT · EVIDENCE · HUMAN DECISION/);
 
   assert.match(page, /sublabel: "Internal matching workspace"/);
@@ -397,6 +398,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
   assert.match(styles, /\.tb3-page-overview \.tb3-overview-actions/);
   assert.match(styles, /\.tb3-role-callout \{[^}]*border-radius: 28px/);
   assert.match(styles, /\.tb3-role-callout::after/);
+  assert.match(styles, /\.tb3-role-portrait \{[^}]*border-radius: 42% 58% 48% 52% \/ 35% 42% 58% 65%/);
   assert.match(styles, /\.tb3-role-tags \{[^}]*flex-wrap: wrap/);
   assert.match(styles, /@media \(max-width: 1200px\)[\s\S]*?\.tb3-page-overview \.tb3-overview-story \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
   assert.match(styles, /@media \(max-width: 860px\)[\s\S]*?\.tb3-role-callout \{ grid-template-columns: minmax\(125px, \.42fr\) minmax\(0, 1fr\)/);

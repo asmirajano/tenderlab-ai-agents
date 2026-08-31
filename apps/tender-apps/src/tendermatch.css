@@ -137,7 +137,9 @@
 .tb3-overview-heading > div > p { color: var(--tb3-mid); font-size: var(--type-body); line-height: 1.6; margin: 0; max-width: 960px; }
 .tb3-role-callout { align-items: center; background: linear-gradient(135deg, #ecfaf2 0%, #d9f3e5 100%); border: 1px solid #acd8c0; border-radius: 28px; color: var(--tb3-ink); display: grid; gap: 13px; grid-template-columns: minmax(92px, .78fr) minmax(0, 1.22fr); min-width: 0; padding: 11px; position: relative; }
 .tb3-role-callout::after { background: #ddf4e7; border-bottom: 1px solid #acd8c0; border-right: 1px solid #acd8c0; bottom: -9px; content: ""; height: 17px; left: 42px; position: absolute; transform: rotate(45deg); width: 17px; }
-.tb3-role-illustration { display: block; height: auto; max-height: 124px; width: 100%; }
+.tb3-role-portrait { align-self: stretch; background: radial-gradient(circle at 25% 22%, #2f7659 0 10%, transparent 11%), var(--tb3-ink); border-radius: 42% 58% 48% 52% / 35% 42% 58% 65%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 0 10px 22px rgba(13,47,36,.14); display: grid; margin: 0; min-height: 110px; overflow: hidden; place-items: end center; position: relative; transform: rotate(-1.5deg); }
+.tb3-role-portrait::after { background: var(--tb3-lime); border-radius: 50%; content: ""; height: 18px; left: 9px; opacity: .88; position: absolute; top: 12px; width: 18px; }
+.tb3-role-portrait img { display: block; filter: saturate(.92) contrast(1.02); height: 120px; max-width: none; object-fit: contain; object-position: 50% 100%; position: relative; transform: rotate(1.5deg) translateY(2px) scale(1.08); width: 132px; z-index: 1; }
 .tb3-role-copy { display: grid; gap: 6px; min-width: 0; padding: 4px 5px 4px 0; }
 .tb3-role-copy > span { color: var(--tb3-green); font-size: 8px; }
 .tb3-role-copy > strong { font-size: clamp(16px, 1.45vw, 21px); letter-spacing: -.035em; line-height: 1.05; }
@@ -618,7 +620,8 @@ button.tb3-metric:hover { border-color: var(--tb3-green); transform: translateY(
   .tb3-overview-heading { padding: 22px 18px; }
   .tb3-overview-heading h1 { font-size: clamp(36px, 12vw, 52px); }
   .tb3-page-overview .tb3-role-callout { align-items: start; grid-template-columns: 1fr; padding: 12px; }
-  .tb3-role-illustration { justify-self: center; max-height: 150px; max-width: 230px; }
+  .tb3-role-portrait { justify-self: center; min-height: 150px; width: min(230px, 78vw); }
+  .tb3-role-portrait img { height: 166px; width: 184px; }
   .tb3-role-copy { padding: 0 4px 5px; text-align: center; }
   .tb3-role-tags { justify-content: center; }
   .tb3-overview-story, .tb3-page-overview .tb3-overview-story { grid-template-columns: 1fr; }
