@@ -388,11 +388,29 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityM
           <h1 id="tendermatch-overview-title">See why one company <em>matches one tender.</em></h1>
           <p>Evidence-linked Company × Tender review for TenderLab Consultants.</p>
         </div>
-        <aside aria-label="TenderMatch operating role">
-          <span>INTERNAL WORKSPACE</span>
-          <strong>Human-reviewed matching</strong>
-          <p><b>TL-A031</b> · practical Agent 03</p>
-          <small>MATCH SUPPORT · EVIDENCE · HUMAN DECISION</small>
+        <aside className="tb3-role-callout" aria-labelledby="tendermatch-role-title">
+          <svg className="tb3-role-illustration" viewBox="0 0 180 132" role="img" aria-label="TenderLab analyst reviewing tender and supplier evidence">
+            <rect x="5" y="7" width="170" height="118" rx="28" fill="#dff6e8" />
+            <circle cx="37" cy="34" r="13" fill="#c9ee63" opacity=".72" />
+            <circle cx="148" cy="101" r="17" fill="#b9ead2" />
+            <rect x="18" y="68" width="59" height="40" rx="9" fill="#fff" stroke="#8fcdb0" strokeWidth="2" />
+            <path d="M29 79h35M29 88h27M29 97h31" stroke="#2f7255" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="105" cy="43" r="18" fill="#efbd8d" />
+            <path d="M88 41c1-19 31-24 38-4-8-1-14-6-18-12-4 9-11 14-20 16Z" fill="#143e30" />
+            <path d="M82 113c1-29 11-47 27-47 18 0 30 18 32 47" fill="#1f7655" />
+            <path d="M101 67l8 16 9-16" fill="#fff" opacity=".9" />
+            <path d="M89 92 65 81M129 91l19-20" stroke="#efbd8d" strokeWidth="9" strokeLinecap="round" />
+            <rect x="133" y="52" width="30" height="37" rx="6" fill="#fff" stroke="#8fcdb0" strokeWidth="2" transform="rotate(8 148 70)" />
+            <path d="m140 65 5 5 10-11M140 77h14" stroke="#2f7255" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="99" cy="45" r="1.8" fill="#143e30" /><circle cx="112" cy="45" r="1.8" fill="#143e30" />
+            <path d="M101 55c4 3 8 3 12 0" stroke="#9c5c45" strokeWidth="2" fill="none" strokeLinecap="round" />
+          </svg>
+          <div className="tb3-role-copy">
+            <span>TENDERLAB CONSULTANT WORKSPACE</span>
+            <strong id="tendermatch-role-title">Tender matching workspace</strong>
+            <p>Turn an open tender and supplier evidence into a reviewable match</p>
+            <div className="tb3-role-tags" aria-label="TenderMatch workspace themes"><span>#Discover</span><span>#Compare</span><span>#Explain</span></div>
+          </div>
         </aside>
       </PracticalAgentOverviewPart>
 
