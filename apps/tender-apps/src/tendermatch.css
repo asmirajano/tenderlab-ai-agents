@@ -139,7 +139,7 @@
 .tb3-role-callout::after { background: #ddf4e7; border-bottom: 1px solid #acd8c0; border-right: 1px solid #acd8c0; bottom: -9px; content: ""; height: 17px; left: 42px; position: absolute; transform: rotate(45deg); width: 17px; }
 .tb3-role-portrait { align-self: stretch; background: radial-gradient(circle at 25% 22%, #2f7659 0 10%, transparent 11%), var(--tb3-ink); border-radius: 42% 58% 48% 52% / 35% 42% 58% 65%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 0 10px 22px rgba(13,47,36,.14); display: grid; margin: 0; min-height: 110px; overflow: hidden; place-items: end center; position: relative; transform: rotate(-1.5deg); }
 .tb3-role-portrait::after { background: var(--tb3-lime); border-radius: 50%; content: ""; height: 18px; left: 9px; opacity: .88; position: absolute; top: 12px; width: 18px; }
-.tb3-role-portrait img { display: block; filter: saturate(.92) contrast(1.02); height: 120px; max-width: none; object-fit: contain; object-position: 50% 100%; position: relative; transform: rotate(1.5deg) translateY(2px) scale(1.08); width: 132px; z-index: 1; }
+.tb3-role-portrait img { display: block; filter: saturate(.92) contrast(1.02); height: 120px; max-width: none; object-fit: cover; object-position: 50% 0; position: relative; transform: rotate(1.5deg) translateY(2px); width: 132px; z-index: 1; }
 .tb3-role-copy { display: grid; gap: 6px; min-width: 0; padding: 4px 5px 4px 0; }
 .tb3-role-copy > span { color: var(--tb3-green); font-size: 8px; }
 .tb3-role-copy > strong { font-size: clamp(16px, 1.45vw, 21px); letter-spacing: -.035em; line-height: 1.05; }
