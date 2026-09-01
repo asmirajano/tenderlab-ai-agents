@@ -23,6 +23,7 @@ import {
   type TenderMatchCaseResult,
   type TenderRecord,
 } from "../../../packages/tendermatch/src";
+import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState } from "./tendermatch-supplier-api.ts";
 
@@ -441,19 +442,16 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityM
           <h1 id="tendermatch-overview-title">See why one company <em>matches one tender.</em></h1>
           <p>Evidence-linked Company × Tender review for TenderLab Consultants.</p>
         </div>
-        <aside className="tb3-role-callout" aria-labelledby="tendermatch-role-title">
-          <figure className="tb3-role-portrait">
-            {/* Static Vite asset; no Next.js image pipeline is present in TenderApps. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tendermatch/illustrations/tendermatch-consultant.png" alt="TenderLab analyst reviewing tender and supplier evidence" />
-          </figure>
-          <div className="tb3-role-copy">
-            <span>TENDERLAB CONSULTANT WORKSPACE</span>
-            <strong id="tendermatch-role-title">Tender matching workspace</strong>
-            <p>Turn an open tender and supplier evidence into a reviewable match</p>
-            <div className="tb3-role-tags" aria-label="TenderMatch workspace themes"><span>#Discover</span><span>#Compare</span><span>#Explain</span></div>
-          </div>
-        </aside>
+        <AgentRoleCallout
+          className="tb3-role-callout"
+          eyebrow="TENDERLAB CONSULTANT WORKSPACE"
+          imageAlt="TenderLab analyst reviewing tender and supplier evidence"
+          imageSrc="/tendermatch/illustrations/tendermatch-consultant.png"
+          subtitle="Turn an open tender and supplier evidence into a reviewable match"
+          tags={["#Discover", "#Compare", "#Explain"]}
+          title="Tender matching workspace"
+          titleId="tendermatch-role-title"
+        />
       </PracticalAgentOverviewPart>
 
       <div className="tb3-overview-story" aria-label="Tender snapshot and company evidence transformed into a reviewable match result">

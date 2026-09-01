@@ -33,6 +33,7 @@ import {
 } from "../../../packages/logistics-costing/src";
 import { readClientDocument, type DocumentProcessingStage } from "./client-document-extraction";
 import { logisticsCalculationExcelFileName, logisticsCalculationToExcel, type LogisticsCalculationWorkbookModel } from "./logistics-calculation-excel";
+import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 
 type WorkspaceMode = "conversion" | "logistics";
@@ -1243,9 +1244,22 @@ export default function LogisticsCostingApp() {
         {clientWorkspaceNav}
         <PracticalAgentOverview audience="client" className="cost-product-manifesto" productId="product:TA-LANDED-COST">
           <PracticalAgentOverviewPart as="header" className="cost-product-heading" part="outcome-promise">
-            <p className="costing-eyebrow"><span /> Tender Logistics Cost · Reviewed Cost Evidence</p>
-            <h1>Raw commercial inputs become a{" "}<br /><em>decision-ready delivery cost.</em></h1>
-            <p>See how commercial source evidence becomes one defensible logistics estimate with transport capacity, cost logic, confidence and traceable assumptions.</p>
+            <div className="cost-product-heading-copy">
+              <p className="costing-eyebrow"><span /> Tender Logistics Cost · Reviewed Cost Evidence</p>
+              <h1>Raw commercial inputs become a{" "}<br /><em>decision-ready delivery cost.</em></h1>
+              <p>See how commercial source evidence becomes one defensible logistics estimate with transport capacity, cost logic, confidence and traceable assumptions.</p>
+            </div>
+            <AgentRoleCallout
+              className="cost-role-callout"
+              eyebrow="CLIENT LOGISTICS PLANNING WORKSPACE"
+              imageAlt="Logistics specialist comparing a packing list with a shipment route"
+              imagePosition="50% 18%"
+              imageSrc="/logistics-cost/illustrations/logistics-cost-planner.png"
+              subtitle="Turn shipment evidence and commercial terms into a reviewable delivery cost"
+              tags={["#Scope", "#Cost", "#Explain"]}
+              title="Delivery cost workspace"
+              titleId="logistics-cost-role-title"
+            />
           </PracticalAgentOverviewPart>
 
           <div className="cost-product-story" aria-label="Commercial inputs transformed into a reviewed delivery cost estimate">

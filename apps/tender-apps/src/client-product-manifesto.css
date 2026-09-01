@@ -5,13 +5,20 @@
 }
 
 .client-product-manifesto__header {
+  align-items: end;
   display: grid;
-  gap: 14px;
+  gap: clamp(20px, 3vw, 42px);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 410px);
   margin-bottom: clamp(28px, 4vw, 48px);
-  max-width: 960px;
 }
 
-.client-product-manifesto__header h1 {
+.client-product-manifesto__heading-copy {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.client-product-manifesto__heading-copy h1 {
   font-size: clamp(46px, 5.7vw, 88px);
   font-weight: 590;
   letter-spacing: -.07em;
@@ -19,12 +26,12 @@
   margin: 0;
 }
 
-.client-product-manifesto__header h1 em {
+.client-product-manifesto__heading-copy h1 em {
   color: var(--bs-green);
   font-style: normal;
 }
 
-.client-product-manifesto__header > p {
+.client-product-manifesto__heading-copy > p {
   color: #5f7168;
   font-size: var(--type-body);
   line-height: 1.55;
@@ -61,12 +68,25 @@
 }
 
 @media (max-width: 1120px) {
+  .client-product-manifesto__header {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 370px);
+  }
+
   .client-product-manifesto__story {
     grid-template-columns: minmax(220px, .8fr) minmax(130px, .45fr) minmax(390px, 1.35fr);
   }
 }
 
 @media (max-width: 930px) {
+  .client-product-manifesto__header {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .client-product-manifesto__header .agent-role-callout {
+    max-width: 560px;
+  }
+
   .client-product-manifesto__story {
     grid-template-columns: 1fr;
   }
@@ -81,7 +101,7 @@
     padding: 40px 16px 24px;
   }
 
-  .client-product-manifesto__header h1 {
+  .client-product-manifesto__heading-copy h1 {
     font-size: 47px;
   }
 

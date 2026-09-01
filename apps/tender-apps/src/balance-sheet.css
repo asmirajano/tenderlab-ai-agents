@@ -21,6 +21,14 @@ button, input, select { font: inherit; }
   padding: 80px 0 48px;
 }
 
+.bs-role-callout {
+  --agent-role-accent: var(--bs-signal);
+  --agent-role-ink: var(--bs-ink);
+  --agent-role-label: var(--bs-green);
+  --agent-role-surface-from: #effaf3;
+  --agent-role-surface-to: #dcf1e5;
+}
+
 .bs-client-nav {
   align-items: center;
   display: flex;

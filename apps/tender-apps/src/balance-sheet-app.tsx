@@ -15,6 +15,7 @@ import {
 } from "../../../packages/tender-balance/src/model.ts";
 import { syntheticBalanceSheetReviews, syntheticFixtureLabels } from "../../../packages/tender-balance/src/fixtures.ts";
 import "../../../packages/design-system/src/tokens.css";
+import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { ClientProductManifesto } from "./client-product-manifesto.tsx";
 import { PracticalAgentOverviewBoundary } from "./practical-agent-overview.tsx";
 import {
@@ -671,6 +672,19 @@ function BalanceSheetWorkspace() {
           productId="product:TA-BALANCE"
           title={<>Raw statements become a<br /><em>finished digital balance sheet.</em></>}
           promise={<>You provide the source. TenderBalance finds the statement, digitizes every readable value, checks the arithmetic, reports genuine findings, and saves the completed result.</>}
+          roleCallout={(
+            <AgentRoleCallout
+              className="bs-role-callout"
+              eyebrow="CLIENT FINANCIAL EVIDENCE WORKSPACE"
+              imageAlt="Finance analyst reviewing a balance sheet and its calculations"
+              imagePosition="50% 22%"
+              imageSrc="/tenderbalance/illustrations/tenderbalance-finance-reviewer.png"
+              subtitle="Turn raw financial statements into a traceable digital balance sheet"
+              tags={["#Digitize", "#Reconcile", "#Trace"]}
+              title="Financial evidence workspace"
+              titleId="tenderbalance-role-title"
+            />
+          )}
           input={(
             <article className="bs-manifesto-input">
               <div className="bs-manifesto-label"><span>01</span><b>WHAT YOU PROVIDE</b></div>

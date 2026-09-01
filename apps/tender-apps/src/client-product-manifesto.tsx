@@ -16,6 +16,7 @@ type ClientProductManifestoProps = {
   output: ReactNode;
   actions: ReactNode;
   productId: string;
+  roleCallout?: ReactNode;
 };
 
 /**
@@ -32,13 +33,17 @@ export function ClientProductManifesto({
   output,
   actions,
   productId,
+  roleCallout,
 }: ClientProductManifestoProps) {
   return (
     <PracticalAgentOverview audience={audience} className="client-product-manifesto" productId={productId} aria-labelledby="client-product-manifesto-title">
       <PracticalAgentOverviewPart as="header" className="client-product-manifesto__header" part="outcome-promise">
-        <div>{eyebrow}</div>
-        <h1 id="client-product-manifesto-title">{title}</h1>
-        <p>{promise}</p>
+        <div className="client-product-manifesto__heading-copy">
+          <div>{eyebrow}</div>
+          <h1 id="client-product-manifesto-title">{title}</h1>
+          <p>{promise}</p>
+        </div>
+        {roleCallout}
       </PracticalAgentOverviewPart>
 
       <div className="client-product-manifesto__story" aria-label="Client input, agent transformation, and finished product">
