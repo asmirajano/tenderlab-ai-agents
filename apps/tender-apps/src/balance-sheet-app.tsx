@@ -676,8 +676,8 @@ function BalanceSheetWorkspace() {
             <AgentRoleCallout
               className="bs-role-callout"
               eyebrow="CLIENT FINANCIAL EVIDENCE WORKSPACE"
-              imageAlt="Finance analyst reviewing a balance sheet and its calculations"
-              imagePosition="50% 22%"
+              imageAlt="Finance analyst calculating and reconciling balance-sheet totals"
+              imagePosition="50% 42%"
               imageSrc="/tenderbalance/illustrations/tenderbalance-finance-reviewer.png"
               subtitle="Turn raw financial statements into a traceable digital balance sheet"
               tags={["#Digitize", "#Reconcile", "#Trace"]}

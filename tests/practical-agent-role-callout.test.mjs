@@ -50,3 +50,18 @@ test("places each role callout inside the outcome header without changing the do
   assert.ok(logistics.indexOf("cost-role-callout") < logistics.indexOf("WHAT YOU PROVIDE"));
   assert.doesNotMatch(`${balance}\n${logistics}`, /https?:\/\/[^"']+\.(?:png|jpe?g|webp)/i);
 });
+
+test("aligns desktop role callouts with the headline and removes the offset when layouts stack", async () => {
+  const [manifestoStyles, balanceStyles, logisticsStyles] = await Promise.all([
+    read("apps/tender-apps/src/client-product-manifesto.css"),
+    read("apps/tender-apps/src/balance-sheet.css"),
+    read("apps/tender-apps/src/logistics-costing.css"),
+  ]);
+
+  assert.match(manifestoStyles, /\.client-product-manifesto__header \{[^}]*align-items: start/);
+  assert.match(balanceStyles, /\.bs-role-callout \{[^}]*margin-top: 50px/);
+  assert.match(manifestoStyles, /@media \(max-width: 930px\)[\s\S]+\.client-product-manifesto__header \.agent-role-callout \{[^}]*margin-top: 0/);
+  assert.match(logisticsStyles, /\.cost-product-heading \{[^}]*align-items: start/);
+  assert.match(logisticsStyles, /\.cost-role-callout \{[^}]*margin-top: 42px/);
+  assert.match(logisticsStyles, /@media \(max-width: 820px\)[\s\S]+\.cost-role-callout \{[^}]*margin-top: 0/);
+});

@@ -27,6 +27,7 @@ button, input, select { font: inherit; }
   --agent-role-label: var(--bs-green);
   --agent-role-surface-from: #effaf3;
   --agent-role-surface-to: #dcf1e5;
+  margin-top: 50px;
 }
 
 .bs-client-nav {

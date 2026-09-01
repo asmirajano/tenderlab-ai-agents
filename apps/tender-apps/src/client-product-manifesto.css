@@ -5,7 +5,7 @@
 }
 
 .client-product-manifesto__header {
-  align-items: end;
+  align-items: start;
   display: grid;
   gap: clamp(20px, 3vw, 42px);
   grid-template-columns: minmax(0, 1fr) minmax(340px, 410px);
@@ -84,6 +84,7 @@
   }
 
   .client-product-manifesto__header .agent-role-callout {
+    margin-top: 0;
     max-width: 560px;
   }
 

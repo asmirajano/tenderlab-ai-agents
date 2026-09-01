@@ -318,12 +318,12 @@
 
 /* Overview manifesto: raw inputs → deterministic transformation → reviewed product */
 .cost-product-manifesto { padding-block: clamp(58px, 6vw, 96px) 26px; }
-.cost-product-heading { align-items: end; display: grid; gap: clamp(20px, 3vw, 42px); grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); margin-bottom: clamp(38px, 4vw, 62px); }
+.cost-product-heading { align-items: start; display: grid; gap: clamp(20px, 3vw, 42px); grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); margin-bottom: clamp(38px, 4vw, 62px); }
 .cost-product-heading-copy { min-width: 0; }
 .cost-product-heading h1 { font-size: clamp(51px, 5.8vw, 91px); font-weight: 580; letter-spacing: -.073em; line-height: .91; margin: 0; }
 .cost-product-heading h1 em { color: var(--costing-green); font-style: normal; }
 .cost-product-heading-copy > p:not(.costing-eyebrow) { color: #607068; font-size: var(--type-body); line-height: 1.55; margin: 24px 0 0; max-width: 920px; }
-.cost-role-callout { --agent-role-accent: var(--costing-signal); --agent-role-ink: var(--costing-ink); --agent-role-label: var(--costing-green); --agent-role-surface-from: #f0faef; --agent-role-surface-to: #dff2e5; }
+.cost-role-callout { --agent-role-accent: var(--costing-signal); --agent-role-ink: var(--costing-ink); --agent-role-label: var(--costing-green); --agent-role-surface-from: #f0faef; --agent-role-surface-to: #dff2e5; margin-top: 42px; }
 .cost-product-story { align-items: stretch; display: grid; gap: clamp(16px, 1.5vw, 24px); grid-template-columns: minmax(250px, .62fr) minmax(96px, .18fr) minmax(650px, 1.55fr); }
 .raw-cost-inputs { background: #eaf0ec; border: 1px solid #cad8d0; border-radius: 19px; display: flex; flex-direction: column; min-height: 600px; overflow: hidden; padding: 22px; }
 .raw-cost-inputs > header { align-items: center; display: flex; gap: 11px; }
@@ -1052,7 +1052,7 @@
   .client-welcome-hero { gap: 32px; padding-block: 55px 40px; }
   .cost-product-manifesto { padding-top: 46px; }
   .cost-product-heading { align-items: start; grid-template-columns: 1fr; }
-  .cost-role-callout { max-width: 560px; }
+  .cost-role-callout { margin-top: 0; max-width: 560px; }
   .cost-product-heading h1 { font-size: clamp(43px, 10.5vw, 67px); }
   .cost-product-story { grid-template-columns: 1fr; }
   .raw-cost-inputs { min-height: 520px; }
