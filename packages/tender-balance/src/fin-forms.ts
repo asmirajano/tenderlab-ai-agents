@@ -547,7 +547,7 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^net sales$/i, /^net (?:revenue|income) from (?:the )?sales\b/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^(?:total )?net sales$/i, /^net (?:revenue|income) from (?:the )?sales\b/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
   { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?\b/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
   { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^net profit(?: \(loss\))?(?: for the reporting period)?\b/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];

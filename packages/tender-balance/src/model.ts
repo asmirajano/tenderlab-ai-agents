@@ -264,11 +264,11 @@ const conceptRules: Array<{
   { concept: "intangible_assets", classification: "non_current_asset", patterns: [/intangible assets/i, /goodwill.*intangibles/i, /^goodwill$/i, /нематериальные активы/i, /nomoddiy aktivlar/i, /номоддий активлар/i] },
   { concept: "other_non_current_assets", classification: "non_current_asset", patterns: [/other non.?current assets/i, /^other assets$/i, /breeding livestock/i, /investments? in cooperatives/i, /прочие внеоборотные/i, /boshqa uzoq muddatli aktiv/i] },
   { concept: "trade_payables", classification: "current_liability", patterns: [/trade (and other )?payables/i, /accounts payable/i, /кредитор/i, /kreditor/i, /мол етказиб берувчилар ва пудратчиларга қарз/i] },
-  { concept: "short_term_borrowings", classification: "current_liability", patterns: [/short.?term borrow/i, /current borrow/i, /current loans? due within/i, /current portion(?:\s*[-:]| of).*long.?term debt/i, /current portion of term debt/i, /operating debt/i, /borrowed principal due within/i, /краткосрочн.*за[её]м/i, /qisqa muddatli qarz/i] },
-  { concept: "other_current_liabilities", classification: "current_liability", patterns: [/other current liabilities/i, /accrued expenses?/i, /accrued interest/i, /income (?:&|and) social security taxes payable/i, /^current portion:\s*deferred taxes/i, /real estate and personal property taxes/i, /^taxes payable$/i, /unearned revenue/i, /salar(?:y|ies) payable/i, /income taxes? payable/i, /warranty liabilit/i, /прочие краткосрочные/i, /boshqa joriy majburiyat/i] },
+  { concept: "short_term_borrowings", classification: "current_liability", patterns: [/short.?term borrow/i, /current borrow/i, /current loans? due within/i, /current portion(?:\s*[-:]| of).*long.?term debt/i, /current portion of term debt/i, /^commercial paper$/i, /operating debt/i, /borrowed principal due within/i, /краткосрочн.*за[её]м/i, /qisqa muddatli qarz/i] },
+  { concept: "other_current_liabilities", classification: "current_liability", patterns: [/other current liabilities/i, /accrued expenses?/i, /accrued interest/i, /income (?:&|and) social security taxes payable/i, /^current portion:\s*deferred taxes/i, /real estate and personal property taxes/i, /^taxes payable$/i, /^(?:unearned|deferred) revenue$/i, /salar(?:y|ies) payable/i, /income taxes? payable/i, /warranty liabilit/i, /прочие краткосрочные/i, /boshqa joriy majburiyat/i] },
   { concept: "long_term_borrowings", classification: "non_current_liability", patterns: [/long.?term (?:borrow|debt|loans?)/i, /intermediate loans?/i, /term debt/i, /non.?current borrow/i, /долгосрочн.*за[её]м/i, /uzoq muddatli qarz/i] },
   { concept: "other_non_current_liabilities", classification: "non_current_liability", patterns: [/other (?:non.?current|long.?term) liabilities/i, /noncurrent portion:\s*deferred taxes/i, /прочие долгосрочные/i, /boshqa uzoq muddatli majburiyat/i] },
-  { concept: "share_capital", classification: "equity", patterns: [/(?:share|equity) capital/i, /уставн.*капитал/i, /ustav kapital/i, /устав капитали/i] },
+  { concept: "share_capital", classification: "equity", patterns: [/(?:share|equity) capital/i, /common stock.*additional paid.?in capital/i, /уставн.*капитал/i, /ustav kapital/i, /устав капитали/i] },
   { concept: "retained_earnings", classification: "equity", patterns: [/retained earnings/i, /accumulated (deficit|loss|profit)/i, /нераспределенн.*прибыл/i, /непокрыт.*убыт/i, /taqsimlanmagan/i, /тақсимланмаган фойда/i] },
   { concept: "other_equity", classification: "equity", patterns: [/other (reserves|equity)/i, /accumulated other comprehensive (?:income|loss)/i, /прочие резервы/i, /boshqa kapital/i] },
 ];
@@ -486,6 +486,38 @@ export function normalizeConcept(label: string, sourceRowCode?: string) {
     classification: rule?.classification ?? "unclassified" as BalanceSheetClassification,
     isTotal: rule?.isTotal ?? false,
   };
+}
+
+type StatementSection = BalanceSheetClassification | null;
+
+function sectionForHeading(line: string): StatementSection | undefined {
+  const normalized = cleanLabel(line).replace(/:$/, "").trim();
+  if (/^(?:current assets|оборотные активы|joriy aktivlar)$/i.test(normalized)) return "current_asset";
+  if (/^(?:non.?current assets|long.?term assets|внеоборотные активы|uzoq muddatli aktivlar)$/i.test(normalized)) return "non_current_asset";
+  if (/^(?:current liabilities|short.?term liabilities|краткосрочные обязательства|joriy majburiyatlar)$/i.test(normalized)) return "current_liability";
+  if (/^(?:non.?current liabilities|long.?term liabilities|долгосрочные обязательства|uzoq muddatli majburiyatlar)$/i.test(normalized)) return "non_current_liability";
+  if (/^(?:(?:share|stock)holders?[’'s\s-]*equity|owners?[’'s\s-]*equity|equity|net worth)$/i.test(normalized)) return "equity";
+  if (/^assets$/i.test(normalized)) return "asset";
+  if (/^liabilities(?: and (?:(?:share|stock)holders?[’'s\s-]*equity|net worth))?$/i.test(normalized)) return "liability";
+  return undefined;
+}
+
+function normalizeConceptInSection(label: string, sourceRowCode: string | undefined, section: StatementSection) {
+  const base = normalizeConcept(label, sourceRowCode);
+  if (sourceRowCode) return base;
+  const cleaned = cleanLabel(label).replace(/:$/, "").trim();
+  if (/^marketable securities$/i.test(cleaned)) {
+    if (section === "current_asset") return { concept: "other_current_assets" as const, classification: "current_asset" as const, isTotal: false };
+    if (section === "non_current_asset") return { concept: "other_non_current_assets" as const, classification: "non_current_asset" as const, isTotal: false };
+  }
+  if (/^term debt$/i.test(cleaned)) {
+    if (section === "current_liability") return { concept: "short_term_borrowings" as const, classification: "current_liability" as const, isTotal: false };
+    if (section === "non_current_liability") return { concept: "long_term_borrowings" as const, classification: "non_current_liability" as const, isTotal: false };
+  }
+  if (base.concept === "unmapped" && section && section !== "asset" && section !== "liability") {
+    return { ...base, classification: section };
+  }
+  return base;
 }
 
 function englishLabelFor(originalLabel: string, concept: BalanceSheetConcept, sourceRowCode?: string) {
@@ -798,30 +830,57 @@ function statementPageScore(page: SourcePageInput) {
   return { page, tabularRows, score: tabularRows * 10 + (title ? 30 : 0) + totals * 8 };
 }
 
+function pageLeadingLines(page: SourcePageInput) {
+  return (page.text ?? "").split(/\r?\n/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 24);
+}
+
+function hasBalanceStatementTitle(page: SourcePageInput) {
+  const leadingLines = pageLeadingLines(page);
+  if (leadingLines.some((line) => /^notes? to (?:the )?(?:consolidated )?financial statements?\b/i.test(line))) return false;
+  return leadingLines.some(isStatementTitleLine);
+}
+
+function hasOtherPrimaryStatementTitle(page: SourcePageInput) {
+  return pageLeadingLines(page).some((line) => isIncomeStatementTitleLine(line)
+    || /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:cash flows?|shareholders?[’'s\s-]*equity|stockholders?[’'s\s-]*equity|comprehensive income|changes in equity)\b/i.test(line)
+    || /^notes? to (?:the )?(?:consolidated )?financial statements?\b/i.test(line));
+}
+
+function isBalanceContinuationPage(page: SourcePageInput) {
+  if (hasOtherPrimaryStatementTitle(page) || hasBalanceStatementTitle(page)) return false;
+  const parsedRows = (page.text ?? "").split(/\r?\n/).map((line) => parseStatementLine(line.trim())).filter((row): row is NonNullable<typeof row> => Boolean(row && row.rawValues.length >= 2));
+  if (parsedRows.length < 2) return false;
+  const balanceRows = parsedRows.filter((row) => row.sourceRowCode
+    ? Boolean(uzbekForm1Concept(row.sourceRowCode))
+    : normalizeConcept(row.label).concept !== "unmapped" || /\b(?:assets?|liabilit|equity|net worth)\b/i.test(row.label));
+  return balanceRows.length >= 2;
+}
+
 export function selectStatementPages(pages: SourcePageInput[]) {
-  const explicitlyTitled = pages.filter((page) => {
-    const leadingLines = (page.text ?? "").split(/\r?\n/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 20);
-    const notesPage = leadingLines.some((line) => /^notes? to (?:the )?(?:consolidated )?financial statements?\b/i.test(line));
-    if (notesPage) return false;
-    return leadingLines.some((line) =>
-      /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\(continued\))?$/i.test(line)
-        || /^statements? of financial position(?:\s*\(continued\))?$/i.test(line)
-        || /^accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\s+(?:no\.?|n[eo])?\s*1\b/i.test(line)
-        || /^бухгалтерия баланси(?:\s|№|$)/iu.test(line)
-    );
-  });
+  const ordered = [...pages].sort((left, right) => left.pageNumber - right.pageNumber);
+  const explicitlyTitled = ordered.filter(hasBalanceStatementTitle);
   if (explicitlyTitled.length) {
-    const titledNumbers = new Set(explicitlyTitled.map((page) => page.pageNumber));
-    const candidates = pages.filter((page) => titledNumbers.has(page.pageNumber)
-      || (statementPageScore(page).tabularRows >= 3 && statementPageScore(page).score >= 38));
-    const tabular = candidates.filter((page) => statementPageScore(page).tabularRows >= 3);
-    return tabular.length ? tabular : candidates;
+    const selected = new Map<number, SourcePageInput>();
+    for (const titled of explicitlyTitled) {
+      selected.set(titled.pageNumber, titled);
+      const startIndex = ordered.findIndex((page) => page.pageNumber === titled.pageNumber);
+      for (let index = startIndex + 1; index < ordered.length; index += 1) {
+        const candidate = ordered[index];
+        if (candidate.pageNumber !== ordered[index - 1].pageNumber + 1 || hasBalanceStatementTitle(candidate) || hasOtherPrimaryStatementTitle(candidate)) break;
+        if (!isBalanceContinuationPage(candidate)) break;
+        selected.set(candidate.pageNumber, candidate);
+      }
+    }
+    return [...selected.values()].sort((left, right) => left.pageNumber - right.pageNumber);
   }
-  const scored = pages.map(statementPageScore);
+  const scored = ordered.filter((page) => !hasOtherPrimaryStatementTitle(page)).map(statementPageScore);
   const strong = scored.filter((candidate) => candidate.tabularRows >= 3 && candidate.score >= 38);
-  if (strong.length) return strong.map((candidate) => candidate.page);
+  if (strong.length) {
+    const best = [...strong].sort((left, right) => right.score - left.score)[0];
+    return best ? [best.page] : [];
+  }
   const best = [...scored].sort((left, right) => right.score - left.score)[0];
-  return best && best.score > 0 ? [best.page] : pages;
+  return best && best.score > 0 ? [best.page] : ordered;
 }
 
 function balanceStatementLines(text: string) {
@@ -851,9 +910,16 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       : [];
     const usedPeriods = pagePeriods.length ? pagePeriods : (contextualPeriods.length ? contextualPeriods : periods);
     let pendingLabel = "";
+    let activeSection: StatementSection = null;
     for (const sourceLine of balanceStatementLines(page.text)) {
       const line = sourceLine.trim();
       if (!line) continue;
+      const sectionHeading = sectionForHeading(line);
+      if (!pendingLabel && sectionHeading !== undefined) {
+        activeSection = sectionHeading;
+        pendingLabel = "";
+        continue;
+      }
       const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?(?:\s+(?:(?:19|20)\d{2})(?:\s*(?:,|and)?\s*(?:19|20)\d{2})*)?\s*$/i.test(line)
         || /^(?:(?:19|20)\d{2}[\s|,;]*){1,4}$/.test(line)
         || /^description(?:\s|\t)/i.test(line)
@@ -861,6 +927,38 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       if (isStatementTitleLine(line) || (!pendingLabel && /^(?:assets|current assets|liabilities(?: and (?:net worth|stockholders.? equity))?|current liabilities|stockholders.? equity):?$/i.test(line)) || /^commitments? and contingencies\b/i.test(line) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line) || isPeriodHeader) {
         pendingLabel = "";
         continue;
+      }
+      const shareDescription = /^common stock.*\b(?:par value|shares? authorized)\b/i.test(line);
+      if (shareDescription) {
+        pendingLabel = `${pendingLabel} ${cleanLabel(line)}`.trim();
+        continue;
+      }
+      if (/^common stock\b/i.test(pendingLabel) && /\bshares? issued\b|\bshares? outstanding\b/i.test(line)) {
+        const respectivelyIndex = line.search(/\brespectively\b/i);
+        const valueText = respectivelyIndex >= 0 ? line.slice(respectivelyIndex).replace(/^respectively\b[,;:]?\s*/i, "") : "";
+        const parsedContinuation = valueText ? parseStatementLine(`continued-row ${valueText}`, usedPeriods.length) : undefined;
+        if (parsedContinuation?.rawValues.length) {
+          const descriptivePart = respectivelyIndex >= 0 ? line.slice(0, respectivelyIndex + "respectively".length) : line;
+          const label = `${pendingLabel} ${cleanLabel(descriptivePart)}`.trim();
+          const normalized = normalizeConceptInSection(label, undefined, activeSection);
+          const rowPeriods = usedPeriods.length ? usedPeriods : parsedContinuation.rawValues.map((_, index) => `column-${index + 1}`);
+          items.push({
+            page: page.pageNumber,
+            originalLabel: label,
+            ...normalized,
+            values: parsedContinuation.rawValues.slice(-rowPeriods.length).map((raw, index) => ({
+              period: rowPeriods[index] ?? `column-${index + 1}`,
+              raw,
+              value: parseReportedNumber(raw),
+              confidence: page.confidence,
+              columnIndex: index,
+            })),
+            extractionMethod: page.extractionMethod,
+            confidence: page.confidence,
+          });
+          pendingLabel = "";
+          continue;
+        }
       }
       if (/\b(?:authorized as of|shares issued|outstanding as of)\b/i.test(line)) {
         pendingLabel = `${pendingLabel} ${cleanLabel(line)}`.trim();
@@ -882,7 +980,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       }
       if (!label || rawValues.length === 0) continue;
       if (/^description$/i.test(label)) continue;
-      const normalized = normalizeConcept(label, parsed?.sourceRowCode);
+      const normalized = normalizeConceptInSection(label, parsed?.sourceRowCode, activeSection);
       if (normalized.concept === "unmapped" && !/[a-zа-яўқғҳ]/i.test(label)) continue;
       const rowPeriods = usedPeriods.length ? usedPeriods : rawValues.map((_, index) => `column-${index + 1}`);
       items.push({
@@ -1201,20 +1299,35 @@ function orderedUniquePeriods(periods: string[]) {
     : unique;
 }
 
+function latestPeriodLabel(periods: string[]) {
+  const scored = periods.flatMap((period, index) => {
+    const explicitYear = period.match(/\b(?:19|20)\d{2}\b/)?.[0];
+    if (!explicitYear) return [];
+    const namedDate = /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b/i.test(period)
+      ? Date.parse(period.replace(/,(?=\s*\d{4}\b)/, ""))
+      : Number.NaN;
+    return [{ period, score: Number.isNaN(namedDate) ? Date.UTC(Number(explicitYear), 0, 1) : namedDate, index }];
+  });
+  return scored.sort((left, right) => right.score - left.score || left.index - right.index)[0]?.period;
+}
+
 export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetReview {
   const contextualPages = pagesWithReportingContext(input.pages);
   const statementPages = input.lineItems?.length ? contextualPages : selectStatementPages(contextualPages);
   const statementText = statementPages.map((page) => page.text ?? "").join("\n");
   const documentText = contextualPages.map((page) => page.text ?? "").join("\n");
-  const contextualYears = contextualPages.map((page) => page.reportingYear).filter((year): year is string => Boolean(year));
-  const inferredReportingYear = contextualYears.sort((left, right) => Number(left) - Number(right)).at(-1)
-    ?? reportingYearFromText(documentText);
   const detectedPeriods = orderedUniquePeriods(statementPages.flatMap((page) => detectPeriods(page.text ?? "", page.reportingYear)));
+  const statementYears = statementPages.map((page) => page.reportingYear).filter((year): year is string => Boolean(year));
+  const inferredReportingYear = detectedPeriods.flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
+    .sort((left, right) => Number(left) - Number(right)).at(-1)
+    ?? statementYears.sort((left, right) => Number(left) - Number(right)).at(-1)
+    ?? reportingYearFromText(statementText);
   const periods = input.periods?.length ? input.periods : (detectedPeriods.length ? detectedPeriods : detectPeriods(statementText, inferredReportingYear));
   const periodYears = periods
     .flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
     .sort((left, right) => Number(left) - Number(right));
-  const inferredReportingDate = inferredReportingYear
+  const inferredReportingDate = latestPeriodLabel(periods)
+    ?? inferredReportingYear
     ?? periodYears.at(-1)
     ?? "Unconfirmed";
   const statementUnits = detectUnits(statementText);

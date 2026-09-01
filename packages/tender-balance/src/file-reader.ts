@@ -395,7 +395,7 @@ export async function readBalanceSheetFile(file: File, onProgress?: ProgressRepo
       expectedPageCount: pages.length,
       synthetic: false,
       processedAt: new Date().toISOString(),
-      processingVersion: "tender-balance/1.2.0",
+      processingVersion: "tender-balance/1.3.0",
     },
     pages,
   });

@@ -476,6 +476,58 @@ test("retains continuation-page rows that precede a balance-sheet total", () => 
   assert.deepEqual(currentAssets.values.map((value) => value.reportedValue), [2_877_316, 4_461_811]);
 });
 
+test("selects one authoritative balance statement from a long report and reconstructs section-aware multiline equity", () => {
+  const review = buildBalanceSheetReview({
+    source: {
+      documentId: "synthetic:long-annual-report",
+      fileName: "SYNTHETIC_LONG_ANNUAL_REPORT.pdf",
+      mimeType: "application/pdf",
+      sha256: "synthetic-long-annual-report",
+      pageCount: 6,
+      expectedPageCount: 6,
+      synthetic: true,
+    },
+    pages: [
+      { pageNumber: 1, text: "SYNTHETIC ORBITAL COMPONENTS INC.\nAnnual Report 2029\nSelected historical information 2016–2023", confidence: 0.99 },
+      { pageNumber: 2, text: [
+        "SYNTHETIC ORBITAL COMPONENTS INC.", "Consolidated Statements of Operations", "Years ended", "October 2, 2025", "October 3, 2024", "October 4, 2023",
+        "Total net sales 300 250 200", "Income before taxes 30 25 20", "Net income 24 20 16",
+      ].join("\n"), confidence: 0.99 },
+      { pageNumber: 3, text: "CONSOLIDATED STATEMENTS OF CASH FLOWS\nYears ended 2025 2024 2023\nCash and cash equivalents 999 888 777", confidence: 0.99 },
+      { pageNumber: 4, text: "Notes to Consolidated Financial Statements\nMarketable securities\n2029 2028\nTotal assets 9,999 8,888", confidence: 0.99 },
+      { pageNumber: 5, text: [
+        "SYNTHETIC ORBITAL COMPONENTS INC.", "CONSOLIDATED BALANCE SHEETS", "(In millions, except number of shares)", "October 2,", "2025", "October 3,", "2024",
+        "ASSETS:", "Current assets:", "Cash and cash equivalents $ 10 $ 8", "Marketable securities 5 7", "Total current assets 15 15",
+        "Non-current assets:", "Marketable securities 20 19", "Total non-current assets 20 19", "Total assets 35 34",
+        "LIABILITIES AND SHAREHOLDERS’ EQUITY:", "Current liabilities:", "Accounts payable 4 5", "Deferred revenue 1 1", "Commercial paper 2 2", "Term debt 3 2", "Total current liabilities 10 10",
+        "Non-current liabilities:", "Term debt 8 7", "Total non-current liabilities 8 7", "Total liabilities 18 17",
+        "Shareholders’ equity:", "Common stock and additional paid-in capital, $0.01 par value: 900,000 shares authorized; 450,000", "and 440,000 shares issued and outstanding, respectively 10 9",
+        "Accumulated deficit (1) (2)", "Accumulated other comprehensive income 8 10", "Total shareholders’ equity 17 17", "Total liabilities and shareholders’ equity 35 34",
+      ].join("\n"), confidence: 0.99 },
+      { pageNumber: 6, text: "CONSOLIDATED STATEMENTS OF SHAREHOLDERS’ EQUITY\n2025 2024\nCommon stock 777 666\nAccumulated deficit 555 444", confidence: 0.99 },
+    ],
+  });
+
+  assert.deepEqual(review.statement.periods, ["October 2, 2025", "October 3, 2024"]);
+  assert.equal(review.statement.reportingDate, "October 2, 2025");
+  assert.deepEqual([...new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page)))], [5]);
+  assert.equal(review.lineItems.some((item) => item.values.some((value) => value.reportedValue === 9_999)), false);
+  const currentSecurity = review.lineItems.find((item) => item.originalLabel === "Marketable securities" && item.classification === "current_asset");
+  const nonCurrentSecurity = review.lineItems.find((item) => item.originalLabel === "Marketable securities" && item.classification === "non_current_asset");
+  assert.deepEqual(currentSecurity?.values.map((value) => value.reportedValue), [5, 7]);
+  assert.deepEqual(nonCurrentSecurity?.values.map((value) => value.reportedValue), [20, 19]);
+  assert.equal(review.lineItems.find((item) => item.originalLabel === "Deferred revenue")?.normalizedConcept, "other_current_liabilities");
+  assert.equal(review.lineItems.find((item) => item.originalLabel === "Commercial paper")?.normalizedConcept, "short_term_borrowings");
+  assert.equal(review.lineItems.find((item) => item.originalLabel === "Term debt" && item.classification === "current_liability")?.normalizedConcept, "short_term_borrowings");
+  assert.equal(review.lineItems.find((item) => item.originalLabel === "Term debt" && item.classification === "non_current_liability")?.normalizedConcept, "long_term_borrowings");
+  const shareCapital = review.lineItems.find((item) => item.normalizedConcept === "share_capital");
+  assert.match(shareCapital?.originalLabel ?? "", /900,000 shares authorized.*440,000 shares issued/);
+  assert.deepEqual(shareCapital?.values.map((value) => value.reportedValue), [10, 9]);
+  assert.equal(review.lineItems.find((item) => item.originalLabel === "Accumulated deficit")?.normalizedConcept, "retained_earnings");
+  assert.equal(review.arithmeticChecks.filter((check) => check.status === "failed").length, 0);
+  assert.equal(review.issues.some((issue) => issue.code === "SUBTOTAL_MISMATCH"), false);
+});
+
 test("reads text from a real synthetic digital PDF without external services", async () => {
   const buffer = createSyntheticTextPdf([
     "SYNTHETIC FIXTURE - NOT CLIENT EVIDENCE",
@@ -511,6 +563,7 @@ test("runs the supplied clean balance-sheet image through OCR, structure, normal
   assert.equal(review.statement.currency, "USD");
   assert.equal(review.lineItems.length, 23);
   assert.equal(review.pages[0].extractionMethod, "ocr");
+  assert.equal(review.source.processingVersion, "tender-balance/1.3.0");
   assert.equal(review.pages[0].imageOnly, false);
   assert.ok(review.pages[0].confidence >= 0.9);
   assert.ok(progress.some((event) => event.stage === "ocr"));

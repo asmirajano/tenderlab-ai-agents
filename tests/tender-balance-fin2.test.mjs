@@ -174,6 +174,42 @@ test("distinguishes missing turnover from a semantically ambiguous turnover cand
   assert.equal(ambiguousForm.readiness.canGenerate, false);
 });
 
+test("uses authoritative operations-statement years for FIN-2 without expanding balance-sheet periods", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:annual-report-fin2", fileName: "SYNTHETIC_ANNUAL_REPORT_FIN2.pdf", sha256: "synthetic-annual-report-fin2", synthetic: true },
+    pages: [
+      {
+        pageNumber: 1,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC THREE-YEAR COMPANY INC.", "Consolidated Balance Sheets", "(USD, in millions)", "September 30, 2025", "September 29, 2024",
+          "Total current assets 80 70", "Total assets 100 90", "Total current liabilities 20 18", "Total liabilities 60 55", "Total shareholders' equity 40 35",
+        ].join("\n"),
+      },
+      {
+        pageNumber: 2,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "SYNTHETIC THREE-YEAR COMPANY INC.", "Consolidated Statements of Operations", "(USD, in millions)", "Years ended", "September 30, 2025", "September 29, 2024", "September 28, 2023",
+          "Total net sales 300 250 200", "Income before taxes 30 25 20", "Net income 24 20 16",
+        ].join("\n"),
+      },
+      { pageNumber: 3, extractionMethod: "digital-text", confidence: 0.99, text: "Notes to Consolidated Financial Statements\nNet sales 9,999 8,888 7,777" },
+    ],
+  });
+  const dataset = buildCanonicalFinancialDataset([financialInputFromBalanceReview(review)]);
+  const form = generateFin2(dataset, { comparisonCurrency: "USD" });
+
+  assert.deepEqual(review.statement.periods, ["September 30, 2025", "September 29, 2024"]);
+  assert.deepEqual(dataset.availableYears, ["2024", "2025"]);
+  assert.deepEqual(form.years, ["2023", "2024", "2025"]);
+  assert.deepEqual(form.mappings.map((mapping) => mapping.sourceValue), [200_000_000, 250_000_000, 300_000_000]);
+  assert.equal(form.mappings.every((mapping) => mapping.status === "ready" && mapping.sourcePages.length === 1 && mapping.sourcePages[0] === 2), true);
+  assert.equal(form.mappings.some((mapping) => mapping.sourceValue === 9_999_000_000), false);
+});
+
 test("exports FIN-2 with clean form, mapping, and FX-audit sheets", () => {
   const { sourceReview, dataset } = sourceDataset();
   const form = generateFin2(dataset, { comparisonCurrency: "USD" });

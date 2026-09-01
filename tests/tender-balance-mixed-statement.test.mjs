@@ -51,7 +51,7 @@ const review = buildBalanceSheetReview({
 
 test("isolates a same-page balance sheet and derives reliable named-date metadata", () => {
   assert.equal(review.statement.reportingEntity, "SYNTHETIC ZERO DEBT COMPANY, INC.");
-  assert.equal(review.statement.reportingDate, "2025");
+  assert.equal(review.statement.reportingDate, "March 31, 2025");
   assert.deepEqual(review.statement.periods, ["March 31, 2025", "March 31, 2024"]);
   assert.equal(review.statement.currency, "USD");
   assert.equal(review.statement.unitLabel, "units");

@@ -965,7 +965,7 @@ function BalanceSheetWorkspace() {
             <article><span>✓</span><div><b>Statement located</b><p>{statementPages.length ? `Source page ${statementPages.join(", ")}` : "Location unavailable"}</p></div></article>
             <article><span>✓</span><div><b>Original figures preserved</b><p>No reported value was silently altered</p></div></article>
             <article className={arithmeticFindingCount ? "has-finding" : ""}><span>{arithmeticFindingCount ? "△" : "✓"}</span><div><b>Arithmetic checked</b><p>{arithmeticFindingCount ? `${arithmeticFindingCount} reported difference${arithmeticFindingCount === 1 ? "" : "s"} retained` : `${passedChecks} relationships reconciled`}</p></div></article>
-            <article className={genuineBlockers.length ? "has-blocker" : ""}><span>{genuineBlockers.length ? "!" : "✓"}</span><div><b>{genuineBlockers.length ? "Specific source evidence needed" : "No client action required"}</b><p>{genuineBlockers.length ? clientIssueCopy(genuineBlockers[0]).action : "Inspect details only if useful"}</p></div></article>
+            <article className={genuineBlockers.length ? "has-blocker" : ""}><span>{genuineBlockers.length ? "!" : "✓"}</span><div><b>{genuineBlockers.length ? "Specific source evidence needed" : "No balance-sheet correction required"}</b><p>{genuineBlockers.length ? clientIssueCopy(genuineBlockers[0]).action : fin1.readiness.canGenerate ? "The balance result and FIN mappings are available." : "The balance result is available; FIN forms may still require additional historical source evidence."}</p></div></article>
           </div>
           {sortedIssues.length > 0 && (
             <details className="bs-finding-details">
