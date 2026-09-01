@@ -1,0 +1,30 @@
+{
+  "recordType": "tendermatch-match-formula-baseline-freeze/1.0.0",
+  "frozenAtCommit": "6600af7",
+  "evaluatedAt": "2026-09-01T11:09:44.745Z",
+  "inputs": {
+    "tenders": 60,
+    "suppliers": 17,
+    "pairs": 1020,
+    "supplierEvidenceRecords": 289,
+    "verifiedClaims": 0,
+    "statedUnverifiedClaims": 226,
+    "inferredClaims": 17,
+    "unknownClaims": 46
+  },
+  "baseline": {
+    "engineVersion": "tendermatch-exploratory-fit/5.0.0",
+    "policyVersion": "tendermatch-goods-works-evidence-overlap/2.0.0",
+    "numericResults": 0,
+    "missingResults": 1020,
+    "runtimeSha256": "e06281656daec9d41ce68d0ae171e8ae13ffa731c4badc227b9f228d724f1a03",
+    "evidenceSha256": "b783085acb509c23866a81548870ab63980518584492888c575a6131b45340bf"
+  },
+  "diagnosis": {
+    "whatHappened": "All 1,020 pair results were MISSING.",
+    "rootCause": "The old conjunction erased preliminary evidence signals in a batch with zero VERIFIED claims.",
+    "correction": "Formula v1.0 separates fit, coverage, confidence, mandatory gates and pair status.",
+    "reusableRule": "Evidence class limits confidence; it must not silently become either VERIFIED truth or no evidence.",
+    "regressionEvidence": "tests/tendermatch-match-formula-v1.test.mjs"
+  }
+}

@@ -12,19 +12,19 @@
     "suppliers": 17,
     "evidence": 289,
     "evaluations": 1020,
-    "numericEvaluations": 0,
-    "missingEvaluations": 1020
+    "numericEvaluations": 48,
+    "missingEvaluations": 972
   },
   "files": {
     "runtime": {
       "path": "/tendermatch/data/supplier-runtime-v1.3.json",
-      "sha256": "e06281656daec9d41ce68d0ae171e8ae13ffa731c4badc227b9f228d724f1a03"
+      "sha256": "62d8b087ae42b972c3dc44a18a5c85e2893c0218bdf06ede7b11be8bde36375d"
     },
     "evidence": {
       "path": "/tendermatch/data/supplier-evidence-v1.3.json",
       "sha256": "b783085acb509c23866a81548870ab63980518584492888c575a6131b45340bf"
     }
   },
-  "publicDataBoundary": "Sanitized supplier profiles, non-contact evidence projections and exploratory evaluations only. No credentials, contacts or raw source content.",
+  "publicDataBoundary": "Sanitized supplier profiles, non-contact evidence projections and preliminary Formula v1.0 evaluations only. No credentials, contacts or raw source content.",
   "refreshCommand": "pnpm run export:tendermatch-static-snapshot -- --origin http://127.0.0.1:4177"
 }

@@ -1,6 +1,6 @@
 # TenderMatch — TenderApps Agent 03 integration and placement record
 
-Status: local controlled supplier-and-matching pilot, 2026-09-01. The active inputs are the unchanged 60-record Central Asia tender snapshot and exactly 17 approved GOODS/WORKS supplier profiles loaded through the pinned read-only Neon v1.3 contract. All 1,020 pair evaluations are currently MISSING under the conservative exploratory gate. See `docs/tendermatch-neon-supplier-matching-pilot.md`. The older TenderBoost fixture and superseded 100-profile supplier release remain historical evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
+Status: local controlled supplier-and-matching pilot, 2026-09-01. The active inputs are the unchanged 60-record Central Asia tender snapshot and exactly 17 approved GOODS/WORKS supplier profiles loaded through the pinned read-only Neon v1.3 contract. Match Formula v1.0 completes all 1,020 pairs as 48 numeric preliminary results, 37 blocked, 935 unassessed, three Needs verification and 45 No match; none qualifies as Bingo, Strong or Potential. See `docs/tendermatch-neon-supplier-matching-pilot.md`. The older TenderBoost fixture and superseded 100-profile supplier release remain historical evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
 
 ## Mandatory placement re-audit
 
@@ -96,7 +96,7 @@ Consumers are the consultant and separately governed Participation Solution-Fit 
 
 Active pilot input/result contract:
 
-`60-record tender snapshot × 17 pinned v1.3 supplier profiles + 289 safe evidence rows → 1,020 deterministic evaluations → 0 numeric / 1,020 MISSING after the current gate → explanation → consultant disposition`
+`60-record tender snapshot × 17 pinned v1.3 supplier profiles + 289 safe evidence rows → 1,020 deterministic Formula v1.0 results → score/coverage/confidence/gates/status → explanation → consultant disposition`
 
 Supplier retrieval is server-side through a local same-origin read-only adapter; the browser has no database credential or direct Neon connection. The ten frozen suppliers and legacy 160-pair matrix are historical tests only and are never a silent fallback.
 
@@ -120,15 +120,11 @@ The active identity chain uses `case:TM:*`, `result:TM:*`, `match:TM:*`, `match-
 
 ## Formula and evidence experiment
 
-Policy `tendermatch-audited-match/3.0.0` preserves the Stage 2 audited method while removing all downstream-priority logic from the active result:
+The frozen v5 baseline produced zero numeric results. Match Formula v1.0 uses explicit GOODS/WORKS weights, 0–5 fit levels, Data Coverage, Evidence Confidence and mandatory gates. Unknown criteria are excluded from the score denominator but remain in coverage. Supplier readiness, deadline urgency, risk and consultant disposition cannot change Match Score.
 
-`Audited Match Support = technical relevance × 70% + market/delivery relevance × 30%`
+The isolated experiment covers overlap strength, zero-versus-MISSING, monotonicity, confidence bands, mandatory FAIL, unsupported procurement types and evidence ownership. A 25-pair current-data calibration corrected false positives caused by notice boilerplate. The full 1,020-pair replay yields 48 preliminary numeric scores, 37 blocked type mismatches and 935 out-of-scope unassessed pairs; every current confidence value is capped by the zero-VERIFIED source batch.
 
-Each component requires distinct reviewed evidence, confidence of at least 75, and a reviewed semantic band of 60, 80, or 100. A missing or reused record makes the required component MISSING and therefore makes the result MISSING. Of 18 historically assessed pairs, 6 have both required components and 12 remain MISSING; the other 142 matrix combinations remain unassessed/MISSING.
-
-Company readiness is a frozen historical estimate and not an operand. Pair evidence quality is calculated separately. Deadline urgency is calculated separately from the absolute deadline and supplied clock and does not alter Match Support. The consultant decision never changes the score.
-
-The complete formula audit, policy rationale, experiment table, limitations, and invariants are in `docs/tendermatch-scoring-model-card.md`.
+The complete formula audit, policy rationale, calibration ledger, limitations and invariants are in `docs/tendermatch-scoring-model-card.md` and `docs/evidence/tendermatch-match-formula-v1-calibration.json`. The Full Matrix exports the same 1,020-result inventory as CSV and a typed two-sheet Excel audit workbook; neither export recomputes or reclassifies the canonical results.
 
 ## Review readiness and human authority
 
@@ -211,4 +207,4 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 
 ## Current maturity
 
-This is an `isolated-method-validated` local controlled pilot, not a deployed production runtime. The pinned read-only v1.3 supplier contract, 17 profiles, 289 safe evidence rows, deterministic 1,020-result inventory, conservative all-MISSING output, global country-level supplier map, directories, matrix modes, Case controls, evidence details, and consultant decisions are integrated into the TenderApps build. `STATED_UNVERIFIED` and `INFERRED` remain distinct from VERIFIED; capacity and turnover remain separate from technical fit. Campaign Studio and Follow-ups remain absent. Predictive validity, live tender refresh, production hosting, authentication, tenant isolation, durable artifacts, Dataset activation, and deployment remain unproven and out of scope.
+This is an `isolated-method-validated` local controlled pilot, not a production matching service. The pinned read-only v1.3 supplier contract, 17 profiles, 289 safe evidence rows, deterministic 1,020-result Formula v1.0 inventory, status/coverage/confidence/gate explanations, global country-level supplier map, directories, matrix modes, Case controls, evidence details and consultant decisions are integrated into the TenderApps build. `STATED_UNVERIFIED` and `INFERRED` remain distinct from VERIFIED. Campaign Studio and Follow-ups remain absent. Predictive validity, live tender refresh, production API hosting, authentication, tenant isolation, durable artifacts, Dataset activation and broader release remain unproven and out of scope.

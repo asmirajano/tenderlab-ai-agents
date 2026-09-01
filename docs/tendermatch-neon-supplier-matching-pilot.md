@@ -62,53 +62,41 @@ The mapper does not create contacts, URLs outside the safe projection, precise c
 
 `STATED_UNVERIFIED` is source-backed but unverified. It may support exploratory matching only when the claim has a saved artifact. It never becomes VERIFIED. UNKNOWN stays MISSING and is never zero or negative evidence.
 
-## Matching policy v5
+## Match Formula v1.0
 
-- Engine: `tendermatch-exploratory-fit/5.0.0`
-- Policy: `tendermatch-goods-works-evidence-overlap/2.0.0`
-- Outputs: `exploratory-technical-fit` / `ESTIMATED`, or `insufficient-evidence` / `MISSING`
+- Engine: `tendermatch-match-formula/1.0.0`
+- Policy: `tendermatch-evidence-aware-goods-works/1.0.0`
+- Reader label: `Preliminary notice-level match`
 
-Tender text is limited to the committed title, object, description, tags, procurement type and geography. Supplier technical text is limited to the approved `product_families`, `works_specializations`, `industries_served` and `materials` evidence. Normalization uses a small versioned alias taxonomy and a generic-token stop set.
+The v5 all-MISSING output is frozen in `docs/evidence/tendermatch-match-formula-v1-baseline.json`. Formula v1.0 separates Match Score, Data Coverage, Evidence Confidence, mandatory gates, Pair Status and consultant disposition. The complete formula, weights, confidence bands, thresholds and limitations are in `docs/tendermatch-scoring-model-card.md`.
 
-A numeric exploratory value is allowed only when all conditions pass:
+The formula uses title/object/tags for scored technical overlap; the complete source description remains available to retrieval and explanation but boilerplate prose cannot create points. Supplier technical evidence is limited to the approved product, works, industry and material claims. Capacity and geography claims support their own bounded criteria and are not reused. Tender-specific financial, comparable-contract and mandatory eligibility comparisons remain MISSING or UNKNOWN when unsupported.
 
-1. the source tender procurement type is explicitly GOODS or WORKS and exactly matches the supplier classification;
-2. the supplier is not excluded;
-3. at least two relevant technical claims overlap the tender;
-4. each cited input used by the score has a saved artifact and is INFERRED or STATED_UNVERIFIED;
-5. at least one versioned concept overlaps the primary tender title/object/procurement corpus; and
-6. at least one direct primary term or three full-corpus terms overlap.
+The isolated deterministic experiment covers strong overlap, weak overlap, genuine zero, missing evidence, unsupported procurement type, supplier-role failure, unavailable artifacts and confidence changes. A 25-pair current-data calibration then exposed description-boilerplate false positives; the corrected policy removed full-description terms from scored overlap. Calibration is retained in `docs/evidence/tendermatch-match-formula-v1-calibration.json`.
 
-Eligible values remain coarse and capped:
-
-`min(85, roundTo5(40 + min(20, concepts × 10) + min(15, terms × 3) + min(10, evidence beyond two × 2)))`
-
-Market/delivery, eligibility, compliance, references, readiness, freshness and human disposition remain separate. Capacity and revenue/turnover are stored as separate source components and are not used in technical fit unless a future tender-specific comparable requirement is explicitly mapped and reviewed. Every evaluation records tender snapshot/version, supplier profile/batch version, cited evidence IDs, engine/policy version, timestamp, components, limitations, reason codes and a pending consultant disposition.
-
-## Isolated experiment, expansion gate and actual output audit
-
-The isolated fixtures prove one strong GOODS pair can produce an artifact-linked, evidence-cited ESTIMATED result, while procurement mismatch, weak overlap, UNKNOWN-only evidence, artifact-unavailable evidence, and capacity/turnover-only evidence remain MISSING. Repeated fixed-version results are deterministic.
-
-The method then evaluated all 60 × 17 identities at the fixed audit clock `2026-09-01T10:30:00.000Z`:
+The fixed full replay at `2026-09-01T11:09:44.745Z` produced:
 
 | Outcome | Count |
 | --- | ---: |
 | Unique pair identities | 1,020 |
-| Numeric exploratory results | 0 |
-| MISSING results | 1,020 |
+| Numeric preliminary results | 48 |
+| MISSING values | 972 |
+| Needs verification | 3 |
+| No match | 45 |
+| Blocked / ineligible | 37 |
+| Unassessed | 935 |
+| Bingo / Strong / Potential | 0 / 0 / 0 |
 
-Gate audit: 48 pairs had exact procurement-class applicability; 89 had at least two artifact-linked relevant claims; 45 passed the normalized-overlap sub-gate; zero passed all gates jointly. There were 313 pairs with at least one overlapping STATED_UNVERIFIED input, but none were promoted into a numeric result without the complete gate. This is the intended conservative outcome, not a failed calculation.
+The 935 unassessed pairs belong to CONSULTING, SERVICES or OTHER notices outside the approved v1.0 calculation scope. The 37 blocked pairs have an explicit GOODS/WORKS supplier-role mismatch. The 48 type-compatible pairs have 60–65% coverage and 50% confidence; three reach score 60 but remain Needs verification, while 45 have supported notice-level fit below 60. The result does not claim predictive accuracy.
 
-Non-exclusive reason counts: procurement mismatch 972; insufficient relevant evidence 931; insufficient normalized overlap 975; zero VERIFIED claims 1,020; capacity separated 1,020; turnover separated 1,020; market/delivery unknown 900; market claim overlap 120; compliance unknown 1,020; references unknown 1,020; STATED_UNVERIFIED overlap 313; tender no longer current at the audit clock 136.
-
-`What happened →` the approved release produced no all-gates-passing pair.
-`Root cause →` the exact procurement-class gate, artifact-linked minimum evidence gate and primary semantic-overlap gate had no joint intersection in the authorized 60 × 17 inputs.
-`Correction →` preserve all 1,020 completed outcomes as MISSING; do not loosen a gate merely to manufacture scores.
-`Reusable rule →` expansion means completing the evaluation inventory, not guaranteeing numeric scores; sparse or zero numeric output is truthful when evidence is insufficient.
-`Regression evidence →` strong/weak/mismatch/artifact/capacity tests, deterministic 1,020-key replay, aggregate false-positive audit and live read-only contract checks.
+- What happened → v5 erased every preliminary result.
+- Root cause → its complete gate conjunction made zero VERIFIED claims function as a universal no-result rule.
+- Correction → preserve evidence class as confidence, calculate only assessed criteria, retain missing criteria in Data Coverage and keep mandatory gates separate.
+- Reusable rule → incomplete evidence must limit status and confidence without being silently treated as either verified truth or zero.
+- Regression evidence → `tests/tendermatch-match-formula-v1.test.mjs`, exact 1,020-key replay, manifest hashes and current-pair calibration.
 
 ## UI and remaining limits
 
-The server precomputes and caches all 1,020 results before ready state, so the browser performs no database or bulk matching work. The Overview, radar, 17-profile directory, evidence review, 60-tender directory, 17 × 60 full matrix, tender-first review, supplier-first review and explicit Case reconstruction consume the same inventory. Current counts are data-derived. Historical Cases keep their supplier identity and are not silently remapped.
+The server precomputes and caches all 1,020 results before ready state, so the browser performs no database or bulk matching work. The Overview, radar, 17-profile directory, evidence review, 60-tender directory, 17 × 60 full matrix, tender-first review, supplier-first review and explicit Case reconstruction consume the same inventory. The Full Matrix provides both CSV and a real typed Excel workbook export of all 1,020 pair evaluations; the workbook preserves audit identities, numeric value types, status/gates/criteria, evidence references and versions. Current counts are data-derived. Historical Cases keep their supplier identity and are not silently remapped.
 
-This remains an `isolated-method-validated` read-only snapshot pilot. Predictive validity, automatic tender/supplier refresh, multilingual taxonomy depth, technical-specification parsing, qualification, capacity comparison, commercial/delivery analysis, authentication, tenant isolation, durable result/artifact storage and a live production API remain unresolved. Consultant disposition is explicit and separate; TenderMatch never selects a bidder, issues Bid/No-Bid, promotes a tender or sends outreach.
+This remains an `isolated-method-validated` read-only snapshot pilot. Predictive validity, automatic tender/supplier refresh, multilingual taxonomy depth, technical-specification parsing, qualification, tender-threshold comparison, commercial/delivery analysis, authentication, tenant isolation, durable result/artifact storage and a live production API remain unresolved. Consultant disposition is explicit and separate; TenderMatch never selects a bidder, issues Bid/No-Bid, promotes a tender or sends outreach.

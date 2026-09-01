@@ -142,7 +142,16 @@ export type EvidenceLinkedClaim = {
   linkage: "lexical" | "unresolved";
 };
 
-export type AuditedComponentCode = "technical-relevance" | "market-delivery";
+export type AuditedComponentCode =
+  | "technical-relevance"
+  | "market-delivery"
+  | "capacity-delivery"
+  | "comparable-experience"
+  | "financial-procurement-readiness"
+  | "works-technical-relevance"
+  | "similar-contracts"
+  | "personnel-equipment-capacity"
+  | "mobilization-local-delivery";
 export type AuditedSemanticBand = 60 | 80 | 100;
 export type AuditedReasonCode =
   | "AUDITED_MATCH_AVAILABLE"
@@ -180,6 +189,28 @@ export type AuditedScoreComponent = {
   evidenceConfidence: number | null;
   reasonCodes: AuditedReasonCode[];
   rationale: string;
+  fitLevel?: 0 | 1 | 2 | 3 | 4 | 5 | null;
+  weightedPoints?: number | null;
+  applicable?: boolean;
+};
+
+export type TenderMatchPairStatus =
+  | "BINGO_MATCH"
+  | "STRONG_CANDIDATE"
+  | "POTENTIAL_MATCH"
+  | "NEEDS_VERIFICATION"
+  | "NO_MATCH"
+  | "BLOCKED_INELIGIBLE"
+  | "UNASSESSED";
+
+export type TenderMatchGateState = "PASS" | "FAIL" | "UNKNOWN" | "NOT_APPLICABLE";
+
+export type TenderMatchMandatoryGate = {
+  code: string;
+  label: string;
+  state: TenderMatchGateState;
+  evidenceIds: string[];
+  rationale: string;
 };
 
 export type AuditedMatchResult = {
@@ -195,6 +226,13 @@ export type AuditedMatchResult = {
   legacyScore: number | null;
   legacyDelta: number | null;
   method: string;
+  status?: TenderMatchPairStatus;
+  dataCoverage?: number;
+  evidenceConfidence?: number;
+  gates?: TenderMatchMandatoryGate[];
+  mainReason?: string;
+  blockers?: string[];
+  noticeLabel?: "Preliminary notice-level match";
 };
 
 export type LegacyBaselineMetrics = {

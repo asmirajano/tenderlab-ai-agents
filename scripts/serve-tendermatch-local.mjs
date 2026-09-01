@@ -180,7 +180,7 @@ async function main() {
   server.listen(port, "127.0.0.1", () => console.log(`TenderMatch local supplier runtime: http://127.0.0.1:${port}/tendermatch`));
   try {
     const runtime = await ready;
-    console.log(`Supplier runtime ready: ${runtime.summary.profileCount} profiles, ${runtime.summary.evidenceCount} evidence records, ${runtime.evaluationSummary.total} pair evaluations (${runtime.evaluationSummary.numeric} numeric exploratory, ${runtime.evaluationSummary.missing} MISSING).`);
+    console.log(`Supplier runtime ready: ${runtime.summary.profileCount} profiles, ${runtime.summary.evidenceCount} evidence records, ${runtime.evaluationSummary.total} Formula v1.0 pair results (${runtime.evaluationSummary.numeric} numeric preliminary, ${runtime.evaluationSummary.missing} MISSING).`);
   } catch {
     console.error("TenderMatch supplier runtime failed safely; no supplier fixture was substituted.");
   }

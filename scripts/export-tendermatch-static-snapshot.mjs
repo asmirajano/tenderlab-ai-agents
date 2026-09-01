@@ -127,7 +127,7 @@ const manifest = {
     runtime: { path: `/tendermatch/data/${runtimeFileName}`, sha256: sha256(runtimeContents) },
     evidence: { path: `/tendermatch/data/${evidenceFileName}`, sha256: sha256(evidenceContents) },
   },
-  publicDataBoundary: "Sanitized supplier profiles, non-contact evidence projections and exploratory evaluations only. No credentials, contacts or raw source content.",
+  publicDataBoundary: "Sanitized supplier profiles, non-contact evidence projections and preliminary Formula v1.0 evaluations only. No credentials, contacts or raw source content.",
   refreshCommand: "pnpm run export:tendermatch-static-snapshot -- --origin http://127.0.0.1:4177",
 };
 

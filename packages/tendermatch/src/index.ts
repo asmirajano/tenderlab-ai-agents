@@ -6,3 +6,4 @@ export * from "./exploratory-matching.ts";
 export * from "./experiment-data.ts";
 export * from "./engine.ts";
 export * from "./legacy-parity.ts";
+export * from "./export.ts";

@@ -47,7 +47,7 @@ const displayMetadata: readonly PracticalAgentDisplayMetadata[] = [
     productId: "product:TA-TENDERBOOST",
     displayName: "TenderMatch",
     functionalSubtitle: "60 current-at-extraction tenders × 17 v1.3 GOODS/WORKS suppliers · exploratory evidence review",
-    description: "Use TenderMatch to inspect 1,020 completed pair evaluations, explicit MISSING results under the current evidence gate, deadline freshness, and a human-controlled consultant disposition.",
+    description: "Use TenderMatch to inspect 1,020 Formula v1.0 pair results with preliminary Match Score, Data Coverage, Evidence Confidence, mandatory gates, explicit unassessed states, deadline freshness, and a human-controlled consultant disposition.",
     pageTitle: "Tender Apps — TenderMatch · Agent 03",
     visual: "tendermatch",
   },

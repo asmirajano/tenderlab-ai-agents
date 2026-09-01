@@ -301,7 +301,7 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(main, /"\/tendermatch\/followups": "\/tendermatch"/);
   const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
   assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
-  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*1,020 completed pair evaluations)(?=[^"]*MISSING results)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*1,020 Formula v1\.0 pair results)(?=[^"]*Data Coverage)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
@@ -353,7 +353,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "KEEP MISSING",
     "WHAT YOU RECEIVE",
     "NEON SUPPLIER + PILOT TENDER · EXPLORATORY",
-    "EXPLORATORY FIT",
+    "PRELIMINARY MATCH",
     "LINKED EVIDENCE",
     "MISSING / BLOCKER",
     "FRESHNESS",

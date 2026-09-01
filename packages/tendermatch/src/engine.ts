@@ -7,7 +7,6 @@ import {
   TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION,
   TENDERBOOST_LEGACY_SCHEMA_VERSION,
   TENDERBOOST_STAGE_2_SCHEMA_VERSION,
-  type AuditedComponentCode,
   type AuditedMatchResult,
   type AuditedPairEvidenceMapping,
   type AuditedReasonCode,
@@ -108,12 +107,14 @@ function legacyVerificationQuality(supplier: SupplierRecord) {
   return Math.round(((legacyVerified + inferred * 0.35) / supplier.evidence.length) * 100);
 }
 
-const AUDITED_COMPONENT_WEIGHTS: Record<AuditedComponentCode, number> = {
+type HistoricalAuditedComponentCode = "technical-relevance" | "market-delivery";
+
+const AUDITED_COMPONENT_WEIGHTS: Record<HistoricalAuditedComponentCode, number> = {
   "technical-relevance": 0.7,
   "market-delivery": 0.3,
 };
 
-const AUDITED_COMPONENT_MISSING: Record<AuditedComponentCode, { reason: AuditedReasonCode; input: string }> = {
+const AUDITED_COMPONENT_MISSING: Record<HistoricalAuditedComponentCode, { reason: AuditedReasonCode; input: string }> = {
   "technical-relevance": { reason: "TECHNICAL_EVIDENCE_MISSING", input: "Distinct reviewed evidence for technical relevance" },
   "market-delivery": { reason: "MARKET_EVIDENCE_MISSING", input: "Distinct reviewed evidence for market or delivery relevance" },
 };
@@ -122,7 +123,7 @@ function mean(values: number[]) {
   return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
 }
 
-function missingComponent(code: AuditedComponentCode, rationale: string, reasonCodes: AuditedReasonCode[] = [AUDITED_COMPONENT_MISSING[code].reason]): AuditedScoreComponent {
+function missingComponent(code: HistoricalAuditedComponentCode, rationale: string, reasonCodes: AuditedReasonCode[] = [AUDITED_COMPONENT_MISSING[code].reason]): AuditedScoreComponent {
   return {
     code,
     value: null,
@@ -135,7 +136,7 @@ function missingComponent(code: AuditedComponentCode, rationale: string, reasonC
   };
 }
 
-function evaluateAssignment(code: AuditedComponentCode, mapping: AuditedPairEvidenceMapping | undefined, supplier: SupplierRecord): AuditedScoreComponent {
+function evaluateAssignment(code: HistoricalAuditedComponentCode, mapping: AuditedPairEvidenceMapping | undefined, supplier: SupplierRecord): AuditedScoreComponent {
   const assignment = mapping?.assignments.find((item) => item.component === code);
   if (!assignment) return missingComponent(code, AUDITED_COMPONENT_MISSING[code].input);
   const records = assignment.evidenceIds.map((id) => supplier.evidence.find((item) => item.id === id));
@@ -183,7 +184,7 @@ export function evaluateAuditedMatch(
     };
   }
 
-  let components = (["technical-relevance", "market-delivery"] as AuditedComponentCode[]).map((code) => evaluateAssignment(code, mapping, supplier));
+  let components = (["technical-relevance", "market-delivery"] as HistoricalAuditedComponentCode[]).map((code) => evaluateAssignment(code, mapping, supplier));
   const used = new Set<string>();
   const reused = new Set<string>();
   for (const component of components) {
@@ -194,11 +195,11 @@ export function evaluateAuditedMatch(
   }
   if (reused.size) {
     components = components.map((component) => component.evidenceIds.some((id) => reused.has(id))
-      ? missingComponent(component.code, component.rationale, ["EVIDENCE_RECORD_REUSED"])
+      ? missingComponent(component.code as HistoricalAuditedComponentCode, component.rationale, ["EVIDENCE_RECORD_REUSED"])
       : component);
   }
 
-  const missingInputs = components.filter((component) => component.value === null).map((component) => AUDITED_COMPONENT_MISSING[component.code].input);
+  const missingInputs = components.filter((component) => component.value === null).map((component) => AUDITED_COMPONENT_MISSING[component.code as HistoricalAuditedComponentCode].input);
   const componentReasons = components.flatMap((component) => component.reasonCodes);
   const value = missingInputs.length === 0
     ? Math.round(components.reduce((sum, component) => sum + (component.value ?? 0) * component.weight, 0))
@@ -310,7 +311,8 @@ function finding(code: ReviewFinding["code"], message: string, nextAction: strin
 
 export function evaluateConsultantReviewSupport(match: MatchAssessment, supplier: SupplierRecord): ConsultantReviewSupport {
   const findings: ReviewFinding[] = [];
-  const exploratory = match.auditedMatch.policyVersion.startsWith("tendermatch-evidence-overlap/");
+  const exploratory = match.auditedMatch.policyVersion.startsWith("tendermatch-evidence-overlap/")
+    || match.auditedMatch.policyVersion.startsWith("tendermatch-evidence-aware-goods-works/");
   if ((!match.exactLegacyPair || match.matchScore.value === null) && !exploratory) {
     findings.push(finding("MATCH_UNASSESSED", "This Company × Tender pair has not been evaluated.", "Run a separately approved pair assessment; do not convert MISSING to zero.", "agent:TL-A031"));
   } else if (match.auditedMatch.value === null) {
@@ -382,7 +384,7 @@ export function createCaseResult(caseId: string, tender: TenderRecord, supplier:
     reviewSupport: evaluateConsultantReviewSupport(match, supplier),
     knownLimitations: [
       "The tender set is a deterministic local snapshot of records current at extraction time, not a live browser connection or continuously refreshed feed.",
-      "Exploratory technical relevance is emitted only when the versioned evidence-overlap threshold is met; every other completed evaluation remains MISSING.",
+      "Formula v1.0 emits a preliminary Match Score only when minimum Data Coverage is met; unsupported criteria remain MISSING and reduce coverage rather than becoming zero.",
       "Supplier readiness is retained as a source state and never creates or changes a Match Score.",
       "This supplier batch contains zero VERIFIED claims. INFERRED and UNKNOWN statuses remain explicit.",
       "Browser-local Case storage is not durable tenant-isolated persistence or a canonical Dataset write.",

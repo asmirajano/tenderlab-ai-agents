@@ -135,12 +135,14 @@ async function listeningServer(store) {
   return { ...runtime, origin: `http://127.0.0.1:${address.port}` };
 }
 
-test("gates numeric exploratory fit on procurement applicability, saved evidence and source overlap", () => {
+test("gates Formula v1.0 numeric fit on procurement applicability and minimum Data Coverage", () => {
   const supplier = profile(0, { displayName: "Transformer Works", classification: "GOODS" });
   const tender = { ...runtimeTenders[0], title: "Supply of power transformers for a new substation", object: "GOODS", procurementType: "GOODS", description: "Electrical grid equipment" };
   const evidence = [
     evidenceRecord(supplier, 1, { field: "product_families", value: "Power transformer and switchgear" }),
     evidenceRecord(supplier, 2, { field: "industries_served", value: "Electrical transformer manufacturing" }),
+    evidenceRecord(supplier, 3, { field: "capacity", value: "Production facilities: 12" }),
+    evidenceRecord(supplier, 4, { field: "geographic_markets", value: "Global; Asia" }),
   ];
   const first = evaluateExploratoryPair(tender, supplier, evidence, evaluatedAt);
   assert.deepEqual(evaluateExploratoryPair(tender, supplier, evidence, evaluatedAt), first);
@@ -149,26 +151,31 @@ test("gates numeric exploratory fit on procurement applicability, saved evidence
   assert.equal(first.valueClass, "ESTIMATED");
   assert.ok(first.value >= 0);
   assert.equal(first.procurementApplicability.compatible, true);
-  assert.deepEqual(first.technicalRelevance.evidenceIds.sort(), evidence.map((entry) => entry.claimId).sort());
-  assert.ok(first.reasonCodes.includes("STATED_UNVERIFIED_INPUT"));
+  assert.ok(first.technicalRelevance.evidenceIds.length >= 2);
+  assert.equal(first.dataCoverage, 65);
+  assert.equal(first.evidenceConfidence, 50);
+  assert.equal(first.pairStatus, "NEEDS_VERIFICATION");
   assert.equal(first.supplierReadinessStatus, "usable_with_limitations");
   assert.equal(first.consultantDecision, "pending");
 });
 
-test("keeps mismatch, weak, UNKNOWN and artifact-unavailable pairs MISSING rather than zero", () => {
+test("distinguishes blocked, unassessed, NO_MATCH and artifact-unavailable evidence", () => {
   const supplier = profile(0, { classification: "GOODS" });
   const goodsTender = { ...runtimeTenders[0], title: "Supply of hospital diagnostic equipment", object: "GOODS", procurementType: "GOODS" };
-  const strong = [evidenceRecord(supplier, 1, { value: "medical diagnostic equipment" }), evidenceRecord(supplier, 2, { field: "industries_served", value: "medical healthcare diagnostics" })];
+  const strong = [evidenceRecord(supplier, 1, { value: "medical diagnostic equipment" }), evidenceRecord(supplier, 2, { field: "industries_served", value: "medical healthcare diagnostics" }), evidenceRecord(supplier, 3, { field: "capacity", value: "Production facilities: 12" }), evidenceRecord(supplier, 4, { field: "geographic_markets", value: "Global; Asia" })];
   const cases = [
     evaluateExploratoryPair({ ...goodsTender, procurementType: "WORKS", object: "WORKS" }, supplier, strong, evaluatedAt),
-    evaluateExploratoryPair(goodsTender, supplier, [evidenceRecord(supplier, 3, { value: "office furniture" })], evaluatedAt),
-    evaluateExploratoryPair(goodsTender, supplier, [evidenceRecord(supplier, 4, { value: null, normalizedValue: null, status: "UNKNOWN", artifactAvailable: false })], evaluatedAt),
+    evaluateExploratoryPair(goodsTender, supplier, [evidenceRecord(supplier, 5, { value: "office furniture" }), evidenceRecord(supplier, 6, { field: "capacity", value: "Factory: 1" }), evidenceRecord(supplier, 7, { field: "geographic_markets", value: "Global" })], evaluatedAt),
+    evaluateExploratoryPair(goodsTender, supplier, [evidenceRecord(supplier, 8, { value: null, normalizedValue: null, status: "UNKNOWN", artifactAvailable: false })], evaluatedAt),
     evaluateExploratoryPair(goodsTender, supplier, strong.map((entry) => ({ ...entry, artifactAvailable: false, sourceArtifactId: null })), evaluatedAt),
   ];
-  for (const result of cases) { assert.equal(result.value, null); assert.equal(result.valueClass, "MISSING"); }
-  assert.ok(cases[0].reasonCodes.includes("PROCUREMENT_CLASSIFICATION_MISMATCH"));
+  assert.deepEqual(cases.map((entry) => entry.pairStatus), ["BLOCKED_INELIGIBLE", "NO_MATCH", "UNASSESSED", "NEEDS_VERIFICATION"]);
+  assert.equal(cases[0].value, null);
+  assert.notEqual(cases[1].value, null);
+  assert.equal(cases[2].value, null);
+  assert.ok(cases[0].reasonCodes.includes("PROCUREMENT_TYPE_SUPPLIER_ROLE"));
   assert.ok(cases[3].reasonCodes.includes("CITED_ARTIFACT_UNAVAILABLE"));
-  assert.deepEqual(cases[3].evidenceCoverage, { cited: 2, availableArtifacts: 0, unavailableArtifacts: 2 });
+  assert.deepEqual(cases[3].evidenceCoverage, { cited: 4, availableArtifacts: 0, unavailableArtifacts: 4 });
 });
 
 test("keeps capacity and turnover separate from technical fit", () => {
