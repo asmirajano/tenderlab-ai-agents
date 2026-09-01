@@ -11,6 +11,7 @@ import { fin2ToCsv, generateFin2 } from "../packages/tender-balance/src/fin2.ts"
 import { fin2ExcelFileName, fin2ToExcel } from "../packages/tender-balance/src/excel.ts";
 
 const contaminationFixture = JSON.parse(await readFile(new URL("./fixtures/SYNTHETIC_FIN2_TEMPLATE_CONTAMINATION_REGRESSION.json", import.meta.url), "utf8"));
+const fin2WorkspaceSource = await readFile(new URL("../apps/tender-apps/src/fin2-workspace.tsx", import.meta.url), "utf8");
 
 function readStoredZipEntries(bytes) {
   const entries = new Map();
@@ -62,6 +63,8 @@ test("uses a populated FIN-2 template only for structure and blocks all example 
   assert.deepEqual(form.averageAnnualTurnover.yearsIncluded, ["2020", "2021"]);
   assert.equal(form.averageAnnualTurnover.provenance, "CALCULATED");
   assert.equal(form.bidderModel, "SINGLE_BIDDER");
+  assert.equal(form.mappings.every((mapping) => mapping.sourceUnitScale === 1 && mapping.sourceReportedValue === mapping.sourceValue), true);
+  assert.match(form.mappings[0].sourceScaleFormula, /USD × 1 = .* USD/);
 });
 
 test("converts source turnover with auditable year-end CBU rates and calculates the average", () => {
@@ -112,6 +115,7 @@ test("converts source turnover with auditable year-end CBU rates and calculates 
 
   assert.deepEqual(form.years, ["2023", "2024"]);
   assert.equal(year2024.sourceValue, 9_386_124_000);
+  assert.equal(year2024.sourceReportedValue, 9_386_124);
   assert.equal(year2024.sourceValue / year2024.sourceUnitScale, 9_386_124);
   assert.equal(year2024.exchangeRate.rateType, "closing");
   assert.equal(year2024.exchangeRate.closingDate, "2024-12-27");
@@ -119,7 +123,9 @@ test("converts source turnover with auditable year-end CBU rates and calculates 
   assert.ok(Math.abs(year2024.convertedValue - 726_453) < 1);
   assert.ok(Math.abs(year2023.convertedValue - 1_925_896) < 1);
   assert.equal(year2024.convertedProvenance, "CALCULATED");
-  assert.match(year2024.conversionFormula, /UZS.*USD/);
+  assert.match(year2024.sourceScaleFormula, /9,386,124 thousand UZS × 1,000 = 9,386,124,000 UZS/);
+  assert.match(year2024.conversionFormula, /9,386,124 thousand UZS × 1,000.*USD\/UZS/);
+  assert.ok(Math.abs(year2024.convertedValue - (year2024.sourceReportedValue * year2024.sourceUnitScale * year2024.exchangeRate.targetUnitsPerSourceUnit)) < 0.000001);
   assert.ok(Math.abs(form.averageAnnualTurnover.value - ((year2023.convertedValue + year2024.convertedValue) / 2)) < 0.000001);
   assert.deepEqual(form.averageAnnualTurnover.yearsIncluded, ["2023", "2024"]);
   assert.equal(form.coverage.status, "insufficient");
@@ -206,8 +212,20 @@ test("uses authoritative operations-statement years for FIN-2 without expanding 
   assert.deepEqual(dataset.availableYears, ["2024", "2025"]);
   assert.deepEqual(form.years, ["2023", "2024", "2025"]);
   assert.deepEqual(form.mappings.map((mapping) => mapping.sourceValue), [200_000_000, 250_000_000, 300_000_000]);
+  assert.deepEqual(form.mappings.map((mapping) => mapping.sourceReportedValue), [200, 250, 300]);
+  assert.equal(form.mappings.every((mapping) => mapping.sourceUnitLabel === "millions" && mapping.sourceUnitScale === 1_000_000), true);
+  assert.match(form.mappings[0].sourceScaleFormula, /200 million USD × 1,000,000 = 200,000,000 USD/);
+  assert.match(form.mappings[0].conversionFormula, /× 1 USD\/USD \(identity\) = 200,000,000 USD/);
+  assert.match(form.averageAnnualTurnover.formula, /full-unit USD equivalents after source-unit scaling and FX/);
   assert.equal(form.mappings.every((mapping) => mapping.status === "ready" && mapping.sourcePages.length === 1 && mapping.sourcePages[0] === 2), true);
   assert.equal(form.mappings.some((mapping) => mapping.sourceValue === 9_999_000_000), false);
+
+  const eurForm = generateFin2(dataset, { comparisonCurrency: "EUR" });
+  assert.deepEqual(eurForm.mappings.map((mapping) => mapping.sourceReportedValue), [200, 250, 300]);
+  assert.equal(eurForm.mappings.every((mapping) => mapping.sourceValue === mapping.sourceReportedValue * mapping.sourceUnitScale), true);
+  assert.equal(eurForm.mappings.every((mapping) => mapping.convertedValue === mapping.sourceValue * mapping.exchangeRate.targetUnitsPerSourceUnit), true);
+  assert.equal(eurForm.mappings.every((mapping) => /EUR\/USD/.test(mapping.conversionFormula)), true);
+  assert.equal(eurForm.mappings.every((mapping) => !/identity/.test(mapping.conversionFormula)), true);
 });
 
 test("exports FIN-2 with clean form, mapping, and FX-audit sheets", () => {
@@ -221,20 +239,43 @@ test("exports FIN-2 with clean form, mapping, and FX-audit sheets", () => {
   assert.match(workbook, /Source &amp; Mapping/);
   assert.match(workbook, /FX Conversion Audit/);
   assert.match(entries.get("xl/worksheets/sheet1.xml"), /Average Annual Turnover/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Source reported amount/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Source unit scale/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Full source-currency amount/);
   assert.match(entries.get("xl/worksheets/sheet2.xml"), /Net revenue/);
+  assert.match(entries.get("xl/worksheets/sheet2.xml"), /Source-scale formula/);
+  assert.match(entries.get("xl/worksheets/sheet2.xml"), /Conversion formula/);
   assert.match(entries.get("xl/worksheets/sheet3.xml"), /Identity conversion/);
-  assert.match(fin2ToCsv(form), /Average Annual Turnover/);
-  assert.doesNotMatch(fin2ToCsv(form), /Joint Venture|Consortium|JV Partner/i);
+  assert.match(entries.get("xl/worksheets/sheet3.xml"), /Full target amount/);
+  const csv = fin2ToCsv(form);
+  assert.match(csv, /Original reported amount/);
+  assert.match(csv, /Source unit scale/);
+  assert.match(csv, /Full source-currency amount/);
+  assert.match(csv, /Full USD equivalent/);
+  assert.match(csv, /Conversion formula/);
+  assert.match(csv, /Average Annual Turnover \(full target-currency units\)/);
+  assert.doesNotMatch(csv, /Joint Venture|Consortium|JV Partner/i);
+});
+
+test("makes the FIN-2 UI conversion path explicit and accessible", () => {
+  assert.match(fin2WorkspaceSource, /Original turnover \(\{form\.sourceCurrency\} · \{form\.sourceUnitLabel\}\)/);
+  assert.match(fin2WorkspaceSource, /Source-reported turnover → full source-currency units → FX → full/);
+  assert.match(fin2WorkspaceSource, /sourceReportedAmount\(mapping\)/);
+  assert.match(fin2WorkspaceSource, /× \{mapping\.sourceUnitScale\.toLocaleString/);
+  assert.match(fin2WorkspaceSource, /full target-currency units/);
+  assert.match(fin2WorkspaceSource, /<caption>/);
 });
 
 test("publishes a stable single-bidder FIN-2 structured-output schema", async () => {
   const schema = JSON.parse(await readFile(new URL("../packages/catalog-schema/schema/fin2-size-of-operation.schema.json", import.meta.url), "utf8"));
   const serialized = JSON.stringify(schema);
 
-  assert.equal(schema.properties.schemaVersion.const, "1.0.0");
+  assert.equal(schema.properties.schemaVersion.const, "1.1.0");
   assert.equal(schema.properties.templateId.const, "FIN-2");
   assert.equal(schema.properties.bidderModel.const, "SINGLE_BIDDER");
   assert.equal(schema.properties.exchangeRateBasis.const, "closing");
   assert.ok(schema.properties.mappings.items.properties.sourceProvenance.enum.includes("MAPPING_REVIEW_REQUIRED"));
+  assert.ok(schema.properties.mappings.items.required.includes("sourceReportedValue"));
+  assert.ok(schema.properties.mappings.items.required.includes("sourceScaleFormula"));
   assert.doesNotMatch(serialized, /joint venture|consortium|jv partner|member percentage/i);
 });

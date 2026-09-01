@@ -9,7 +9,7 @@ import type {
   FinancialProvenance,
 } from "./fin-forms.ts";
 
-export const FIN2_SCHEMA_VERSION = "1.0.0";
+export const FIN2_SCHEMA_VERSION = "1.1.0";
 
 export type Fin2AdministrativeInput = {
   biddingProcess?: string;
@@ -34,6 +34,7 @@ export type Fin2TurnoverMapping = {
   field: "annual_turnover";
   label: "Annual Turnover";
   displayYear: string;
+  sourceReportedValue: number | null;
   sourceValue: number | null;
   sourceCurrency: string;
   sourceUnitLabel: string;
@@ -51,6 +52,7 @@ export type Fin2TurnoverMapping = {
   comparisonCurrency: FinPresentationCurrency;
   comparisonUnitScale: 1;
   convertedProvenance: "CALCULATED" | "MISSING";
+  sourceScaleFormula: string | null;
   conversionFormula: string | null;
   status: Fin2MappingStatus;
   action: string | null;
@@ -121,6 +123,27 @@ function sourceSummary(fileName: string, originalLabels: string[], sourcePages: 
   return labels ? `${fileName} · ${labels}${pages}` : fileName;
 }
 
+function auditNumber(value: number) {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 12 });
+}
+
+export function fin2ReportedUnitName(unitLabel: string, unitScale: number, currency: string) {
+  if (unitScale === 1 || /^units?$/i.test(unitLabel)) return currency;
+  if (/^thousands?$/i.test(unitLabel)) return `thousand ${currency}`;
+  if (/^millions?$/i.test(unitLabel)) return `million ${currency}`;
+  return `${unitLabel} ${currency}`;
+}
+
+function sourceScaleFormula(
+  reportedValue: number,
+  unitLabel: string,
+  unitScale: number,
+  currency: string,
+  fullValue: number,
+) {
+  return `${auditNumber(reportedValue)} ${fin2ReportedUnitName(unitLabel, unitScale, currency)} × ${auditNumber(unitScale)} = ${auditNumber(fullValue)} ${currency}`;
+}
+
 function mappingForYear(
   dataset: CanonicalFinancialDataset,
   displayYear: string,
@@ -136,22 +159,29 @@ function mappingForYear(
   const sourcePages = Array.from(new Set(sources.flatMap((source) => source.page === null ? [] : [source.page]))).sort((left, right) => left - right);
   const rawReportedValues = Array.from(new Set(sources.flatMap((source) => source.rawReportedValue === undefined ? [] : [source.rawReportedValue])));
   const fileName = sources[0]?.fileName ?? dataset.documents.find((document) => document.eligibleForGeneratedFinValues)?.fileName ?? "Eligible financial source";
+  const sourceUnitScale = value?.unitScale ?? dataset.unitScale;
+  const sourceReportedValue = value?.value === null || value?.value === undefined ? null : value.value / sourceUnitScale;
+  const scaleFormula = sourceReportedValue === null || value?.value === null || value?.value === undefined
+    ? null
+    : sourceScaleFormula(sourceReportedValue, dataset.unitLabel, sourceUnitScale, value.currency, value.value);
 
   const base = {
     id,
     field: "annual_turnover" as const,
     label: "Annual Turnover" as const,
     displayYear,
+    sourceReportedValue,
     sourceValue: value?.value ?? null,
     sourceCurrency: value?.currency ?? dataset.currency,
     sourceUnitLabel: dataset.unitLabel,
-    sourceUnitScale: value?.unitScale ?? dataset.unitScale,
+    sourceUnitScale,
     sourceIds,
     sourceSummary: sourceSummary(fileName, originalLabels, sourcePages),
     originalLabels,
     originalPeriods,
     sourcePages,
     rawReportedValues,
+    sourceScaleFormula: scaleFormula,
     comparisonCurrency,
     comparisonUnitScale: 1 as const,
   };
@@ -203,6 +233,7 @@ function mappingForYear(
 
   const convertedValue = value.value * resolvedRate.rate;
   const sourceUnitsPerComparisonUnit = 1 / resolvedRate.rate;
+  const conversionFormula = `${scaleFormula}; ${auditNumber(value.value)} ${value.currency} × ${auditNumber(resolvedRate.rate)} ${comparisonCurrency}/${value.currency}${value.currency === comparisonCurrency ? " (identity)" : ""} = ${auditNumber(convertedValue)} ${comparisonCurrency}`;
   return {
     ...base,
     sourceProvenance: value.provenance,
@@ -210,7 +241,7 @@ function mappingForYear(
     sourceUnitsPerComparisonUnit,
     convertedValue,
     convertedProvenance: "CALCULATED",
-    conversionFormula: `${value.value} ${value.currency} × ${resolvedRate.rate} ${comparisonCurrency}/${value.currency} = ${convertedValue} ${comparisonCurrency}`,
+    conversionFormula,
     status: "ready",
     action: null,
   };
@@ -279,7 +310,7 @@ export function generateFin2(dataset: CanonicalFinancialDataset, options: Genera
       mappingIds: eligible.map((mapping) => mapping.id),
       formula: average === null
         ? "No eligible converted annual-turnover values are available"
-        : `(${eligible.map((mapping) => `${mapping.convertedValue} ${options.comparisonCurrency}`).join(" + ")}) ÷ ${eligible.length}`,
+        : `Average of full-unit ${options.comparisonCurrency} equivalents after source-unit scaling and FX: (${eligible.map((mapping) => `${auditNumber(mapping.convertedValue ?? 0)} ${options.comparisonCurrency}`).join(" + ")}) ÷ ${eligible.length} = ${auditNumber(average)} ${options.comparisonCurrency}`,
     },
     readiness: {
       status: readinessStatus,
@@ -323,19 +354,25 @@ export function fin2ToCsv(form: Fin2Form) {
     ["Invitation number", form.invitationNumber.value ?? "MISSING"],
     ["Purchaser", form.purchaser.value ?? "MISSING"],
     [],
-    ["Year", `Original amount (${form.sourceCurrency} · ${form.sourceUnitLabel})`, "Original label", `Exchange rate (${form.sourceCurrency} per ${form.comparisonCurrency})`, "Rate basis/date", `${form.comparisonCurrency} equivalent`, "Source", "Status"],
+    ["Year", "Original reported amount", "Source currency", "Source unit", "Source unit scale", "Full source-currency amount", "Original label", `FX rate (${form.comparisonCurrency} per ${form.sourceCurrency})`, `Published quote (${form.sourceCurrency} per ${form.comparisonCurrency})`, "Rate basis/date", `Full ${form.comparisonCurrency} equivalent`, "Conversion formula", "Source", "Status"],
     ...form.mappings.map((mapping) => [
       mapping.displayYear,
-      mapping.sourceValue === null ? "MISSING" : mapping.sourceValue / mapping.sourceUnitScale,
+      mapping.sourceReportedValue ?? "MISSING",
+      mapping.sourceCurrency,
+      mapping.sourceUnitLabel,
+      mapping.sourceUnitScale,
+      mapping.sourceValue ?? "MISSING",
       mapping.originalLabels.join(" / "),
+      mapping.exchangeRate?.targetUnitsPerSourceUnit ?? "MISSING",
       mapping.sourceUnitsPerComparisonUnit ?? "MISSING",
       mapping.exchangeRate ? `${mapping.exchangeRate.rateType}${mapping.exchangeRate.closingDate ? ` · ${mapping.exchangeRate.closingDate}` : ""}` : "MISSING",
       mapping.convertedValue ?? "MISSING",
+      mapping.conversionFormula ?? "MISSING",
       mapping.sourceSummary,
       mapping.status,
     ]),
     [],
-    ["Average Annual Turnover", form.averageAnnualTurnover.value ?? "MISSING", form.comparisonCurrency, form.averageAnnualTurnover.formula],
+    ["Average Annual Turnover (full target-currency units)", form.averageAnnualTurnover.value ?? "MISSING", form.comparisonCurrency, "units", form.averageAnnualTurnover.formula],
   ];
   const escape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
   return rows.map((row) => row.map(escape).join(",")).join("\n");

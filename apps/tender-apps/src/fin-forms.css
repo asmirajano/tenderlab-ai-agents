@@ -232,7 +232,7 @@
 .fin-fx-policy p { color: #63736a; font-size: var(--type-label); line-height: 1.5; margin: 0; }
 .fin-currency-switcher { align-items: center; align-self: center; background: white; border: 1px solid #c9d6ce; border-radius: 999px; display: flex; gap: 3px; padding: 4px; }
 .fin-currency-switcher > span { color: #697970; font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; padding: 0 8px; text-transform: uppercase; }
-.fin-currency-switcher button { background: transparent; border: 0; border-radius: 999px; color: #617168; cursor: pointer; font-size: var(--type-control); font-weight: 900; min-height: 39px; min-width: 58px; padding: 8px 12px; }
+.fin-currency-switcher button { background: transparent; border: 0; border-radius: 999px; color: #617168; cursor: pointer; font-size: var(--type-control); font-weight: 900; min-height: 44px; min-width: 58px; padding: 8px 12px; }
 .fin-currency-switcher button[aria-pressed="true"] { background: var(--bs-ink); color: white; }
 .fin-currency-switcher button:focus-visible { outline: 3px solid rgba(23,107,81,.22); outline-offset: 2px; }
 .fin-fx-policy dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
@@ -245,6 +245,8 @@
 
 .fin-mapping-table-wrap { margin-top: 14px; overflow-x: auto; }
 .fin-mapping-table { border-collapse: collapse; min-width: 1050px; width: 100%; }
+.fin-mapping-table caption,
+.fin-generated-form table caption { background: #eef3ef; color: #52675c; font-size: var(--type-label); font-weight: 750; line-height: 1.45; padding: 12px 16px; text-align: left; }
 .fin-mapping-table th { background: #899991; color: white; font-size: var(--type-label); letter-spacing: .04em; padding: 14px 16px; text-align: left; }
 .fin-mapping-table td { border-bottom: 1px solid var(--bs-line); font-size: var(--type-table); line-height: 1.5; padding: 15px 16px; vertical-align: top; }
 .fin-mapping-table tr:last-child td { border-bottom: 0; }
@@ -356,17 +358,22 @@
 .fin2-admin-grid input { background: #f7faf8; border: 1px solid var(--bs-line); border-radius: 8px; color: var(--bs-ink); font: inherit; min-height: 44px; padding: 10px 12px; width: 100%; }
 .fin2-admin-grid input:focus-visible { border-color: var(--bs-green); outline: 3px solid rgba(23,107,81,.14); }
 .fin2-admin-grid small { color: #77857d; font-size: var(--type-micro); }
-.fin2-mapping-table { min-width: 1380px; }
-.fin2-mapping-table td:first-child { width: 13%; }
-.fin2-mapping-table td:nth-child(2) { width: 8%; }
+.fin2-mapping-table { min-width: 1460px; }
+.fin2-mapping-table td:first-child { width: 11%; }
+.fin2-mapping-table td:nth-child(2) { width: 7%; }
 .fin2-mapping-table td:nth-child(3) { width: 14%; }
-.fin2-mapping-table td:nth-child(4) { width: 14%; }
+.fin2-mapping-table td:nth-child(4) { width: 12%; }
 .fin2-mapping-table td:nth-child(5) { width: 14%; }
-.fin2-mapping-table td:nth-child(6) { width: 22%; }
-.fin2-mapping-table td:last-child { width: 15%; }
+.fin2-mapping-table td:nth-child(6) { width: 14%; }
+.fin2-mapping-table td:nth-child(7) { width: 17%; }
+.fin2-mapping-table td:last-child { width: 11%; }
 .fin2-mapping-table td:nth-child(3) > b,
 .fin2-mapping-table td:nth-child(4) > b,
-.fin2-mapping-table td:nth-child(5) > b { text-align: right; }
+.fin2-mapping-table td:nth-child(5) > b,
+.fin2-mapping-table td:nth-child(6) > b { text-align: right; }
+.fin2-scale-step small,
+.fin2-fx-step small,
+.fin2-target-amount small { max-width: 240px; overflow-wrap: anywhere; }
 .fin2-mapping-table tr.is-mapping-review-required,
 .fin2-mapping-table tr.is-extraction-problem,
 .fin2-mapping-table tr.is-fx-rate-missing { background: #fff0ee; }
@@ -383,6 +390,7 @@
 .fin2-form-admin p:last-child { border-right: 0; }
 .fin2-form-admin span { color: var(--bs-green); font-size: var(--type-micro); font-weight: 850; text-transform: uppercase; }
 .fin2-generated-form th:first-child { width: 14%; }
+.fin2-generated-form table { min-width: 1020px; }
 .fin2-average-result { align-items: center; background: #edf4ef; border-top: 2px solid var(--bs-green); display: grid; gap: 6px; grid-template-columns: 1fr auto; padding: 20px 24px; }
 .fin2-average-result > span { font-size: 20px; font-weight: 850; }
 .fin2-average-result > strong { color: var(--bs-green); font-size: 24px; }

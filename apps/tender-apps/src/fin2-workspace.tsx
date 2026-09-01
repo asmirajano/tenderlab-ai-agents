@@ -3,6 +3,7 @@ import type { BalanceSheetReview } from "../../../packages/tender-balance/src/mo
 import type { CanonicalFinancialDataset } from "../../../packages/tender-balance/src/fin-forms.ts";
 import type { FinPresentationCurrency } from "../../../packages/tender-balance/src/fin1-fx.ts";
 import {
+  fin2ReportedUnitName,
   fin2ToCsv,
   generateFin2,
   type Fin2AdministrativeInput,
@@ -70,6 +71,27 @@ function statusLabel(mapping: Fin2TurnoverMapping) {
   if (mapping.status === "mapping-review-required") return "Mapping review required";
   if (mapping.status === "fx-rate-missing") return "Exchange rate required";
   return "Extraction review required";
+}
+
+function formatFullAmount(value: number | null, currency: string) {
+  return value === null ? "MISSING" : `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${currency}`;
+}
+
+function sourceReportedAmount(mapping: Fin2TurnoverMapping) {
+  if (mapping.sourceReportedValue === null) return "MISSING";
+  return `${formatFigure(mapping.sourceValue, mapping.sourceUnitScale)} ${fin2ReportedUnitName(mapping.sourceUnitLabel, mapping.sourceUnitScale, mapping.sourceCurrency)}`;
+}
+
+function fxMultiplier(mapping: Fin2TurnoverMapping) {
+  const rate = mapping.exchangeRate?.targetUnitsPerSourceUnit;
+  if (rate === undefined) return "MISSING";
+  return `× ${rate.toLocaleString("en-US", { maximumSignificantDigits: 12 })} ${mapping.comparisonCurrency}/${mapping.sourceCurrency}`;
+}
+
+function fxExplanation(mapping: Fin2TurnoverMapping) {
+  if (!mapping.exchangeRate || mapping.sourceUnitsPerComparisonUnit === null) return "Authorized year-end rate required";
+  if (mapping.sourceCurrency === mapping.comparisonCurrency) return `1 ${mapping.sourceCurrency} = 1 ${mapping.comparisonCurrency} · identity`;
+  return `1 ${mapping.comparisonCurrency} = ${mapping.sourceUnitsPerComparisonUnit.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${mapping.sourceCurrency} · ${mapping.exchangeRate.closingDate ?? "year-end"}`;
 }
 
 function Fin2Header({ view, canGenerate, onChange, onBackToCatalog }: {
@@ -156,7 +178,7 @@ export function Fin2Workspace({
         </section>
 
         <section className="fin-fx-policy is-ready">
-          <div><span>FIN-2 COMPARISON CURRENCY</span><h2>{form.sourceCurrency} turnover → {comparisonCurrency} equivalent</h2><p>FIN-2 uses the saved year-end closing rate for each source-driven year. Original amounts and labels remain unchanged.</p></div>
+          <div><span>FIN-2 COMPARISON CURRENCY</span><h2>{form.sourceCurrency} turnover → {comparisonCurrency} equivalent</h2><p>Each conversion preserves the source-reported amount and unit, applies the source unit scale once, then applies the saved year-end FX rate.</p></div>
           <FinCurrencySwitcher value={comparisonCurrency} onChange={onComparisonCurrencyChange} />
           <dl><div><dt>Provider</dt><dd>{form.fxDataset.provider}</dd></div><div><dt>Basis</dt><dd>Year-end closing</dd></div><div><dt>Dataset</dt><dd>{form.fxDataset.datasetId}</dd></div><div><dt>Coverage</dt><dd>{form.coverage.message}</dd></div></dl>
         </section>
@@ -171,13 +193,15 @@ export function Fin2Workspace({
 
         <div className="fin-mapping-table-wrap">
           <table className="fin-mapping-table fin2-mapping-table">
-            <thead><tr><th>FIN-2 field</th><th>Year</th><th>Original turnover</th><th>Exchange rate</th><th>{comparisonCurrency} equivalent</th><th>Source</th><th>Status</th></tr></thead>
+            <caption>Source-reported turnover → full source-currency units → FX → full {comparisonCurrency} equivalent</caption>
+            <thead><tr><th>FIN-2 field</th><th>Year</th><th>Original turnover ({form.sourceCurrency} · {form.sourceUnitLabel})</th><th>Unit scale</th><th>FX rate</th><th>Full {comparisonCurrency} equivalent</th><th>Source</th><th>Status</th></tr></thead>
             <tbody>{form.mappings.map((mapping) => <tr className={`is-${mapping.status}`} key={mapping.id}>
               <td><b>Annual Turnover</b>{mapping.originalLabels.length > 0 && <small>Reported as: {mapping.originalLabels.join(" / ")}</small>}</td>
               <td><strong>{mapping.displayYear}</strong>{mapping.originalPeriods.length > 0 && <small>Source: {mapping.originalPeriods.join(" / ")}</small>}</td>
-              <td><b>{formatFigure(mapping.sourceValue, mapping.sourceUnitScale)}{mapping.sourceValue !== null ? ` ${mapping.sourceCurrency}` : ""}</b><small>{mapping.sourceProvenance}</small></td>
-              <td><b>{mapping.sourceUnitsPerComparisonUnit === null ? "MISSING" : mapping.sourceUnitsPerComparisonUnit.toLocaleString("en-US", { maximumFractionDigits: 6 })}</b>{mapping.exchangeRate && <small>{mapping.sourceCurrency} per {comparisonCurrency} · {mapping.exchangeRate.closingDate ?? "identity"}</small>}</td>
-              <td><b>{mapping.convertedValue === null ? "MISSING" : mapping.convertedValue.toLocaleString("en-US", { maximumFractionDigits: 2 })} {mapping.convertedValue === null ? "" : comparisonCurrency}</b><small>{mapping.convertedProvenance}</small></td>
+              <td className="fin2-source-amount"><b>{sourceReportedAmount(mapping)}</b><small>{mapping.sourceProvenance} · source reported</small></td>
+              <td className="fin2-scale-step"><b>× {mapping.sourceUnitScale.toLocaleString("en-US")}</b><small>= {formatFullAmount(mapping.sourceValue, mapping.sourceCurrency)}</small></td>
+              <td className="fin2-fx-step"><b>{fxMultiplier(mapping)}</b><small>{fxExplanation(mapping)}</small></td>
+              <td className="fin2-target-amount"><b>{formatFullAmount(mapping.convertedValue, comparisonCurrency)}</b><small>{mapping.convertedProvenance} · full units</small></td>
               <td><span>{mapping.sourceSummary}</span></td>
               <td><span className="fin-mapping-status">{statusLabel(mapping)}</span>{mapping.action && <small>{mapping.action}</small>}</td>
             </tr>)}</tbody>
@@ -185,7 +209,7 @@ export function Fin2Workspace({
         </div>
 
         <section className="fin2-average-audit">
-          <div><span>CALCULATED RESULT</span><h2>Average Annual Turnover</h2><p>{form.averageAnnualTurnover.formula}</p></div>
+          <div><span>CALCULATED RESULT · FULL {comparisonCurrency} UNITS</span><h2>Average Annual Turnover</h2><p>{form.averageAnnualTurnover.formula}</p></div>
           <dl><div><dt>Years included</dt><dd>{form.averageAnnualTurnover.yearsIncluded.join(" · ") || "NONE"}</dd></div><div><dt>Average</dt><dd>{form.averageAnnualTurnover.value === null ? "MISSING" : `${form.averageAnnualTurnover.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${comparisonCurrency}`}</dd></div><div><dt>Provenance</dt><dd>{form.averageAnnualTurnover.provenance}</dd></div></dl>
         </section>
 
@@ -198,11 +222,11 @@ export function Fin2Workspace({
   return (
     <>
       <section className="fin-workspace-heading fin-generated-heading">
-        <div><p className="bs-eyebrow"><span /> FORM GENERATED · SOURCE + FX CALCULATED</p><h1>FIN-2 is ready<br /><em>in {comparisonCurrency}.</em></h1><p>The original turnover remains in {form.sourceCurrency}; equivalents and the average are calculated and auditable.</p></div>
+        <div><p className="bs-eyebrow"><span /> FORM GENERATED · SOURCE + SCALE + FX CALCULATED</p><h1>FIN-2 is ready<br /><em>in {comparisonCurrency}.</em></h1><p>The original turnover remains in {form.sourceCurrency} · {form.sourceUnitLabel}; every full-unit equivalent and the average retain an auditable scale and FX path.</p></div>
         <Fin2Header view={view} canGenerate={form.readiness.canGenerate} onChange={setView} onBackToCatalog={onBackToCatalog} />
       </section>
 
-      <section className="fin-generated-meta"><div><span>Bidder</span><b>{form.bidder.value}</b></div><div><span>Original currency / units</span><b>{form.sourceCurrency} · {form.sourceUnitLabel}</b></div><div><span>Historical periods</span><b>{form.years.join(" · ")}</b></div><div><span>Comparison currency</span><b>{comparisonCurrency}</b></div></section>
+      <section className="fin-generated-meta"><div><span>Bidder</span><b>{form.bidder.value}</b></div><div><span>Source currency / reported unit</span><b>{form.sourceCurrency} · {form.sourceUnitLabel} · ×{form.sourceUnitScale.toLocaleString("en-US")}</b></div><div><span>Historical periods</span><b>{form.years.join(" · ")}</b></div><div><span>Target currency / unit</span><b>{comparisonCurrency} · full units</b></div></section>
 
       <section className="fin-generated-form fin2-generated-form" aria-label="Generated FIN-2 Size of Operation">
         <header><div><span>FORM FIN–2</span><h2>Size of Operation (Average Annual Turnover)</h2><p>{form.bidder.value}</p></div><b>{form.readiness.status === "ready" ? "READY" : "GENERATED WITH DECLARED GAPS"}</b></header>
@@ -211,8 +235,8 @@ export function Fin2Workspace({
           <p><span>Invitation number</span><b>{form.invitationNumber.value ?? "MISSING"}</b></p>
           <p><span>Purchaser</span><b>{form.purchaser.value ?? "MISSING"}</b></p>
         </div>
-        <div className="fin-form-table-wrap"><table><thead><tr><th>Year</th><th>Amount ({form.sourceCurrency}, {form.sourceUnitLabel})</th><th>Exchange Rate</th><th>{comparisonCurrency} Equivalent</th></tr></thead><tbody>{form.mappings.map((mapping) => <tr key={mapping.id}><td><b>{mapping.displayYear}</b></td><td className={mapping.sourceValue === null ? "is-missing" : ""}><b>{formatFigure(mapping.sourceValue, mapping.sourceUnitScale)}</b></td><td className={mapping.sourceUnitsPerComparisonUnit === null ? "is-missing" : ""}><b>{mapping.sourceUnitsPerComparisonUnit === null ? "MISSING" : mapping.sourceUnitsPerComparisonUnit.toLocaleString("en-US", { maximumFractionDigits: 6 })}</b></td><td className={mapping.convertedValue === null ? "is-missing" : ""}><b>{mapping.convertedValue === null ? "MISSING" : mapping.convertedValue.toLocaleString("en-US", { maximumFractionDigits: 2 })}</b></td></tr>)}</tbody></table></div>
-        <div className="fin2-average-result"><span>Average Annual Turnover</span><strong>{form.averageAnnualTurnover.value === null ? "MISSING" : `${form.averageAnnualTurnover.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${comparisonCurrency}`}</strong><small>{form.averageAnnualTurnover.yearsIncluded.join(" · ")} · CALCULATED</small></div>
+        <div className="fin-form-table-wrap"><table><caption>Every target amount is calculated from the displayed source-reported amount, its unit scale, and the applicable FX rate.</caption><thead><tr><th>Year</th><th>Source reported amount ({form.sourceCurrency} · {form.sourceUnitLabel})</th><th>To full source units</th><th>FX rate</th><th>Full {comparisonCurrency} equivalent</th></tr></thead><tbody>{form.mappings.map((mapping) => <tr key={mapping.id}><td><b>{mapping.displayYear}</b></td><td className={mapping.sourceValue === null ? "is-missing" : ""}><b>{sourceReportedAmount(mapping)}</b><small>source reported</small></td><td className={mapping.sourceValue === null ? "is-missing" : ""}><b>× {mapping.sourceUnitScale.toLocaleString("en-US")}</b><small>= {formatFullAmount(mapping.sourceValue, mapping.sourceCurrency)}</small></td><td className={mapping.sourceUnitsPerComparisonUnit === null ? "is-missing" : ""}><b>{fxMultiplier(mapping)}</b><small>{fxExplanation(mapping)}</small></td><td className={mapping.convertedValue === null ? "is-missing" : ""}><b>{formatFullAmount(mapping.convertedValue, comparisonCurrency)}</b><small>full target-currency units</small></td></tr>)}</tbody></table></div>
+        <div className="fin2-average-result"><span>Average Annual Turnover</span><strong>{form.averageAnnualTurnover.value === null ? "MISSING" : `${form.averageAnnualTurnover.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${comparisonCurrency}`}</strong><small>{form.averageAnnualTurnover.yearsIncluded.join(" · ")} · CALCULATED from full {comparisonCurrency} units after source scaling and FX</small></div>
         <footer><p>Source-driven years only. Template examples and JV/Consortium fields are excluded from this single-bidder form.</p><span>{form.coverage.message}</span></footer>
       </section>
 
