@@ -14,6 +14,7 @@
     "build:tender-apps": "npm --prefix apps/tender-apps run build",
     "dev:tender-apps": "npm --prefix apps/tender-apps run dev",
     "extract:tendermatch-pilot": "node scripts/extract-tendermatch-central-asia-pilot.mjs",
+    "export:tendermatch-static-snapshot": "node --experimental-strip-types scripts/export-tendermatch-static-snapshot.mjs",
     "serve:tendermatch-local": "node --experimental-strip-types scripts/serve-tendermatch-local.mjs",
     "generate:agent-specs": "node --experimental-strip-types scripts/generate-agent-specifications.mjs",
     "start": "vinext start",

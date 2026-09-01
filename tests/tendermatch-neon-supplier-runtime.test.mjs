@@ -253,7 +253,9 @@ test("validates target, keyset inputs, filtering and browser-secret containment"
   const app = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
   assert.doesNotMatch(`${client}\n${app}`, /TENDERMATCH_SUPPLIER_DATABASE_URL|postgres(?:ql)?:\/\//i);
   assert.doesNotMatch(app, /demoSuppliers/);
-  assert.match(app, /No fixture fallback was applied/);
+  assert.match(app, /NO HISTORICAL FIXTURE FALLBACK/);
+  assert.match(client, /supplier-runtime-v1\.3\.json/);
+  assert.match(client, /supplier-evidence-v1\.3\.json/);
 
   async function files(directory) {
     const entries = await readdir(directory, { withFileTypes: true });

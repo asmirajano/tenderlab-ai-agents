@@ -47,4 +47,10 @@ TenderBalance and Tender Logistics Cost were checked at desktop Standard, deskto
 - Full TenderApps TypeScript baseline: 19 errors remain only in unchanged TenderBalance/Logistics Excel, PDF, FX and ES-lib surfaces; the changed TenderMatch and callout surfaces add none.
 - Exact secret scan: 318 tracked/build files checked, 0 exact credential matches.
 
-This evidence is local verification only. Nothing was pushed, merged, deployed or published.
+The evidence above was local-only at its original checkpoint; later release evidence is recorded separately below.
+
+## Firebase-compatible snapshot correction
+
+The later production correction preserves the local API evidence above and adds an intentionally public, sanitized static release of the same immutable v1.3 batch. The generated manifest records 17 suppliers, 289 non-contact evidence records, 1,020 unique evaluations, zero numeric results and 1,020 MISSING results, with SHA-256 identities for both data files.
+
+The exact TenderApps production artifact was served without `/api/tendermatch/*`. Direct Overview and Evidence Review loads recovered through `/tendermatch/data/supplier-runtime-v1.3.json` and `/tendermatch/data/supplier-evidence-v1.3.json`; the browser displayed `PINNED V1.3 SNAPSHOT`, loaded evidence, showed no offline alert, had no horizontal overflow or broken image, and produced no console warning/error. Production publication remains bound to a separately recorded successful GitHub/Firebase release run.

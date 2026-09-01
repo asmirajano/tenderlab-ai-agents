@@ -95,10 +95,14 @@ export type SupplierDatasetSummary = {
   retrievedAt: string;
 };
 
+export type SupplierStaticDatasetSummary = Omit<SupplierDatasetSummary, "consumerRole" | "views"> & {
+  sourceMode: "approved-sanitized-v1.3-export";
+};
+
 export type TenderMatchRuntimePayload = {
   status: "ready";
-  mode: "neon-read-only";
-  summary: SupplierDatasetSummary;
+  mode: "neon-read-only" | "static-pinned-snapshot";
+  summary: SupplierDatasetSummary | SupplierStaticDatasetSummary;
   suppliers: SupplierProfileApiRecord[];
   evaluations: import("./exploratory-matching.ts").ExploratoryMatchEvaluation[];
   evaluationSummary: import("./exploratory-matching.ts").ExploratoryEvaluationSummary;

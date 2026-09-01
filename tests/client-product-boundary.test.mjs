@@ -31,8 +31,8 @@ test("registers all practical Agents as pages in one Tender Apps product", () =>
   assert.equal(tenderMatchProduct.name, "TenderMatch");
   assert.equal(tenderMatchProduct.clientRoute, "/tendermatch");
   assert.equal(tenderMatchProduct.status, "pilot");
-  assert.match(tenderMatchProduct.surfaceStatus, /Local controlled pilot/);
-  assert.match(tenderMatchProduct.surfaceStatus, /read-only supplier API/);
+  assert.match(tenderMatchProduct.surfaceStatus, /Pinned v1\.3 supplier snapshot/);
+  assert.match(tenderMatchProduct.surfaceStatus, /read-only/);
   assert.match(tenderMatchProduct.surfaceStatus, /human disposition/);
   assert.match(tenderMatchProduct.dataNotice, /60-tender snapshot/);
   assert.match(tenderMatchProduct.dataNotice, /17 pinned v1\.3 supplier profiles/);

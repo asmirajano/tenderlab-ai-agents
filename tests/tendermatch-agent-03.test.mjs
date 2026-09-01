@@ -307,9 +307,10 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /data-map-mode="local-geographic"/);
   assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "neon-supplier-v1\.3"\}/);
-  assert.match(page, /No fixture fallback was applied/);
-  assert.match(page, /17 Neon v1\.3 profiles/);
+  assert.match(page, /deployed pinned v1\.3 supplier snapshot/);
+  assert.match(page, /NO HISTORICAL FIXTURE FALLBACK/);
   assert.match(page, /Retry supplier service/);
+  assert.match(page, /PINNED V1\.3 SNAPSHOT/);
   assert.match(page, /runtime\.evaluations\.map\(assessmentFromExploratoryEvaluation\)/);
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);

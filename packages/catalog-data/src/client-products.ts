@@ -139,7 +139,7 @@ export const clientProducts: ClientProduct[] = [
     family: "Tender Apps",
     name: "TenderMatch",
     descriptor: "TenderMatch pilot with 60 current-at-extraction Central Asia tenders, 17 under-review GOODS/WORKS supplier profiles, and evidence-gated exploratory Company × Tender evaluation",
-    surfaceStatus: "Local controlled pilot · read-only supplier API · human disposition",
+    surfaceStatus: "Pinned v1.3 supplier snapshot · read-only · human disposition",
     dataNotice: "60-tender snapshot · 17 pinned v1.3 supplier profiles · 1,020 completed evaluations, currently all MISSING under the evidence gate · no direct browser database connection",
     status: "pilot",
     ownerAgentId: "agent:TL-A031",

@@ -212,7 +212,7 @@ function SupplierTabs({ view, onChange }: { view: WorkspaceView; onChange: (view
 }
 
 export default function TenderMatchApp() {
-  const [runtimeState, setRuntimeState] = useState<TenderMatchRuntimeState>({ status: "loading", progress: "Connecting to the read-only supplier service…" });
+  const [runtimeState, setRuntimeState] = useState<TenderMatchRuntimeState>({ status: "loading", progress: "Loading the approved read-only supplier data…" });
   useEffect(() => {
     const controller = new AbortController();
     loadTenderMatchRuntime(controller.signal)
@@ -221,7 +221,7 @@ export default function TenderMatchApp() {
         if (error instanceof DOMException && error.name === "AbortError") return;
         const offline = error instanceof TypeError;
         setRuntimeState({ status: offline ? "offline" : "error", message: offline
-          ? "Supplier API unavailable. No fixture fallback was applied; start the approved same-origin local runtime to load the 17 Neon v1.3 profiles."
+          ? "Neither the local supplier API nor the deployed pinned v1.3 supplier snapshot could be loaded. No historical fixture was substituted."
           : error instanceof Error ? error.message : "Supplier runtime failed safely." });
       });
     return () => controller.abort();
@@ -234,7 +234,7 @@ function TenderMatchRuntimeGate({ state }: { state: Exclude<TenderMatchRuntimeSt
   return <main className="tb3-page tb3-runtime-gate"><section role={state.status === "loading" ? "status" : "alert"} aria-live="polite">
     <span>SUPPLIER DATA BOUNDARY</span><h1>{state.status === "loading" ? "Loading the TenderMatch supplier workspace" : "Supplier service is offline"}</h1>
     <p>{state.status === "loading" ? state.progress : state.message}</p>
-    <div><b>NO SILENT FALLBACK</b><small>The ten frozen suppliers remain historical fixtures only and never replace a failed Neon connection.</small></div>
+    <div><b>NO HISTORICAL FIXTURE FALLBACK</b><small>The ten frozen suppliers remain historical fixtures only. Production uses the explicitly identified sanitized v1.3 snapshot.</small></div>
     {state.status !== "loading" && <button type="button" onClick={() => window.location.reload()}>Retry supplier service</button>}
   </section></main>;
 }
@@ -370,7 +370,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     const id = supplierProfile.canonicalEntityId;
     if (supplierEvidence[id]) return;
     const controller = new AbortController();
-    loadSupplierEvidence(id, controller.signal)
+    loadSupplierEvidence(id, controller.signal, runtime.mode)
       .then((records) => {
         setSupplierEvidence((current) => ({ ...current, [id]: records }));
         setEvidenceErrors((current) => {
@@ -385,7 +385,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
         setEvidenceErrors((current) => ({ ...current, [id]: error instanceof Error ? error.message : "Evidence could not be retrieved." }));
       });
     return () => controller.abort();
-  }, [supplierProfile.canonicalEntityId, supplierEvidence]);
+  }, [runtime.mode, supplierProfile.canonicalEntityId, supplierEvidence]);
 
   const evidenceError = evidenceErrors[supplierProfile.canonicalEntityId] ?? "";
   const evidenceStatus: "loading" | "ready" | "error" = supplierEvidence[supplierProfile.canonicalEntityId]
@@ -417,7 +417,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>5 page families · {navItems.length} reachable views</small></header>
+        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>5 page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
         <WorkspaceNavigation expanded={expandedNavGroups} navGroups={navGroups} onToggle={toggleNavGroup} onView={changeView} view={view} />
       </aside>
 
@@ -667,7 +667,7 @@ function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceE
   return <>
     <ViewHeader eyebrow="03 · SUPPLIERS / VERIFICATION" title="Evidence Review" description="Inspect the safe non-contact evidence projection, claim class, source record, artifact availability and explicit unknowns. This batch contains zero VERIFIED claims." aside={<div className="tb3-directory-count"><b>0/{profile.evidenceClaimCount}</b><span>verified profile claims</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{profile.classification} · {supplierActivity(supplier)} · {profile.profileVersion}</small></div></header><div className="tb3-evidence-legend"><span className="verified">0 verified</span><span className="stated">STATED_UNVERIFIED · saved artifact, not verified</span><span className="inferred">INFERRED · source-backed, not verified</span><span className="unknown">UNKNOWN / MISSING</span></div>{evidenceStatus === "loading" && <div className="tb3-evidence-state" role="status">Loading safe non-contact evidence…</div>}{evidenceStatus === "error" && <div className="tb3-evidence-state error" role="alert">{evidenceError}</div>}<div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>ARTIFACT</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "Unknown / MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus}</span><strong>{entry.notes.startsWith("Saved") ? "Linked" : "Unavailable"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source reference ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>STATED_UNVERIFIED remains stated and INFERRED remains inferred. UNKNOWN remains MISSING. None becomes verified, zero, or negative evidence.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length || "—"}</b><small>safe evidence records loaded</small></div><div><b>{profile.evidenceStatedUnverifiedCount}</b><small>stated-unverified profile claims</small></div><div><b>{profile.evidenceInferredCount}</b><small>inferred profile claims</small></div><div><b>{profile.evidenceUnknownCount}</b><small>unknown profile claims</small></div><p>Contacts, messaging fields, named people, addresses and raw source content are excluded by the database view and same-origin API.</p><section><b>CONSULTANT LIMITS</b>{supplier.verificationQuestions.slice(0, 3).map((question) => <p key={question}>? {question}</p>)}</section><button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
+    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{profile.classification} · {supplierActivity(supplier)} · {profile.profileVersion}</small></div></header><div className="tb3-evidence-legend"><span className="verified">0 verified</span><span className="stated">STATED_UNVERIFIED · saved artifact, not verified</span><span className="inferred">INFERRED · source-backed, not verified</span><span className="unknown">UNKNOWN / MISSING</span></div>{evidenceStatus === "loading" && <div className="tb3-evidence-state" role="status">Loading safe non-contact evidence…</div>}{evidenceStatus === "error" && <div className="tb3-evidence-state error" role="alert">{evidenceError}</div>}<div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>ARTIFACT</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "Unknown / MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus}</span><strong>{entry.notes.startsWith("Saved") ? "Linked" : "Unavailable"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source reference ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>STATED_UNVERIFIED remains stated and INFERRED remains inferred. UNKNOWN remains MISSING. None becomes verified, zero, or negative evidence.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length || "—"}</b><small>safe evidence records loaded</small></div><div><b>{profile.evidenceStatedUnverifiedCount}</b><small>stated-unverified profile claims</small></div><div><b>{profile.evidenceInferredCount}</b><small>inferred profile claims</small></div><div><b>{profile.evidenceUnknownCount}</b><small>unknown profile claims</small></div><p>Contacts, messaging fields, named people, addresses and raw source content are excluded from both the local API and the deployed sanitized snapshot.</p><section><b>CONSULTANT LIMITS</b>{supplier.verificationQuestions.slice(0, 3).map((question) => <p key={question}>? {question}</p>)}</section><button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
   </>;
 }
 

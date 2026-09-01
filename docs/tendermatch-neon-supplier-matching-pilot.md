@@ -1,6 +1,6 @@
 # TenderMatch Neon v1.3 supplier and exploratory-matching pilot
 
-Status: local controlled pilot, 2026-09-01. This records the approved development-only, read-only supplier integration and matching-method gate for `agent:TL-A031`. It does not authorize deployment, Neon writes, supplier selection, qualification, Bid/No-Bid, outreach, or production operation.
+Status: read-only snapshot pilot, 2026-09-01. This records the approved supplier integration and matching-method gate for `agent:TL-A031`, plus the sanitized Firebase-compatible snapshot release. It does not authorize Neon writes, supplier selection, qualification, Bid/No-Bid, outreach, or production operation.
 
 ## Pinned source and authority boundary
 
@@ -26,7 +26,23 @@ The adapter keeps the existing `connect-src 'self'` CSP. The credential is loade
 | `GET /api/tendermatch/suppliers/:uuid` | One approved normalized profile |
 | `GET /api/tendermatch/suppliers/:uuid/evidence` | That supplier's safe non-contact evidence projection |
 
-Invalid IDs, filters, cursor pairs and limits fail before a data query. Operands are parameterized. A failed source or a malformed same-origin response renders a visible recoverable error and never a blank page or silent fixture fallback. Firebase remains static and unchanged; a production API host, authentication, tenant authorization, managed secret, durable cache and monitoring are later approval gates.
+Invalid IDs, filters, cursor pairs and limits fail before a data query. Operands are parameterized. A failed source or a malformed same-origin response renders a visible recoverable error and never a blank page or silent historical-fixture fallback.
+
+## Firebase static snapshot release
+
+Firebase Hosting cannot execute the local Node adapter or access Neon secrets. The no-paid production path therefore publishes an intentionally versioned, sanitized snapshot generated from the approved local read-only API:
+
+- runtime: `/tendermatch/data/supplier-runtime-v1.3.json`;
+- evidence: `/tendermatch/data/supplier-evidence-v1.3.json`;
+- manifest: `/tendermatch/data/supplier-snapshot-v1.3.manifest.json`.
+
+The manifest binds the contract, profile and batch versions, snapshot time, counts and SHA-256 hashes. The exporter removes the database role and view names, rejects contact/email/phone/person/raw-content fields, validates supplier/evidence ownership and cardinalities, and emits only the same safe browser projection already exposed by the local API. Production displays `PINNED V1.3 SNAPSHOT` and its as-of date. This is the primary static release dataset, not a silent substitution of the historical ten-supplier fixture.
+
+Refresh command after the approved local read-only runtime is ready:
+
+`pnpm run export:tendermatch-static-snapshot -- --origin http://127.0.0.1:4177`
+
+The immutable Neon v1.3 views remain authoritative. A live production API, authentication, tenant authorization, managed secret, durable cache and monitoring remain later approval gates.
 
 ## Canonical mapping and contract totals
 
@@ -95,4 +111,4 @@ Non-exclusive reason counts: procurement mismatch 972; insufficient relevant evi
 
 The server precomputes and caches all 1,020 results before ready state, so the browser performs no database or bulk matching work. The Overview, radar, 17-profile directory, evidence review, 60-tender directory, 17 × 60 full matrix, tender-first review, supplier-first review and explicit Case reconstruction consume the same inventory. Current counts are data-derived. Historical Cases keep their supplier identity and are not silently remapped.
 
-This remains an `isolated-method-validated` development pilot. Predictive validity, joint tender/supplier refresh, multilingual taxonomy depth, technical-specification parsing, qualification, capacity comparison, commercial/delivery analysis, authentication, tenant isolation, durable result/artifact storage and production hosting remain unresolved. Consultant disposition is explicit and separate; TenderMatch never selects a bidder, issues Bid/No-Bid, promotes a tender or sends outreach.
+This remains an `isolated-method-validated` read-only snapshot pilot. Predictive validity, automatic tender/supplier refresh, multilingual taxonomy depth, technical-specification parsing, qualification, capacity comparison, commercial/delivery analysis, authentication, tenant isolation, durable result/artifact storage and a live production API remain unresolved. Consultant disposition is explicit and separate; TenderMatch never selects a bidder, issues Bid/No-Bid, promotes a tender or sends outreach.

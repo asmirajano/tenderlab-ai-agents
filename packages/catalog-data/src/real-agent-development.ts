@@ -118,7 +118,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     name: "TenderMatch · TenderApps Agent 03",
     ownerAgentId: "agent:TL-A031",
     clientProductId: "product:TA-TENDERBOOST",
-    descriptor: "Local controlled pilot over 60 current-at-extraction Central Asia tenders and 17 pinned v1.3 GOODS/WORKS supplier profiles with evidence-gated exploratory fit or explicit MISSING",
+    descriptor: "Read-only pilot over 60 current-at-extraction Central Asia tenders and a deployed sanitized snapshot of 17 pinned v1.3 GOODS/WORKS supplier profiles with evidence-gated exploratory fit or explicit MISSING",
     tor: "Present one selected current-at-extraction Tender × Company pair, preserve source provenance and claim classes, calculate exploratory technical relevance only above the approved evidence threshold, return MISSING otherwise, explain blockers, and retain the consultant’s disposition within a matching-only human-review workspace.",
     primaryInputs: [
       "Versioned tender record with absolute deadline and source snapshot",

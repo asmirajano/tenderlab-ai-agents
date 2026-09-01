@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "tendermatch-static-supplier-snapshot-manifest/1.0.0",
+  "releaseMode": "static-pinned-snapshot",
+  "sourceMode": "approved-local-read-only-api",
+  "sourceAuthority": "Neon tender-entity-registry immutable v1.3 supplier projection",
+  "contractVersion": "tendermatch-supplier-goods-works-v1.3",
+  "profileVersion": "v1.3-critical-evidence-corrected-2026-09-01",
+  "batchCode": "accio-goods-works-suppliers-2026-09-01-v1.3-critical-evidence-corrected-db-staged",
+  "snapshotAsOf": "2026-09-01T11:09:44.745Z",
+  "counts": {
+    "tenders": 60,
+    "suppliers": 17,
+    "evidence": 289,
+    "evaluations": 1020,
+    "numericEvaluations": 0,
+    "missingEvaluations": 1020
+  },
+  "files": {
+    "runtime": {
+      "path": "/tendermatch/data/supplier-runtime-v1.3.json",
+      "sha256": "e06281656daec9d41ce68d0ae171e8ae13ffa731c4badc227b9f228d724f1a03"
+    },
+    "evidence": {
+      "path": "/tendermatch/data/supplier-evidence-v1.3.json",
+      "sha256": "b783085acb509c23866a81548870ab63980518584492888c575a6131b45340bf"
+    }
+  },
+  "publicDataBoundary": "Sanitized supplier profiles, non-contact evidence projections and exploratory evaluations only. No credentials, contacts or raw source content.",
+  "refreshCommand": "pnpm run export:tendermatch-static-snapshot -- --origin http://127.0.0.1:4177"
+}
