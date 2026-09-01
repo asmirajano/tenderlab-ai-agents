@@ -428,15 +428,29 @@ test("the TENDER LOGISTICS COST overview shows inputs, transformation and a domi
     readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing.css"), "utf8"),
   ]);
   assert.match(page, /WHAT YOU PROVIDE/);
-  assert.match(page, /ESTIMATE CARGO/);
-  assert.match(page, /Estimated Logistics Cost/);
-  assert.match(page, /ILLUSTRATIVE DEMO · NOT CLIENT DATA/);
-  assert.match(page, /PRIMARY RESULT/);
-  assert.match(page, /Ready for commercial \/ tender decision/);
+  assert.match(page, /READ[\s\S]*SIZE LOAD[\s\S]*PRICE[\s\S]*EXPLAIN/);
+  assert.match(page, /ILLUSTRATIVE · NOT CLIENT DATA/);
+  assert.match(page, /cost-capacity-diagram/);
+  assert.match(page, /WEIGHT[\s\S]*kg · t/);
+  assert.match(page, /VOLUME[\s\S]*m³/);
+  assert.match(page, /CAPACITY MODEL/);
+  assert.match(page, /LOAD 01[\s\S]*100% CAPACITY/);
+  assert.match(page, /LOAD 02[\s\S]*52% CAPACITY/);
+  assert.match(page, /WEIGHT \+ VOLUME → CAPACITY/);
+  assert.match(page, /not a live quote/);
   assert.match(page, /Open saved cases/);
-  assert.match(page, /A consultation, not a technical form/);
+  assert.match(page, /Guided, not technical/);
+  assert.match(page, /Deterministic browser calculation/);
+  assert.doesNotMatch(page, /Raw commercial \+ shipment information|never silently treat unknown costs as zero/);
+  assert.match(page, /raw-input-facts/);
+  assert.doesNotMatch(page, /cost-estimate-sheet|cost-responsibility-sheet|preview-responsibility-table|preview-deliverables/);
   assert.match(css, /\.cost-product-story/);
   assert.match(css, /grid-template-columns:\s*minmax\(250px, \.62fr\)\s+minmax\(96px, \.18fr\)\s+minmax\(650px, 1\.55fr\)/);
+  assert.match(css, /\.cost-capacity-visual/);
+  assert.match(css, /\.cost-capacity-diagram/);
+  assert.match(css, /\.cost-load-fill-top/);
+  assert.match(css, /\.cost-data-link/);
+  assert.doesNotMatch(page, /cost-truck|cost-trailer|cost-cab/);
   assert.match(css, /@media \(max-width: 820px\)[\s\S]*\.cost-product-story \{ grid-template-columns: 1fr; \}/);
 });
 

@@ -1245,9 +1245,9 @@ export default function LogisticsCostingApp() {
         <PracticalAgentOverview audience="client" className="cost-product-manifesto" productId="product:TA-LANDED-COST">
           <PracticalAgentOverviewPart as="header" className="cost-product-heading" part="outcome-promise">
             <div className="cost-product-heading-copy">
-              <p className="costing-eyebrow"><span /> Tender Logistics Cost · Reviewed Cost Evidence</p>
-              <h1>Raw commercial inputs become a{" "}<br /><em>decision-ready delivery cost.</em></h1>
-              <p>See how commercial source evidence becomes one defensible logistics estimate with transport capacity, cost logic, confidence and traceable assumptions.</p>
+              <p className="costing-eyebrow"><span /> Tender Logistics Cost · Traceable Estimate</p>
+              <h1>Shipment evidence becomes a<br /><em>reviewable delivery cost.</em></h1>
+              <p>Provide shipment evidence. Receive one traceable delivery-cost estimate.</p>
             </div>
             <AgentRoleCallout
               className="cost-role-callout"
@@ -1255,7 +1255,7 @@ export default function LogisticsCostingApp() {
               imageAlt="Logistics specialist comparing a packing list with a shipment route"
               imagePosition="50% 18%"
               imageSrc="/logistics-cost/illustrations/logistics-cost-planner.png"
-              subtitle="Turn shipment evidence and commercial terms into a reviewable delivery cost"
+              subtitle="Turn shipment evidence into a reviewable delivery cost"
               tags={["#Scope", "#Cost", "#Explain"]}
               title="Delivery cost workspace"
               titleId="logistics-cost-role-title"
@@ -1264,17 +1264,16 @@ export default function LogisticsCostingApp() {
 
           <div className="cost-product-story" aria-label="Commercial inputs transformed into a reviewed delivery cost estimate">
             <PracticalAgentOverviewPart as="article" className="raw-cost-inputs" part="input">
-              <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>Raw commercial + shipment information</small></div></header>
+              <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>Commercial + shipment evidence</small></div></header>
               <div className="cost-document-stack" aria-label="Quotation, packing list and freight quote">
-                <div className="cost-document document-back"><span>FREIGHT QUOTE</span><b>Rail rate</b><i>Origin · destination</i></div>
-                <div className="cost-document document-middle"><span>PACKING LIST</span><b>Packages</b><i>Volume · gross weight</i></div>
-                <div className="cost-document document-front"><span>QUOTATION / PO</span><b>Commercial offer</b><i>Goods · price · Incoterm</i></div>
+                <div className="cost-document document-back"><span>FREIGHT</span><b>Route · rate</b></div>
+                <div className="cost-document document-middle"><span>PACKING</span><b>Weight · volume</b></div>
+                <div className="cost-document document-front"><span>QUOTATION / PO</span><b>Goods · terms</b></div>
               </div>
               <dl className="raw-input-facts">
                 <div><dt>PRODUCT</dt><dd>Laboratory equipment</dd></div>
                 <div><dt>ROUTE</dt><dd>Guangzhou → Tashkent</dd></div>
                 <div><dt>TERMS</dt><dd>EXW → desired CIP</dd></div>
-                <div><dt>COSTS</dt><dd>Known rates + open gaps</dd></div>
               </dl>
               <footer><span>PDF</span><span>XLSX</span><span>CSV / JSON</span><span>Manual input</span></footer>
             </PracticalAgentOverviewPart>
@@ -1283,44 +1282,101 @@ export default function LogisticsCostingApp() {
               <span className="story-arrow" aria-hidden="true">→</span>
               <div className="cost-agent-medallion"><small>TENDER APPS</small><strong>TENDER</strong><b>LOGISTICS<br />COST</b></div>
               <ol>
-                <li>READ</li><li>STRUCTURE</li><li>ESTIMATE CARGO</li><li>SIZE TRANSPORT</li><li>PRICE LOGISTICS</li><li>EXPLAIN</li>
+                <li>READ</li><li>SIZE LOAD</li><li>PRICE</li><li>EXPLAIN</li>
               </ol>
               <span className="story-arrow" aria-hidden="true">→</span>
             </PracticalAgentOverviewPart>
 
             <PracticalAgentOverviewPart as="article" className="finished-cost-preview" part="finished-output">
               <header>
-                <div><span>03 · WHAT YOU RECEIVE</span><small>ILLUSTRATIVE DEMO · NOT CLIENT DATA</small></div>
-                <b>FINISHED PRODUCT</b>
+                <div><span>03 · WHAT YOU RECEIVE</span></div>
+                <b>ILLUSTRATIVE · NOT CLIENT DATA</b>
               </header>
-              <div className="preview-title-row"><div><h2>Estimated Logistics Cost</h2><p>Source term → target named destination · selected transport mode</p></div><span>METHOD PREVIEW</span></div>
-              <div className="preview-cost-metrics">
-                <div><span>ESTIMATED CARGO</span><strong>Packed cube + gross weight</strong></div>
-                <div><span>TRANSPORT REQUIRED</span><strong>Calculated units</strong></div>
-                <div><span>FREIGHT BENCHMARK</span><strong>Route + mode + vintage</strong></div>
-                <div><span>INSURANCE</span><strong>Estimated separately</strong></div>
-                <div><span>CONFIDENCE</span><strong>Main uncertainty disclosed</strong></div>
+              <div className="cost-capacity-visual" role="img" aria-label="Illustrative digital load-planning model: shipment weight and volume signals are translated into one transport module at full capacity and a second transport module at 52 percent capacity.">
+                <svg className="cost-capacity-diagram" viewBox="0 0 760 430" aria-hidden="true">
+                  <defs>
+                    <pattern id="cost-capacity-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                      <circle cx="1" cy="1" r="1" fill="currentColor" />
+                    </pattern>
+                    <linearGradient id="cost-capacity-fill" x1="0" x2="1" y1="0" y2="1">
+                      <stop offset="0" stopColor="#d7ff73" />
+                      <stop offset="1" stopColor="#78c932" />
+                    </linearGradient>
+                    <linearGradient id="cost-capacity-glass" x1="0" x2="1" y1="0" y2="1">
+                      <stop offset="0" stopColor="#b8f23e" stopOpacity=".22" />
+                      <stop offset="1" stopColor="#b8f23e" stopOpacity=".03" />
+                    </linearGradient>
+                    <filter id="cost-capacity-glow" x="-60%" y="-60%" width="220%" height="220%">
+                      <feGaussianBlur stdDeviation="5" result="blur" />
+                      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+
+                  <rect className="cost-diagram-grid" width="760" height="430" rx="18" fill="url(#cost-capacity-grid)" />
+                  <text className="cost-diagram-kicker" x="28" y="38">CARGO SIGNALS</text>
+                  <g className="cost-signal-module" transform="translate(28 66)">
+                    <rect width="174" height="104" rx="16" />
+                    <circle className="cost-signal-ring" cx="42" cy="52" r="22" />
+                    <path className="cost-signal-icon" d="M31 59h22M34 59l3-20h10l3 20M37 45h10" />
+                    <text className="cost-signal-title" x="78" y="47">WEIGHT</text>
+                    <text className="cost-signal-unit" x="78" y="70">kg · t</text>
+                  </g>
+                  <g className="cost-signal-module" transform="translate(28 188)">
+                    <rect width="174" height="104" rx="16" />
+                    <circle className="cost-signal-ring" cx="42" cy="52" r="22" />
+                    <path className="cost-signal-icon" d="m31 44 11-6 11 6v15l-11 6-11-6zM31 44l11 6 11-6M42 50v15" />
+                    <text className="cost-signal-title" x="78" y="47">VOLUME</text>
+                    <text className="cost-signal-unit" x="78" y="70">m³</text>
+                  </g>
+
+                  <path className="cost-data-link" d="M202 118 C248 118 242 182 287 182" />
+                  <path className="cost-data-link" d="M202 240 C248 240 242 182 287 182" />
+                  <path className="cost-data-link" d="M303 182 C335 182 328 110 371 110" />
+                  <path className="cost-data-link" d="M303 182 C335 182 328 309 371 309" />
+                  <circle className="cost-data-hub" cx="295" cy="182" r="17" />
+                  <circle className="cost-data-core" cx="295" cy="182" r="5" filter="url(#cost-capacity-glow)" />
+                  <text className="cost-hub-label" x="295" y="215" textAnchor="middle">CAPACITY MODEL</text>
+
+                  <g className="cost-load-module cost-load-full">
+                    <text className="cost-load-name" x="374" y="43">LOAD 01</text>
+                    <text className="cost-load-state" x="690" y="43" textAnchor="end">100% CAPACITY</text>
+                    <polygon className="cost-load-top" points="370,73 650,73 708,106 428,106" />
+                    <polygon className="cost-load-side" points="370,73 428,106 428,176 370,143" />
+                    <rect className="cost-load-face" x="428" y="106" width="280" height="70" />
+                    <polygon className="cost-load-fill-top" points="378,80 646,80 695,108 427,108" />
+                    <polygon className="cost-load-fill-side" points="378,80 427,108 427,166 378,138" />
+                    <rect className="cost-load-fill-face" x="428" y="109" width="267" height="57" />
+                    <path className="cost-load-grid" d="M482 109v57M536 109v57M590 109v57M644 109v57M428 138h267" />
+                    <path className="cost-load-chassis" d="M404 186h296" />
+                    <circle className="cost-load-node" cx="448" cy="186" r="10" />
+                    <circle className="cost-load-node" cx="662" cy="186" r="10" />
+                  </g>
+
+                  <g className="cost-load-module cost-load-partial">
+                    <text className="cost-load-name" x="374" y="242">LOAD 02</text>
+                    <text className="cost-load-state" x="690" y="242" textAnchor="end">52% CAPACITY</text>
+                    <polygon className="cost-load-top" points="370,272 650,272 708,305 428,305" />
+                    <polygon className="cost-load-side" points="370,272 428,305 428,375 370,342" />
+                    <rect className="cost-load-face" x="428" y="305" width="280" height="70" />
+                    <polygon className="cost-load-fill-top" points="378,279 515,279 564,307 427,307" />
+                    <polygon className="cost-load-fill-side" points="378,279 427,307 427,365 378,337" />
+                    <rect className="cost-load-fill-face" x="428" y="308" width="136" height="57" />
+                    <path className="cost-load-grid" d="M482 308v57M536 308v57M590 305v70M644 305v70M428 337h280" />
+                    <path className="cost-load-chassis" d="M404 385h296" />
+                    <circle className="cost-load-node" cx="448" cy="385" r="10" />
+                    <circle className="cost-load-node" cx="662" cy="385" r="10" />
+                  </g>
+                </svg>
               </div>
-              <div className="preview-result-total"><div><span>PRIMARY RESULT</span><strong>≈ Estimated Logistics Cost</strong></div><p>Commercial total remains secondary</p></div>
-              <div className="preview-responsibility-table" role="table" aria-label="Illustrative responsibility and cost impact">
-                <div className="table-head" role="row"><span>COMPONENT</span><span>CURRENT</span><span>TARGET</span><span>IMPACT</span></div>
-                <div role="row"><b>Packing / origin</b><span>Source</span><span>Seller</span><strong>Estimated</strong></div>
-                <div role="row"><b>Main freight</b><span>Source</span><span>Seller</span><strong>Benchmark</strong></div>
-                <div role="row"><b>Cargo insurance</b><span>Source</span><span>Seller</span><strong>Estimated</strong></div>
-                <div role="row"><b>Import duty / VAT</b><span>Buyer</span><span>Buyer</span><strong>Excluded for CIP</strong></div>
-              </div>
-              <ul className="preview-deliverables">
-                <li>✓ Cargo evidence separated from proxies</li><li>✓ Transport capacity calculated</li><li>✓ Freight benchmark labelled</li><li>✓ Insurance disclosed separately</li><li>✓ Assumptions traceable</li><li>✓ One current estimate</li>
-              </ul>
-              <footer><div><span>APPROVED RESULT</span><strong>Ready for commercial / tender decision</strong></div><span aria-hidden="true">→</span></footer>
+              <p className="cost-output-truth"><b>WEIGHT + VOLUME → CAPACITY</b><span>Illustrative · not a live quote</span></p>
             </PracticalAgentOverviewPart>
           </div>
 
           <PracticalAgentOverviewPart as="footer" className="cost-product-actions" part="primary-action">
-            <div><strong>You provide the transaction evidence.</strong><span>Tender Logistics Cost turns it into one calculation you can review, understand, and approve.</span></div>
+            <div><strong>One reviewable delivery-cost estimate.</strong></div>
             <div className="welcome-actions">
               <button className="primary-client-action" onClick={startNewCalculation} type="button">Start a logistics calculation <span>→</span></button>
-              <button className="secondary-client-action" onClick={openDemoScenario} type="button">Open labelled methodology example</button>
+              <button className="secondary-client-action" onClick={openDemoScenario} type="button">Open methodology example</button>
               <button className="secondary-client-action" onClick={() => { setSelectedCaseId(null); setClientSurface("cases"); }} type="button">Open saved cases</button>
             </div>
           </PracticalAgentOverviewPart>
@@ -1328,23 +1384,23 @@ export default function LogisticsCostingApp() {
 
         <section className="overview-support" aria-label="How Tender Logistics Cost works">
           <article className="guided-consultation-card">
-            <header><span>GUIDED CONSULTATION</span><strong>A consultation, not a technical form</strong><p>We reuse uploaded and earlier inputs, ask only for genuine gaps, and never silently treat unknown costs as zero.</p></header>
+            <header><span>GUIDED CONSULTATION</span><strong>Guided, not technical</strong><p>We reuse evidence and ask only for genuine gaps. Unknown costs remain explicit, never zero.</p></header>
             <ol>
-              <li><b>1</b><span>Describe the shipment or upload available documents.</span></li>
+              <li><b>1</b><span>Add shipment details or available documents.</span></li>
               <li><b>2</b><span>Confirm current and desired delivery responsibilities.</span></li>
-              <li><b>3</b><span>Review prepared costs and complete only missing inputs.</span></li>
-              <li><b>4</b><span>Calculate, review, approve, and save one current estimate.</span></li>
+              <li><b>3</b><span>Review prepared costs and complete genuine gaps.</span></li>
+              <li><b>4</b><span>Calculate, review, and save one current estimate.</span></li>
             </ol>
           </article>
           <div className="client-capabilities" aria-label="Available calculations">
-            <article><span>01</span><strong>Logistics cost</strong><p>Factory-to-terminal, international freight, door-to-door or a custom scope.</p></article>
-            <article><span>02</span><strong>Delivery-term impact</strong><p>See only the responsibilities and costs that change—without double counting.</p></article>
-            <article><span>03</span><strong>Commercial summary</strong><p>Keep the logistics addition primary and the revised commercial total secondary.</p></article>
+            <article><span>01</span><strong>Logistics cost</strong><p>Factory-to-terminal, international freight, door-to-door, or custom scope.</p></article>
+            <article><span>02</span><strong>Term impact</strong><p>Changed responsibilities and costs—without double counting.</p></article>
+            <article><span>03</span><strong>Commercial summary</strong><p>Logistics addition first; revised commercial total second.</p></article>
           </div>
         </section>
         <PracticalAgentOverviewBoundary className="client-trust-note" productId="product:TA-LANDED-COST">
           <strong>How it works</strong>
-          <p>The calculation is deterministic and runs locally in your browser. No AI tokens are used. Missing cargo and rate values may be estimated only from visible, versioned proxies and benchmarks; they are never presented as source facts or live quotations.</p>
+          <p>Deterministic browser calculation; no AI tokens. Missing cargo or rates stay visible or use versioned estimates—never source facts or live quotes.</p>
           <details className="calculation-architecture-overview">
             <summary>Review calculation architecture</summary>
             <div className="architecture-overview-grid">
@@ -1355,7 +1411,7 @@ export default function LogisticsCostingApp() {
             </div>
           </details>
         </PracticalAgentOverviewBoundary>
-        <footer className="costing-footer"><div><strong>TenderApps</strong><span>Tender Logistics Cost · guided and auditable</span></div><p>Planning and review tool · not legal, tax, customs, insurance, or carrier advice</p></footer>
+        <footer className="costing-footer"><div><strong>TenderApps</strong><span>Tender Logistics Cost</span></div><p>Planning tool · not professional or carrier advice</p></footer>
       </main>
     );
   }

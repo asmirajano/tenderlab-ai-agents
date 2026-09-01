@@ -28,7 +28,7 @@ test("TenderBalance starts with a clean client surface and keeps demos separate"
 test("TenderBalance makes upload the only required client action before the result", async () => {
   const source = await readFile(appUrl, "utf8");
 
-  assert.match(source, /Digitize a balance sheet/);
+  assert.match(source, /Prepare tender forms/);
   assert.match(source, /type="file" multiple/);
   assert.match(source, /Add an optional internal company or case reference/);
   assert.match(source, /tenderapps:tenderbalance:case-contexts:v1/);
@@ -48,13 +48,26 @@ test("TenderBalance declares input, transformation, and the tangible finished pr
   assert.match(manifesto, /part="outcome-promise"[\s\S]*part="input"[\s\S]*part="agent-transformation"[\s\S]*part="finished-output"[\s\S]*part="primary-action"/);
   assert.match(manifesto, /Client input, agent transformation, and finished product/);
   assert.match(source, /WHAT YOU PROVIDE/);
-  assert.match(source, /Read[\s\S]*Identify[\s\S]*Extract[\s\S]*Structure[\s\S]*Check/);
+  assert.match(source, /Read[\s\S]*Digitize[\s\S]*Reconcile[\s\S]*Map[\s\S]*Prepare/);
   assert.match(source, /WHAT YOU RECEIVE/);
-  assert.match(source, /Digitized Balance Sheet/);
-  assert.match(source, /ILLUSTRATIVE PRODUCT PREVIEW · NOT CLIENT EVIDENCE/);
-  assert.match(source, /Original labels preserved/);
-  assert.match(source, /Ready for downstream tender analysis/);
-  assert.match(source, /How it works, accepted inputs, and scope/);
+  assert.match(source, /tender-ready financial forms/);
+  assert.match(source, /FIN-1 \+ FIN-2/);
+  assert.match(source, /FIN-1[\s\S]*Historical Financial[\s\S]*Performance/);
+  assert.match(source, /FIN-2[\s\S]*Average Annual[\s\S]*Turnover/);
+  assert.match(source, /SOURCE-LINKED/);
+  assert.match(source, /TRACEABLE/);
+  assert.match(source, /Reviewable · not approved/);
+  assert.match(source, /Upload financial statements\. TenderBalance prepares reviewable FIN-1 and FIN-2 forms\./);
+  assert.match(source, /unavailable evidence stays MISSING/);
+  assert.doesNotMatch(source, /bs-output-preview-table/);
+  assert.doesNotMatch(source, /bs-finished-checks/);
+  assert.doesNotMatch(source, /bs-result-receipt__panel/);
+  assert.match(source, /How it works and scope/);
+  assert.doesNotMatch(source, /One client action/);
+  assert.doesNotMatch(source, /Digital statement|Image evidence|Several periods/);
+  assert.doesNotMatch(source, /You provide financial statements\. TenderBalance digitizes and reconciles them/);
+  assert.doesNotMatch(source, /The product preserves original reported values and keeps corrections separate/);
+  assert.doesNotMatch(source, /TenderBalance identifies, extracts, structures, reconciles, and validates the statement independently/);
 });
 
 test("TenderBalance exposes the finished result, automatic cases, and optional advanced controls", async () => {

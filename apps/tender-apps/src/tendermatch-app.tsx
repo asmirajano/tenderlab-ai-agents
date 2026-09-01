@@ -433,7 +433,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
         {view !== "dashboard" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
-          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} caseResults={caseResults} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
+          {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
           {view === "radar-tenders" && <TenderRadarView allMatches={allMatches} suppliers={suppliers} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={changeView} />}
           {view === "radar-suppliers" && <SupplierRadarView filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} countryFilters={supplierClusters.map((entry) => entry.label).sort()} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={changeView} />}
           {view === "suppliers" && <SupplierDirectoryView view={view} suppliers={suppliers} profiles={supplierProfiles} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
@@ -447,15 +447,13 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   </main>;
 }
 
-function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityMatches, caseResults, suppliers, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; evaluatedMatches: MatchAssessment[]; priorityMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; suppliers: SupplierRecord[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityMatches, suppliers, onView, onOpen }: { allMatches: MatchAssessment[]; auditedMatches: MatchAssessment[]; evaluatedMatches: MatchAssessment[]; priorityMatches: MatchAssessment[]; suppliers: SupplierRecord[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
   const previewAssessment = priorityMatches.find((entry) => entry.auditedMatch.value !== null && entry.tenderFreshness.status !== "closed")
     ?? auditedMatches[0]
     ?? evaluatedMatches[0]
     ?? allMatches[0]!;
   const previewSupplier = suppliers.find((entry) => entry.id === previewAssessment.supplierId) ?? suppliers[0]!;
   const previewTender = runtimeTenders.find((entry) => entry.id === previewAssessment.tenderId) ?? runtimeTenders[0]!;
-  const previewDecision = caseResults[previewAssessment.key]?.match.consultantDecision ?? previewAssessment.consultantDecision;
-
   return <>
     <PracticalAgentOverview audience="consultant" className="tb3-overview-manifesto" productId="product:TA-TENDERBOOST" aria-labelledby="tendermatch-overview-title">
       <PracticalAgentOverviewPart as="header" className="tb3-overview-heading" part="outcome-promise">
@@ -495,23 +493,81 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityM
         </PracticalAgentOverviewPart>
 
         <PracticalAgentOverviewPart as="article" className="tb3-story-output" part="finished-output">
-          <header><div><span>03 · WHAT YOU RECEIVE</span><small>NEON SUPPLIER + PILOT TENDER · EXPLORATORY</small></div><b>REVIEWABLE RESULT</b></header>
-          <div className="tb3-result-pair">
-            <div><span>COMPANY</span><strong>{previewSupplier.legalEnglishName}</strong></div>
-            <i aria-hidden="true">×</i>
-            <div><span>TENDER</span><strong>{previewTender.reference}</strong></div>
+          <header><div><span>03 · WHAT YOU RECEIVE</span></div><b>EXPLORATORY · NOT CLIENT DATA</b></header>
+          <div className="tb3-match-network" role="img" aria-label="Illustrative digital evidence network: three company evidence nodes are routed through TenderMatch to three tender nodes. Solid luminous routes indicate candidate matches; a dashed route requires consultant review.">
+            <svg className="tb3-match-graph" viewBox="0 0 640 300" aria-hidden="true">
+              <defs>
+                <pattern id="tb3-network-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="1" fill="currentColor" />
+                </pattern>
+                <linearGradient id="tb3-network-link" x1="0" x2="1">
+                  <stop offset="0" stopColor="#31aa82" />
+                  <stop offset=".55" stopColor="#d0ff64" />
+                  <stop offset="1" stopColor="#84de51" />
+                </linearGradient>
+                <radialGradient id="tb3-network-core">
+                  <stop offset="0" stopColor="#d0ff64" stopOpacity=".4" />
+                  <stop offset="1" stopColor="#d0ff64" stopOpacity="0" />
+                </radialGradient>
+                <filter id="tb3-network-glow" x="-70%" y="-70%" width="240%" height="240%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+              <rect className="tb3-graph-grid" width="640" height="300" rx="16" fill="url(#tb3-network-grid)" />
+              <text className="tb3-graph-kicker" x="26" y="30">COMPANY EVIDENCE</text>
+              <text className="tb3-graph-kicker" x="614" y="30" textAnchor="end">TENDER SIGNALS</text>
+
+              <path className="tb3-graph-link match" d="M112 74 C214 74 222 121 309 144 C397 167 424 74 528 74" />
+              <path className="tb3-graph-link match" d="M112 150 C216 150 224 150 309 150 C397 150 422 226 528 226" />
+              <path className="tb3-graph-link review" d="M112 226 C213 226 236 181 309 156 C391 128 432 150 528 150" />
+              <path className="tb3-graph-link ambient" d="M112 74 C213 91 236 122 309 144 C391 169 432 205 528 226" />
+
+              <g className="tb3-graph-node company" transform="translate(78 74)">
+                <circle className="node-halo" r="33" /><circle className="node-shell" r="20" />
+                <path className="node-icon" d="M-8 8V-8H7V8M-3-3h2m4 0h2m-8 6h2m4 0h2" />
+                <text x="-34" y="43">COMPANY A</text>
+              </g>
+              <g className="tb3-graph-node company" transform="translate(78 150)">
+                <circle className="node-halo" r="33" /><circle className="node-shell" r="20" />
+                <path className="node-icon" d="M-8 8V-8H7V8M-3-3h2m4 0h2m-8 6h2m4 0h2" />
+                <text x="-34" y="43">COMPANY B</text>
+              </g>
+              <g className="tb3-graph-node company" transform="translate(78 226)">
+                <circle className="node-halo" r="33" /><circle className="node-shell" r="20" />
+                <path className="node-icon" d="M-8 8V-8H7V8M-3-3h2m4 0h2m-8 6h2m4 0h2" />
+                <text x="-34" y="43">COMPANY C</text>
+              </g>
+
+              <g className="tb3-graph-engine" transform="translate(320 150)">
+                <circle className="engine-field" r="74" fill="url(#tb3-network-core)" />
+                <circle className="engine-orbit outer" r="46" />
+                <circle className="engine-orbit inner" r="31" />
+                <path className="engine-pulse" d="M-18 0h9l7-11 10 23 7-12h18" />
+                <text y="58" textAnchor="middle">TENDERMATCH</text>
+              </g>
+              <circle className="tb3-data-packet" cx="238" cy="103" r="4" filter="url(#tb3-network-glow)" />
+              <circle className="tb3-data-packet" cx="405" cy="119" r="4" filter="url(#tb3-network-glow)" />
+              <circle className="tb3-data-packet review" cx="441" cy="150" r="4" />
+
+              <g className="tb3-graph-node tender" transform="translate(562 74)">
+                <circle className="node-halo" r="33" /><path className="node-shell" d="M0-23 23 0 0 23-23 0Z" />
+                <path className="node-icon" d="M-8-10H5l7 7v13H-8zM5-10v7h7M-3 2h10M-3 7h7" />
+                <text x="-37" y="43">TENDER 01</text>
+              </g>
+              <g className="tb3-graph-node tender" transform="translate(562 150)">
+                <circle className="node-halo" r="33" /><path className="node-shell" d="M0-23 23 0 0 23-23 0Z" />
+                <path className="node-icon" d="M-8-10H5l7 7v13H-8zM5-10v7h7M-3 2h10M-3 7h7" />
+                <text x="-37" y="43">TENDER 02</text>
+              </g>
+              <g className="tb3-graph-node tender" transform="translate(562 226)">
+                <circle className="node-halo" r="33" /><path className="node-shell" d="M0-23 23 0 0 23-23 0Z" />
+                <path className="node-icon" d="M-8-10H5l7 7v13H-8zM5-10v7h7M-3 2h10M-3 7h7" />
+                <text x="-37" y="43">TENDER 03</text>
+              </g>
+            </svg>
           </div>
-          <dl className="tb3-result-summary">
-            <div className="score"><dt>EXPLORATORY FIT</dt><dd>{previewAssessment.auditedMatch.value ?? "MISSING"}<small>{previewAssessment.auditedMatch.value === null ? "Insufficient evidence" : "TECHNICAL ONLY"}</small></dd></div>
-            <div><dt>LINKED EVIDENCE</dt><dd>{previewAssessment.auditedMatch.evidenceIds.length}<small>records</small></dd></div>
-            <div><dt>FRESHNESS</dt><dd>{previewAssessment.tenderFreshness.status}<small>{previewAssessment.tenderFreshness.freshness}</small></dd></div>
-            <div><dt>DECISION</dt><dd>{decisionLabel[previewDecision]}<small>consultant</small></dd></div>
-          </dl>
-          <div className="tb3-result-findings">
-            <div><span>SUPPORTED</span><p>✓ {previewAssessment.linkedStrengths[0]?.text ?? "No supported claim"}</p></div>
-            <div><span>MISSING / BLOCKER</span><p>? {previewAssessment.gaps[0] ?? "None recorded"}</p></div>
-          </div>
-          <footer><span>HUMAN-CONTROLLED RESULT</span><b>Ready for consultant review</b><i aria-hidden="true">→</i></footer>
+          <footer className="tb3-match-network-legend"><span><i className="solid" />MATCH</span><span><i className="dashed" />REVIEW</span><b>CONSULTANT DECIDES</b></footer>
         </PracticalAgentOverviewPart>
       </div>
 
