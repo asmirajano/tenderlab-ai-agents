@@ -1,0 +1,5 @@
+apps/tender-apps/public/tendermatch/data/supplier-runtime-v1.3.json text eol=lf
+apps/tender-apps/public/tendermatch/data/supplier-evidence-v1.3.json text eol=lf
+apps/tender-apps/public/tendermatch/data/supplier-snapshot-v1.3.manifest.json text eol=lf
+packages/tendermatch/src/fixtures/central-asia-current-tenders.pilot.json text eol=lf
+packages/tendermatch/src/fixtures/central-asia-current-tenders.pilot.manifest.json text eol=lf

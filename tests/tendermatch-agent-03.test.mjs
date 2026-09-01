@@ -350,14 +350,16 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "tb3-pair-card tender",
     "tb3-pair-card company",
     "tb3-agent-medallion",
-    "SHOW COVERAGE",
+    "KEEP MISSING",
     "WHAT YOU RECEIVE",
-    "NEON SUPPLIER + PILOT TENDER · EXPLORATORY",
-    "PAIR SCORE",
-    "LINKED EVIDENCE",
-    "MISSING / BLOCKER",
-    "FRESHNESS",
-    "DECISION",
+    "EXPLORATORY · NOT CLIENT DATA",
+    "tb3-match-network",
+    "tb3-match-graph",
+    "COMPANY EVIDENCE",
+    "COMPANY A",
+    "TENDER SIGNALS",
+    "TENDER 01",
+    "CONSULTANT DECIDES",
     "Open existing match for review",
     "Open Full Matrix",
     "INTERNAL MATCHING ONLY",
@@ -369,7 +371,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
   assert.ok(orientation.indexOf('part="input"') < orientation.indexOf('part="agent-transformation"'));
   assert.ok(orientation.indexOf('part="agent-transformation"') < orientation.indexOf('part="finished-output"'));
   assert.ok(orientation.indexOf('part="finished-output"') < orientation.indexOf('part="primary-action"'));
-  assert.match(orientation, /<ol><li>SELECT<\/li><li>SCORE<\/li><li>SHOW COVERAGE<\/li><li>EXPLAIN<\/li><\/ol>/);
+  assert.match(orientation, /<ol><li>SELECT<\/li><li>VALIDATE<\/li><li>KEEP MISSING<\/li><li>EXPLAIN<\/li><\/ol>/);
   assert.match(orientation, /onOpen\(previewAssessment, "match-tenders"\)/);
   assert.match(orientation, /onKeyDown=\{\(event\)[\s\S]+event\.key === "Enter"[\s\S]+event\.key === " "/);
   assert.match(orientation, /onView\("matrix"\)/);
@@ -390,6 +392,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "Evaluated legacy matches",
   ]) assert.doesNotMatch(orientation, new RegExp(rejectedOverviewContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), rejectedOverviewContent);
   assert.doesNotMatch(orientation, /tb3-runtime-summary|READ-ONLY SUPPLIER RUNTIME/);
+  assert.doesNotMatch(orientation, /tb3-result-summary|tb3-result-findings|Match Review/);
   assert.doesNotMatch(page, /<DashboardView[^>]*caseControls=/);
   for (const roleContent of ["Tender matching workspace", "Turn an open tender and supplier evidence into a reviewable match", "#Discover", "#Compare", "#Explain"]) {
     assert.match(orientation, new RegExp(roleContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), roleContent);
@@ -403,7 +406,10 @@ test("ends the Overview after the approved infographic and authority boundary", 
   assert.match(styles, /\.tb3-page-overview \.tb3-overview-heading h1/);
   assert.match(styles, /\.tb3-page-overview \.tb3-pair-illustration/);
   assert.match(styles, /\.tb3-page-overview \.tb3-agent-medallion/);
-  assert.match(styles, /\.tb3-page-overview \.tb3-result-summary/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-match-network/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-match-graph/);
+  assert.match(styles, /\.tb3-page-overview \.tb3-graph-link\.review/);
+  assert.doesNotMatch(orientation, /tb3-match-nodes|tb3-match-connections/);
   assert.match(styles, /\.tb3-page-overview \.tb3-overview-actions/);
   assert.match(styles, /\.tb3-role-callout \{[^}]*border-radius: 28px/);
   assert.match(styles, /\.tb3-role-callout::after/);

@@ -120,7 +120,7 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   const clientBundle = (await Promise.all(assetNames
     .filter((name) => name.endsWith(".js"))
     .map((name) => readFile(path.join(tenderAppsRoot, "dist", "assets", name), "utf8")))).join("\n");
-  assert.match(clientBundle, /Tender Logistics Cost · Reviewed Cost Evidence/);
+  assert.match(clientBundle, /Tender Logistics Cost · Traceable Estimate/);
   assert.match(clientBundle, /ONE BEST CURRENT ESTIMATE/);
   assert.match(clientBundle, /tenderapps\.landed-cost\.audit\.v0\.1/);
   assert.match(shell, /Client workspace/);
@@ -129,7 +129,7 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   assert.match(displayRegistry, /productId:\s*"product:TA-BALANCE"[\s\S]+displayName:\s*"TenderBalance"/);
   assert.match(displayRegistry, /productId:\s*"product:TA-LANDED-COST"[\s\S]+displayName:\s*"Tender Logistics Cost"/);
   assert.match(displayRegistry, /productId:\s*"product:TA-TENDERBOOST"[\s\S]+displayName:\s*"TenderMatch"/);
-  assert.match(component, /Tender Logistics Cost · Reviewed Cost Evidence/);
+  assert.match(component, /Tender Logistics Cost · Traceable Estimate/);
   assert.match(component, /Estimated Logistics Cost/);
   assert.match(component, /required \+ 1 free capacity reference/);
   assert.match(component, /estimate\.transport\.allocations\.map/);
