@@ -51,6 +51,6 @@ The evidence above was local-only at its original checkpoint; later release evid
 
 ## Firebase-compatible snapshot correction
 
-The later production correction preserves the local API evidence above and adds an intentionally public, sanitized static release of the same immutable v1.3 batch. The generated manifest records 17 suppliers, 289 non-contact evidence records, 1,020 unique evaluations, zero numeric results and 1,020 MISSING results, with SHA-256 identities for both data files.
+The later production correction preserves the local API evidence above and adds an intentionally public, sanitized static release of the same immutable v1.3 batch. The generated manifest records 17 suppliers, 289 non-contact evidence records and 1,020 unique Formula v1.1 numeric Pair Scores, with zero missing numeric scores and SHA-256 identities for both data files. Criterion-level MISSING evidence remains explicit.
 
 The exact TenderApps production artifact was served without `/api/tendermatch/*`. Direct Overview and Evidence Review loads recovered through `/tendermatch/data/supplier-runtime-v1.3.json` and `/tendermatch/data/supplier-evidence-v1.3.json`; the browser displayed `PINNED V1.3 SNAPSHOT`, loaded evidence, showed no offline alert, had no horizontal overflow or broken image, and produced no console warning/error. Production publication remains bound to a separately recorded successful GitHub/Firebase release run.

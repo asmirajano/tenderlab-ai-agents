@@ -62,13 +62,13 @@ The mapper does not create contacts, URLs outside the safe projection, precise c
 
 `STATED_UNVERIFIED` is source-backed but unverified. It may support exploratory matching only when the claim has a saved artifact. It never becomes VERIFIED. UNKNOWN stays MISSING and is never zero or negative evidence.
 
-## Match Formula v1.0
+## Pair Scoring Formula v1.1
 
-- Engine: `tendermatch-match-formula/1.0.0`
-- Policy: `tendermatch-evidence-aware-goods-works/1.0.0`
-- Reader label: `Preliminary notice-level match`
+- Engine: `tendermatch-match-formula/1.1.0`
+- Policy: `tendermatch-coverage-adjusted-goods-works/1.1.0`
+- Reader label: `Coverage-adjusted pair score`
 
-The v5 all-MISSING output is frozen in `docs/evidence/tendermatch-match-formula-v1-baseline.json`. Formula v1.0 separates Match Score, Data Coverage, Evidence Confidence, mandatory gates, Pair Status and consultant disposition. The complete formula, weights, confidence bands, thresholds and limitations are in `docs/tendermatch-scoring-model-card.md`.
+The v5 all-MISSING output is frozen in `docs/evidence/tendermatch-match-formula-v1-baseline.json`. Formula v1.1 assigns every pair a numeric 0–100 Pair Score while keeping Data Coverage, Evidence Confidence, mandatory gates, criterion-level MISSING evidence and consultant disposition separate. It defines no Match/Non-match threshold. The complete formula, weights and limitations are in `docs/tendermatch-scoring-model-card.md`.
 
 The formula uses title/object/tags for scored technical overlap; the complete source description remains available to retrieval and explanation but boilerplate prose cannot create points. Supplier technical evidence is limited to the approved product, works, industry and material claims. Capacity and geography claims support their own bounded criteria and are not reused. Tender-specific financial, comparable-contract and mandatory eligibility comparisons remain MISSING or UNKNOWN when unsupported.
 
@@ -79,24 +79,24 @@ The fixed full replay at `2026-09-01T11:09:44.745Z` produced:
 | Outcome | Count |
 | --- | ---: |
 | Unique pair identities | 1,020 |
-| Numeric preliminary results | 48 |
-| MISSING values | 972 |
-| Needs verification | 3 |
-| No match | 45 |
-| Blocked / ineligible | 37 |
-| Unassessed | 935 |
-| Bingo / Strong / Potential | 0 / 0 / 0 |
+| Numeric Pair Scores | 1,020 |
+| Missing numeric scores | 0 |
+| Score 0 | 972 |
+| Score 1–20 | 39 |
+| Score 21–40 | 7 |
+| Score 41–60 | 2 |
+| Score 61–100 | 0 |
 
-The 935 unassessed pairs belong to CONSULTING, SERVICES or OTHER notices outside the approved v1.0 calculation scope. The 37 blocked pairs have an explicit GOODS/WORKS supplier-role mismatch. The 48 type-compatible pairs have 60–65% coverage and 50% confidence; three reach score 60 but remain Needs verification, while 45 have supported notice-level fit below 60. The result does not claim predictive accuracy.
+All 1,020 pairs are scored against the fixed 100-point denominator. CONSULTING, SERVICES and OTHER notices receive zero under the current GOODS/WORKS-only scope and keep that scope limitation as their explanation. MISSING criteria contribute no points but remain explicitly MISSING and reduce coverage. A zero is therefore not automatically a Non-match. The result does not claim predictive accuracy.
 
 - What happened → v5 erased every preliminary result.
 - Root cause → its complete gate conjunction made zero VERIFIED claims function as a universal no-result rule.
-- Correction → preserve evidence class as confidence, calculate only assessed criteria, retain missing criteria in Data Coverage and keep mandatory gates separate.
-- Reusable rule → incomplete evidence must limit status and confidence without being silently treated as either verified truth or zero.
+- Correction → preserve evidence class as confidence, score against all applicable criterion weights, retain missing criteria in Data Coverage and keep mandatory gates separate.
+- Reusable rule → incomplete evidence contributes no score points but remains explicitly MISSING; a low or zero Pair Score is not a Match verdict.
 - Regression evidence → `tests/tendermatch-match-formula-v1.test.mjs`, exact 1,020-key replay, manifest hashes and current-pair calibration.
 
 ## UI and remaining limits
 
-The server precomputes and caches all 1,020 results before ready state, so the browser performs no database or bulk matching work. The Overview, radar, 17-profile directory, evidence review, 60-tender directory, 17 × 60 full matrix, tender-first review, supplier-first review and explicit Case reconstruction consume the same inventory. The Full Matrix provides both CSV and a real typed Excel workbook export of all 1,020 pair evaluations; the workbook preserves audit identities, numeric value types, status/gates/criteria, evidence references and versions. Current counts are data-derived. Historical Cases keep their supplier identity and are not silently remapped.
+The server precomputes and caches all 1,020 results before ready state, so the browser performs no database or bulk scoring work. The Overview, radar, 17-profile directory, evidence review, 60-tender directory, 17 × 60 full matrix, tender-first review, supplier-first review and explicit Case reconstruction consume the same inventory. The Full Matrix provides CSV and typed Excel exports of all 1,020 pair evaluations; the workbook preserves Pair Score, Assessed-only Fit, coverage, confidence, gates, criteria, evidence references and versions. Current counts are data-derived. Historical Cases keep their supplier identity and are not silently remapped.
 
 This remains an `isolated-method-validated` read-only snapshot pilot. Predictive validity, automatic tender/supplier refresh, multilingual taxonomy depth, technical-specification parsing, qualification, tender-threshold comparison, commercial/delivery analysis, authentication, tenant isolation, durable result/artifact storage and a live production API remain unresolved. Consultant disposition is explicit and separate; TenderMatch never selects a bidder, issues Bid/No-Bid, promotes a tender or sends outreach.

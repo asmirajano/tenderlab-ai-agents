@@ -67,41 +67,43 @@ function sufficientEvidence(profile, technical = "Power transformers; electrical
   ];
 }
 
-test("Formula v1.0 is deterministic, versioned and emits a preliminary numeric score only above coverage threshold", () => {
+test("Formula v1.1 deterministically scores every pair on the fixed 100-point denominator", () => {
   const profile = supplier();
   const first = evaluateExploratoryPair(tender(), profile, sufficientEvidence(profile), evaluatedAt);
   assert.deepEqual(evaluateExploratoryPair(tender(), profile, sufficientEvidence(profile), evaluatedAt), first);
   assert.equal(first.engineVersion, TENDERMATCH_EXPLORATORY_ENGINE_VERSION);
   assert.equal(first.policyVersion, TENDERMATCH_EXPLORATORY_POLICY_VERSION);
-  assert.ok(first.value >= 60);
+  assert.equal(first.value, Math.round(first.assessedFitScore * first.dataCoverage / 100));
+  assert.ok(first.value > 0);
   assert.equal(first.valueClass, "ESTIMATED");
   assert.equal(first.dataCoverage, 65);
   assert.equal(first.evidenceConfidence, 50);
-  assert.equal(first.pairStatus, "NEEDS_VERIFICATION");
-  assert.equal(first.label, "Preliminary notice-level match");
+  assert.equal(first.pairStatus, "UNASSESSED");
+  assert.equal(first.label, "Coverage-adjusted pair score");
 });
 
-test("keeps mandatory gates separate and blocks a supported supplier-role failure", () => {
+test("keeps mandatory gates separate without suppressing the numeric score", () => {
   const profile = supplier({ classification: "GOODS" });
   const result = evaluateExploratoryPair(tender("WORKS", "Construction of a public school"), profile, sufficientEvidence(profile), evaluatedAt);
-  assert.equal(result.value, null);
-  assert.equal(result.pairStatus, "BLOCKED_INELIGIBLE");
+  assert.equal(result.value, 0);
+  assert.equal(result.pairStatus, "UNASSESSED");
   assert.equal(result.mainReason, "PROCUREMENT_TYPE_SUPPLIER_ROLE");
   assert.equal(result.mandatoryGates.find((entry) => entry.code === "PROCUREMENT_TYPE_SUPPLIER_ROLE").state, "FAIL");
   assert.ok(result.blockers.length > 0);
 });
 
-test("keeps out-of-scope and missing-evidence pairs UNASSESSED rather than zero", () => {
+test("scores out-of-scope and partial-evidence pairs numerically while preserving applicability and coverage", () => {
   const profile = supplier();
   const outOfScope = evaluateExploratoryPair(tender("CONSULTING", "Consulting services"), profile, sufficientEvidence(profile), evaluatedAt);
   const insufficient = evaluateExploratoryPair(tender(), profile, [claim(profile, 7, "product_families", "Power transformers")], evaluatedAt);
-  assert.deepEqual([outOfScope.value, insufficient.value], [null, null]);
+  assert.equal(outOfScope.value, 0);
+  assert.ok(insufficient.value > 0);
   assert.deepEqual([outOfScope.pairStatus, insufficient.pairStatus], ["UNASSESSED", "UNASSESSED"]);
   assert.equal(outOfScope.mainReason, "CURRENT_SCOPE_GOODS_WORKS_ONLY");
   assert.ok(insufficient.dataCoverage < 50);
 });
 
-test("preserves genuine evaluated zero-fit evidence inside a numeric NO_MATCH result", () => {
+test("preserves genuine evaluated zero-fit evidence without issuing a Non-match verdict", () => {
   const profile = supplier();
   const evidence = [
     claim(profile, 1, "product_families", "Office furniture; chairs and desks"),
@@ -114,7 +116,7 @@ test("preserves genuine evaluated zero-fit evidence inside a numeric NO_MATCH re
   assert.equal(technical.fitLevel, 0);
   assert.equal(technical.valueClass, "ESTIMATED");
   assert.notEqual(result.value, null);
-  assert.equal(result.pairStatus, "NO_MATCH");
+  assert.equal(result.pairStatus, "UNASSESSED");
   assert.ok(result.reasonCodes.includes("SUPPORTED_TECHNICAL_INCOMPATIBILITY"));
 });
 
@@ -154,19 +156,19 @@ test("does not double-count evidence across criteria and cites only the relevant
   assert.ok(result.evidenceIds.every((id) => sufficientEvidence(profile).some((entry) => entry.claimId === id)));
 });
 
-test("full pinned replay has exact cardinality and enforces all status thresholds", async () => {
+test("full pinned replay has 1,020 numeric scores and no Match threshold", async () => {
   const runtime = JSON.parse(await readFile(path.join(projectRoot, "apps/tender-apps/public/tendermatch/data/supplier-runtime-v1.3.json"), "utf8"));
   const evidenceSnapshot = JSON.parse(await readFile(path.join(projectRoot, "apps/tender-apps/public/tendermatch/data/supplier-evidence-v1.3.json"), "utf8"));
   const evaluations = buildExploratoryEvaluationInventory(runtimeTenders, runtime.suppliers, Object.values(evidenceSnapshot.evidenceBySupplier).flat(), evaluatedAt);
   const summary = summarizeExploratoryEvaluations(evaluations);
   assert.equal(evaluations.length, 1020);
   assert.equal(new Set(evaluations.map((entry) => entry.key)).size, 1020);
-  assert.deepEqual(summary.byStatus, { BINGO_MATCH: 0, STRONG_CANDIDATE: 0, POTENTIAL_MATCH: 0, NEEDS_VERIFICATION: 3, NO_MATCH: 45, BLOCKED_INELIGIBLE: 37, UNASSESSED: 935 });
-  assert.equal(summary.numeric, 48);
-  assert.equal(summary.missing, 972);
-  assert.ok(evaluations.filter((entry) => entry.pairStatus === "BINGO_MATCH").every((entry) => entry.value >= 85 && entry.dataCoverage >= 85 && entry.evidenceConfidence >= 75));
-  assert.ok(evaluations.filter((entry) => entry.pairStatus === "STRONG_CANDIDATE").every((entry) => entry.value >= 75 && entry.dataCoverage >= 70 && entry.evidenceConfidence >= 60));
-  assert.ok(evaluations.filter((entry) => entry.value === null).every((entry) => entry.valueClass === "MISSING"));
+  assert.deepEqual(summary.byStatus, { BINGO_MATCH: 0, STRONG_CANDIDATE: 0, POTENTIAL_MATCH: 0, NEEDS_VERIFICATION: 0, NO_MATCH: 0, BLOCKED_INELIGIBLE: 0, UNASSESSED: 1020 });
+  assert.equal(summary.numeric, 1020);
+  assert.equal(summary.missing, 0);
+  assert.ok(evaluations.every((entry) => Number.isInteger(entry.value) && entry.value >= 0 && entry.value <= 100));
+  assert.ok(evaluations.every((entry) => entry.pairStatus === "UNASSESSED"));
+  assert.ok(evaluations.some((entry) => entry.value === 0 && entry.dataCoverage === 0));
 });
 
 test("exports one auditable row per pair with versions, gates, criteria and evidence identities", async () => {
@@ -174,14 +176,13 @@ test("exports one auditable row per pair with versions, gates, criteria and evid
   const csv = formulaEvaluationsToCsv(runtime.evaluations, runtimeTenders, runtime.suppliers);
   const lines = csv.trim().split(/\r?\n/);
   assert.equal(lines.length, 1021);
-  for (const header of ["Tender ID", "Supplier ID", "Pair status", "Match Score", "Data Coverage", "Evidence Confidence", "Mandatory gates", "Weighted criteria", "Main reason", "Blockers", "Missing inputs", "Evidence IDs", "Engine version", "Policy version", "Evaluated at"]) assert.match(lines[0], new RegExp(header));
-  assert.match(csv, /tendermatch-match-formula\/1\.0\.0/);
-  assert.match(csv, /NEEDS_VERIFICATION/);
-  assert.match(csv, /BLOCKED_INELIGIBLE/);
+  for (const header of ["Tender ID", "Supplier ID", "Scoring stage", "Pair Score", "Assessed Fit Score", "Data Coverage", "Evidence Confidence", "Mandatory gates", "Weighted criteria", "Main reason", "Blockers", "Missing inputs", "Evidence IDs", "Engine version", "Policy version", "Evaluated at"]) assert.match(lines[0], new RegExp(header));
+  assert.match(csv, /tendermatch-match-formula\/1\.1\.0/);
+  assert.match(csv, /SCORING_ONLY/);
   assert.match(csv, /CURRENT_SCOPE_GOODS_WORKS_ONLY/);
 });
 
-test("exports a typed Formula v1.0 Excel workbook with 1,020 auditable pair rows", async () => {
+test("exports a typed Formula v1.1 Excel workbook with 1,020 auditable pair rows", async () => {
   const runtime = JSON.parse(await readFile(path.join(projectRoot, "apps/tender-apps/public/tendermatch/data/supplier-runtime-v1.3.json"), "utf8"));
   const bytes = await tenderMatchFormulaToExcel(runtime.evaluations, runtimeTenders, runtime.suppliers);
   const ExcelJS = (await import(pathToFileURL(path.join(projectRoot, "apps", "tender-apps", "node_modules", "exceljs", "excel.js")).href)).default;
@@ -193,28 +194,28 @@ test("exports a typed Formula v1.0 Excel workbook with 1,020 auditable pair rows
   const summary = workbook.getWorksheet("Formula Summary");
   const pairs = workbook.getWorksheet("Pair Evaluations");
   assert.equal(summary.getCell("B8").value, 1020);
-  assert.equal(summary.getCell("B9").value, 48);
-  assert.equal(summary.getCell("B10").value, 972);
+  assert.equal(summary.getCell("B9").value, 1020);
+  assert.equal(summary.getCell("B10").value, 0);
   assert.equal(pairs.rowCount, 1021);
   assert.deepEqual(pairs.getRow(1).values.slice(1), [
     "Tender ID", "Tender reference", "Tender procurement type", "Tender snapshot", "Tender version",
     "Supplier ID", "Supplier name", "Supplier role", "Supplier profile version", "Supplier batch",
-    "Pair status", "Match Score", "Match value class", "Data Coverage", "Evidence Confidence",
+    "Scoring stage", "Pair Score", "Assessed Fit Score", "Score value class", "Data Coverage", "Evidence Confidence",
     "Mandatory gates", "Weighted criteria", "Main reason", "Blockers", "Missing inputs", "Evidence IDs",
     "Consultant decision", "Engine version", "Policy version", "Evaluated at", "Reader label",
   ]);
-  const numericRow = pairs.getRows(2, 1020).find((row) => row.getCell(11).value === "NEEDS_VERIFICATION");
+  const numericRow = pairs.getRows(2, 1020).find((row) => row.getCell(11).value === "SCORING_ONLY" && row.getCell(12).value > 0);
   assert.ok(numericRow);
   assert.equal(typeof numericRow.getCell(12).value, "number");
-  assert.equal(typeof numericRow.getCell(14).value, "number");
   assert.equal(typeof numericRow.getCell(15).value, "number");
-  assert.ok(numericRow.getCell(25).value instanceof Date);
-  assert.ok(Array.isArray(JSON.parse(numericRow.getCell(16).value)));
+  assert.equal(typeof numericRow.getCell(16).value, "number");
+  assert.ok(numericRow.getCell(26).value instanceof Date);
   assert.ok(Array.isArray(JSON.parse(numericRow.getCell(17).value)));
-  assert.match(numericRow.getCell(23).value, /tendermatch-match-formula\/1\.0\.0/);
+  assert.ok(Array.isArray(JSON.parse(numericRow.getCell(18).value)));
+  assert.match(numericRow.getCell(24).value, /tendermatch-match-formula\/1\.1\.0/);
 
   const appSource = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "tendermatch-app.tsx"), "utf8");
-  assert.match(appSource, /Export Formula v1\.0 CSV/);
-  assert.match(appSource, /Export Formula v1\.0 Excel/);
+  assert.match(appSource, /Export Formula v1\.1 CSV/);
+  assert.match(appSource, /Export Formula v1\.1 Excel/);
   assert.match(appSource, /const pageSize = 10/);
 });

@@ -44,17 +44,17 @@ test("binds the deployed supplier snapshot to manifest hashes and exact v1.3 cou
   assert.equal(manifest.releaseMode, "static-pinned-snapshot");
   assert.equal(manifest.files.runtime.sha256, sha256(runtimeFixture.contents));
   assert.equal(manifest.files.evidence.sha256, sha256(evidenceFixture.contents));
-  assert.deepEqual(manifest.counts, { tenders: 60, suppliers: 17, evidence: 289, evaluations: 1020, numericEvaluations: 48, missingEvaluations: 972 });
+  assert.deepEqual(manifest.counts, { tenders: 60, suppliers: 17, evidence: 289, evaluations: 1020, numericEvaluations: 1020, missingEvaluations: 0 });
 
   assert.equal(runtime.mode, "static-pinned-snapshot");
   assert.equal(runtime.suppliers.length, 17);
   assert.equal(runtime.evaluations.length, 1020);
   assert.equal(new Set(runtime.evaluations.map((entry) => entry.key)).size, 1020);
-  assert.equal(runtime.evaluationSummary.numeric, 48);
-  assert.equal(runtime.evaluationSummary.missing, 972);
-  assert.deepEqual(runtime.evaluationSummary.byStatus, { BINGO_MATCH: 0, STRONG_CANDIDATE: 0, POTENTIAL_MATCH: 0, NEEDS_VERIFICATION: 3, NO_MATCH: 45, BLOCKED_INELIGIBLE: 37, UNASSESSED: 935 });
-  assert.ok(runtime.evaluations.filter((entry) => entry.value === null).every((entry) => entry.valueClass === "MISSING"));
-  assert.ok(runtime.evaluations.filter((entry) => entry.value !== null).every((entry) => entry.valueClass === "ESTIMATED"));
+  assert.equal(runtime.evaluationSummary.numeric, 1020);
+  assert.equal(runtime.evaluationSummary.missing, 0);
+  assert.deepEqual(runtime.evaluationSummary.byStatus, { BINGO_MATCH: 0, STRONG_CANDIDATE: 0, POTENTIAL_MATCH: 0, NEEDS_VERIFICATION: 0, NO_MATCH: 0, BLOCKED_INELIGIBLE: 0, UNASSESSED: 1020 });
+  assert.ok(runtime.evaluations.every((entry) => Number.isInteger(entry.value) && entry.value >= 0 && entry.value <= 100));
+  assert.ok(runtime.evaluations.every((entry) => entry.valueClass === "ESTIMATED"));
   assert.equal("consumerRole" in runtime.summary, false);
   assert.equal("views" in runtime.summary, false);
 

@@ -228,11 +228,12 @@ export type AuditedMatchResult = {
   method: string;
   status?: TenderMatchPairStatus;
   dataCoverage?: number;
+  assessedFitScore?: number;
   evidenceConfidence?: number;
   gates?: TenderMatchMandatoryGate[];
   mainReason?: string;
   blockers?: string[];
-  noticeLabel?: "Preliminary notice-level match";
+  noticeLabel?: "Preliminary notice-level match" | "Coverage-adjusted pair score";
 };
 
 export type LegacyBaselineMetrics = {

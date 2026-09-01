@@ -135,7 +135,7 @@ async function listeningServer(store) {
   return { ...runtime, origin: `http://127.0.0.1:${address.port}` };
 }
 
-test("gates Formula v1.0 numeric fit on procurement applicability and minimum Data Coverage", () => {
+test("Formula v1.1 emits a coverage-adjusted numeric score and keeps diagnostics separate", () => {
   const supplier = profile(0, { displayName: "Transformer Works", classification: "GOODS" });
   const tender = { ...runtimeTenders[0], title: "Supply of power transformers for a new substation", object: "GOODS", procurementType: "GOODS", description: "Electrical grid equipment" };
   const evidence = [
@@ -154,12 +154,13 @@ test("gates Formula v1.0 numeric fit on procurement applicability and minimum Da
   assert.ok(first.technicalRelevance.evidenceIds.length >= 2);
   assert.equal(first.dataCoverage, 65);
   assert.equal(first.evidenceConfidence, 50);
-  assert.equal(first.pairStatus, "NEEDS_VERIFICATION");
+  assert.equal(first.pairStatus, "UNASSESSED");
+  assert.equal(first.value, Math.round(first.assessedFitScore * first.dataCoverage / 100));
   assert.equal(first.supplierReadinessStatus, "usable_with_limitations");
   assert.equal(first.consultantDecision, "pending");
 });
 
-test("distinguishes blocked, unassessed, NO_MATCH and artifact-unavailable evidence", () => {
+test("keeps gates, missing evidence and unavailable artifacts diagnostic while always scoring", () => {
   const supplier = profile(0, { classification: "GOODS" });
   const goodsTender = { ...runtimeTenders[0], title: "Supply of hospital diagnostic equipment", object: "GOODS", procurementType: "GOODS" };
   const strong = [evidenceRecord(supplier, 1, { value: "medical diagnostic equipment" }), evidenceRecord(supplier, 2, { field: "industries_served", value: "medical healthcare diagnostics" }), evidenceRecord(supplier, 3, { field: "capacity", value: "Production facilities: 12" }), evidenceRecord(supplier, 4, { field: "geographic_markets", value: "Global; Asia" })];
@@ -169,10 +170,10 @@ test("distinguishes blocked, unassessed, NO_MATCH and artifact-unavailable evide
     evaluateExploratoryPair(goodsTender, supplier, [evidenceRecord(supplier, 8, { value: null, normalizedValue: null, status: "UNKNOWN", artifactAvailable: false })], evaluatedAt),
     evaluateExploratoryPair(goodsTender, supplier, strong.map((entry) => ({ ...entry, artifactAvailable: false, sourceArtifactId: null })), evaluatedAt),
   ];
-  assert.deepEqual(cases.map((entry) => entry.pairStatus), ["BLOCKED_INELIGIBLE", "NO_MATCH", "UNASSESSED", "NEEDS_VERIFICATION"]);
-  assert.equal(cases[0].value, null);
-  assert.notEqual(cases[1].value, null);
-  assert.equal(cases[2].value, null);
+  assert.ok(cases.every((entry) => entry.pairStatus === "UNASSESSED"));
+  assert.ok(cases.every((entry) => Number.isInteger(entry.value)));
+  assert.equal(cases[0].value, 0);
+  assert.equal(cases[2].value, 0);
   assert.ok(cases[0].reasonCodes.includes("PROCUREMENT_TYPE_SUPPLIER_ROLE"));
   assert.ok(cases[3].reasonCodes.includes("CITED_ARTIFACT_UNAVAILABLE"));
   assert.deepEqual(cases[3].evidenceCoverage, { cited: 4, availableArtifacts: 0, unavailableArtifacts: 4 });
@@ -183,7 +184,7 @@ test("keeps capacity and turnover separate from technical fit", () => {
   const tender = { ...runtimeTenders[0], title: "Supply industrial equipment", object: "GOODS", procurementType: "GOODS" };
   const evidence = [evidenceRecord(supplier, 1, { field: "capacity", value: "1,000 units" }), evidenceRecord(supplier, 2, { field: "financial", value: "USD 10m" })];
   const result = evaluateExploratoryPair(tender, supplier, evidence, evaluatedAt);
-  assert.equal(result.value, null);
+  assert.equal(result.value, 12);
   assert.equal(result.capacity.state, "stated-unverified");
   assert.equal(result.capacity.usedInTechnicalFit, false);
   assert.equal(result.turnover.usedInTechnicalFit, false);

@@ -350,10 +350,10 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "tb3-pair-card tender",
     "tb3-pair-card company",
     "tb3-agent-medallion",
-    "KEEP MISSING",
+    "SHOW COVERAGE",
     "WHAT YOU RECEIVE",
     "NEON SUPPLIER + PILOT TENDER · EXPLORATORY",
-    "PRELIMINARY MATCH",
+    "PAIR SCORE",
     "LINKED EVIDENCE",
     "MISSING / BLOCKER",
     "FRESHNESS",
@@ -369,7 +369,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
   assert.ok(orientation.indexOf('part="input"') < orientation.indexOf('part="agent-transformation"'));
   assert.ok(orientation.indexOf('part="agent-transformation"') < orientation.indexOf('part="finished-output"'));
   assert.ok(orientation.indexOf('part="finished-output"') < orientation.indexOf('part="primary-action"'));
-  assert.match(orientation, /<ol><li>SELECT<\/li><li>VALIDATE<\/li><li>KEEP MISSING<\/li><li>EXPLAIN<\/li><\/ol>/);
+  assert.match(orientation, /<ol><li>SELECT<\/li><li>SCORE<\/li><li>SHOW COVERAGE<\/li><li>EXPLAIN<\/li><\/ol>/);
   assert.match(orientation, /onOpen\(previewAssessment, "match-tenders"\)/);
   assert.match(orientation, /onKeyDown=\{\(event\)[\s\S]+event\.key === "Enter"[\s\S]+event\.key === " "/);
   assert.match(orientation, /onView\("matrix"\)/);

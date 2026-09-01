@@ -24,7 +24,6 @@ import {
   type SupplierRecord,
   type TenderMatchRuntimePayload,
   type TenderMatchCaseResult,
-  type TenderMatchPairStatus,
   type TenderRecord,
 } from "../../../packages/tendermatch/src";
 import { AgentRoleCallout } from "./agent-role-callout.tsx";
@@ -149,9 +148,9 @@ function dateLabel(value: string) {
 }
 
 function scoreBand(value: number | null) {
-  if (value === null) return "missing";
-  if (value >= 75) return "priority";
-  if (value >= 60) return "review";
+  if (value === null || value <= 20) return "archive";
+  if (value >= 61) return "priority";
+  if (value >= 41) return "review";
   return "archive";
 }
 
@@ -177,33 +176,8 @@ function downloadBytes(fileName: string, contents: Uint8Array) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
-const pairStatusLabel: Record<TenderMatchPairStatus, string> = {
-  BINGO_MATCH: "Bingo match",
-  STRONG_CANDIDATE: "Strong candidate",
-  POTENTIAL_MATCH: "Potential match",
-  NEEDS_VERIFICATION: "Needs verification",
-  NO_MATCH: "No match",
-  BLOCKED_INELIGIBLE: "Blocked / ineligible",
-  UNASSESSED: "Unassessed",
-};
-
-const pairStatusRank: Record<TenderMatchPairStatus, number> = {
-  BINGO_MATCH: 7,
-  STRONG_CANDIDATE: 6,
-  POTENTIAL_MATCH: 5,
-  NEEDS_VERIFICATION: 4,
-  NO_MATCH: 3,
-  BLOCKED_INELIGIBLE: 2,
-  UNASSESSED: 1,
-};
-
-function statusOf(match: MatchAssessment): TenderMatchPairStatus {
-  return match.auditedMatch.status ?? (match.auditedMatch.value === null ? "UNASSESSED" : "NEEDS_VERIFICATION");
-}
-
 function compareMatches(left: MatchAssessment, right: MatchAssessment) {
-  return pairStatusRank[statusOf(right)] - pairStatusRank[statusOf(left)]
-    || (right.auditedMatch.value ?? -1) - (left.auditedMatch.value ?? -1)
+  return (right.auditedMatch.value ?? -1) - (left.auditedMatch.value ?? -1)
     || (right.auditedMatch.dataCoverage ?? 0) - (left.auditedMatch.dataCoverage ?? 0)
     || left.key.localeCompare(right.key);
 }
@@ -344,9 +318,9 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   const supplier = mapSupplierProfileToWorkspace(supplierProfile, supplierEvidence[supplierProfile.canonicalEntityId] ?? []);
   const tenderMatches = allMatches.filter((entry) => entry.tenderId === tender.id).sort(compareMatches);
   const supplierMatches = allMatches.filter((entry) => entry.supplierId === supplier.id).sort(compareMatches);
-  const evaluatedMatches = allMatches.filter((entry) => entry.auditedMatch.value !== null);
-  const priorityMatches = evaluatedMatches.filter((entry) => ["BINGO_MATCH", "STRONG_CANDIDATE", "POTENTIAL_MATCH", "NEEDS_VERIFICATION"].includes(statusOf(entry))).sort(compareMatches);
-  const auditedMatches = allMatches.filter((entry) => entry.auditedMatch.value !== null);
+  const evaluatedMatches = allMatches;
+  const priorityMatches = [...evaluatedMatches].sort(compareMatches).slice(0, 10);
+  const auditedMatches = allMatches;
   const sourceCount = new Set(runtimeTenders.map((entry) => entry.sourceLabel)).size;
 
   const changeView = (nextView: WorkspaceView) => {
@@ -464,7 +438,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
 
   const caseControls = <section className="tb3-case-strip">
     <div><span>EXPLICIT CASE</span><code>{result.caseIdentity.id}</code><small>{supplier.legalEnglishName} × {tender.reference}</small></div>
-    <div><span>PRELIMINARY MATCH</span><b>{result.match.auditedMatch.value ?? pairStatusLabel[statusOf(result.match)]}</b><small>{pairStatusLabel[statusOf(result.match)]} · {result.match.auditedMatch.dataCoverage ?? 0}% coverage · {result.match.tenderFreshness.status}</small></div>
+    <div><span>PAIR SCORE</span><b>{result.match.auditedMatch.value ?? 0}</b><small>{result.match.auditedMatch.dataCoverage ?? 0}% coverage · {result.match.auditedMatch.evidenceConfidence ?? 0}% confidence · {result.match.tenderFreshness.status}</small></div>
     <div className="tb3-case-actions"><button onClick={saveCase}>Save Case</button><button onClick={loadCase}>Load Case</button><small>{persistenceMessage}</small></div>
   </section>;
 
@@ -549,7 +523,7 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityM
         <PracticalAgentOverviewPart className="tb3-story-work" part="agent-transformation" aria-label="TenderMatch evidence-aware transformation">
           <span className="tb3-story-arrow" aria-hidden="true">→</span>
           <div className="tb3-agent-medallion"><small>TENDER APPS</small><strong>Tender<br />Match</strong><i>TL-A031</i></div>
-          <ol><li>SELECT</li><li>VALIDATE</li><li>KEEP MISSING</li><li>EXPLAIN</li></ol>
+          <ol><li>SELECT</li><li>SCORE</li><li>SHOW COVERAGE</li><li>EXPLAIN</li></ol>
           <span className="tb3-story-arrow" aria-hidden="true">→</span>
         </PracticalAgentOverviewPart>
 
@@ -561,7 +535,7 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityM
             <div><span>TENDER</span><strong>{previewTender.reference}</strong></div>
           </div>
           <dl className="tb3-result-summary">
-            <div className="score"><dt>PRELIMINARY MATCH</dt><dd>{previewAssessment.auditedMatch.value ?? "—"}<small>{pairStatusLabel[statusOf(previewAssessment)]}</small></dd></div>
+            <div className="score"><dt>PAIR SCORE</dt><dd>{previewAssessment.auditedMatch.value ?? 0}<small>{previewAssessment.auditedMatch.dataCoverage ?? 0}% coverage</small></dd></div>
             <div><dt>LINKED EVIDENCE</dt><dd>{previewAssessment.auditedMatch.evidenceIds.length}<small>records</small></dd></div>
             <div><dt>FRESHNESS</dt><dd>{previewAssessment.tenderFreshness.status}<small>{previewAssessment.tenderFreshness.freshness}</small></dd></div>
             <div><dt>DECISION</dt><dd>{decisionLabel[previewDecision]}<small>consultant</small></dd></div>
@@ -691,7 +665,7 @@ function SupplierDirectoryView({ view, suppliers, profiles, allMatches, onView, 
 function TenderDirectoryView({ allMatches, suppliers, onOpen }: { allMatches: MatchAssessment[]; suppliers: SupplierRecord[]; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
   return <>
     <ViewHeader eyebrow="04 · CURRENT OPPORTUNITY DATABASE" title="Tender Snapshot" description={`All ${runtimeTenders.length} records met the approved Central Asia current-tender predicate at extraction. Deadline state is recalculated at review time; no browser-to-database connection exists.`} aside={<div className="tb3-directory-count"><b>{runtimeTenders.length}</b><span>current at extraction</span></div>} />
-    <section className="tb3-directory" aria-label="Tender snapshot directory"><div className="tb3-directory-head tender"><span>NO.</span><span>TENDER</span><span>OBJECT</span><span>SOURCE</span><span>BUDGET</span><span>DEADLINE</span><span>MATCH STATE</span><span>ACTION</span></div>{runtimeTenders.map((entry, index) => { const matches = allMatches.filter((match) => match.tenderId === entry.id); const best = bestLegacyMatch(matches); return <button className="tb3-directory-row tender" key={entry.id} onClick={() => best && onOpen(best, "match-tenders")}><span className="number">{index + 1}</span><div className="tender-name"><p><b>{entry.title}</b><small>{entry.buyer} · {entry.country}</small><em>{entry.reference}</em></p></div><span>{entry.object}</span><strong>{entry.sourceLabel}</strong><strong>{entry.budgetLabel}</strong><p>{best.tenderFreshness.daysRemaining} days<small>{dateLabel(entry.deadlineAt)} · {best.tenderFreshness.status}</small></p><div className="top-match"><b className={scoreBand(best.auditedMatch.value)}>{best.auditedMatch.value ?? "—"}</b><p><strong>{suppliers.find((supplier) => supplier.id === best.supplierId)?.legalEnglishName ?? "Not evaluated"}</strong><small>{pairStatusLabel[statusOf(best)]} · {best.auditedMatch.dataCoverage ?? 0}% coverage</small></p></div><em>Open match →</em></button>; })}</section>
+    <section className="tb3-directory" aria-label="Tender snapshot directory"><div className="tb3-directory-head tender"><span>NO.</span><span>TENDER</span><span>OBJECT</span><span>SOURCE</span><span>BUDGET</span><span>DEADLINE</span><span>TOP SCORE</span><span>ACTION</span></div>{runtimeTenders.map((entry, index) => { const matches = allMatches.filter((match) => match.tenderId === entry.id); const best = bestLegacyMatch(matches); return <button className="tb3-directory-row tender" key={entry.id} onClick={() => best && onOpen(best, "match-tenders")}><span className="number">{index + 1}</span><div className="tender-name"><p><b>{entry.title}</b><small>{entry.buyer} · {entry.country}</small><em>{entry.reference}</em></p></div><span>{entry.object}</span><strong>{entry.sourceLabel}</strong><strong>{entry.budgetLabel}</strong><p>{best.tenderFreshness.daysRemaining} days<small>{dateLabel(entry.deadlineAt)} · {best.tenderFreshness.status}</small></p><div className="top-match"><b className={scoreBand(best.auditedMatch.value)}>{best.auditedMatch.value ?? 0}</b><p><strong>{suppliers.find((supplier) => supplier.id === best.supplierId)?.legalEnglishName ?? "Not evaluated"}</strong><small>{best.auditedMatch.dataCoverage ?? 0}% coverage · score only</small></p></div><em>Open pair →</em></button>; })}</section>
   </>;
 }
 
@@ -702,8 +676,15 @@ function MatrixView({ view, suppliers, profiles, evaluations, matchByKey, onView
   const pageCount = Math.ceil(suppliers.length / pageSize);
   const visibleSuppliers = suppliers.slice(page * pageSize, (page + 1) * pageSize);
   const matches = [...matchByKey.values()];
-  const numeric = matches.filter((entry) => entry.auditedMatch.value !== null).length;
-  const statusCounts = Object.fromEntries(Object.keys(pairStatusLabel).map((status) => [status, matches.filter((entry) => statusOf(entry) === status).length])) as Record<TenderMatchPairStatus, number>;
+  const numeric = matches.filter((entry) => typeof entry.auditedMatch.value === "number").length;
+  const scoreBands = [
+    { label: "Score 0", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) === 0).length },
+    { label: "Score 1–20", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 1 && (entry.auditedMatch.value ?? 0) <= 20).length },
+    { label: "Score 21–40", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 21 && (entry.auditedMatch.value ?? 0) <= 40).length },
+    { label: "Score 41–60", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 41 && (entry.auditedMatch.value ?? 0) <= 60).length },
+    { label: "Score 61–80", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 61 && (entry.auditedMatch.value ?? 0) <= 80).length },
+    { label: "Score 81–100", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 81).length },
+  ];
   async function exportExcel() {
     setExcelExporting(true);
     try {
@@ -714,23 +695,23 @@ function MatrixView({ view, suppliers, profiles, evaluations, matchByKey, onView
     }
   }
   return <>
-    <ViewHeader eyebrow="05 · MATCH MATRIX / PORTFOLIO" title="Full Match Matrix" description={`Every Company × Tender pair has a Formula v1.0 result. ${numeric} pairs have a preliminary numeric fit; unassessed, blocked and no-match outcomes remain explicit rather than collapsing into zero.`} aside={<div className="tb3-matrix-actions"><div className="tb3-directory-count"><b>{suppliers.length * runtimeTenders.length}</b><span>unique pair evaluations</span></div><button type="button" onClick={() => downloadText(tenderMatchFormulaExportFileName(evaluations[0]?.evaluatedAt ?? "undated"), formulaEvaluationsToCsv(evaluations, runtimeTenders, profiles))}>Export Formula v1.0 CSV</button><button type="button" disabled={excelExporting} onClick={exportExcel}>{excelExporting ? "Preparing Excel…" : "Export Formula v1.0 Excel"}</button></div>} />
+    <ViewHeader eyebrow="05 · MATCH MATRIX / SCORING" title="Full Match Matrix" description={`Every Company × Tender pair has a coverage-adjusted Formula v1.1 score from 0 to 100. All ${numeric} cells are numeric; coverage and evidence confidence remain separate, and no Match threshold is defined.`} aside={<div className="tb3-matrix-actions"><div className="tb3-directory-count"><b>{suppliers.length * runtimeTenders.length}</b><span>numeric pair scores</span></div><button type="button" onClick={() => downloadText(tenderMatchFormulaExportFileName(evaluations[0]?.evaluatedAt ?? "undated"), formulaEvaluationsToCsv(evaluations, runtimeTenders, profiles))}>Export Formula v1.1 CSV</button><button type="button" disabled={excelExporting} onClick={exportExcel}>{excelExporting ? "Preparing Excel…" : "Export Formula v1.1 Excel"}</button></div>} />
     <MatchModeTabs view={view} onChange={onView} supplierCount={suppliers.length} />
-    <section className="tb3-status-summary" aria-label="Formula v1.0 pair-status summary">
-      {(["BINGO_MATCH", "STRONG_CANDIDATE", "POTENTIAL_MATCH", "NEEDS_VERIFICATION", "NO_MATCH", "BLOCKED_INELIGIBLE", "UNASSESSED"] as TenderMatchPairStatus[]).map((status) => <div key={status}><b>{statusCounts[status]}</b><span>{pairStatusLabel[status]}</span></div>)}
+    <section className="tb3-status-summary" aria-label="Formula v1.1 numeric score distribution">
+      {scoreBands.map((band) => <div key={band.label}><b>{band.count}</b><span>{band.label}</span></div>)}
     </section>
-    <section className="tb3-matrix-panel"><header><div><span>FORMULA V1.0 · PRELIMINARY</span><h2>Evidence-aware pair landscape</h2><p>Select any cell to inspect weighted criteria, mandatory gates, coverage, confidence, cited evidence and the separate human disposition.</p></div><div className="tb3-matrix-legend"><span className="priority">Candidate · verify gates</span><span className="review">No match · supported gap</span><span className="missing">Unassessed / blocked · no hidden zero</span></div></header><div className="tb3-matrix-pagination" aria-label="Supplier matrix pages"><button disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>← Previous suppliers</button><span>Suppliers {page * pageSize + 1}–{Math.min((page + 1) * pageSize, suppliers.length)} of {suppliers.length}</span><button disabled={page >= pageCount - 1} onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}>Next suppliers →</button></div><div className="tb3-matrix-scroll" role="region" aria-label="Full supplier by tender match matrix"><div className="tb3-matrix-table" style={{ minWidth: `${280 + runtimeTenders.length * 104}px` }}><div className="tb3-matrix-header" style={{ gridTemplateColumns: `280px repeat(${runtimeTenders.length}, 104px)` }}><div><b>SUPPLIER</b><span>READINESS STATE</span></div>{runtimeTenders.map((entry, index) => <div key={entry.id} title={`${entry.reference} · ${entry.country} · ${entry.object}`}><span>T{String(index + 1).padStart(2, "0")}</span><b>{entry.reference}</b><small>{entry.country}</small><em>{entry.object}</em></div>)}</div>{visibleSuppliers.map((company) => <div className="tb3-matrix-row" style={{ gridTemplateColumns: `280px repeat(${runtimeTenders.length}, 104px)` }} key={company.id}><div className="tb3-matrix-company"><span>{company.profile?.countryCode ?? "?"}</span><p><b>{company.legalEnglishName}</b><small>{supplierActivity(company)}</small><em>{company.readiness.label}</em></p><strong>—</strong></div>{runtimeTenders.map((opportunity) => { const assessment = matchByKey.get(matchKey(opportunity, company))!; const status = statusOf(assessment); return <button className={`tb3-matrix-cell ${scoreBand(assessment.auditedMatch.value)} status-${status.toLowerCase()}`} key={opportunity.id} onClick={() => onOpen(assessment, "match-tenders")} aria-label={`Open ${company.legalEnglishName} and ${opportunity.reference}; ${pairStatusLabel[status]}${assessment.auditedMatch.value === null ? "" : `, preliminary score ${assessment.auditedMatch.value}`}, ${assessment.auditedMatch.dataCoverage ?? 0} percent coverage`}><b>{assessment.auditedMatch.value ?? (status === "BLOCKED_INELIGIBLE" ? "BLOCK" : "—")}</b><span>{pairStatusLabel[status]}</span></button>; })}</div>)}</div></div></section>
+    <section className="tb3-matrix-panel"><header><div><span>FORMULA V1.1 · SCORING ONLY</span><h2>Evidence-aware pair scores</h2><p>Select any cell to inspect the score, weighted criteria, missing evidence, mandatory gates, coverage, confidence and separate human disposition.</p></div><div className="tb3-matrix-legend"><span className="priority">61–100</span><span className="review">41–60</span><span className="missing">0–40 · inspect coverage</span></div></header><div className="tb3-matrix-pagination" aria-label="Supplier matrix pages"><button disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>← Previous suppliers</button><span>Suppliers {page * pageSize + 1}–{Math.min((page + 1) * pageSize, suppliers.length)} of {suppliers.length}</span><button disabled={page >= pageCount - 1} onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}>Next suppliers →</button></div><div className="tb3-matrix-scroll" role="region" aria-label="Full supplier by tender score matrix"><div className="tb3-matrix-table" style={{ minWidth: `${280 + runtimeTenders.length * 104}px` }}><div className="tb3-matrix-header" style={{ gridTemplateColumns: `280px repeat(${runtimeTenders.length}, 104px)` }}><div><b>SUPPLIER</b><span>READINESS STATE</span></div>{runtimeTenders.map((entry, index) => <div key={entry.id} title={`${entry.reference} · ${entry.country} · ${entry.object}`}><span>T{String(index + 1).padStart(2, "0")}</span><b>{entry.reference}</b><small>{entry.country}</small><em>{entry.object}</em></div>)}</div>{visibleSuppliers.map((company) => <div className="tb3-matrix-row" style={{ gridTemplateColumns: `280px repeat(${runtimeTenders.length}, 104px)` }} key={company.id}><div className="tb3-matrix-company"><span>{company.profile?.countryCode ?? "?"}</span><p><b>{company.legalEnglishName}</b><small>{supplierActivity(company)}</small><em>{company.readiness.label}</em></p><strong>—</strong></div>{runtimeTenders.map((opportunity) => { const assessment = matchByKey.get(matchKey(opportunity, company))!; const score = assessment.auditedMatch.value ?? 0; const coverage = assessment.auditedMatch.dataCoverage ?? 0; return <button className={`tb3-matrix-cell ${scoreBand(score)}`} key={opportunity.id} onClick={() => onOpen(assessment, "match-tenders")} aria-label={`Open ${company.legalEnglishName} and ${opportunity.reference}; pair score ${score} of 100, ${coverage} percent coverage`}><b>{score}</b><span>{coverage}% coverage</span></button>; })}</div>)}</div></div></section>
   </>;
 }
 
 function MatchWorkspaceView({ view, tender, supplier, suppliers, result, allMatches, tenderMatches, supplierMatches, caseResults, onView, onOpen, onDecision }: { view: "match-tenders" | "match-suppliers"; tender: TenderRecord; supplier: SupplierRecord; suppliers: SupplierRecord[]; result: TenderMatchCaseResult; allMatches: MatchAssessment[]; tenderMatches: MatchAssessment[]; supplierMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void; onDecision: (decision: ConsultantDecision) => void }) {
   return <>
-    <ViewHeader eyebrow={`05 · MATCH MATRIX / ${view === "match-tenders" ? "TENDER-FIRST" : "SUPPLIER-FIRST"}`} title={view === "match-tenders" ? "Review by Tenders" : "Review by Suppliers"} description="Inspect deterministic Formula v1.0 outcomes. Match Score, Data Coverage, Evidence Confidence, supplier readiness, freshness and consultant disposition remain separate." aside={<div className="tb3-replay" role="status"><span>✓</span><p><b>Formula v1.0 ready</b><small>{allMatches.length} / {allMatches.length} pair results completed</small></p></div>} />
+    <ViewHeader eyebrow={`05 · MATCH MATRIX / ${view === "match-tenders" ? "TENDER-FIRST" : "SUPPLIER-FIRST"}`} title={view === "match-tenders" ? "Review by Tenders" : "Review by Suppliers"} description="Inspect deterministic Formula v1.1 scores. Pair Score, assessed-only fit, Data Coverage, Evidence Confidence, supplier readiness, freshness and consultant disposition remain separate." aside={<div className="tb3-replay" role="status"><span>✓</span><p><b>Formula v1.1 ready</b><small>{allMatches.length} / {allMatches.length} numeric pair scores completed</small></p></div>} />
     <MatchModeTabs view={view} onChange={onView} supplierCount={suppliers.length} />
     <div className="tb3-progress" role="progressbar" aria-label="Server-computed pair inventory progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}><i style={{ width: "100%" }} /><span>100%</span></div>
     <section className="tb3-match-workspace">
       <aside className="tb3-picker"><header><span>{view === "match-tenders" ? "TENDERS" : "SUPPLIERS"}</span><b>{view === "match-tenders" ? `${runtimeTenders.length} current-at-extraction records` : `${suppliers.length} under-review profiles`}</b></header>{view === "match-tenders" ? runtimeTenders.map((entry) => <button className={entry.id === tender.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)); if (best) onOpen(best); }}><span>{entry.sourceLabel}</span><b>{entry.reference}</b><p>{entry.title}</p><small>{entry.country} · {dateLabel(entry.deadlineAt)}</small></button>) : suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{supplierActivity(entry)} · {entry.readiness.label}</small></p><i>→</i></button>)}</aside>
-      <article className="tb3-ranking"><header><div><span>{view === "match-tenders" ? tender.sourceLabel : "SELECTED SUPPLIER"}</span><h2>{view === "match-tenders" ? tender.title : supplier.legalEnglishName}</h2><p>{view === "match-tenders" ? `${tender.buyer} · ${tender.country}` : `${supplierActivity(supplier)} · ${supplier.profile?.verificationStatus.replace("_", " ")}`}</p></div><div><small>{view === "match-tenders" ? "DEADLINE" : "READINESS"}</small><b>{view === "match-tenders" ? dateLabel(tender.deadlineAt) : supplier.readiness.label}</b><small>{view === "match-tenders" ? "STATUS" : "VERIFIED CLAIMS"}</small><b>{view === "match-tenders" ? result.match.tenderFreshness.status : "0"}</b></div></header><div className="tb3-ranking-head"><span>{view === "match-tenders" ? "SUPPLIER" : "TENDER"}</span><span>READINESS</span><span>FORMULA V1.0</span><span>COVERAGE / CONFIDENCE</span><span>DECISION</span></div><div className="tb3-ranking-rows">{(view === "match-tenders" ? tenderMatches : supplierMatches).map((assessment) => { const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!; const cachedDecision = caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision; const status = statusOf(assessment); return <button className={assessment.key === result.match.key ? "selected" : ""} key={assessment.key} onClick={() => onOpen(assessment)}><div><span>{view === "match-tenders" ? rowSupplier.profile?.countryCode ?? "?" : rowTender.countryCode ?? "?"}</span><p><b>{view === "match-tenders" ? rowSupplier.legalEnglishName : rowTender.title}</b><small>{view === "match-tenders" ? supplierActivity(rowSupplier) : `${rowTender.reference} · ${rowTender.country} · ${rowTender.object}`}</small></p></div><strong>—<small>{rowSupplier.readiness.label}</small></strong><strong className={scoreBand(assessment.auditedMatch.value)}>{assessment.auditedMatch.value ?? "—"}<small>{pairStatusLabel[status]}</small></strong><strong>{assessment.auditedMatch.dataCoverage ?? 0}%<small>{assessment.auditedMatch.evidenceConfidence ?? 0}% confidence · {assessment.auditedMatch.evidenceIds.length} cited</small></strong><em className={`tb3-state ${cachedDecision}`}>{decisionLabel[cachedDecision]}</em></button>; })}</div></article>
+      <article className="tb3-ranking"><header><div><span>{view === "match-tenders" ? tender.sourceLabel : "SELECTED SUPPLIER"}</span><h2>{view === "match-tenders" ? tender.title : supplier.legalEnglishName}</h2><p>{view === "match-tenders" ? `${tender.buyer} · ${tender.country}` : `${supplierActivity(supplier)} · ${supplier.profile?.verificationStatus.replace("_", " ")}`}</p></div><div><small>{view === "match-tenders" ? "DEADLINE" : "READINESS"}</small><b>{view === "match-tenders" ? dateLabel(tender.deadlineAt) : supplier.readiness.label}</b><small>{view === "match-tenders" ? "STATUS" : "VERIFIED CLAIMS"}</small><b>{view === "match-tenders" ? result.match.tenderFreshness.status : "0"}</b></div></header><div className="tb3-ranking-head"><span>{view === "match-tenders" ? "SUPPLIER" : "TENDER"}</span><span>READINESS</span><span>PAIR SCORE</span><span>COVERAGE / CONFIDENCE</span><span>DECISION</span></div><div className="tb3-ranking-rows">{(view === "match-tenders" ? tenderMatches : supplierMatches).map((assessment) => { const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!; const cachedDecision = caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision; return <button className={assessment.key === result.match.key ? "selected" : ""} key={assessment.key} onClick={() => onOpen(assessment)}><div><span>{view === "match-tenders" ? rowSupplier.profile?.countryCode ?? "?" : rowTender.countryCode ?? "?"}</span><p><b>{view === "match-tenders" ? rowSupplier.legalEnglishName : rowTender.title}</b><small>{view === "match-tenders" ? supplierActivity(rowSupplier) : `${rowTender.reference} · ${rowTender.country} · ${rowTender.object}`}</small></p></div><strong>—<small>{rowSupplier.readiness.label}</small></strong><strong className={scoreBand(assessment.auditedMatch.value)}>{assessment.auditedMatch.value ?? 0}<small>score only · no threshold</small></strong><strong>{assessment.auditedMatch.dataCoverage ?? 0}%<small>{assessment.auditedMatch.evidenceConfidence ?? 0}% confidence · {assessment.auditedMatch.evidenceIds.length} cited</small></strong><em className={`tb3-state ${cachedDecision}`}>{decisionLabel[cachedDecision]}</em></button>; })}</div></article>
       <MatchReviewPanel result={result} tender={tender} supplier={supplier} onViewChange={onView} onDecision={onDecision} />
     </section>
   </>;
@@ -747,19 +728,19 @@ function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceE
 
 function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision }: { result: TenderMatchCaseResult; tender: TenderRecord; supplier: SupplierRecord; onViewChange: (view: WorkspaceView) => void; onDecision: (decision: ConsultantDecision) => void }) {
   const match = result.match.auditedMatch;
-  const status = statusOf(result.match);
   return <aside className="tb3-match-review">
-    <header><span>PRELIMINARY NOTICE-LEVEL MATCH</span><b className={scoreBand(match.value)}>{match.value ?? "—"}</b></header>
+    <header><span>COVERAGE-ADJUSTED PAIR SCORE</span><b className={scoreBand(match.value)}>{match.value ?? 0}</b></header>
     <h2>{supplier.legalEnglishName}</h2><p>{tender.reference} · {tender.country}</p>
-    <div className="tb3-pair-verdict"><strong>{pairStatusLabel[status]}</strong><span>{match.mainReason}</span></div>
+    <div className="tb3-pair-verdict"><strong>SCORING ONLY</strong><span>{match.mainReason} · no Match threshold has been defined</span></div>
     <div className="tb3-review-states"><span>{supplier.readiness.label}</span><span>Under review · 0 verified claims</span><span>Human disposition: {decisionLabel[result.match.consultantDecision]}</span></div>
     <div className="tb3-breakdown">{[
-      ["Match Score", match.value, match.valueClass],
+      ["Pair Score", match.value, match.valueClass],
+      ["Assessed-only Fit", match.assessedFitScore ?? 0, "CALCULATED"],
       ["Data Coverage", match.dataCoverage ?? 0, "CALCULATED"],
       ["Evidence Confidence", match.evidenceConfidence ?? 0, "CALCULATED"],
       ["Deadline urgency", result.match.deadlineUrgency.value, result.match.deadlineUrgency.valueClass],
     ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "MISSING" : valueClass}</small></strong></div>)}</div>
-    <section className="tb3-formula-audit"><span>WEIGHTED CRITERIA</span><div className="tb3-formula-table" role="table" aria-label="Formula v1.0 criterion audit">
+    <section className="tb3-formula-audit"><span>WEIGHTED CRITERIA</span><div className="tb3-formula-table" role="table" aria-label="Formula v1.1 criterion audit">
       <div className="head" role="row"><b>Criterion</b><b>Weight</b><b>Fit</b><b>Points</b><b>Class / confidence</b></div>
       {match.components.map((component) => <div className="row" role="row" key={component.code}><p><b>{component.code.replace(/-/g, " ")}</b><small>{component.rationale}</small>{component.evidenceIds.map((id) => <code key={id}>{id}</code>)}</p><strong>{Math.round(component.weight)}%</strong><strong>{component.fitLevel ?? "—"}/5</strong><strong>{component.weightedPoints ?? "—"}</strong><span>{component.valueClass}<small>{component.evidenceConfidence ?? 0}% confidence</small></span></div>)}
     </div></section>
@@ -767,6 +748,6 @@ function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision }
     <section className="gaps"><span>BLOCKERS / MISSING INPUTS</span><div>{(match.blockers ?? []).map((blocker) => <p key={blocker}>! {blocker}</p>)}{match.missingInputs.map((input) => <p key={input}>? {input}</p>)}{result.reviewSupport.findings.map((finding) => <p key={finding.code}>! {finding.code}: {finding.nextAction}</p>)}</div></section>
     <button className="tb3-evidence-link" onClick={() => onViewChange("verification")}>Open cited supplier evidence →</button>
     <div className="tb3-decision-actions"><button className={result.match.consultantDecision === "rejected" ? "selected reject" : ""} onClick={() => onDecision("rejected")}>Reject</button><button className={result.match.consultantDecision === "hold" ? "selected" : ""} onClick={() => onDecision("hold")}>Hold</button><button disabled={!result.reviewSupport.readyForCurrentDecision} className={result.match.consultantDecision === "approved" ? "selected" : ""} onClick={() => onDecision("approved")}>Approve match</button></div>
-    <small className="tb3-owner-boundary">Preliminary notice-level match · consultant-controlled disposition · never formal bid evaluation or Bid/No-Bid</small>
+    <small className="tb3-owner-boundary">Pair scoring only · consultant-controlled disposition · never a Match/Non-match verdict, formal bid evaluation or Bid/No-Bid decision</small>
   </aside>;
 }

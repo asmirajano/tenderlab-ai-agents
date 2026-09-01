@@ -191,12 +191,13 @@ test("documents the formula, experiment, version migration, and matching-only in
     readFile(path.join(projectRoot, "docs/tendermatch-scoring-model-card.md"), "utf8"),
     readFile(path.join(projectRoot, "docs/tendermatch-agent-03-integration.md"), "utf8"),
   ]);
-  assert.match(modelCard, /tendermatch-match-formula\/1\.0\.0/);
-  assert.match(modelCard, /Match Score = 100 × Σ\(weight × fit \/ 5\) \/ Σ\(assessed weights\)/);
-  assert.match(modelCard, /Numeric preliminary Match Scores \| 48/);
-  assert.match(modelCard, /Blocked \/ ineligible \| 37/);
-  assert.match(modelCard, /Unassessed \| 935/);
-  assert.match(modelCard, /Supplier readiness, deadline, consultant decision and general company size do not change Match Score/);
+  assert.match(modelCard, /tendermatch-match-formula\/1\.1\.0/);
+  assert.match(modelCard, /Pair Score = ROUND\(100 × Σ\(weight × available fit \/ 5\) \/ Σ\(all applicable criterion weights\), 0\)/);
+  assert.match(modelCard, /Numeric Pair Scores \| 1,020/);
+  assert.match(modelCard, /Missing numeric scores \| 0/);
+  assert.match(modelCard, /Score 0 \| 972/);
+  assert.match(modelCard, /Supplier readiness, deadline urgency, risk and consultant disposition never add score points/);
+  assert.match(modelCard, /does not decide whether a pair is a Match or Non-match/);
   assert.match(playbook, /The 64-Agent matching gate is passed: \*\*yes\*\*/);
   assert.match(playbook, /Canonical owner: `agent:TL-A031`/);
   assert.match(playbook, /### Terminology and protected-exception matrix/);

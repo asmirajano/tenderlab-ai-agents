@@ -50,8 +50,8 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   for (const content of ["Current Tender Radar", "Supplier Market", "Full Match Matrix", "Review by Tenders", "Review by Suppliers", "Case save failed"]) assert.match(page, new RegExp(content));
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.match(page, /role="alert"/);
-  assert.match(page, /FORMULA V1\.0 · PRELIMINARY/);
-  assert.match(page, /Unassessed \/ blocked · no hidden zero/);
+  assert.match(page, /FORMULA V1\.1 · SCORING ONLY/);
+  assert.match(page, /0–40 · inspect coverage/);
   assert.match(page, /STATED_UNVERIFIED remains stated and INFERRED remains inferred\. UNKNOWN remains MISSING\. None becomes verified, zero, or negative evidence/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
   assert.match(page, /data-map-mode="local-geographic"/);
