@@ -1,6 +1,7 @@
 import { incotermProfiles, isSellerPaid, validateTermMode } from "./incoterms.ts";
 import type {
   AllocatedContractLine,
+  CalculationDerivation,
   CalculationInput,
   CalculationResult,
   CalculationWarning,
@@ -155,6 +156,40 @@ function computedInsurancePremium(preInsuranceValue: number, premiumRate: number
   if (basis === "cost-before-insurance") return roundMoney(preInsuranceValue * factor);
   if (factor >= 1) return Number.NaN;
   return roundMoney(preInsuranceValue * factor / (1 - factor));
+}
+
+export function buildCanonicalInsuranceDerivation(input: {
+  sourceValue: number;
+  nonInsuranceAdjustment: number;
+  premiumRate: number;
+  coverageFactor: number;
+  basis: "final-contract-value" | "cost-before-insurance";
+  currency: string;
+  resultValue?: number;
+  sourceRef: string;
+  confidence: CalculationDerivation["confidence"];
+  benchmark?: CalculationDerivation["benchmark"];
+}): CalculationDerivation {
+  const preInsuranceValue = input.sourceValue + input.nonInsuranceAdjustment;
+  const resultValue = input.resultValue ?? computedInsurancePremium(preInsuranceValue, input.premiumRate, input.coverageFactor, input.basis);
+  return {
+    id: "cost:insurance:canonical-result",
+    engineVersion: LOGISTICS_COSTING_ENGINE_VERSION,
+    formula: input.basis === "final-contract-value"
+      ? "(source value + incremental non-insurance adjustment) × premium factor ÷ (1 − premium factor)"
+      : "(source value + incremental non-insurance adjustment) × premium factor",
+    inputs: [
+      { label: "Source commercial value", value: input.sourceValue, unit: input.currency, sourceRef: "Canonical commercial source value", evidenceKind: "sourced-fact", confidence: "high" },
+      { label: "Incremental non-insurance adjustment", value: input.nonInsuranceAdjustment, unit: input.currency, sourceRef: "Canonical Incoterm component treatments", evidenceKind: "calculation", confidence: input.confidence },
+      { label: "Premium rate", value: input.premiumRate * 100, unit: "%", sourceRef: input.sourceRef, evidenceKind: "assumption", confidence: input.confidence },
+      { label: "Insured-value factor", value: input.coverageFactor * 100, unit: "%", sourceRef: input.sourceRef, evidenceKind: "assumption", confidence: input.confidence },
+    ],
+    resultValue: roundMoney(resultValue),
+    resultUnit: input.currency,
+    confidence: input.confidence,
+    assumptions: ["This is the same insurance amount and operand set used by the canonical Case result, saved snapshot, explanation and export."],
+    benchmark: input.benchmark,
+  };
 }
 
 export function calculateScenario(input: CalculationInput): CalculationResult {

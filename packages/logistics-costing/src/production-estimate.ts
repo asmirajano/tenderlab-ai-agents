@@ -1,4 +1,4 @@
-import type { CalculationDerivation, CalculationOperand, CommercialItemEvidence, Confidence, CostComponentCode, CostLine, TransportMode, TransportUnit } from "./types.ts";
+import type { CalculationDerivation, CalculationOperand, CommercialItemEvidence, Confidence, CostComponentCode, CostLine, DocumentPhysicalEvidence, TransportMode, TransportUnit } from "./types.ts";
 import { transportUnits } from "./packing.ts";
 
 export type EstimateValue<T> = {
@@ -19,6 +19,13 @@ export type TruckAllocation = {
 };
 
 export type LimitingFactor = "VOLUME / LOADABILITY" | "WEIGHT" | "BOTH";
+
+export type PhysicalReadinessBlocker = {
+  code: "MISSING_PACKED_DIMENSIONS" | "MISSING_PACKED_GROSS_WEIGHT" | "UNIT_FIT_CONTRADICTION" | "GENERIC_MODE_FALLBACK_NOT_APPLICABLE";
+  message: string;
+  nextAction: string;
+  sourceRefs: string[];
+};
 
 export type HsCandidate = {
   code: string;
@@ -52,6 +59,7 @@ export type ProductionEstimateInput = {
   quantityDescription?: string;
   sourceLineCount?: number;
   commercialItems?: CommercialItemEvidence[];
+  physicalEvidence?: DocumentPhysicalEvidence[];
   sourcePackedVolumeM3?: number;
   sourceGrossWeightKg?: number;
   origin: string;
@@ -73,6 +81,10 @@ export type ProductionLogisticsEstimate = {
     sourceLineCount?: number;
     calculationRows: CargoCalculationRow[];
     confidenceFactors: string[];
+    packedVolumeStatus: "confirmed" | "estimated" | "missing";
+    grossWeightStatus: "confirmed" | "lower-bound" | "estimated" | "missing";
+    minimumEquipmentEnvelopeVolumeM3?: number;
+    explicitWeightLowerBoundKg?: number;
   };
   transport: {
     unit: TransportUnit;
@@ -83,7 +95,9 @@ export type ProductionLogisticsEstimate = {
     limitingFactor: LimitingFactor;
     allocations: TruckAllocation[];
     transitDays: [number, number];
+    selectionStatus: "qualified" | "blocked";
   };
+  readiness: { status: "ready" | "blocked"; blockers: PhysicalReadinessBlocker[] };
   costLines: CostLine[];
   nonInsuranceCost: number;
   insuranceRate: number;
@@ -335,19 +349,48 @@ function matchHsCandidates(text: string): HsCandidate[] {
   }).slice(0, 5);
 }
 
+function dimensionsVolumeM3(dimensions: { length: number; width: number; height: number }, quantity = 1) {
+  return dimensions.length * dimensions.width * dimensions.height / 1_000_000 * quantity;
+}
+
+function fitsLoadingEnvelope(item: { length: number; width: number; height: number }, unit?: { length: number; width: number; height: number }) {
+  if (!unit) return true;
+  const itemAxes = [item.length, item.width, item.height].sort((left, right) => left - right);
+  const unitAxes = [unit.length, unit.width, unit.height].sort((left, right) => left - right);
+  return itemAxes.every((axis, index) => axis <= unitAxes[index]);
+}
+
 export function buildProductionLogisticsEstimate(input: ProductionEstimateInput): ProductionLogisticsEstimate {
   const evidenceText = `${input.cargoDescription}\n${input.quantityDescription ?? ""}\n${input.evidenceText ?? ""}`;
   const proxy = selectCargoProxy(evidenceText);
   const commercialItems = input.commercialItems?.filter((item) => item.workingBaselineIncluded) ?? [];
+  const physicalEvidence = input.physicalEvidence ?? [];
   const lineCount = input.sourceLineCount ?? (commercialItems.length || undefined) ?? parsedCount(input.quantityDescription) ?? 1;
-  const volumeFromSource = Number.isFinite(input.sourcePackedVolumeM3) && (input.sourcePackedVolumeM3 ?? 0) > 0;
-  const weightFromSource = Number.isFinite(input.sourceGrossWeightKg) && (input.sourceGrossWeightKg ?? 0) > 0;
+  const sourcePackedDimensions = physicalEvidence.filter((item) => item.role === "packed-dimensions" && item.dimensionsCm);
+  const sourceProductDimensions = physicalEvidence.filter((item) => item.role === "product-dimensions" && item.dimensionsCm);
+  const sourcePackedWeights = physicalEvidence.filter((item) => item.role === "packed-gross-weight" && item.weightKg);
+  const sourceDeclaredWeights = physicalEvidence.filter((item) => item.role === "declared-total-weight" && item.weightKg);
+  const sourceProductWeights = physicalEvidence.filter((item) => item.role === "product-weight" && item.weightKg);
+  const packedDimensionsVolume = sourcePackedDimensions.reduce((sum, item) => sum + dimensionsVolumeM3(item.dimensionsCm!, item.quantity ?? 1), 0);
+  const minimumEquipmentEnvelopeVolumeM3 = sourceProductDimensions.length ? Math.max(...sourceProductDimensions.map((item) => dimensionsVolumeM3(item.dimensionsCm!, item.quantity ?? 1))) : undefined;
+  const packedEvidenceWeight = sourcePackedWeights.length ? Math.max(...sourcePackedWeights.map((item) => item.weightKg!)) : undefined;
+  const declaredWeightLowerBound = sourceDeclaredWeights.length ? Math.max(...sourceDeclaredWeights.map((item) => item.weightKg!)) : undefined;
+  const productWeightLowerBound = sourceProductWeights.length ? (lineCount === 1 ? sourceProductWeights.reduce((sum, item) => sum + item.weightKg!, 0) : Math.max(...sourceProductWeights.map((item) => item.weightKg!))) : undefined;
+  const explicitWeightLowerBoundKg = Math.max(declaredWeightLowerBound ?? 0, productWeightLowerBound ?? 0) || undefined;
+  const directVolumeFromSource = Number.isFinite(input.sourcePackedVolumeM3) && (input.sourcePackedVolumeM3 ?? 0) > 0;
+  const directWeightFromSource = Number.isFinite(input.sourceGrossWeightKg) && (input.sourceGrossWeightKg ?? 0) > 0;
+  const volumeFromSource = directVolumeFromSource || packedDimensionsVolume > 0;
+  const weightFromSource = directWeightFromSource || Boolean(packedEvidenceWeight);
+  const proxyVolume = proxy.volumePerLineM3 * lineCount;
+  const proxyWeight = proxy.weightPerLineKg * lineCount;
   const packedVolumeM3: EstimateValue<number> = volumeFromSource
-    ? { value: input.sourcePackedVolumeM3!, kind: "sourced-fact", confidence: "high", sourceRef: "Shipment-level client/document input", method: "Used without estimation." }
-    : { value: proxy.volumePerLineM3 * lineCount, kind: "evidence-estimate", confidence: proxy.confidence, sourceRef: proxy.sourceRef, method: `${lineCount} source lines × ${proxy.volumePerLineM3.toFixed(3)} m³ category proxy.` };
+    ? { value: directVolumeFromSource ? input.sourcePackedVolumeM3! : packedDimensionsVolume, kind: "sourced-fact", confidence: "high", sourceRef: directVolumeFromSource ? "Shipment-level client/document input" : sourcePackedDimensions.map((item) => item.sourceRef).join(" · "), method: directVolumeFromSource ? "Used confirmed shipment-level packed volume without estimation." : "Calculated from explicit packed/package dimensions and quantity." }
+    : { value: proxyVolume, kind: "evidence-estimate", confidence: proxy.confidence, sourceRef: proxy.sourceRef, method: `${lineCount} source lines × ${proxy.volumePerLineM3.toFixed(3)} m³ category proxy.` };
   const grossWeightKg: EstimateValue<number> = weightFromSource
-    ? { value: input.sourceGrossWeightKg!, kind: "sourced-fact", confidence: "high", sourceRef: "Shipment-level client/document input", method: "Used without estimation." }
-    : { value: proxy.weightPerLineKg * lineCount, kind: "evidence-estimate", confidence: proxy.confidence, sourceRef: proxy.sourceRef, method: `${lineCount} source lines × ${proxy.weightPerLineKg.toFixed(1)} kg category proxy.` };
+    ? { value: directWeightFromSource ? input.sourceGrossWeightKg! : packedEvidenceWeight!, kind: "sourced-fact", confidence: "high", sourceRef: directWeightFromSource ? "Shipment-level client/document input" : sourcePackedWeights.map((item) => item.sourceRef).join(" · "), method: "Used confirmed shipment packed gross weight without estimation." }
+    : explicitWeightLowerBoundKg
+      ? { value: Math.max(proxyWeight, explicitWeightLowerBoundKg), kind: "sourced-fact", confidence: "high", sourceRef: [...sourceDeclaredWeights, ...sourceProductWeights].map((item) => item.sourceRef).join(" · "), method: `Explicit source weight retained as a ${explicitWeightLowerBoundKg.toFixed(1)} kg lower bound; the generic proxy cannot reduce it.` }
+      : { value: proxyWeight, kind: "evidence-estimate", confidence: proxy.confidence, sourceRef: proxy.sourceRef, method: `${lineCount} source lines × ${proxy.weightPerLineKg.toFixed(1)} kg category proxy.` };
   const loadabilityFactor: EstimateValue<number> = { value: proxy.loadabilityFactor, kind: "benchmark-assumption", confidence: "low", sourceRef: proxy.sourceRef, method: "Practical usable-space factor for mixed, fragile and partly non-stackable cargo." };
   const planningVolumeM3 = packedVolumeM3.value / loadabilityFactor.value;
   const cargoCalculationRows: CargoCalculationRow[] = volumeFromSource || weightFromSource
@@ -412,8 +455,51 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
         sourceRef: proxy.sourceRef,
         confidence: proxy.confidence,
       }];
+  const physicalCalculationRows: CargoCalculationRow[] = physicalEvidence.map((item) => ({
+    id: item.id,
+    description: item.role.replaceAll("-", " "),
+    quantity: item.quantity ?? 1,
+    planningQuantity: item.quantity ?? 1,
+    sourceMetric: item.sourceText,
+    estimationMethod: item.basis,
+    unitVolumeM3: item.role === "packed-dimensions" && item.dimensionsCm ? dimensionsVolumeM3(item.dimensionsCm) : 0,
+    estimatedVolumeM3: item.role === "packed-dimensions" && item.dimensionsCm ? dimensionsVolumeM3(item.dimensionsCm, item.quantity ?? 1) : 0,
+    unitGrossWeightKg: item.weightKg ?? 0,
+    estimatedGrossWeightKg: item.weightKg ? item.weightKg * (item.quantity ?? 1) : 0,
+    sourceRef: item.sourceRef,
+    confidence: item.confidence,
+  }));
+  const calculationRows = physicalCalculationRows.length ? [...physicalCalculationRows, ...cargoCalculationRows] : cargoCalculationRows;
   const benchmark = selectBenchmark(input.origin, input.destination, input.transportMode);
   const unit = selectedUnit(benchmark, input.transportMode, input.preferredUnitId);
+  const fitFailures = physicalEvidence.filter((item) => item.dimensionsCm && !fitsLoadingEnvelope(item.dimensionsCm, unit.internalDimensionsCm));
+  const blockers: PhysicalReadinessBlocker[] = [];
+  if (fitFailures.length) blockers.push({
+    code: "UNIT_FIT_CONTRADICTION",
+    message: `${fitFailures.length} explicit equipment/packing envelope${fitFailures.length === 1 ? " does" : "s do"} not fit the clear internal dimensions of ${unit.label}. The standard unit is not a qualified transport selection.`,
+    nextAction: "Obtain a forwarder loading plan and an oversized/open-top/flat-rack or other suitable unit quotation.",
+    sourceRefs: fitFailures.map((item) => item.sourceRef),
+  });
+  const physicalProxyRequiresPacking = proxy.id === "mixed-machinery" || benchmark.id === "generic-mode-fallback-2026q3";
+  if (!volumeFromSource && physicalProxyRequiresPacking) blockers.push({
+    code: "MISSING_PACKED_DIMENSIONS",
+    message: `Packed shipment dimensions or a supplier packing list are missing. ${minimumEquipmentEnvelopeVolumeM3 ? `The ${minimumEquipmentEnvelopeVolumeM3.toFixed(3)} m³ equipment envelope is only a minimum fit constraint and cannot be treated as packed cube.` : "The machinery proxy is not sufficient to qualify a transport unit."}`,
+    nextAction: "Obtain supplier packed dimensions/package count or a forwarder-approved loading plan.",
+    sourceRefs: sourceProductDimensions.map((item) => item.sourceRef),
+  });
+  if (!weightFromSource && physicalProxyRequiresPacking) blockers.push({
+    code: "MISSING_PACKED_GROSS_WEIGHT",
+    message: explicitWeightLowerBoundKg ? `Packed gross weight is missing. The explicit ${explicitWeightLowerBoundKg.toFixed(0)} kg source weight is retained as a lower bound and cannot be replaced by the ${proxyWeight.toFixed(0)} kg category proxy.` : "Packed gross weight is missing and the machinery proxy is insufficient for a qualified freight selection.",
+    nextAction: "Obtain supplier packed gross weight; retain the source product/declared weight as the minimum.",
+    sourceRefs: [...sourceDeclaredWeights, ...sourceProductWeights].map((item) => item.sourceRef),
+  });
+  if (benchmark.id === "generic-mode-fallback-2026q3" && (!volumeFromSource || !weightFromSource)) blockers.push({
+    code: "GENERIC_MODE_FALLBACK_NOT_APPLICABLE",
+    message: "The generic cross-mode benchmark cannot become the best estimate while packed physical fit remains unresolved.",
+    nextAction: "Confirm packed cargo data and a compatible transport unit, then apply a route/mode-specific benchmark or forwarder quotation.",
+    sourceRefs: [benchmark.sourceRef],
+  });
+  const physicalReady = blockers.length === 0;
   const volumeRequiredCount = Math.max(1, Math.ceil(planningVolumeM3 / unit.usableVolumeM3));
   const weightRequiredCount = Math.max(1, Math.ceil(grossWeightKg.value / unit.payloadKg));
   const requiredTruckCount = Math.max(volumeRequiredCount, weightRequiredCount);
@@ -478,7 +564,7 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     operand("Premium rate", benchmark.insuranceRate * 100, "%", benchmarkSource, "assumption", benchmarkConfidence),
     operand("Insured-value factor", benchmark.insuranceCoverageFactor * 100, "%", benchmarkSource, "assumption", benchmarkConfidence),
   ], estimatedInsurance, benchmark.currency, benchmark, ["Self-inclusive CIP insurance estimate; replace with an insurer quotation when available."]);
-  const costLines: CostLine[] = [
+  const calculatedCostLines: CostLine[] = [
     { ...makeCostLine("export_packing", "Packing reinforcement", benchmark.packingBase, benchmark, "Shipment-level packing reinforcement benchmark allowance.", packingCalculation), startIncluded: false, targetIncluded: true },
     makeCostLine("origin_loading", "Origin handling · loading", originLoading, benchmark, "34% allocated share of the origin-handling benchmark.", originLoadingCalculation),
     makeCostLine("origin_pickup", "Origin handling · pickup", originPickup, benchmark, "50% allocated share of the origin-handling benchmark; pickup point remains subject to confirmation.", originPickupCalculation),
@@ -491,9 +577,11 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     makeCostLine("contingency", "Contingency", contingency, benchmark, `${(benchmark.contingencyRate * 100).toFixed(0)}% benchmark-validity allowance applied before insurance.`, contingencyCalculation, true),
     makeCostLine("insurance", "Estimated insurance basis", 0, benchmark, `${(benchmark.insuranceRate * 100).toFixed(2)}% premium benchmark on ${(benchmark.insuranceCoverageFactor * 100).toFixed(0)}% of the insured value; the calculation engine computes the self-inclusive premium.`, insuranceCalculation),
   ];
+  const costLines = physicalReady ? calculatedCostLines : calculatedCostLines.filter((line) => ["export_packing", "origin_loading", "origin_pickup", "origin_terminal", "export_clearance"].includes(line.component));
 
   const specialHints = [/battery|lithium/i, /refrigerant|freezer|refrigerator/i, /cryogenic|liquid nitrogen/i, /gas cylinder|compressed gas/i, /dangerous goods|\bDG\b/i, /temperature[- ]sensitive|cold chain/i].filter((pattern) => pattern.test(evidenceText));
   const warnings = [
+    ...blockers.map((blocker) => `${blocker.message} Next action: ${blocker.nextAction}`),
     ...(!volumeFromSource || !weightFromSource ? ["Packing information is partly estimated from category and source-line proxies."] : []),
     ...(!input.pickupConfirmed ? ["Pickup point is assumed from the best supplier-side location reference."] : []),
     ...(!input.specialCargoConfirmed ? ["Special-cargo status is not confirmed. The estimate excludes unidentified DG, cold-chain and special-handling surcharges."] : []),
@@ -504,8 +592,8 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
   const assumptions = [
     `${benchmark.label}; benchmark vintage ${benchmark.asOf}.`,
     `Planning volume = packed volume ÷ ${(loadabilityFactor.value * 100).toFixed(0)}% loadability.`,
-    `${requiredTruckCount} required ${unit.label}${requiredTruckCount === 1 ? "" : "s"}; one additional free unit is shown only as a capacity reference.`,
-    `Insurance estimated at ${(benchmark.insuranceRate * 100).toFixed(2)}% on ${(benchmark.insuranceCoverageFactor * 100).toFixed(0)}% of the self-inclusive CIP value.`,
+    physicalReady ? `${requiredTruckCount} required ${unit.label}${requiredTruckCount === 1 ? "" : "s"}; one additional free unit is shown only as a capacity reference.` : `Transport-unit selection is blocked until the physical-fit requirements are resolved; ${unit.label} remains an unqualified comparison only.`,
+    physicalReady ? `Insurance estimated at ${(benchmark.insuranceRate * 100).toFixed(2)}% on ${(benchmark.insuranceCoverageFactor * 100).toFixed(0)}% of the self-inclusive CIP value.` : "Insurance and the final logistics total remain uncalculated while freight selection is blocked.",
   ];
 
   const confidenceDeductions = [
@@ -516,9 +604,9 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     benchmark.id.startsWith("generic-") ? 18 : 8,
     input.destination.includes(",") ? 0 : 8,
   ];
-  const score = Math.max(20, Math.min(90, 98 - confidenceDeductions.reduce((sum, value) => sum + value, 0)));
+  const score = physicalReady ? Math.max(20, Math.min(90, 98 - confidenceDeductions.reduce((sum, value) => sum + value, 0))) : Math.max(10, 35 - blockers.length * 5);
   const label = score >= 75 ? "High" : score >= 60 ? "Medium" : score >= 40 ? "Medium/Low" : "Low";
-  const mainUncertainty = !volumeFromSource ? "Packing & loadability" : benchmark.id.startsWith("generic-") ? "Freight benchmark" : !input.pickupConfirmed ? "Pickup location" : !input.specialCargoConfirmed ? "Special-cargo status" : "Rate validity";
+  const mainUncertainty = !physicalReady ? "Physical fit & packing" : !volumeFromSource ? "Packing & loadability" : benchmark.id.startsWith("generic-") ? "Freight benchmark" : !input.pickupConfirmed ? "Pickup location" : !input.specialCargoConfirmed ? "Special-cargo status" : "Rate validity";
 
   return {
     cargo: {
@@ -527,7 +615,7 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
       loadabilityFactor,
       planningVolumeM3,
       sourceLineCount: lineCount,
-      calculationRows: cargoCalculationRows,
+      calculationRows,
       confidenceFactors: [
         volumeFromSource ? "Shipment-level packed volume is provided." : `${lineCount} source line(s) use the ${proxy.id} volume proxy because confirmed packing dimensions are unavailable.`,
         weightFromSource ? "Shipment-level gross weight is provided." : `${lineCount} source line(s) use the ${proxy.id} gross-weight proxy because confirmed shipment gross weights are unavailable.`,
@@ -535,16 +623,21 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
         input.pickupConfirmed ? "Pickup location is confirmed." : "Pickup location is assumed from supplier-side evidence.",
         input.specialCargoConfirmed ? "Special-cargo status is confirmed for this estimate." : "Special-cargo status is not confirmed.",
       ],
+      packedVolumeStatus: volumeFromSource ? "confirmed" : physicalReady ? "estimated" : "missing",
+      grossWeightStatus: weightFromSource ? "confirmed" : explicitWeightLowerBoundKg ? "lower-bound" : physicalReady ? "estimated" : "missing",
+      minimumEquipmentEnvelopeVolumeM3,
+      explicitWeightLowerBoundKg,
     },
-    transport: { unit, requiredTruckCount, displayedTruckCount: requiredTruckCount + 1, volumeRequiredCount, weightRequiredCount, limitingFactor: factor, allocations, transitDays: benchmark.transitDays },
+    transport: { unit, requiredTruckCount, displayedTruckCount: requiredTruckCount + 1, volumeRequiredCount, weightRequiredCount, limitingFactor: factor, allocations, transitDays: benchmark.transitDays, selectionStatus: physicalReady ? "qualified" : "blocked" },
+    readiness: { status: physicalReady ? "ready" : "blocked", blockers },
     costLines,
-    nonInsuranceCost,
+    nonInsuranceCost: physicalReady ? nonInsuranceCost : 0,
     insuranceRate: benchmark.insuranceRate,
     insuranceCoverageFactor: benchmark.insuranceCoverageFactor,
-    estimatedInsurance,
-    estimatedLogisticsCost,
-    estimatedCommercialTotal: input.sourceValue + estimatedLogisticsCost,
-    upliftPercent: input.sourceValue > 0 ? estimatedLogisticsCost / input.sourceValue * 100 : 0,
+    estimatedInsurance: physicalReady ? estimatedInsurance : 0,
+    estimatedLogisticsCost: physicalReady ? estimatedLogisticsCost : 0,
+    estimatedCommercialTotal: physicalReady ? input.sourceValue + estimatedLogisticsCost : input.sourceValue,
+    upliftPercent: physicalReady && input.sourceValue > 0 ? estimatedLogisticsCost / input.sourceValue * 100 : 0,
     confidence: { score, label, mainUncertainty },
     assumptions,
     warnings,

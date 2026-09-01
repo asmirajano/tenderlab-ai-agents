@@ -23,7 +23,7 @@ export type LogisticsCalculationWorkbookModel = {
   productionEstimate: ProductionLogisticsEstimate;
   effectiveCostLines: CostLine[];
   warnings: string[];
-  sourceDocuments: Array<Pick<DocumentIntakeRecord, "fileName" | "status" | "facts" | "warnings" | "documentProfile" | "extractionMethod" | "commercialItems" | "fieldSources" | "fieldEvidence">>;
+  sourceDocuments: Array<Pick<DocumentIntakeRecord, "fileName" | "status" | "facts" | "warnings" | "documentProfile" | "extractionMethod" | "commercialItems" | "physicalEvidence" | "fieldSources" | "fieldEvidence">>;
 };
 
 type CellRef = { address: string; result: number };
@@ -189,6 +189,9 @@ function sourceInputRows(model: LogisticsCalculationWorkbookModel) {
     ["Benchmark", "Benchmark label", model.productionEstimate.benchmark.label, "", model.productionEstimate.benchmark.sourceRef, "low"],
     ["Benchmark", "Benchmark vintage", model.productionEstimate.benchmark.asOf, "", model.productionEstimate.benchmark.sourceRef, "low"],
     ["Approval", "Special-cargo declaration", model.specialCargoDeclaration || "Not confirmed", "", "Client case state", model.specialCargoDeclaration ? "confirmed" : "provisional"],
+    ["Case", "Canonical result ID", model.result.id, "", "Canonical Case result", "confirmed"],
+    ["Case", "Calculation engine version", model.result.audit.engineVersion, "", "Canonical Case result", "confirmed"],
+    ["Case", "Workbook file identity", `${model.caseId}:${model.result.id}:${model.result.audit.engineVersion}`, "", "Generated workbook identity", "confirmed"],
   ];
 }
 
@@ -455,10 +458,9 @@ function addCostSheet(workbook: import("exceljs").Workbook, model: LogisticsCalc
     setFormula(sheet.getCell(contingencyRow, 8), `IF(C${contingencyRow}="added",IF(ISNUMBER(G${contingencyRow}),G${contingencyRow},SUM(${effectiveRows})*E${contingencyRow}),0)`, effective);
   }
   if (insuranceRow > 0) {
-    const preInsuranceRows = componentRows.filter((entry) => entry.row !== insuranceRow).map((entry) => `F${entry.row}`).join(",");
     const effectivePreInsuranceRows = componentRows.filter((entry) => entry.row !== insuranceRow).map((entry) => `H${entry.row}`).join(",");
-    const insuranceFormula = `ROUND((${quotedSheet("Source & Inputs")}!${sourceRefs.sourceValue}+SUM(${preInsuranceRows}))*D${insuranceRow}*E${insuranceRow}/(1-D${insuranceRow}*E${insuranceRow}),2)`;
-    setFormula(sheet.getCell(insuranceRow, 6), insuranceFormula, model.productionEstimate.estimatedInsurance);
+    const insuranceFormula = `ROUND((${quotedSheet("Source & Inputs")}!${sourceRefs.sourceValue}+SUM(${effectivePreInsuranceRows}))*D${insuranceRow}*E${insuranceRow}/(1-D${insuranceRow}*E${insuranceRow}),2)`;
+    setFormula(sheet.getCell(insuranceRow, 6), insuranceFormula, model.result.insurance);
     const effectiveFormula = `IF(C${insuranceRow}="added",IF(ISNUMBER(G${insuranceRow}),G${insuranceRow},ROUND((${quotedSheet("Source & Inputs")}!${sourceRefs.sourceValue}+SUM(${effectivePreInsuranceRows}))*D${insuranceRow}*E${insuranceRow}/(1-D${insuranceRow}*E${insuranceRow}),2)),0)`;
     setFormula(sheet.getCell(insuranceRow, 8), effectiveFormula, model.result.insurance);
   }
@@ -664,6 +666,7 @@ function addAuditSheet(workbook: import("exceljs").Workbook, model: LogisticsCal
     ...model.sourceDocuments.flatMap((document) => [
       ["Source document", document.fileName, `${document.extractionMethod ?? "unknown"} · ${document.status}`, "", model.savedAt ?? "", document.status],
       ...document.facts.map((fact) => ["Document fact", fact, document.fileName, "", model.savedAt ?? "", "preserved"]),
+      ...(document.physicalEvidence ?? []).map((item) => ["Typed physical evidence", `${item.role}: ${item.dimensionsCm ? `${item.dimensionsCm.length} × ${item.dimensionsCm.width} × ${item.dimensionsCm.height} cm` : `${item.weightKg} kg`}`, item.sourceRef, item.confidence, model.savedAt ?? "", item.basis]),
       ...document.warnings.map((warning) => ["Document warning", warning.message, `${document.fileName} · ${warning.code}`, "", model.savedAt ?? "", warning.severity]),
     ]),
   ];

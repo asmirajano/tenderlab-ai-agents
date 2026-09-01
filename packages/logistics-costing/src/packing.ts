@@ -1,17 +1,17 @@
 import type { CalculationWarning, Confidence, PackingEstimate, PackingItem, TransportMode, TransportUnit } from "./types.ts";
 
 export const transportUnits: TransportUnit[] = [
-  { id: "rail-40hc", label: "40HC rail container", mode: "rail", usableVolumeM3: 76.3, payloadKg: 26_500 },
-  { id: "rail-20std", label: "20ft rail container", mode: "rail", usableVolumeM3: 33.2, payloadKg: 28_000 },
-  { id: "sea-40hc", label: "40HC sea container", mode: "sea", usableVolumeM3: 76.3, payloadKg: 26_500 },
-  { id: "sea-40std", label: "40ft standard container", mode: "sea", usableVolumeM3: 67.7, payloadKg: 26_500 },
-  { id: "sea-20std", label: "20ft standard container", mode: "sea", usableVolumeM3: 33.2, payloadKg: 28_000 },
-  { id: "road-curtain", label: "13.6m curtain-side truck", mode: "road", usableVolumeM3: 90, payloadKg: 24_000 },
-  { id: "road-enclosed-136", label: "13.6m enclosed FTL truck", mode: "road", usableVolumeM3: 86, payloadKg: 22_000 },
+  { id: "rail-40hc", label: "40HC rail container", mode: "rail", usableVolumeM3: 76.3, payloadKg: 26_500, internalDimensionsCm: { length: 1_203, width: 235, height: 269 } },
+  { id: "rail-20std", label: "20ft rail container", mode: "rail", usableVolumeM3: 33.2, payloadKg: 28_000, internalDimensionsCm: { length: 589, width: 235, height: 239 } },
+  { id: "sea-40hc", label: "40HC sea container", mode: "sea", usableVolumeM3: 76.3, payloadKg: 26_500, internalDimensionsCm: { length: 1_203, width: 235, height: 269 } },
+  { id: "sea-40std", label: "40ft standard container", mode: "sea", usableVolumeM3: 67.7, payloadKg: 26_500, internalDimensionsCm: { length: 1_203, width: 235, height: 239 } },
+  { id: "sea-20std", label: "20ft standard container", mode: "sea", usableVolumeM3: 33.2, payloadKg: 28_000, internalDimensionsCm: { length: 589, width: 235, height: 239 } },
+  { id: "road-curtain", label: "13.6m curtain-side truck", mode: "road", usableVolumeM3: 90, payloadKg: 24_000, internalDimensionsCm: { length: 1_360, width: 248, height: 270 } },
+  { id: "road-enclosed-136", label: "13.6m enclosed FTL truck", mode: "road", usableVolumeM3: 86, payloadKg: 22_000, internalDimensionsCm: { length: 1_360, width: 248, height: 265 } },
   { id: "air-pallet", label: "Air-freight pallet position", mode: "air", usableVolumeM3: 10, payloadKg: 4_500 },
-  { id: "inland-40hc", label: "40HC inland-waterway container position", mode: "inland-waterway", usableVolumeM3: 76.3, payloadKg: 26_500 },
-  { id: "multimodal-40hc", label: "40HC multimodal planning unit", mode: "multimodal", usableVolumeM3: 76.3, payloadKg: 26_500 },
-  { id: "reefer-40hc", label: "40HC refrigerated container", mode: "sea", usableVolumeM3: 67, payloadKg: 27_000, refrigerated: true },
+  { id: "inland-40hc", label: "40HC inland-waterway container position", mode: "inland-waterway", usableVolumeM3: 76.3, payloadKg: 26_500, internalDimensionsCm: { length: 1_203, width: 235, height: 269 } },
+  { id: "multimodal-40hc", label: "40HC multimodal planning unit", mode: "multimodal", usableVolumeM3: 76.3, payloadKg: 26_500, internalDimensionsCm: { length: 1_203, width: 235, height: 269 } },
+  { id: "reefer-40hc", label: "40HC refrigerated container", mode: "sea", usableVolumeM3: 67, payloadKg: 27_000, internalDimensionsCm: { length: 1_154, width: 229, height: 255 }, refrigerated: true },
 ];
 
 const confidenceRank: Record<Confidence, number> = { confirmed: 5, high: 4, medium: 3, low: 2, provisional: 1 };

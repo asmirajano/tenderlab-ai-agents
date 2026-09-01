@@ -74,6 +74,7 @@ async function parsePdf(file: File): Promise<DocumentIntakeRecord> {
       ? [{
         id: String((candidate as { id?: unknown }).id ?? `document-line-${index + 1}`),
         description: String((candidate as { rawLine?: unknown }).rawLine ?? "Commercial line"),
+        quantity: Number((candidate as { quantity?: unknown }).quantity) || undefined,
         lineTotal: Number((candidate as { lineTotal?: unknown }).lineTotal) || undefined,
         sourceRef: String((candidate as { sourceRef?: unknown }).sourceRef ?? file.name),
         workingBaselineIncluded: Boolean((candidate as { workingBaselineIncluded?: unknown }).workingBaselineIncluded),
@@ -86,7 +87,10 @@ async function parsePdf(file: File): Promise<DocumentIntakeRecord> {
     format: "pdf",
     status: "parsed",
     rows: recognizedCount ? [extracted.row] : [],
-    facts: Object.entries(extracted.row).map(([key, value]) => `[${extracted.fieldEvidence[key]?.scope ?? "document"}] ${key} = ${String(value)}`),
+    facts: [
+      ...Object.entries(extracted.row).map(([key, value]) => `[${extracted.fieldEvidence[key]?.scope ?? "document"}] ${key} = ${String(value)}`),
+      ...extracted.physicalEvidence.map((item) => `[${item.scope}] ${item.role} = ${item.dimensionsCm ? `${item.dimensionsCm.length} × ${item.dimensionsCm.width} × ${item.dimensionsCm.height} cm` : `${item.weightKg} kg`} · ${item.sourceRef}`),
+    ],
     ignoredInstructions,
     warnings,
     fieldSources: Object.fromEntries(Object.entries(extracted.fieldSources).map(([key, source]) => [normalizedKey(key), source])),
@@ -95,6 +99,7 @@ async function parsePdf(file: File): Promise<DocumentIntakeRecord> {
     extractionMethod: "pdf-text",
     extractedTextLength,
     commercialItems,
+    physicalEvidence: extracted.physicalEvidence,
   };
 }
 
@@ -180,6 +185,7 @@ async function parseSpreadsheet(file: File): Promise<DocumentIntakeRecord> {
     },
     extractionMethod: "spreadsheet-cells",
     commercialItems,
+    physicalEvidence: textExtraction.physicalEvidence,
   };
 }
 

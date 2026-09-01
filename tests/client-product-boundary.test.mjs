@@ -131,7 +131,7 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
     .map((name) => readFile(path.join(tenderAppsRoot, "dist", "assets", name), "utf8")))).join("\n");
   assert.match(clientBundle, /Tender Logistics Cost · Traceable Estimate/);
   assert.match(clientBundle, /ONE BEST CURRENT ESTIMATE/);
-  assert.match(clientBundle, /tenderapps\.landed-cost\.audit\.v0\.1/);
+  assert.match(clientBundle, /tenderapps\.logistics-cost\.audit\.v0\.2/);
   assert.match(shell, /Client workspace/);
   assert.match(shell, /practicalAgents/);
   assert.match(displayRegistry, /canonicalName:\s*product\.name/);

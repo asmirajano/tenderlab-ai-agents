@@ -315,6 +315,8 @@
 .client-workspace-nav button[aria-current="page"] { background: var(--costing-ink); color: white; }
 .client-workspace-nav button[aria-current="page"] span { background: var(--costing-signal); color: var(--costing-ink); }
 .client-workspace-nav button:hover, .client-workspace-nav button:focus-visible { border-color: var(--costing-green); outline: 3px solid rgba(20,116,84,.12); }
+.export-status { background: #eaf7ef; border: 1px solid #9bc9b6; border-radius: 10px; color: var(--costing-ink); font-size: var(--type-small); margin: 8px auto 0; max-width: var(--costing-content-max-width); padding: 10px 14px; width: calc(100% - 28px); }
+.export-status.error { background: #fff2ee; border-color: #d9947e; color: #842d17; }
 
 /* Overview manifesto: raw inputs → deterministic transformation → reviewed product */
 .cost-product-manifesto { padding-block: var(--practical-overview-top-space) 26px; }

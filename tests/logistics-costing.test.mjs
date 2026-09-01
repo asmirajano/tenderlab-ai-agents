@@ -234,6 +234,23 @@ test("approved production fixture produces one reconciled road estimate and dyna
   assert.equal(roundMoney(result.sourceContractTotal + result.incrementalCost), result.revisedContractTotal);
 });
 
+test("canonical insurance derivation uses the exact result operands and amount", async () => {
+  const { buildCanonicalInsuranceDerivation, calculateScenario } = await load("packages/logistics-costing/src/index.ts");
+  const input = {
+    id: "insurance-reconciliation", mode: "incoterm-conversion", sourceContractTotal: 209_000, currency: "USD", sourceTerm: "FOB", sourceNamedPlace: "Ningbo, China", targetTerm: "CIP", targetNamedPlace: "Tashkent, Uzbekistan", incotermsVersion: "2020", transportMode: "multimodal",
+    costLines: [
+      { id: "source-vessel", component: "vessel_loading", label: "FOB on-board handling", amount: 1_250, currency: "USD", evidenceKind: "sourced-fact", confidence: "high" },
+      { id: "freight", component: "main_freight", label: "Freight", amount: 15_000, currency: "USD", evidenceKind: "assumption", confidence: "low" },
+    ],
+    insurance: { enabled: true, premiumRate: 0.0035, coverageFactor: 1.1, basis: "final-contract-value", clauses: "A" },
+  };
+  const result = calculateScenario(input);
+  const derivation = buildCanonicalInsuranceDerivation({ sourceValue: result.sourceContractTotal, nonInsuranceAdjustment: result.incrementalCost - result.insurance, premiumRate: input.insurance.premiumRate, coverageFactor: input.insurance.coverageFactor, basis: input.insurance.basis, currency: result.currency, resultValue: result.insurance, sourceRef: "insurance benchmark", confidence: "low" });
+  assert.equal(derivation.resultValue, result.insurance);
+  assert.equal(derivation.inputs.find((operand) => operand.label === "Incremental non-insurance adjustment").value, result.incrementalCost - result.insurance);
+  assert.equal(derivation.inputs.find((operand) => operand.label === "Source commercial value").value, result.sourceContractTotal);
+});
+
 test("canonical cargo and cost derivations expose the exact operands used by the production model", async () => {
   const { buildProductionLogisticsEstimate, roundMoney } = await load("packages/logistics-costing/src/index.ts");
   const estimate = buildProductionLogisticsEstimate({ sourceValue: 1_586_386, currency: "USD", cargoDescription: "Medical laboratory equipment", sourceLineCount: 167, origin: "Guangzhou, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
@@ -348,7 +365,7 @@ Notes: all the price are EXW without any shipping cost.`,
   assert.equal(extraction.row.storage_amount, undefined);
   assert.equal(extraction.profile.commercialTotalReconciled, true);
   assert.ok(extraction.profile.suppressedLineItemMetricCount >= 3);
-  assert.match(extraction.warnings.map((warning) => warning.code).join(" "), /LINE_ITEM_METRICS_EXCLUDED/);
+  assert.match(extraction.warnings.map((warning) => warning.code).join(" "), /LINE_ITEM_METRICS_TYPED/);
 });
 
 test("semantic extraction accepts weight and cube only when the document states shipment-level totals", async () => {
@@ -420,6 +437,11 @@ test("the TenderApps client starts empty and gates calculation behind guided rev
   assert.doesNotMatch(page, /Create alternative scenario/);
   assert.match(page, /Calculation details \/ audit/);
   assert.match(page, /DEMO \/ REGRESSION SCENARIO/);
+  const regressionReset = page.slice(page.indexOf("function resetRegression()"), page.indexOf("function resetClientDraft()"));
+  assert.match(regressionReset, /setInputSupplyMode\("manual"\)/);
+  assert.match(regressionReset, /setDocuments\(\[\]\)/);
+  assert.match(regressionReset, /setDocumentProcessingStage\("idle"\)/);
+  assert.match(regressionReset, /setDocumentProcessingMessage\(""\)/);
 });
 
 test("the TENDER LOGISTICS COST overview shows inputs, transformation and a dominant finished product before the CTA", async () => {
@@ -518,6 +540,107 @@ $14,614` }]);
   assert.ok(extraction.warnings.some((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY"));
 });
 
+test("industrial quotation regressions preserve commercial and typed physical facts without filename special-casing", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const d1 = extractSemanticBusinessFacts([
+    { label: "offer-a.pdf · page 1", pageNumber: 1, text: `WENZHOU ROKIN MACHINERY CO.,LTD MOBILE: +8619000000000 EMAIL: SALES@EXAMPLE.INVALID
+Q uotation
+Machine
+Model
+Unit price
+Qty
+Amount
+Full Automatic Shopping Paper Bag RKHF - 330T 209,000 USD 1
+209,000 USD
+Machine With Twisted Rope Handle Inline
+PAYMENT ITEMS
+This price is by FOB NINGBO PORT, CHINA price.` },
+    { label: "offer-a.pdf · page 7", pageNumber: 7, text: "18000 KGS\nW eight\nL 12500 *W 4300 *H 2400 m m\nDimension" },
+  ]);
+  assert.equal(d1.row.contract_value, 209_000);
+  assert.equal(d1.row.currency, "USD");
+  assert.equal(d1.row.current_incoterm, "FOB");
+  assert.match(String(d1.row.source_named_place), /Ningbo port, China/i);
+  assert.doesNotMatch(String(d1.row.source_named_place), /price/i);
+  assert.equal(d1.row.line_count, 1);
+  assert.equal(d1.row.commercial_items[0].quantity, 1);
+  assert.match(d1.row.commercial_items[0].rawLine, /RKHF-330T/);
+  assert.doesNotMatch(d1.row.commercial_items[0].rawLine, /quotation|unit price|209,$/i);
+  assert.doesNotMatch(String(d1.row.supplier_origin), /mobile|email|@/i);
+  assert.match(String(d1.row.supplier_origin), /Wenzhou Rokin Machinery/i);
+  assert.notEqual(d1.row.supplier_origin, d1.row.source_named_place);
+  assert.equal(d1.physicalEvidence.find((item) => item.role === "product-weight").weightKg, 18_000);
+  assert.deepEqual(d1.physicalEvidence.find((item) => item.role === "product-dimensions").dimensionsCm, { length: 1_250, width: 430, height: 240 });
+  assert.equal(d1.row.gross_weight_kg, undefined);
+  assert.equal(d1.row.packed_volume_m3, undefined);
+
+  const d2 = extractSemanticBusinessFacts([{ label: "offer-b.pdf · page 7", pageNumber: 7, text: `SHANGHAI YANBAN MACHINERY CO. LTD
+Quotation
+Item no. Product Name & Description Picture Quantity/set Price(USD)
+1
+YB-k12 12 Nozzle filling capping machine
+1 set $15,000
+2
+YB-TB200 Shrink sleeve labeling machine
+1 set $13,500
+3
+YB-LP1 Automatic bottle unscrambler
+1 set $3,300
+4
+YB-TP1 Bottle collect table
+1 set $1,100
+Total Amount $32900usd, FOB Shanghai by sea $32,900
+REMARKS:` }]);
+  assert.equal(d2.row.contract_value, 32_900);
+  assert.equal(d2.row.line_count, 4);
+  assert.deepEqual(d2.row.commercial_items.map((item) => item.lineTotal), [15_000, 13_500, 3_300, 1_100]);
+  assert.equal(d2.row.current_incoterm, "FOB");
+  assert.equal(d2.row.source_named_place, "Shanghai");
+
+  const d3 = extractSemanticBusinessFacts([
+    { label: "offer-c.pdf · page 1", pageNumber: 1, text: `QUOTATION
+Total amoun t
+Marks & Number Description Qty (set) Unit price USD Total amount USD
+N/M
+Upgraded D C S- 520 PAPER CUTLERY MACHINE INCLUDE ONE SET FREE MOLD
+1 $138,000.00 $138,000.00
+TOTAL: $138,000.00
+PRICE TERMS FOB Ningbo port, China` },
+    { label: "offer-c.pdf · page 2", pageNumber: 2, text: "Weight\n10 10T" },
+  ]);
+  assert.equal(d3.row.contract_value, 138_000);
+  assert.equal(d3.row.line_count, 1);
+  assert.equal(d3.row.commercial_items[0].quantity, 1);
+  assert.match(d3.row.commercial_items[0].rawLine, /DCS-520/);
+  assert.equal(d3.row.current_incoterm, "FOB");
+  assert.match(String(d3.row.source_named_place), /Ningbo/i);
+  assert.equal(d3.physicalEvidence.find((item) => item.role === "product-weight").weightKg, 10_000);
+});
+
+test("physical contradiction gate preserves source lower bounds and blocks unqualified freight", async () => {
+  const { buildProductionLogisticsEstimate } = await load("packages/logistics-costing/src/index.ts");
+  const base = { currency: "USD", origin: "Ningbo, China", destination: "Tashkent, Uzbekistan", transportMode: "multimodal" };
+  const d1 = buildProductionLogisticsEstimate({ ...base, sourceValue: 209_000, cargoDescription: "RKHF-330T shopping bag machine", sourceLineCount: 1, physicalEvidence: [
+    { id: "d1-weight", role: "product-weight", scope: "line-item", weightKg: 18_000, sourceText: "Weight 18000KGS", sourceRef: "offer-a.pdf · page 7", confidence: "high", basis: "product weight" },
+    { id: "d1-dimensions", role: "product-dimensions", scope: "line-item", dimensionsCm: { length: 1_250, width: 430, height: 240 }, sourceText: "Dimension L12500*W4300*H2400mm", sourceRef: "offer-a.pdf · page 7", confidence: "high", basis: "equipment envelope" },
+  ] });
+  assert.equal(d1.cargo.grossWeightKg.value, 18_000);
+  assert.equal(d1.cargo.grossWeightStatus, "lower-bound");
+  assert.equal(d1.cargo.packedVolumeStatus, "missing");
+  assert.equal(d1.transport.selectionStatus, "blocked");
+  assert.ok(d1.readiness.blockers.some((blocker) => blocker.code === "UNIT_FIT_CONTRADICTION"));
+  assert.ok(d1.readiness.blockers.some((blocker) => blocker.code === "GENERIC_MODE_FALLBACK_NOT_APPLICABLE"));
+  assert.equal(d1.costLines.some((line) => line.component === "main_freight"), false);
+
+  const d3 = buildProductionLogisticsEstimate({ ...base, sourceValue: 138_000, cargoDescription: "DCS-520 paper cutlery machine", sourceLineCount: 1, physicalEvidence: [
+    { id: "d3-weight", role: "product-weight", scope: "line-item", weightKg: 10_000, sourceText: "Weight 10T", sourceRef: "offer-c.pdf · page 2", confidence: "high", basis: "product weight" },
+  ] });
+  assert.equal(d3.cargo.grossWeightKg.value, 10_000);
+  assert.notEqual(d3.cargo.grossWeightKg.value, 115);
+  assert.equal(d3.transport.selectionStatus, "blocked");
+  assert.equal(d3.costLines.some((line) => line.component === "main_freight"), false);
+});
+
 test("spreadsheet quotation extraction calculates the commercial total from priced rows", async () => {
   const { extractSpreadsheetCommercialSummary } = await load("packages/logistics-costing/src/index.ts");
   const rows = [
@@ -566,9 +689,9 @@ test("production result UI separates exact and approximate values and exposes th
 
 test("saved Cases persist the composite result and reopen Result separately from Inputs and Audit", async () => {
   const page = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "logistics-costing-app.tsx"), "utf8");
-  assert.match(page, /schemaVersion:\s*"2\.1"/);
+  assert.match(page, /schemaVersion:\s*"2\.2"/);
   assert.match(page, /productionEstimate,/);
-  assert.match(page, /effectiveCostLines:\s*preparedCostLines/);
+  assert.match(page, /effectiveCostLines,/);
   assert.match(page, /primaryWarnings:\s*currentPrimaryWarnings/);
   assert.match(page, /sourceDocuments:/);
   assert.match(page, /saved-case-view-tabs/);
@@ -609,14 +732,16 @@ test("default target Incoterm has a non-missing provenance state and estimates a
 });
 
 test("Excel export carries canonical formulas, cargo rows, provenance and a reconciliable cost total", async () => {
-  const { buildProductionLogisticsEstimate, calculateScenario } = await load("packages/logistics-costing/src/index.ts");
+  const { buildCanonicalInsuranceDerivation, buildProductionLogisticsEstimate, calculateScenario } = await load("packages/logistics-costing/src/index.ts");
   const { logisticsCalculationToExcel } = await load("apps/tender-apps/src/logistics-calculation-excel.ts");
   const ExcelJS = (await import(pathToFileURL(path.join(projectRoot, "apps", "tender-apps", "node_modules", "exceljs", "excel.js")).href)).default;
   const commercialItems = Array.from({ length: 13 }, (_, index) => ({ id: `line-${index + 1}`, itemCode: `LAB-${index + 1}`, description: `Laboratory equipment line ${index + 1}`, quantity: index + 1, unitPrice: 1_000, lineTotal: (index + 1) * 1_000, currency: "USD", sourceRef: `quotation.xlsx · row ${index + 8}`, workingBaselineIncluded: true }));
   const estimate = buildProductionLogisticsEstimate({ sourceValue: 100_000, currency: "USD", cargoDescription: "Laboratory equipment", sourceLineCount: 13, commercialItems, origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
   const input = { id: "excel-regression", mode: "incoterm-conversion", sourceContractTotal: 100_000, currency: "USD", sourceTerm: "EXW", sourceNamedPlace: "Shandong, China", targetTerm: "CIP", targetNamedPlace: "Tashkent, Uzbekistan", incotermsVersion: "2020", transportMode: "road", costLines: estimate.costLines, insurance: { enabled: true, premiumRate: estimate.insuranceRate, coverageFactor: estimate.insuranceCoverageFactor, basis: "final-contract-value", clauses: "A" } };
   const result = calculateScenario(input);
-  const bytes = await logisticsCalculationToExcel({ caseId: "excel-regression", caseName: "Excel regression", cargo: "Laboratory equipment", quantity: "13 lines", origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road", specialCargoDeclaration: "", input, result, productionEstimate: estimate, effectiveCostLines: estimate.costLines, warnings: estimate.warnings, sourceDocuments: [{ fileName: "quotation.xlsx", status: "parsed", facts: [], warnings: [], extractionMethod: "spreadsheet-cells", commercialItems }] });
+  const insuranceDerivation = buildCanonicalInsuranceDerivation({ sourceValue: result.sourceContractTotal, nonInsuranceAdjustment: result.incrementalCost - result.insurance, premiumRate: input.insurance.premiumRate, coverageFactor: input.insurance.coverageFactor, basis: input.insurance.basis, currency: result.currency, resultValue: result.insurance, sourceRef: "insurance benchmark", confidence: "low" });
+  const effectiveCostLines = estimate.costLines.map((line) => line.component === "insurance" ? { ...line, amount: result.insurance, calculation: insuranceDerivation, agentEstimate: { amount: result.insurance, currency: result.currency, calculation: insuranceDerivation } } : line);
+  const bytes = await logisticsCalculationToExcel({ caseId: "excel-regression", caseName: "Excel regression", cargo: "Laboratory equipment", quantity: "13 lines", origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road", specialCargoDeclaration: "", input, result, productionEstimate: estimate, effectiveCostLines, warnings: estimate.warnings, sourceDocuments: [{ fileName: "quotation.xlsx", status: "parsed", facts: [], warnings: [], extractionMethod: "spreadsheet-cells", commercialItems, physicalEvidence: [] }] });
   assert.equal(bytes[0], 0x50);
   assert.equal(bytes[1], 0x4b);
   const workbook = new ExcelJS.Workbook();
@@ -632,6 +757,7 @@ test("Excel export carries canonical formulas, cargo rows, provenance and a reco
   assert.equal(cargo.getCell("B31").value.formula, "MAX(B29,B30)");
   assert.equal(costs.getCell("F10").value.formula, "'Cargo Calculation'!B31*E10");
   assert.match(costs.getCell("F15").value.formula, /Source & Inputs.*SUM/);
+  assert.equal(costs.getCell("F15").value.result, result.insurance);
   assert.equal(costs.getCell("H17").value.formula, "SUM(H5:H15)");
   assert.equal(summary.getCell("A8").value.formula, "ROUND('Cost Calculation'!H17,-3)");
   assert.equal(summary.pageSetup.orientation, "portrait");

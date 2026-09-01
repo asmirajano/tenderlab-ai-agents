@@ -2,6 +2,7 @@
 import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   allocateResultToContractLines,
+  buildCanonicalInsuranceDerivation,
   buildProductionLogisticsEstimate,
   calculateScenario,
   componentLabels,
@@ -46,7 +47,7 @@ type CostScopeBasis = "incoterm" | LogisticsScope;
 type CostInputState = "unknown" | "provided" | "extracted" | "estimated" | "needs-confirmation" | "not-applicable";
 type SpecialCargoDeclaration = "" | "standard-confirmed" | "possible-special" | "declared-special";
 type SavedCaseView = "result" | "inputs" | "audit";
-type IntakeFieldKey = "cargoDescription" | "quantityDescription" | "sourceTotal" | "currency" | "sourcePlace" | "targetPlace" | "transportMode" | "packedVolumeM3" | "grossWeightKg" | "sourceTerm" | "targetTerm";
+type IntakeFieldKey = "cargoDescription" | "quantityDescription" | "sourceTotal" | "currency" | "sourcePlace" | "sourceNamedPlace" | "targetPlace" | "transportMode" | "packedVolumeM3" | "grossWeightKg" | "sourceTerm" | "targetTerm";
 type ExtractedInputEvidence = {
   status: "extracted-confidently" | "needs-confirmation" | "client-adjusted";
   sourceRef: string;
@@ -86,7 +87,7 @@ type SavedCase = {
   input: CalculationInput;
   result: CalculationResult;
   snapshot?: {
-    schemaVersion: "2.0" | "2.1";
+    schemaVersion: "2.0" | "2.1" | "2.2";
     productionEstimate: ProductionLogisticsEstimate;
     effectiveCostLines: CostLine[];
     costInputStates: Record<string, CostInputState>;
@@ -95,7 +96,7 @@ type SavedCase = {
     workspaceMode: WorkspaceMode;
     transportMode: TransportMode;
     primaryWarnings: string[];
-    sourceDocuments: Array<Pick<DocumentIntakeRecord, "fileName" | "status" | "facts" | "warnings" | "documentProfile" | "extractionMethod" | "commercialItems" | "fieldSources" | "fieldEvidence">>;
+    sourceDocuments: Array<Pick<DocumentIntakeRecord, "fileName" | "status" | "facts" | "warnings" | "documentProfile" | "extractionMethod" | "commercialItems" | "physicalEvidence" | "fieldSources" | "fieldEvidence">>;
   };
 };
 
@@ -178,10 +179,11 @@ function extractDocumentInputs(records: DocumentIntakeRecord[]): DocumentExtract
   const extraction: DocumentExtraction = { fields: {}, costs: {} };
   const aliases: Record<IntakeFieldKey, string[]> = {
     cargoDescription: ["product_or_cargo", "cargo_description", "product_description", "goods_description", "item_description", "cargo", "product"],
-    quantityDescription: ["quantity_package_count", "package_count", "package_quantity", "quantity", "packages", "line_count"],
+    quantityDescription: ["quantity_package_count", "package_count", "package_quantity", "line_count", "quantity", "packages"],
     sourceTotal: ["contract_or_goods_value", "contract_value", "goods_value", "quotation_total", "grand_total", "total_amount", "total_value"],
     currency: ["contract_currency", "quotation_currency", "currency", "currency_code"],
-    sourcePlace: ["supplier_origin", "source_named_place", "source_place", "ship_from", "supplier_location", "origin"],
+    sourcePlace: ["source_place", "ship_from", "supplier_location", "origin", "supplier_origin"],
+    sourceNamedPlace: ["source_named_place", "incoterm_named_place"],
     targetPlace: ["target_named_place", "delivery_place", "ship_to", "destination", "delivery_location"],
     transportMode: ["transport_mode", "freight_mode", "shipment_mode", "mode_of_transport"],
     packedVolumeM3: ["estimated_packed_volume_m3", "packed_volume_m3", "volume_m3", "total_cbm", "cbm"],
@@ -196,7 +198,7 @@ function extractDocumentInputs(records: DocumentIntakeRecord[]): DocumentExtract
     const entries = record.rows.flatMap((row) => flattenDocumentValue(row));
     for (const [field, fieldAliases] of Object.entries(aliases) as Array<[IntakeFieldKey, string[]]>) {
       if (extraction.fields[field]) continue;
-      const match = entries.find((entry) => fieldAliases.some((alias) => entry.key === alias || entry.key.endsWith(`_${alias}`)));
+      const match = fieldAliases.map((alias) => entries.find((entry) => entry.key === alias || entry.key.endsWith(`_${alias}`))).find(Boolean);
       if (!match || match.value === "" || match.value === null || match.value === undefined) continue;
       let parsedValue: string | number = String(match.value).trim();
       if (["sourceTotal", "packedVolumeM3", "grossWeightKg"].includes(field)) {
@@ -338,8 +340,8 @@ function TruckCutaway({ allocation, unitLabel }: { allocation: TruckAllocation; 
   </article>;
 }
 
-function downloadText(fileName: string, content: string, mime: string) {
-  const blob = new Blob([content], { type: mime });
+function triggerBrowserDownload(fileName: string, blob: Blob) {
+  if (!document.body) throw new Error("The browser document is not ready for a download.");
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -347,23 +349,21 @@ function downloadText(fileName: string, content: string, mime: string) {
   anchor.style.display = "none";
   document.body.append(anchor);
   anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  window.setTimeout(() => {
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, 30_000);
+  return fileName;
+}
+
+function downloadText(fileName: string, content: string, mime: string) {
+  return triggerBrowserDownload(fileName, new Blob([content], { type: mime }));
 }
 
 function downloadBytes(fileName: string, content: Uint8Array, mime: string) {
   const copied = new Uint8Array(content.byteLength);
   copied.set(content);
-  const blob = new Blob([copied.buffer], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.style.display = "none";
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  return triggerBrowserDownload(fileName, new Blob([copied.buffer], { type: mime }));
 }
 
 function CalculationDetails({ derivation, agentEstimate, userOverride, currency }: { derivation?: CalculationDerivation; agentEstimate?: number; userOverride?: number; currency: string }) {
@@ -382,14 +382,22 @@ function CalculationDetails({ derivation, agentEstimate, userOverride, currency 
 }
 
 function CargoCalculationDetails({ estimate, compact = false }: { estimate: ProductionLogisticsEstimate; compact?: boolean }) {
+  const readiness = estimate.readiness ?? { status: "ready" as const, blockers: [] };
+  const packedVolumeStatus = estimate.cargo.packedVolumeStatus ?? (estimate.cargo.packedVolumeM3.kind === "sourced-fact" ? "confirmed" : "estimated");
+  const grossWeightStatus = estimate.cargo.grossWeightStatus ?? (estimate.cargo.grossWeightKg.kind === "sourced-fact" ? "confirmed" : "estimated");
+  const volumeDisplay = packedVolumeStatus === "missing" ? "Packed volume MISSING" : approximateNumber(estimate.cargo.packedVolumeM3.value, "m³");
+  const weightDisplay = grossWeightStatus === "lower-bound"
+    ? `≥ ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(estimate.cargo.explicitWeightLowerBoundKg ?? estimate.cargo.grossWeightKg.value)} kg source lower bound`
+    : grossWeightStatus === "missing" ? "Gross weight MISSING" : approximateNumber(estimate.cargo.grossWeightKg.value, "kg");
   return <details className={`calculation-details cargo-calculation-details ${compact ? "compact" : ""}`}>
     <summary><span aria-hidden="true">ⓘ</span> How calculated?</summary>
     <div>
-      <header><span>CANONICAL CARGO MODEL</span><strong>{approximateNumber(estimate.cargo.packedVolumeM3.value, "m³")} · {approximateNumber(estimate.cargo.grossWeightKg.value, "kg")}</strong><p>{estimate.cargo.packedVolumeM3.method} {estimate.cargo.grossWeightKg.method}</p></header>
-      <div className="cargo-formula-grid"><p><b>Packed volume</b><span>{estimate.cargo.packedVolumeM3.kind} · {estimate.cargo.packedVolumeM3.sourceRef}</span></p><p><b>Gross weight</b><span>{estimate.cargo.grossWeightKg.kind} · {estimate.cargo.grossWeightKg.sourceRef}</span></p><p><b>Planning volume</b><span>{number(estimate.cargo.packedVolumeM3.value, 3)} m³ ÷ {(estimate.cargo.loadabilityFactor.value * 100).toFixed(0)}% = {number(estimate.cargo.planningVolumeM3, 3)} m³</span></p></div>
+      <header><span>CANONICAL CARGO MODEL</span><strong>{volumeDisplay} · {weightDisplay}</strong><p>{estimate.cargo.packedVolumeM3.method} {estimate.cargo.grossWeightKg.method}</p></header>
+      <div className="cargo-formula-grid"><p><b>Packed volume</b><span>{packedVolumeStatus === "missing" ? "MISSING · proxy retained for audit only and not qualified for freight" : `${estimate.cargo.packedVolumeM3.kind} · ${estimate.cargo.packedVolumeM3.sourceRef}`}</span></p><p><b>Gross weight</b><span>{grossWeightStatus === "lower-bound" ? `SOURCE LOWER BOUND · ${estimate.cargo.grossWeightKg.sourceRef}` : grossWeightStatus === "missing" ? "MISSING" : `${estimate.cargo.grossWeightKg.kind} · ${estimate.cargo.grossWeightKg.sourceRef}`}</span></p><p><b>Planning volume</b><span>{readiness.status === "blocked" ? "Not calculated for freight until physical blockers are resolved." : `${number(estimate.cargo.packedVolumeM3.value, 3)} m³ ÷ ${(estimate.cargo.loadabilityFactor.value * 100).toFixed(0)}% = ${number(estimate.cargo.planningVolumeM3, 3)} m³`}</span></p></div>
+      {readiness.blockers.length > 0 && <section className="confidence-explanation"><strong>Physical readiness blockers</strong><ul>{readiness.blockers.map((blocker) => <li key={blocker.code}><b>{blocker.code.replaceAll("_", " ")}</b> · {blocker.message} {blocker.nextAction}</li>)}</ul></section>}
       <div className="cargo-calculation-table-wrap"><table><thead><tr><th>Item / calculation group</th><th>Commercial qty</th><th>Planning units</th><th>Source metric</th><th>Method</th><th>Volume</th><th>Gross weight</th><th>Confidence</th></tr></thead><tbody>{estimate.cargo.calculationRows.map((row) => <tr key={row.id}><th>{row.itemCode && <b>{row.itemCode} · </b>}{row.description}<small>{row.sourceRef}</small></th><td>{row.quantity}</td><td>{row.planningQuantity}</td><td>{row.sourceMetric}</td><td>{row.estimationMethod}</td><td>{number(row.estimatedVolumeM3, 3)} m³</td><td>{number(row.estimatedGrossWeightKg, 1)} kg</td><td>{row.confidence}</td></tr>)}</tbody></table></div>
       <section className="confidence-explanation"><strong>Why confidence is {estimate.confidence.score}% · {estimate.confidence.label}</strong><ul>{estimate.cargo.confidenceFactors.map((factor) => <li key={factor}>{factor}</li>)}</ul></section>
-      <footer>These rows are the actual operands used by the transport and cost models. Commercial quantity remains sourced evidence; planning units are shown separately whenever confirmed per-unit packing data is unavailable.</footer>
+      <footer>{readiness.status === "blocked" ? "Source physical facts and provisional proxies remain visible, but no freight unit or rate is qualified until the blockers are resolved." : "These rows are the actual operands used by the transport and cost models. Commercial quantity remains sourced evidence; planning units are shown separately whenever confirmed per-unit packing data is unavailable."}</footer>
     </div>
   </details>;
 }
@@ -505,6 +513,7 @@ export default function LogisticsCostingApp() {
   const [sourceTerm, setSourceTerm] = useState<IncotermCode>(exwGuangzhouToCipTashkent.sourceTerm);
   const [targetTerm, setTargetTerm] = useState<IncotermCode>(exwGuangzhouToCipTashkent.targetTerm!);
   const [sourcePlace, setSourcePlace] = useState("");
+  const [sourceNamedPlace, setSourceNamedPlace] = useState("");
   const [targetPlace, setTargetPlace] = useState("");
   const [transportMode, setTransportMode] = useState<TransportMode>("multimodal");
   const [preferredUnitId, setPreferredUnitId] = useState("multimodal-40hc");
@@ -535,9 +544,11 @@ export default function LogisticsCostingApp() {
   const [newLineSource, setNewLineSource] = useState("");
   const [newLineRateDate, setNewLineRateDate] = useState("");
   const [newLineIncluded, setNewLineIncluded] = useState(false);
+  const [exportStatus, setExportStatus] = useState("");
 
   const sourceLineCount = useMemo(() => documents.reduce((highest, document) => Math.max(highest, document.documentProfile?.lineItemCount ?? 0), 0) || undefined, [documents]);
   const commercialItems = useMemo(() => documents.flatMap((document) => document.commercialItems ?? []), [documents]);
+  const physicalEvidence = useMemo(() => documents.flatMap((document) => document.physicalEvidence ?? []), [documents]);
   const documentEvidenceText = useMemo(() => documents.flatMap((document) => document.rows).map((row) => JSON.stringify(row)).join("\n"), [documents]);
   const productionEstimate = useMemo<ProductionLogisticsEstimate>(() => buildProductionLogisticsEstimate({
     sourceValue: sourceTotal,
@@ -546,6 +557,7 @@ export default function LogisticsCostingApp() {
     quantityDescription,
     sourceLineCount,
     commercialItems,
+    physicalEvidence,
     sourcePackedVolumeM3: packedVolumeM3 || undefined,
     sourceGrossWeightKg: grossWeightKg || undefined,
     origin: sourcePlace,
@@ -555,7 +567,7 @@ export default function LogisticsCostingApp() {
     pickupConfirmed: inputFieldEvidence.sourcePlace?.status === "client-adjusted",
     specialCargoConfirmed: specialCargoDeclaration === "standard-confirmed" || specialCargoDeclaration === "declared-special",
     evidenceText: documentEvidenceText,
-  }), [sourceTotal, currency, cargoDescription, quantityDescription, sourceLineCount, commercialItems, packedVolumeM3, grossWeightKg, sourcePlace, targetPlace, transportMode, preferredUnitId, inputFieldEvidence.sourcePlace?.status, specialCargoDeclaration, documentEvidenceText]);
+  }), [sourceTotal, currency, cargoDescription, quantityDescription, sourceLineCount, commercialItems, physicalEvidence, packedVolumeM3, grossWeightKg, sourcePlace, targetPlace, transportMode, preferredUnitId, inputFieldEvidence.sourcePlace?.status, specialCargoDeclaration, documentEvidenceText]);
 
   const preparedCostLines = useMemo(() => {
     const benchmarkByComponent = new Map(productionEstimate.costLines.map((line) => [line.component, line]));
@@ -589,7 +601,7 @@ export default function LogisticsCostingApp() {
       sourceContractTotal: sourceTotal,
       currency,
       sourceTerm,
-      sourceNamedPlace: sourcePlace,
+      sourceNamedPlace: sourceNamedPlace || sourcePlace,
       ...(workspaceMode === "logistics"
         ? costScopeBasis === "incoterm"
           ? { logisticsScopeIncoterm: sourceTerm }
@@ -628,9 +640,27 @@ export default function LogisticsCostingApp() {
         "Benchmark-derived values remain editable and never represent a live carrier or insurer quotation.",
       ],
     };
-  }, [workspaceMode, sourceTotal, currency, fxRate, fxAsOf, fxSource, sourceTerm, sourcePlace, logisticsScope, costScopeBasis, targetTerm, targetPlace, transportMode, costLines, preparedCostLines, contractUnloadOverride, customBoundaryEnabled, customDeliveryPoint, customRiskTransferPoint, customCostBoundary, customBoundarySource, insuranceRatePercent, coveragePercent, importJurisdiction, importerOfRecord, taxRegistrationBasis, demoLoaded, productionEstimate]);
+  }, [workspaceMode, sourceTotal, currency, fxRate, fxAsOf, fxSource, sourceTerm, sourcePlace, sourceNamedPlace, logisticsScope, costScopeBasis, targetTerm, targetPlace, transportMode, costLines, preparedCostLines, contractUnloadOverride, customBoundaryEnabled, customDeliveryPoint, customRiskTransferPoint, customCostBoundary, customBoundarySource, insuranceRatePercent, coveragePercent, importJurisdiction, importerOfRecord, taxRegistrationBasis, demoLoaded, productionEstimate]);
 
   const result = useMemo(() => calculateScenario(calculationInput), [calculationInput]);
+  const canonicalInsuranceDerivation = useMemo(() => buildCanonicalInsuranceDerivation({
+    sourceValue: result.sourceContractTotal,
+    nonInsuranceAdjustment: result.incrementalCost - result.insurance,
+    premiumRate: calculationInput.insurance?.premiumRate ?? productionEstimate.insuranceRate,
+    coverageFactor: calculationInput.insurance?.coverageFactor ?? productionEstimate.insuranceCoverageFactor,
+    basis: calculationInput.insurance?.basis ?? "final-contract-value",
+    currency: result.currency,
+    resultValue: result.insurance,
+    sourceRef: calculationInput.insurance?.note ?? productionEstimate.benchmark.sourceRef,
+    confidence: insuranceRatePercent > 0 ? "medium" : productionEstimate.benchmark.id.startsWith("generic-") ? "low" : "medium",
+    benchmark: { id: productionEstimate.benchmark.id, label: productionEstimate.benchmark.label, asOf: productionEstimate.benchmark.asOf, sourceRef: productionEstimate.benchmark.sourceRef },
+  }), [result, calculationInput.insurance, productionEstimate, insuranceRatePercent]);
+  const effectiveCostLines = useMemo(() => preparedCostLines.map((line) => line.component === "insurance" ? {
+    ...line,
+    amount: result.insurance,
+    calculation: canonicalInsuranceDerivation,
+    agentEstimate: { amount: result.insurance, currency: result.currency, calculation: canonicalInsuranceDerivation },
+  } : line), [preparedCostLines, result.insurance, result.currency, canonicalInsuranceDerivation]);
   const compatibleTransportUnits = useMemo(() => transportUnits.filter((unit) => unit.mode === transportMode), [transportMode]);
   const selectedUnitId = compatibleTransportUnits.some((unit) => unit.id === preferredUnitId) ? preferredUnitId : compatibleTransportUnits[0]?.id;
   const transportPlan = useMemo(() => ({
@@ -672,8 +702,12 @@ export default function LogisticsCostingApp() {
   function resetRegression() {
     setDemoLoaded(true);
     setClientGoal("conversion");
-    setInputSupplyMode("documents");
+    setInputSupplyMode("manual");
     setInputFieldEvidence({});
+    setDocuments([]);
+    setDocumentProcessingStage("idle");
+    setDocumentProcessingMessage("");
+    setExportStatus("");
     setScenarioName("EXW Guangzhou → CIP Tashkent · approved production fixture");
     setCargoDescription("Medical, veterinary and laboratory equipment — multi-item quotation");
     setQuantityDescription("167 quotation lines");
@@ -697,6 +731,7 @@ export default function LogisticsCostingApp() {
     setTargetTerm("CIP");
     setCostScopeBasis("incoterm");
     setSourcePlace("Supplier premises, Guangzhou, China");
+    setSourceNamedPlace("Guangzhou, China");
     setTargetPlace("Tashkent, Uzbekistan");
     setTransportMode("road");
     setPreferredUnitId("road-enclosed-136");
@@ -752,6 +787,7 @@ export default function LogisticsCostingApp() {
     setSourceTerm("EXW");
     setTargetTerm("CIP");
     setSourcePlace("");
+    setSourceNamedPlace("");
     setTargetPlace("");
     setTransportMode("multimodal");
     setPreferredUnitId("multimodal-40hc");
@@ -831,6 +867,7 @@ export default function LogisticsCostingApp() {
       registerEvidence("currency", extracted.fields.currency);
     }
     if (!sourcePlace.trim() && extracted.fields.sourcePlace) { setSourcePlace(String(extracted.fields.sourcePlace.originalValue)); registerEvidence("sourcePlace", extracted.fields.sourcePlace); }
+    if (!sourceNamedPlace.trim() && extracted.fields.sourceNamedPlace) { setSourceNamedPlace(String(extracted.fields.sourceNamedPlace.originalValue)); registerEvidence("sourceNamedPlace", extracted.fields.sourceNamedPlace); }
     if (!targetPlace.trim() && extracted.fields.targetPlace) { setTargetPlace(String(extracted.fields.targetPlace.originalValue)); registerEvidence("targetPlace", extracted.fields.targetPlace); }
     if ((!transportModeAnswer || transportModeAnswer === "unknown") && extracted.fields.transportMode) {
       const nextMode = String(extracted.fields.transportMode.originalValue) as TransportMode;
@@ -882,25 +919,41 @@ export default function LogisticsCostingApp() {
   }
 
   function exportAudit() {
-    downloadText("contract-logistics-audit.json", JSON.stringify({
-      schema: "tenderapps.landed-cost.audit.v0.1",
-      processDefinition: logisticsCostingProcessDefinition,
-      input: calculationInput,
-      result,
-      packing: { packedVolumeM3, grossWeightKg, transportPlan, coldChainParcel: "provisional separate parcel" },
-      productionEstimate,
-      specialCargoDeclaration,
-      sourceDocuments: documents,
-      inputSupplyMode,
-      inputFieldEvidence,
-      lineAllocation: allocatedLines,
-    }, null, 2), "application/json");
+    try {
+      const generatedAt = new Date().toISOString();
+      const fileName = "tender-logistics-cost-audit.json";
+      downloadText(fileName, JSON.stringify({
+        schema: "tenderapps.logistics-cost.audit.v0.2",
+        fileIdentity: { fileName, caseId: approvedCaseId ?? result.id, resultId: result.id, engineVersion: result.audit.engineVersion, generatedAt },
+        processDefinition: logisticsCostingProcessDefinition,
+        input: calculationInput,
+        result,
+        effectiveCostLines,
+        packing: { packedVolumeM3, grossWeightKg, transportPlan, coldChainParcel: "provisional separate parcel" },
+        productionEstimate,
+        primaryWarnings: currentPrimaryWarnings,
+        specialCargoDeclaration,
+        sourceDocuments: documents,
+        inputSupplyMode,
+        inputFieldEvidence,
+        lineAllocation: allocatedLines,
+      }, null, 2), "application/json");
+      setExportStatus(`Downloaded ${fileName}.`);
+    } catch (error) {
+      setExportStatus(`Export failed: ${error instanceof Error ? error.message : "Unknown browser download error"}`);
+    }
   }
 
   function exportLines() {
     const headers = ["Contract line", "Source price", "Included logistics", "Additional logistics", "Removed costs", "Insurance", "Duties/taxes", "Resulting price", "Currency", "Allocation method", "Assumptions"];
     const rows = allocatedLines.map((line) => [line.description, line.sourcePrice, line.includedLogistics, line.additionalLogistics, line.removedCosts, line.insurance, line.dutiesTaxes, line.resultingPrice, line.currency, line.allocationMethod, line.assumptions.join("; ")]);
-    downloadText("contract-logistics-line-allocation.csv", [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n"), "text/csv;charset=utf-8");
+    try {
+      const fileName = "contract-logistics-line-allocation.csv";
+      downloadText(fileName, [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n"), "text/csv;charset=utf-8");
+      setExportStatus(`Downloaded ${fileName}.`);
+    } catch (error) {
+      setExportStatus(`Export failed: ${error instanceof Error ? error.message : "Unknown browser download error"}`);
+    }
   }
 
   const visibleAllocatedLines = showAllLines ? allocatedLines : allocatedLines.slice(0, 8);
@@ -910,11 +963,6 @@ export default function LogisticsCostingApp() {
   const displayedTargetTerm = targetTermSelected ? targetTerm : inferredTargetTerm;
   const applicableTargetTerms = incotermCodes.filter((term) => incotermProfiles[term].modeFamily === "any-mode" || transportMode === "sea" || transportMode === "inland-waterway");
   const selectedSavedCase = savedCases.find((savedCase) => savedCase.id === selectedCaseId);
-  const currentPrimaryWarnings = useMemo(() => [
-    ...documents.flatMap((document) => document.warnings.filter((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY").map((warning) => warning.message)),
-    ...productionEstimate.warnings,
-  ].slice(0, 5), [documents, productionEstimate.warnings]);
-
   const requiredCostComponents = useMemo<CostComponentCode[]>(() => {
     if (workspaceMode === "logistics") {
       if (costScopeBasis === "incoterm") return [...incotermProfiles[sourceTerm].sellerPaidComponents];
@@ -943,6 +991,12 @@ export default function LogisticsCostingApp() {
   const unknownRequiredCosts = requiredCostComponents.filter((component) => costStateFor(component) === "unknown");
   const preparedRequiredCosts = requiredCostComponents.filter((component) => ["provided", "extracted", "estimated", "needs-confirmation"].includes(costStateFor(component)));
   const excludedRequiredCosts = requiredCostComponents.filter((component) => costStateFor(component) === "not-applicable");
+  const currentPrimaryWarnings = [
+    ...productionEstimate.readiness.blockers.map((blocker) => `${blocker.message} ${blocker.nextAction}`),
+    ...unknownRequiredCosts.map((component) => `Unresolved responsibility adjustment: ${componentLabels[component]} has no amount. The final commercial delta remains incomplete until it is supplied or explicitly excluded.`),
+    ...documents.flatMap((document) => document.warnings.filter((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY").map((warning) => warning.message)),
+    ...productionEstimate.warnings,
+  ].filter((warning, index, values) => values.indexOf(warning) === index).slice(0, 8);
   const blockingMissing = [
     !clientGoal && "calculation goal",
     !cargoDescription.trim() && "product or cargo",
@@ -957,6 +1011,7 @@ export default function LogisticsCostingApp() {
     workspaceMode === "logistics" && costScopeBasis !== "incoterm" && !logisticsScope && "standalone logistics scope",
     workspaceMode !== "logistics" && targetTerm === "DDP" && !importJurisdiction.trim() && "DDP import jurisdiction",
     workspaceMode !== "logistics" && targetTerm === "DDP" && !importerOfRecord.trim() && "DDP seller-side importer of record",
+    ...productionEstimate.readiness.blockers.map((blocker) => `${blocker.code.replaceAll("_", " ").toLowerCase()}: ${blocker.nextAction}`),
   ].filter((item): item is string => Boolean(item));
 
   function persistSavedCases(next: SavedCase[]) {
@@ -1099,7 +1154,7 @@ export default function LogisticsCostingApp() {
   }
 
   function GuidedCostRow({ component }: { component: CostComponentCode }) {
-    const line = preparedCostLines.find((candidate) => candidate.component === component);
+    const line = effectiveCostLines.find((candidate) => candidate.component === component);
     if (!line) return null;
     const state = costStateFor(component);
     const displayedAmount = component === "insurance" && state === "estimated" ? result.insurance : line.amount;
@@ -1146,16 +1201,16 @@ export default function LogisticsCostingApp() {
       input: calculationInput,
       result,
       snapshot: {
-        schemaVersion: "2.1",
+        schemaVersion: "2.2",
         productionEstimate,
-        effectiveCostLines: preparedCostLines,
+        effectiveCostLines,
         costInputStates,
         inputFieldEvidence,
         clientGoal,
         workspaceMode,
         transportMode,
         primaryWarnings: currentPrimaryWarnings,
-        sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence })),
+        sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, physicalEvidence: documentPhysicalEvidence, fieldSources, fieldEvidence }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, physicalEvidence: documentPhysicalEvidence, fieldSources, fieldEvidence })),
       },
     };
     persistSavedCases([savedCase, ...savedCases]);
@@ -1163,7 +1218,14 @@ export default function LogisticsCostingApp() {
   }
 
   async function exportCalculationWorkbook(model: LogisticsCalculationWorkbookModel) {
-    downloadBytes(logisticsCalculationExcelFileName(model), await logisticsCalculationToExcel(model), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    try {
+      setExportStatus("Preparing the Excel calculation workbook…");
+      const fileName = logisticsCalculationExcelFileName(model);
+      downloadBytes(fileName, await logisticsCalculationToExcel(model), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      setExportStatus(`Downloaded ${fileName}.`);
+    } catch (error) {
+      setExportStatus(`Export failed: ${error instanceof Error ? error.message : "Unknown workbook generation error"}`);
+    }
   }
 
   function currentWorkbookModel(caseId = result.id, caseName = scenarioName.trim() || `${cargoDescription} · ${sourceTerm} → ${targetTerm}`, savedAt?: string): LogisticsCalculationWorkbookModel {
@@ -1180,9 +1242,9 @@ export default function LogisticsCostingApp() {
       input: calculationInput,
       result,
       productionEstimate,
-      effectiveCostLines: preparedCostLines,
+      effectiveCostLines,
       warnings: currentPrimaryWarnings,
-      sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, fieldSources, fieldEvidence })),
+      sourceDocuments: documents.map(({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, physicalEvidence: documentPhysicalEvidence, fieldSources, fieldEvidence }) => ({ fileName, status: documentStatus, facts, warnings, documentProfile, extractionMethod, commercialItems: documentCommercialItems, physicalEvidence: documentPhysicalEvidence, fieldSources, fieldEvidence })),
     };
   }
 
@@ -1214,6 +1276,7 @@ export default function LogisticsCostingApp() {
       <button aria-current={clientSurface === "cases" ? "page" : undefined} onClick={() => { setSelectedCaseId(null); setSelectedCaseView("result"); setClientSurface("cases"); }} type="button">Saved cases <span>{savedCases.length}</span></button>
     </nav>
   );
+  const exportNotice = exportStatus ? <p className={exportStatus.startsWith("Export failed") ? "export-status error" : "export-status"} role="status">{exportStatus}</p> : null;
 
   function ResponsibilityQuestionnaire({ side, answers, inferred }: { side: "current" | "desired"; answers: ResponsibilityAnswers; inferred?: IncotermCode }) {
     return (
@@ -1243,6 +1306,7 @@ export default function LogisticsCostingApp() {
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
+        {exportNotice}
         <TrialNotice product="logistics" productId="product:TA-LANDED-COST" />
         <PracticalAgentOverview audience="client" className="cost-product-manifesto" productId="product:TA-LANDED-COST">
           <PracticalAgentOverviewPart as="header" className="cost-product-heading" part="outcome-promise">
@@ -1263,7 +1327,6 @@ export default function LogisticsCostingApp() {
               titleId="logistics-cost-role-title"
             />
           </PracticalAgentOverviewPart>
-
           <div className="cost-product-story" aria-label="Commercial inputs transformed into a reviewed delivery cost estimate">
             <PracticalAgentOverviewPart as="article" className="raw-cost-inputs" part="input">
               <header><span>01</span><div><b>WHAT YOU PROVIDE</b><small>Commercial + shipment evidence</small></div></header>
@@ -1422,6 +1485,7 @@ export default function LogisticsCostingApp() {
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
+        {exportNotice}
         <section className="cases-heading">
           <div><p className="costing-eyebrow"><span /> SAVED CASES</p><h1>Saved calculations,<br /><em>kept separately.</em></h1><p>Every saved calculation preserves its inputs, assumptions, result and review status.</p></div>
           <button className="primary-client-action" onClick={startNewCalculation} type="button">New calculation <span>＋</span></button>
@@ -1443,9 +1507,9 @@ export default function LogisticsCostingApp() {
         {selectedSavedCase && <section className="saved-case-workspace" id="saved-case-workspace" aria-label="Saved case workspace">
           <header className="saved-case-workspace-heading"><div><span>{selectedSavedCase.status.toUpperCase()} CASE · DURABLE SNAPSHOT</span><h2>{selectedSavedCase.name}</h2><p>Saved {new Date(selectedSavedCase.savedAt).toLocaleString()} · the client Result and technical evidence remain separate.</p></div><button onClick={() => setSelectedCaseId(null)} type="button" aria-label="Close saved case">×</button></header>
           <nav className="saved-case-view-tabs" aria-label="Saved case views"><button aria-current={selectedCaseView === "result" ? "page" : undefined} onClick={() => setSelectedCaseView("result")} type="button">Result</button><button aria-current={selectedCaseView === "inputs" ? "page" : undefined} onClick={() => setSelectedCaseView("inputs")} type="button">Inputs</button><button aria-current={selectedCaseView === "audit" ? "page" : undefined} onClick={() => setSelectedCaseView("audit")} type="button">Calculation details / audit</button></nav>
-          {selectedCaseView === "result" && selectedSavedCase.snapshot && <div className="saved-case-result-view"><ResultDashboard estimate={selectedSavedCase.snapshot.productionEstimate} primaryWarnings={selectedSavedCase.snapshot.primaryWarnings} result={selectedSavedCase.result} sourcePlace={selectedSavedCase.origin} targetPlace={selectedSavedCase.destination} transportMode={selectedSavedCase.snapshot.transportMode} afterDashboard={<section className="saved-result-actions"><div><span>SAVED RESULT</span><strong>This is the canonical dashboard snapshot preserved with the Case.</strong></div><div><button onClick={() => { const model = savedWorkbookModel(selectedSavedCase); if (model) exportCalculationWorkbook(model); }} type="button">Export calculations to Excel</button><button onClick={() => setSelectedCaseView("inputs")} type="button">View inputs</button><button onClick={() => setSelectedCaseView("audit")} type="button">Open calculation audit</button></div></section>} /></div>}
+          {selectedCaseView === "result" && selectedSavedCase.snapshot && <div className="saved-case-result-view"><ResultDashboard estimate={selectedSavedCase.snapshot.productionEstimate} primaryWarnings={selectedSavedCase.snapshot.primaryWarnings} result={selectedSavedCase.result} sourcePlace={selectedSavedCase.result.sourceNamedPlace || selectedSavedCase.origin} targetPlace={selectedSavedCase.destination} transportMode={selectedSavedCase.snapshot.transportMode} afterDashboard={<section className="saved-result-actions"><div><span>SAVED RESULT</span><strong>This is the canonical dashboard snapshot preserved with the Case.</strong></div><div><button onClick={() => { const model = savedWorkbookModel(selectedSavedCase); if (model) exportCalculationWorkbook(model); }} type="button">Export calculations to Excel</button><button onClick={() => setSelectedCaseView("inputs")} type="button">View inputs</button><button onClick={() => setSelectedCaseView("audit")} type="button">Open calculation audit</button></div></section>} /></div>}
           {selectedCaseView === "result" && !selectedSavedCase.snapshot && <section className="legacy-case-notice"><span>LEGACY CASE</span><h3>The original saved record predates durable Result snapshots.</h3><p>Its totals and assumptions remain available, but the truck and cargo submodels were not persisted at that time and cannot be truthfully reconstructed.</p><button onClick={() => setSelectedCaseView("audit")} type="button">Open available audit record</button></section>}
-          {selectedCaseView === "inputs" && <div className="case-detail-grid saved-case-inputs"><article><span>COMMERCIAL INPUTS</span><p><b>Cargo:</b> {selectedSavedCase.cargo}</p><p><b>Quantity:</b> {selectedSavedCase.quantity || "Not specified"}</p><p><b>Source value:</b> {money(selectedSavedCase.input.sourceContractTotal, selectedSavedCase.input.currency)}</p><p><b>Special cargo:</b> {selectedSavedCase.specialCargoDeclaration || "Not confirmed"}</p></article><article><span>DELIVERY TRANSFORMATION</span><p><b>Source:</b> {selectedSavedCase.input.sourceTerm} {selectedSavedCase.input.sourceNamedPlace}</p><p><b>Target:</b> {selectedSavedCase.input.targetTerm ?? selectedSavedCase.input.logisticsScopeIncoterm} {selectedSavedCase.input.targetNamedPlace ?? selectedSavedCase.destination}</p><p><b>Mode:</b> {selectedSavedCase.snapshot?.transportMode ?? selectedSavedCase.input.transportMode}</p></article><article><span>COST INPUTS</span>{selectedSavedCase.input.costLines.filter((line) => line.amount > 0 || line.userOverride || line.agentEstimate).map((line) => <p key={line.id}><b>{line.label}:</b> {money(line.amount, line.currency)} · {line.evidenceKind}</p>)}</article><article><span>CASE STATUS</span><strong>{selectedSavedCase.status === "approved" ? "Approved" : "Preliminary"}</strong><p>{new Date(selectedSavedCase.savedAt).toLocaleString()}</p><p>Saved locally in this browser.</p></article></div>}
+          {selectedCaseView === "inputs" && <div className="case-detail-grid saved-case-inputs"><article><span>COMMERCIAL INPUTS</span><p><b>Cargo:</b> {selectedSavedCase.cargo}</p><p><b>Quantity:</b> {selectedSavedCase.quantity || "Not specified"}</p><p><b>Source value:</b> {money(selectedSavedCase.input.sourceContractTotal, selectedSavedCase.input.currency)}</p><p><b>Special cargo:</b> {selectedSavedCase.specialCargoDeclaration || "Not confirmed"}</p></article><article><span>DELIVERY TRANSFORMATION</span><p><b>Source:</b> {selectedSavedCase.input.sourceTerm} {selectedSavedCase.input.sourceNamedPlace}</p><p><b>Target:</b> {selectedSavedCase.input.targetTerm ?? selectedSavedCase.input.logisticsScopeIncoterm} {selectedSavedCase.input.targetNamedPlace ?? selectedSavedCase.destination}</p><p><b>Mode:</b> {selectedSavedCase.snapshot?.transportMode ?? selectedSavedCase.input.transportMode}</p></article><article><span>COST INPUTS</span>{(selectedSavedCase.snapshot?.effectiveCostLines ?? selectedSavedCase.input.costLines).filter((line) => line.amount > 0 || line.userOverride || line.agentEstimate).map((line) => <p key={line.id}><b>{line.label}:</b> {money(line.amount, line.currency)} · {line.evidenceKind}</p>)}</article><article><span>CASE STATUS</span><strong>{selectedSavedCase.status === "approved" ? "Approved" : "Preliminary"}</strong><p>{new Date(selectedSavedCase.savedAt).toLocaleString()}</p><p>Saved locally in this browser.</p></article></div>}
           {selectedCaseView === "audit" && <div className="case-detail-grid saved-case-audit"><article><span>ASSUMPTIONS</span>{selectedSavedCase.result.assumptions.map((assumption) => <p key={assumption}>{assumption}</p>)}</article><article><span>CALCULATION</span><strong>{money(selectedSavedCase.result.incrementalCost, selectedSavedCase.result.currency)}</strong><p>{selectedSavedCase.result.audit.formula}</p><p>Engine: {selectedSavedCase.result.audit.engineVersion}</p><p>Calculated: {selectedSavedCase.result.audit.calculatedAt}</p></article><article><span>PROVENANCE</span>{selectedSavedCase.snapshot ? <><p>{selectedSavedCase.snapshot.sourceDocuments.length} source document record(s) preserved.</p><p>{selectedSavedCase.snapshot.productionEstimate.costLines.filter((line) => line.calculation).length} cost derivation(s) preserved.</p><p>{selectedSavedCase.snapshot.productionEstimate.cargo.calculationRows.length} cargo calculation row(s) preserved.</p></> : <p>Only the v1 totals and assumptions were persisted for this legacy Case.</p>}</article><article><span>EXPORTS</span>{selectedSavedCase.snapshot ? <button onClick={() => { const model = savedWorkbookModel(selectedSavedCase); if (model) exportCalculationWorkbook(model); }} type="button">Export calculations to Excel</button> : <p>Full workbook export is unavailable because the canonical submodels were not stored.</p>}</article></div>}
         </section>}
         <footer className="costing-footer"><div><strong>TenderApps</strong><span>Saved cases · local browser storage</span></div><p>Export audit artifacts for durable tender or contract records</p></footer>
@@ -1457,6 +1521,7 @@ export default function LogisticsCostingApp() {
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
+        {exportNotice}
         <section className="intake-heading"><div><span>GUIDED CALCULATION</span><h1>{guidedSteps[clientStep - 1].label}</h1><p>Step {clientStep} of {guidedSteps.length}. We will keep your earlier answers as you move back and forward.</p></div><button onClick={() => setClientSurface("welcome")} type="button">Exit to start</button></section>
         <ol className="consultation-progress" aria-label="Calculation progress">
           {guidedSteps.map((step) => <li className={step.id < clientStep ? "completed" : step.id === clientStep ? "current" : "upcoming"} key={step.id} aria-current={step.id === clientStep ? "step" : undefined}><span>{step.id < clientStep ? "✓" : step.id}</span><b>{step.short}</b></li>)}
@@ -1489,19 +1554,19 @@ export default function LogisticsCostingApp() {
             </>}
           </div>}
 
-          {clientStep === 3 && <div className="intake-step terms-step"><header><span>STEP 3 · CURRENT ARRANGEMENT</span><h2>How is delivery handled now?</h2><p>If you know the current Incoterm, select it directly. Otherwise describe who handles the work and we will suggest the closest standard rule.</p></header><div className="knowledge-switch" role="group" aria-label="Current Incoterm knowledge"><button aria-pressed={sourceTermKnowledge === "known"} onClick={() => setSourceTermKnowledge("known")} type="button">I know the current Incoterm</button><button aria-pressed={sourceTermKnowledge === "help"} onClick={() => { setSourceTermKnowledge("help"); setSourceTermSelected(false); }} type="button">I don't know · help me</button></div>{sourceTermKnowledge === "known" && <div className="known-term-card"><label><span>Current Incoterm</span><select value={sourceTermSelected ? sourceTerm : ""} onChange={(event) => { setSourceTerm(event.target.value as IncotermCode); setSourceTermSelected(true); markInputFieldAdjusted("sourceTerm"); }}><option value="">Select a rule</option>{incotermCodes.map((term) => <option key={term} value={term}>{term} · {incotermProfiles[term].name}</option>)}</select><InputEvidence field="sourceTerm" /></label><label><span>Current named place</span><input value={sourcePlace} onChange={(event) => { setSourcePlace(event.target.value); markInputFieldAdjusted("sourcePlace"); }} /><small>The exact place matters for delivery, risk and cost boundaries.</small></label></div>}{sourceTermKnowledge === "help" && <ResponsibilityQuestionnaire side="current" answers={currentResponsibilities} inferred={inferredSourceTerm} />}</div>}
+          {clientStep === 3 && <div className="intake-step terms-step"><header><span>STEP 3 · CURRENT ARRANGEMENT</span><h2>How is delivery handled now?</h2><p>If you know the current Incoterm, select it directly. Otherwise describe who handles the work and we will suggest the closest standard rule.</p></header><div className="knowledge-switch" role="group" aria-label="Current Incoterm knowledge"><button aria-pressed={sourceTermKnowledge === "known"} onClick={() => setSourceTermKnowledge("known")} type="button">I know the current Incoterm</button><button aria-pressed={sourceTermKnowledge === "help"} onClick={() => { setSourceTermKnowledge("help"); setSourceTermSelected(false); }} type="button">I don't know · help me</button></div>{sourceTermKnowledge === "known" && <div className="known-term-card"><label><span>Current Incoterm</span><select value={sourceTermSelected ? sourceTerm : ""} onChange={(event) => { setSourceTerm(event.target.value as IncotermCode); setSourceTermSelected(true); markInputFieldAdjusted("sourceTerm"); }}><option value="">Select a rule</option>{incotermCodes.map((term) => <option key={term} value={term}>{term} · {incotermProfiles[term].name}</option>)}</select><InputEvidence field="sourceTerm" /></label><label><span>Current named place</span><input value={sourceNamedPlace} onChange={(event) => { setSourceNamedPlace(event.target.value); markInputFieldAdjusted("sourceNamedPlace"); }} /><InputEvidence field="sourceNamedPlace" /><small>The Incoterm place is preserved independently from the supplier identity and pickup origin.</small></label></div>}{sourceTermKnowledge === "help" && <ResponsibilityQuestionnaire side="current" answers={currentResponsibilities} inferred={inferredSourceTerm} />}</div>}
 
           {clientStep === 4 && <div className="intake-step terms-step">
             <header><span>STEP 4 · TARGET DELIVERY CONDITION</span><h2>What delivery term should we calculate?</h2><p>The supplier's Incoterm is the source condition. Select the target Incoterm and the engine will calculate only the additional or removed responsibilities.</p></header>
             <section className="incoterm-transformation" aria-label="Delivery transformation">
-              <article><span>SUPPLIER / SOURCE CONDITION</span><strong>{sourceTerm} {sourcePlace}</strong><small>Extracted supplier condition; editable in Step 3.</small></article>
+              <article><span>SUPPLIER / SOURCE CONDITION</span><strong>{sourceTerm} {sourceNamedPlace || sourcePlace}</strong><small>Extracted supplier condition; editable in Step 3.</small></article>
               <b aria-hidden="true">→</b>
               <article className="target"><span>RECOMMENDED TARGET</span><strong>{displayedTargetTerm ?? "CIP"} {targetPlace}</strong><small>{displayedTargetTerm === "CIP" ? "Selected by default" : "Client-selected target"}</small></article>
             </section>
             <div className="knowledge-switch" role="group" aria-label="Target Incoterm knowledge"><button aria-pressed={targetTermKnowledge === "known"} onClick={() => { setTargetTermKnowledge("known"); if (!targetTermSelected) { setTargetTerm("CIP"); setTargetTermSelected(true); } }} type="button">Select target Incoterm</button><button aria-pressed={targetTermKnowledge === "help"} onClick={() => { setTargetTermKnowledge("help"); setTargetTermSelected(false); }} type="button">Help me choose by responsibility</button></div>
             {targetTermKnowledge === "known" && <div className="known-term-card"><label><span>Target Incoterm</span><select value={targetTermSelected ? targetTerm : ""} onChange={(event) => { setTargetTerm(event.target.value as IncotermCode); setTargetTermSelected(true); setCostScopeBasis("incoterm"); markInputFieldAdjusted("targetTerm"); }}><option value="">Select a rule</option>{applicableTargetTerms.map((term) => <option key={term} value={term}>{term}{term === "CIP" ? " · Recommended" : ""} · {incotermProfiles[term].name}</option>)}</select><InputEvidence field="targetTerm" />{displayedTargetTerm && <small>{incotermClientDescriptions[displayedTargetTerm]}</small>}</label><label><span>Target named place</span><input value={targetPlace} onChange={(event) => { setTargetPlace(event.target.value); markInputFieldAdjusted("targetPlace"); }} /><small>The named place is part of the commercial term and directly affects the route and estimate.</small></label></div>}
             {targetTermKnowledge === "help" && <ResponsibilityQuestionnaire side="desired" answers={desiredResponsibilities} inferred={inferredTargetTerm} />}
-            {displayedTargetTerm && <section className="inherited-scope-panel"><div className="inherited-scope-heading"><span>CALCULATED DIFFERENCE</span><h3>{sourceTerm} {sourcePlace} → {displayedTargetTerm} {targetPlace}</h3><p>The Incoterms engine determines the changed logistics components. Origin handling, freight, insurance, import costs and other services are outputs—not alternative target scopes.</p></div>{sourceTerm === displayedTargetTerm && sourcePlace.trim().toLowerCase() === targetPlace.trim().toLowerCase() && <div className="scope-deviation-warning"><strong>No Incoterm conversion required</strong><p>The selected target matches the supplier's existing delivery condition.</p></div>}</section>}
+            {displayedTargetTerm && <section className="inherited-scope-panel"><div className="inherited-scope-heading"><span>CALCULATED DIFFERENCE</span><h3>{sourceTerm} {sourceNamedPlace || sourcePlace} → {displayedTargetTerm} {targetPlace}</h3><p>The Incoterms engine determines the changed logistics components. Origin handling, freight, insurance, import costs and other services are outputs—not alternative target scopes.</p></div>{sourceTerm === displayedTargetTerm && (sourceNamedPlace || sourcePlace).trim().toLowerCase() === targetPlace.trim().toLowerCase() && <div className="scope-deviation-warning"><strong>No Incoterm conversion required</strong><p>The selected target matches the supplier's existing delivery condition.</p></div>}</section>}
           </div>}
 
           {clientStep === 5 && <div className="intake-step costs-step">
@@ -1515,7 +1580,7 @@ export default function LogisticsCostingApp() {
             {unknownRequiredCosts.length > 0 && <div className="provisional-continuation-note"><strong>Continue with unknown costs</strong><p>The known subtotal can still be calculated. {unknownRequiredCosts.map((component) => componentLabels[component]).join(", ")} will remain open and will not be included in the numeric total until supplied.</p></div>}
           </div>}
 
-          {clientStep === 6 && <div className="intake-step review-step"><header><span>STEP 6 · REVIEW</span><h2>Here is the calculation basis</h2><p>Review the commercial facts, estimated cargo profile, benchmark basis and remaining warnings before calculation.</p></header><div className="review-summary-grid"><article><header><span>GOAL</span><button onClick={() => setClientStep(1)} type="button">Edit</button></header><strong>{clientGoals.find((goal) => goal.id === clientGoal)?.title}</strong><p>{workspaceMode === "logistics" ? costScopeBasis === "incoterm" ? `As per current Incoterm — ${sourceTerm}` : logisticsScopes.find((scope) => scope.id === logisticsScope)?.label : `${sourceTerm} → ${targetTerm}`}</p></article><article><header><span>SHIPMENT</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{cargoDescription}</strong><p>{quantityDescription || `${sourceLineCount ?? 1} source line(s)`}</p><p>{sourcePlace} → {targetPlace}</p><p>{exactMoney(sourceTotal, currency)}</p></article><article><header><span>TRANSPORT</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{productionEstimate.transport.requiredTruckCount} × {productionEstimate.transport.unit.label}</strong><p>{productionEstimate.transport.limitingFactor} · {transportMode}</p></article><article className="cargo-review-card"><header><span>CARGO ESTIMATE</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{approximateNumber(productionEstimate.cargo.packedVolumeM3.value, "m³")} · {approximateNumber(productionEstimate.cargo.grossWeightKg.value, "kg")}</strong><p>Confidence {productionEstimate.confidence.score}% · {productionEstimate.confidence.label}</p><CargoCalculationDetails compact estimate={productionEstimate} /></article></div><div className="review-findings"><section className={blockingMissing.length ? "blocking" : "complete"}><span>{blockingMissing.length ? "REQUIRED INFORMATION" : "REQUIRED INFORMATION COMPLETE"}</span>{blockingMissing.length ? <ul>{blockingMissing.map((item) => <li key={item}>{item}</li>)}</ul> : <p>All inputs required to define the calculation are present.</p>}</section><section className={unknownRequiredCosts.length ? "provisional" : "complete"}><span>{unknownRequiredCosts.length ? "UNESTIMABLE COST INPUTS" : "ESTIMATE PREPARED"}</span>{unknownRequiredCosts.length ? <ul>{unknownRequiredCosts.map((component) => <li key={component}>{componentLabels[component]}</li>)}</ul> : <p>Every relevant cost is sourced, provided, estimated or explicitly excluded.</p>}</section><section className="assumptions"><span>KEY BOUNDARIES</span><ul><li>Freight is benchmark-derived, not a carrier quotation.</li><li>Estimated packing remains separate from source facts.</li><li>Duties and VAT remain outside standard CIP.</li><li>{specialCargoDeclaration ? "Special-cargo declaration recorded for this preliminary case." : "Special-cargo declaration is still required before approval."}</li></ul></section></div><label className="scenario-name-field"><span>Case name <i>Optional</i></span><input placeholder={`${cargoDescription} · ${sourceTerm}${workspaceMode === "logistics" ? " logistics" : ` → ${targetTerm}`}`} value={scenarioName} onChange={(event) => setScenarioName(event.target.value)} /></label></div>}
+          {clientStep === 6 && <div className="intake-step review-step"><header><span>STEP 6 · REVIEW</span><h2>Here is the calculation basis</h2><p>Review the commercial facts, estimated cargo profile, benchmark basis and remaining warnings before calculation.</p></header><div className="review-summary-grid"><article><header><span>GOAL</span><button onClick={() => setClientStep(1)} type="button">Edit</button></header><strong>{clientGoals.find((goal) => goal.id === clientGoal)?.title}</strong><p>{workspaceMode === "logistics" ? costScopeBasis === "incoterm" ? `As per current Incoterm — ${sourceTerm}` : logisticsScopes.find((scope) => scope.id === logisticsScope)?.label : `${sourceTerm} → ${targetTerm}`}</p></article><article><header><span>SHIPMENT</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{cargoDescription}</strong><p>{quantityDescription || `${sourceLineCount ?? 1} source line(s)`}</p><p>{sourcePlace} → {targetPlace}</p><p>{exactMoney(sourceTotal, currency)}</p></article><article><header><span>TRANSPORT</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{productionEstimate.transport.selectionStatus === "blocked" ? "MISSING — physical fit unresolved" : `${productionEstimate.transport.requiredTruckCount} × ${productionEstimate.transport.unit.label}`}</strong><p>{productionEstimate.transport.selectionStatus === "blocked" ? "No freight unit or rate is qualified yet." : `${productionEstimate.transport.limitingFactor} · ${transportMode}`}</p></article><article className="cargo-review-card"><header><span>CARGO EVIDENCE</span><button onClick={() => setClientStep(2)} type="button">Edit</button></header><strong>{productionEstimate.cargo.packedVolumeStatus === "missing" ? "Packed volume MISSING" : approximateNumber(productionEstimate.cargo.packedVolumeM3.value, "m³")} · {productionEstimate.cargo.grossWeightStatus === "lower-bound" ? `≥ ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(productionEstimate.cargo.explicitWeightLowerBoundKg ?? productionEstimate.cargo.grossWeightKg.value)} kg` : productionEstimate.cargo.grossWeightStatus === "missing" ? "Gross weight MISSING" : approximateNumber(productionEstimate.cargo.grossWeightKg.value, "kg")}</strong><p>Confidence {productionEstimate.confidence.score}% · {productionEstimate.confidence.label}</p><CargoCalculationDetails compact estimate={productionEstimate} /></article></div><div className="review-findings"><section className={blockingMissing.length ? "blocking" : "complete"}><span>{blockingMissing.length ? "REQUIRED INFORMATION" : "REQUIRED INFORMATION COMPLETE"}</span>{blockingMissing.length ? <ul>{blockingMissing.map((item) => <li key={item}>{item}</li>)}</ul> : <p>All inputs required to define the calculation are present.</p>}</section><section className={unknownRequiredCosts.length ? "provisional" : "complete"}><span>{unknownRequiredCosts.length ? "UNESTIMABLE COST INPUTS" : "ESTIMATE PREPARED"}</span>{unknownRequiredCosts.length ? <ul>{unknownRequiredCosts.map((component) => <li key={component}>{componentLabels[component]}</li>)}</ul> : <p>Every relevant cost is sourced, provided, estimated or explicitly excluded.</p>}</section><section className="assumptions"><span>KEY BOUNDARIES</span><ul><li>Freight is benchmark-derived, not a carrier quotation.</li><li>Product dimensions constrain fit but never become packed cube.</li><li>Duties and VAT remain outside standard CIP.</li><li>{specialCargoDeclaration ? "Special-cargo declaration recorded for this preliminary case." : "Special-cargo declaration is still required before approval."}</li></ul></section></div><label className="scenario-name-field"><span>Case name <i>Optional</i></span><input placeholder={`${cargoDescription} · ${sourceTerm}${workspaceMode === "logistics" ? " logistics" : ` → ${targetTerm}`}`} value={scenarioName} onChange={(event) => setScenarioName(event.target.value)} /></label></div>}
           {clientStep === 5 && workspaceMode !== "logistics" && targetTerm === "DDP" && <div className="ddp-guidance"><div><span>DDP JURISDICTION GATE</span><strong>Confirm that seller-paid import is legally workable</strong><p>DDP requires an import jurisdiction and a lawful seller-side importer-of-record basis.</p></div><label><span>Import jurisdiction <b>Required</b></span><input placeholder="e.g. Uzbekistan" value={importJurisdiction} onChange={(event) => setImportJurisdiction(event.target.value)} /></label><label><span>Seller-side importer of record <b>Required</b></span><input placeholder="Legal entity or confirmed basis" value={importerOfRecord} onChange={(event) => setImporterOfRecord(event.target.value)} /></label><label><span>Tax registration / recovery basis <i>Optional</i></span><input placeholder="Registration and recoverability assumption" value={taxRegistrationBasis} onChange={(event) => setTaxRegistrationBasis(event.target.value)} /></label></div>}
         </section>
         <nav className="intake-actions" aria-label="Guided calculation actions"><button disabled={clientStep === 1} onClick={() => setClientStep((current) => Math.max(1, current - 1))} type="button">← Back</button><span className={clientStep < 6 && !canContinueFromStep(clientStep) ? "continue-requirement" : ""}>{clientStep < 6 && !canContinueFromStep(clientStep) ? `To continue, complete: ${missingForStep(clientStep).join(", ")}.` : "Your answers stay in this browser session."}</span>{clientStep < 6 ? <button className="continue-button" disabled={!canContinueFromStep(clientStep)} onClick={continueIntake} type="button">Continue →</button> : <button className="continue-button" disabled={blockingMissing.length > 0} onClick={calculateClientScenario} type="button">Calculate result →</button>}</nav>
@@ -1529,12 +1594,13 @@ export default function LogisticsCostingApp() {
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
+        {exportNotice}
         {demoLoaded && <section className="demo-banner"><div><span>DEMO / REGRESSION SCENARIO</span><strong>These values are seeded test assumptions—not your commercial data.</strong></div><button onClick={startNewCalculation} type="button">Start with my own data</button></section>}
         <ResultDashboard
           estimate={productionEstimate}
           primaryWarnings={currentPrimaryWarnings}
           result={result}
-          sourcePlace={sourcePlace}
+          sourcePlace={sourceNamedPlace || sourcePlace}
           targetPlace={targetPlace}
           transportMode={transportMode}
           afterDashboard={<section className="result-next-actions"><div><span>NEXT DECISION</span><h2>{approvedCaseId ? "Estimate saved" : !specialCargoDeclaration ? "Confirm special-cargo status or save as preliminary" : hasOpenCostInputs ? "Save now or review the remaining open inputs" : "Confirm and save this estimate"}</h2><p>{approvedCaseId ? "The case is preserved in Saved cases." : "Saving is always available. Approval requires a special-cargo declaration and no unestimable required cost inputs."}</p>{!approvedCaseId && <label className="result-special-cargo"><span>Special-cargo status</span><select value={specialCargoDeclaration} onChange={(event) => setSpecialCargoDeclaration(event.target.value as SpecialCargoDeclaration)}><option value="">Not confirmed yet</option><option value="standard-confirmed">No DG, cold-chain or special handling declared</option><option value="possible-special">Possible special cargo — declarations pending</option><option value="declared-special">Special cargo declared — review surcharges</option></select></label>}</div><div>{!demoLoaded && <><button className="approve-action" disabled={Boolean(approvedCaseId) || result.status === "blocked" || hasOpenCostInputs || !specialCargoDeclaration} onClick={() => saveResult("approved")} type="button">{approvedCaseId ? "✓ Saved" : "Confirm and save estimate"}</button><button disabled={Boolean(approvedCaseId)} onClick={() => saveResult("preliminary")} type="button">Save preliminary case</button></>}<button onClick={() => exportCalculationWorkbook(currentWorkbookModel(approvedCaseId ?? result.id, scenarioName || `${cargoDescription} · ${sourceTerm} → ${targetTerm}`))} type="button">Export calculations to Excel</button><button onClick={() => { setClientStep(hasOpenCostInputs ? 5 : 6); setClientSurface("intake"); }} type="button">Change inputs</button><button onClick={() => setClientSurface("audit")} type="button">Open methodology / audit</button><button onClick={exportAudit} type="button">Export audit JSON</button></div></section>}
@@ -1547,6 +1613,7 @@ export default function LogisticsCostingApp() {
   return (
     <main className="costing-page">
       {clientWorkspaceNav}
+      {exportNotice}
       <section className="audit-mode-banner"><div><span>ADVANCED / AUDIT VIEW</span><strong>Technical calculation details</strong><p>This view exposes the engine inputs, rule boundaries, validation state and regression tools. It is not the first-time client workflow.</p></div><button onClick={() => setClientSurface(approvedCaseId || demoLoaded ? "result" : "welcome")} type="button">← Back to client view</button></section>
 
       <section className="costing-hero">
@@ -1604,7 +1671,7 @@ export default function LogisticsCostingApp() {
             <legend>{workspaceMode === "logistics" ? "Existing commercial term and logistics scope" : "Starting and target responsibility"}</legend>
             <div className="field-grid term-grid">
               <label><span>Starting Incoterm</span><select value={sourceTerm} onChange={(event) => setSourceTerm(event.target.value as IncotermCode)}>{incotermCodes.map((term) => <option key={term} value={term}>{term} · {incotermProfiles[term].name}</option>)}</select></label>
-              <label><span>Starting named place</span><input value={sourcePlace} onChange={(event) => setSourcePlace(event.target.value)} /></label>
+              <label><span>Starting named place</span><input value={sourceNamedPlace} onChange={(event) => setSourceNamedPlace(event.target.value)} /></label>
               {workspaceMode === "logistics" ? (
                 <label className="wide-field"><span>Logistics expense scope</span><select value={logisticsScope} onChange={(event) => setLogisticsScope(event.target.value as LogisticsScope | "")}><option value="">Select a standalone scope</option>{logisticsScopes.map((scope) => <option key={scope.id} value={scope.id}>{scope.label}</option>)}</select><small>The selected scope is costed separately; {sourceTerm} remains the commercial term.</small></label>
               ) : <>

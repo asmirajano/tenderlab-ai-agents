@@ -317,6 +317,8 @@ export type TransportUnit = {
   mode: TransportMode;
   usableVolumeM3: number;
   payloadKg: number;
+  /** Clear internal loading envelope. It is a fit constraint, not a volume proxy. */
+  internalDimensionsCm?: { length: number; width: number; height: number };
   refrigerated?: boolean;
 };
 
@@ -374,6 +376,31 @@ export type CommercialItemEvidence = {
   workingBaselineIncluded: boolean;
 };
 
+export type DocumentPhysicalEvidenceRole =
+  | "product-dimensions"
+  | "product-weight"
+  | "declared-total-weight"
+  | "packed-dimensions"
+  | "packed-gross-weight";
+
+/**
+ * Typed physical evidence deliberately remains separate from commercial rows and
+ * shipment-level packed metrics. Product dimensions constrain fit, but they do
+ * not become packed shipment cube without packing evidence.
+ */
+export type DocumentPhysicalEvidence = {
+  id: string;
+  role: DocumentPhysicalEvidenceRole;
+  scope: "line-item" | "shipment";
+  dimensionsCm?: { length: number; width: number; height: number };
+  weightKg?: number;
+  quantity?: number;
+  sourceText: string;
+  sourceRef: string;
+  confidence: Confidence;
+  basis: string;
+};
+
 export type DocumentIntakeRecord = {
   id: string;
   fileName: string;
@@ -389,4 +416,5 @@ export type DocumentIntakeRecord = {
   extractionMethod?: "structured-data" | "spreadsheet-cells" | "pdf-text" | "manual-review";
   extractedTextLength?: number;
   commercialItems?: CommercialItemEvidence[];
+  physicalEvidence?: DocumentPhysicalEvidence[];
 };
