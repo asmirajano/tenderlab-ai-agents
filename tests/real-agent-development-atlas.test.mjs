@@ -46,7 +46,7 @@ test("registers Real Agent implementations with stable Agent and product identit
       assert.equal(implementation.maturity, "isolated-method-validated");
       assert.equal(implementation.evidenceStrength, "isolated-authorized-realistic-document");
       assert.ok(implementation.knownLimitations.some((item) => /deterministic local snapshot of records current at extraction/i.test(item)));
-      assert.ok(implementation.knownLimitations.some((item) => /6,000 pair evaluations are experimental/i.test(item)));
+      assert.ok(implementation.knownLimitations.some((item) => /1,020 pair evaluations are experimental/i.test(item)));
       assert.ok(implementation.knownLimitations.some((item) => /zero VERIFIED claims/i.test(item)));
       assert.equal(implementation.runtimeReadiness, "controlled-pilot-runtime");
       assert.equal(implementation.deploymentStatus, "not-deployed");

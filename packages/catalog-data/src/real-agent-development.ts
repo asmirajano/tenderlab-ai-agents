@@ -118,12 +118,12 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     name: "TenderMatch · TenderApps Agent 03",
     ownerAgentId: "agent:TL-A031",
     clientProductId: "product:TA-TENDERBOOST",
-    descriptor: "Local controlled pilot over 60 current-at-extraction Central Asia tenders and 100 policy-corrected supplier profiles with evidence-gated exploratory fit or explicit MISSING",
+    descriptor: "Local controlled pilot over 60 current-at-extraction Central Asia tenders and 17 pinned v1.3 GOODS/WORKS supplier profiles with evidence-gated exploratory fit or explicit MISSING",
     tor: "Present one selected current-at-extraction Tender × Company pair, preserve source provenance and claim classes, calculate exploratory technical relevance only above the approved evidence threshold, return MISSING otherwise, explain blockers, and retain the consultant’s disposition within a matching-only human-review workspace.",
     primaryInputs: [
       "Versioned tender record with absolute deadline and source snapshot",
       "Versioned supplier profile and evidence records",
-      "Deterministic read-only Central Asia tender snapshot, read-only v2.1 supplier profile/evidence contract, experimental evaluation policy, and consultant decisions",
+      "Deterministic read-only Central Asia tender snapshot, pinned read-only v1.3 GOODS/WORKS supplier profile/evidence contract, experimental evaluation policy, and consultant decisions",
     ],
     primaryOutput: "A versioned Company × Tender Case with immutable legacy metrics, an evidence-gated audited result or explicit MISSING state, evidence explanations, current-review findings, and consultant-decision provenance",
     downstreamConsumer: "Consultant review and later Participation Solution-Fit or Bid/No-Bid analysis under separate Agent and human authority",
@@ -150,7 +150,7 @@ export const realAgentImplementations: RealAgentImplementation[] = [
     ],
     knownLimitations: [
       "The Central Asia pilot is a deterministic local snapshot of records current at extraction, not a live browser connection or continuously refreshed feed.",
-      "All 6,000 pair evaluations are experimental: only policy-eligible technical overlap receives a numeric estimate and every other completed evaluation remains MISSING.",
+      "All 1,020 pair evaluations are experimental and currently MISSING: a numeric estimate is allowed only after procurement applicability, saved evidence, and minimum relevance gates all pass.",
       "The tender snapshot is a committed current-at-extraction artifact; supplier profiles and safe non-contact evidence are loaded by a local same-origin adapter from an authorized read-only development contract.",
       "The supplier batch contains zero VERIFIED claims; readiness is retained as a source state and never converted to or blended into Match Score.",
       "Production hosting, authentication, tenant isolation, durable caching, and server-side decision authorization remain unresolved approval gates.",

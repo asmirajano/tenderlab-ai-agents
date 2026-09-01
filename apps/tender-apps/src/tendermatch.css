@@ -338,8 +338,7 @@ button.tb3-metric:hover { border-color: var(--tb3-green); transform: translateY(
 .tb3-geo-map-viewport:focus-visible { box-shadow: inset 0 0 0 3px rgba(23, 107, 81, .7); outline: 0; }
 .tb3-geo-map-inner { min-height: 100%; min-width: 100%; position: relative; transition: height .22s ease, width .22s ease; }
 .tb3-geo-map-geometry { background-position: center; background-repeat: no-repeat; inset: 3% 2% 8%; pointer-events: none; position: absolute; }
-.tb3-geo-map-shell.world .tb3-geo-map-geometry { background-image: url("/tendermatch/maps/world-map.png"); background-size: 96% auto; opacity: .15; }
-.tb3-geo-map-shell.china .tb3-geo-map-geometry { background-image: url("/tendermatch/maps/china-prefectures.png"); background-size: min(94%, 1240px) auto; filter: saturate(.82) contrast(1.08); opacity: .86; }
+.tb3-geo-map-shell.world .tb3-geo-map-geometry, .tb3-geo-map-shell.supplier-world .tb3-geo-map-geometry { background-image: url("/tendermatch/maps/world-map.png"); background-size: 96% auto; opacity: .15; }
 .tb3-geo-map-inner .cluster, .tb3-geo-map-inner .marker { align-items: center; border-radius: 50%; display: flex; justify-content: center; position: absolute; transform: translate(-50%, -50%); }
 .tb3-geo-map-inner .cluster { background: rgba(220, 239, 228, .9); border: 1px solid rgba(23, 107, 81, .5); box-shadow: 0 2px 9px rgba(17, 39, 30, .12); color: var(--tb3-green); height: 38px; width: 38px; z-index: 2; }
 .tb3-geo-map-inner .cluster::after { border: 1px solid rgba(23, 107, 81, .2); border-radius: 50%; content: ""; inset: -5px; position: absolute; }
@@ -395,6 +394,7 @@ button.tb3-metric:hover { border-color: var(--tb3-green); transform: translateY(
 .tb3-directory-row .evidence { display: flex; flex-wrap: wrap; gap: 5px; }
 .tb3-directory-row .evidence span, .tb3-evidence-legend span { border-radius: 999px; font-size: 10px; font-weight: 800; padding: 5px 8px; }
 .verified { background: #e0f2e8 !important; color: #176b51 !important; }
+.stated { background: #e7efff !important; color: #294f8f !important; }
 .inferred { background: #fff0d9 !important; color: #8d5712 !important; }
 .unknown { background: #edf1ef !important; color: #58685f !important; }
 .tb3-directory-row .number { color: #84958c; font-family: var(--font-geist-mono), monospace; }

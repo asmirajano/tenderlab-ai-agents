@@ -1,6 +1,6 @@
 # TenderMatch — TenderApps Agent 03 integration and placement record
 
-Status: local controlled supplier-and-matching pilot, 2026-09-01. The active inputs are the unchanged 60-record Central Asia tender snapshot and 100 policy-corrected supplier profiles loaded through the read-only Neon supplier contract. The 6,000-pair experimental inventory contains sparse exploratory technical-fit estimates and explicit MISSING results. See `docs/tendermatch-neon-supplier-matching-pilot.md`. The older TenderBoost fixture remains historical regression evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
+Status: local controlled supplier-and-matching pilot, 2026-09-01. The active inputs are the unchanged 60-record Central Asia tender snapshot and exactly 17 approved GOODS/WORKS supplier profiles loaded through the pinned read-only Neon v1.3 contract. All 1,020 pair evaluations are currently MISSING under the conservative exploratory gate. See `docs/tendermatch-neon-supplier-matching-pilot.md`. The older TenderBoost fixture and superseded 100-profile supplier release remain historical evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
 
 ## Mandatory placement re-audit
 
@@ -96,7 +96,7 @@ Consumers are the consultant and separately governed Participation Solution-Fit 
 
 Active pilot input/result contract:
 
-`60-record tender snapshot × 100 Neon supplier profiles + 2,300 safe evidence rows → 6,000 deterministic evaluations → exploratory technical fit for 4 policy-eligible pairs / MISSING for 5,996 pairs → explanation → consultant disposition`
+`60-record tender snapshot × 17 pinned v1.3 supplier profiles + 289 safe evidence rows → 1,020 deterministic evaluations → 0 numeric / 1,020 MISSING after the current gate → explanation → consultant disposition`
 
 Supplier retrieval is server-side through a local same-origin read-only adapter; the browser has no database credential or direct Neon connection. The ten frozen suppliers and legacy 160-pair matrix are historical tests only and are never a silent fallback.
 
@@ -211,4 +211,4 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 
 ## Current maturity
 
-This is an `isolated-method-validated` local controlled pilot, not a deployed production runtime. The read-only supplier contract, 100 profiles, 2,300 safe evidence rows, deterministic 6,000-result inventory, sparse policy-gated estimates, MISSING behavior, maps, directories, matrix modes, Case controls, evidence details, and consultant decisions are integrated into the TenderApps build. Campaign Studio and Follow-ups remain absent. Predictive validity, live tender refresh, production hosting, authentication, tenant isolation, durable artifacts, Dataset activation, and deployment remain unproven and out of scope.
+This is an `isolated-method-validated` local controlled pilot, not a deployed production runtime. The pinned read-only v1.3 supplier contract, 17 profiles, 289 safe evidence rows, deterministic 1,020-result inventory, conservative all-MISSING output, global country-level supplier map, directories, matrix modes, Case controls, evidence details, and consultant decisions are integrated into the TenderApps build. `STATED_UNVERIFIED` and `INFERRED` remain distinct from VERIFIED; capacity and turnover remain separate from technical fit. Campaign Studio and Follow-ups remain absent. Predictive validity, live tender refresh, production hosting, authentication, tenant isolation, durable artifacts, Dataset activation, and deployment remain unproven and out of scope.

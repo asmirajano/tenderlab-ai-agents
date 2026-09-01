@@ -1,18 +1,20 @@
 import type { EvidenceRecord, SupplierRecord } from "./types.ts";
 
-export const TENDERMATCH_SUPPLIER_CONTRACT_VERSION = "tendermatch-supplier-read-contract-v1" as const;
-export const TENDERMATCH_SUPPLIER_PROFILE_VERSION = "v2.1-policy-corrected-2026-09-01" as const;
-export const TENDERMATCH_SUPPLIER_BATCH_CODE = "accio-neutral-suppliers-2026-09-01-v2.1-policy-corrected" as const;
-export const TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT = 100 as const;
-export const TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT = 2300 as const;
+export const TENDERMATCH_SUPPLIER_CONTRACT_VERSION = "tendermatch-supplier-goods-works-v1.3" as const;
+export const TENDERMATCH_SUPPLIER_PROFILE_VERSION = "v1.3-critical-evidence-corrected-2026-09-01" as const;
+export const TENDERMATCH_SUPPLIER_BATCH_CODE = "accio-goods-works-suppliers-2026-09-01-v1.3-critical-evidence-corrected-db-staged" as const;
+export const TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT = 17 as const;
+export const TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT = 289 as const;
+export const TENDERMATCH_SUPPLIER_EXPECTED_ARTIFACT_COUNT = 243 as const;
+export const TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW = "current_supplier_profiles" as const;
+export const TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW = "current_supplier_evidence" as const;
+export const TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW = "supplier_profiles_goods_works_v1_3" as const;
+export const TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW = "supplier_evidence_goods_works_v1_3" as const;
+export const TENDERMATCH_SUPPLIER_CONSUMER_ROLE = "tendermatch_supplier_consumer_dev" as const;
 
-export type SupplierReadinessStatus =
-  | "ready_for_exploratory_matching"
-  | "usable_with_limitations"
-  | "requires_enrichment"
-  | "exclude_from_current_matching_run";
-
-export type SupplierEvidenceStatus = "VERIFIED" | "INFERRED" | "UNKNOWN";
+export type SupplierReadinessStatus = "ready_for_exploratory_matching" | "usable_with_limitations" | "requires_enrichment" | "exclude_from_current_matching_run";
+export type SupplierEvidenceStatus = "VERIFIED" | "INFERRED" | "STATED_UNVERIFIED" | "UNKNOWN";
+export type SupplierClassification = "GOODS" | "WORKS";
 
 export type SupplierProfileApiRecord = {
   canonicalEntityId: string;
@@ -20,26 +22,21 @@ export type SupplierProfileApiRecord = {
   profileVersion: string;
   batchId: string;
   batchCode: string;
+  sourceCandidateId: string;
   legalName: string;
   displayName: string;
   countryCode: string | null;
-  canonicalMarketplaceProfileUrl: string | null;
-  operatingGeography: unknown;
-  mainActivity: string | null;
-  productPortfolio: unknown;
-  productCategories: unknown;
-  materialsSpecifications: unknown;
-  capabilities: unknown;
-  capacity: unknown;
+  city: string | null;
+  region: string | null;
+  classification: SupplierClassification;
+  productFamilies: unknown;
+  worksSpecializations: unknown;
+  industriesServed: unknown;
+  materials: unknown;
   certifications: unknown;
-  exportMarkets: unknown;
-  localPresence: unknown;
-  serviceCapabilities: unknown;
-  commercialTerms: unknown;
-  comparableReferences: unknown;
-  scaleIndicators: unknown;
-  complianceAndIntegrity: unknown;
-  unresolvedChecks: unknown;
+  operatingGeography: unknown;
+  capacity: unknown;
+  revenueOrTurnover: unknown;
   readinessStatus: SupplierReadinessStatus;
   readinessReasons: unknown;
   readinessGateResults: unknown;
@@ -49,6 +46,7 @@ export type SupplierProfileApiRecord = {
   evidenceClaimCount: number;
   evidenceVerifiedCount: number;
   evidenceInferredCount: number;
+  evidenceStatedUnverifiedCount: number;
   evidenceUnknownCount: number;
   claimsWithSavedArtifact: number;
   sourceRecordIds: string[];
@@ -59,9 +57,12 @@ export type SupplierEvidenceApiRecord = {
   canonicalEntityId: string;
   profileVersionId: string;
   claimId: string;
+  externalClaimId: string | null;
   field: string;
   value: string | null;
+  normalizedValue: unknown;
   status: SupplierEvidenceStatus;
+  sourceSystem: string | null;
   sourceTitle: string | null;
   sourceUrl: string | null;
   retrievedAt: string;
@@ -71,16 +72,22 @@ export type SupplierEvidenceApiRecord = {
   artifactStatus: string;
   artifactSha256: string | null;
   artifactLimitation: string;
-  supersedesClaimId: string | null;
-  policyCorrectionCode: string | null;
 };
 
 export type SupplierDatasetSummary = {
   contractVersion: typeof TENDERMATCH_SUPPLIER_CONTRACT_VERSION;
   profileVersion: typeof TENDERMATCH_SUPPLIER_PROFILE_VERSION;
   batchCode: typeof TENDERMATCH_SUPPLIER_BATCH_CODE;
+  consumerRole: typeof TENDERMATCH_SUPPLIER_CONSUMER_ROLE;
+  views: {
+    currentProfiles: typeof TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW;
+    currentEvidence: typeof TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW;
+    versionedProfiles: typeof TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW;
+    versionedEvidence: typeof TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW;
+  };
   profileCount: number;
   evidenceCount: number;
+  classification: Record<SupplierClassification, number>;
   readiness: Record<SupplierReadinessStatus, number>;
   profileClaims: Record<SupplierEvidenceStatus, number>;
   evidenceStatuses: Record<SupplierEvidenceStatus, number>;
@@ -120,7 +127,7 @@ export function mapSupplierProfileToWorkspace(profile: SupplierProfileApiRecord,
     value: record.value ?? "",
     reviewStatus: record.status,
     confidence: 0,
-    sourceTitle: record.sourceTitle ?? "Source record",
+    sourceTitle: record.sourceTitle ?? record.sourceSystem ?? "Source record",
     sourceUrl: record.sourceUrl ?? "",
     retrievedAt: record.retrievedAt,
     notes: record.artifactAvailable ? "Saved source artifact linked." : record.artifactLimitation,
@@ -128,36 +135,32 @@ export function mapSupplierProfileToWorkspace(profile: SupplierProfileApiRecord,
     valueClass: record.status === "UNKNOWN" ? "MISSING" : "SOURCE",
   }));
 
-  const country = profile.countryCode ?? "Unknown";
+  const productFamilies = stringsFromStructuredValue(profile.productFamilies);
+  const worksSpecializations = stringsFromStructuredValue(profile.worksSpecializations);
+  const industries = stringsFromStructuredValue(profile.industriesServed);
   const geography = stringsFromStructuredValue(profile.operatingGeography);
   return {
     id: `supplier:NEON:${profile.canonicalEntityId}`,
     version: profile.profileVersion,
     legalEnglishName: profile.displayName,
     legalChineseName: "",
-    headquarters: { city: geography[0] ?? "Unknown / not disclosed", province: "", country },
-    companyType: [],
-    officialWebsite: profile.canonicalMarketplaceProfileUrl ?? "",
-    categories: stringsFromStructuredValue(profile.productCategories),
-    capabilities: [...stringsFromStructuredValue(profile.capabilities), ...stringsFromStructuredValue(profile.serviceCapabilities)],
-    products: stringsFromStructuredValue(profile.productPortfolio),
-    exportMarkets: stringsFromStructuredValue(profile.exportMarkets),
+    headquarters: { city: profile.city ?? "Unknown / not disclosed", province: profile.region ?? "", country: profile.countryCode ?? "Unknown" },
+    companyType: [profile.classification],
+    officialWebsite: "",
+    categories: [...productFamilies, ...worksSpecializations, ...industries],
+    capabilities: [...productFamilies, ...worksSpecializations],
+    products: productFamilies,
+    exportMarkets: geography,
     evidence: evidenceRecords,
     legacyTenderMatches: [],
-    readiness: {
-      value: null,
-      valueClass: "MISSING",
-      method: "Readiness is a source state, not a numeric Match Score.",
-      status: profile.readinessStatus,
-      label: readinessLabel(profile.readinessStatus),
-    },
+    readiness: { value: null, valueClass: "MISSING", method: "Readiness is a source state, not a numeric Match Score.", status: profile.readinessStatus, label: readinessLabel(profile.readinessStatus) },
     technicalFit: null,
     exportReadiness: null,
     legacyEvidenceCompleteness: null,
-    risks: stringsFromStructuredValue(profile.complianceAndIntegrity),
-    verificationQuestions: stringsFromStructuredValue(profile.unresolvedChecks),
+    risks: [],
+    verificationQuestions: stringsFromStructuredValue(profile.readinessReasons),
     snapshotId: `supplier-batch:${profile.batchCode}`,
-    sourceKind: "NEON_SUPPLIER_V2_1",
-    profile: profile,
+    sourceKind: "NEON_SUPPLIER_V1_3",
+    profile,
   };
 }

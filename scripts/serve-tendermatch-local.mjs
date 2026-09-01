@@ -8,10 +8,16 @@ import { buildExploratoryEvaluationInventory, summarizeExploratoryEvaluations } 
 import { runtimeTenders } from "../packages/tendermatch/src/pilot-data.ts";
 import {
   TENDERMATCH_SUPPLIER_BATCH_CODE,
+  TENDERMATCH_SUPPLIER_CONSUMER_ROLE,
   TENDERMATCH_SUPPLIER_CONTRACT_VERSION,
+  TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW,
+  TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW,
+  TENDERMATCH_SUPPLIER_EXPECTED_ARTIFACT_COUNT,
   TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT,
   TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT,
   TENDERMATCH_SUPPLIER_PROFILE_VERSION,
+  TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW,
+  TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW,
 } from "../packages/tendermatch/src/supplier-contract.ts";
 import { createSupplierStore, parseSupplierListParameters, readSupplierConnectionString, validateSupplierId } from "./lib/tendermatch-supplier-store.mjs";
 
@@ -30,13 +36,16 @@ function json(response, status, body) {
 
 function summary(profiles, evidence, retrievedAt) {
   const readiness = { ready_for_exploratory_matching: 0, usable_with_limitations: 0, requires_enrichment: 0, exclude_from_current_matching_run: 0 };
-  const profileClaims = { VERIFIED: 0, INFERRED: 0, UNKNOWN: 0 };
-  const evidenceStatuses = { VERIFIED: 0, INFERRED: 0, UNKNOWN: 0 };
+  const classification = { GOODS: 0, WORKS: 0 };
+  const profileClaims = { VERIFIED: 0, INFERRED: 0, STATED_UNVERIFIED: 0, UNKNOWN: 0 };
+  const evidenceStatuses = { VERIFIED: 0, INFERRED: 0, STATED_UNVERIFIED: 0, UNKNOWN: 0 };
   let available = 0;
   for (const profile of profiles) {
     readiness[profile.readinessStatus] += 1;
+    classification[profile.classification] += 1;
     profileClaims.VERIFIED += profile.evidenceVerifiedCount;
     profileClaims.INFERRED += profile.evidenceInferredCount;
+    profileClaims.STATED_UNVERIFIED += profile.evidenceStatedUnverifiedCount;
     profileClaims.UNKNOWN += profile.evidenceUnknownCount;
   }
   for (const record of evidence) { evidenceStatuses[record.status] += 1; if (record.artifactAvailable) available += 1; }
@@ -44,8 +53,16 @@ function summary(profiles, evidence, retrievedAt) {
     contractVersion: TENDERMATCH_SUPPLIER_CONTRACT_VERSION,
     profileVersion: TENDERMATCH_SUPPLIER_PROFILE_VERSION,
     batchCode: TENDERMATCH_SUPPLIER_BATCH_CODE,
+    consumerRole: TENDERMATCH_SUPPLIER_CONSUMER_ROLE,
+    views: {
+      currentProfiles: TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW,
+      currentEvidence: TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW,
+      versionedProfiles: TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW,
+      versionedEvidence: TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW,
+    },
     profileCount: profiles.length,
     evidenceCount: evidence.length,
+    classification,
     readiness,
     profileClaims,
     evidenceStatuses,
@@ -61,15 +78,16 @@ export async function createTenderMatchLocalServer({ store, distDir = resolve("a
       const { profiles, evidence } = await store.loadAll();
       if (profiles.length !== TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT) throw new Error(`Supplier contract expected ${TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT} profiles; received ${profiles.length}.`);
       if (evidence.length !== TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT) throw new Error(`Supplier contract expected ${TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT} evidence rows; received ${evidence.length}.`);
-      if (profiles.some((profile) => profile.profileVersion !== TENDERMATCH_SUPPLIER_PROFILE_VERSION || profile.batchCode !== TENDERMATCH_SUPPLIER_BATCH_CODE)) throw new Error("Supplier contract refused a profile outside the approved v2.1 batch.");
+      if (profiles.some((profile) => profile.profileVersion !== TENDERMATCH_SUPPLIER_PROFILE_VERSION || profile.batchCode !== TENDERMATCH_SUPPLIER_BATCH_CODE)) throw new Error("Supplier contract refused a profile outside the approved v1.3 batch.");
       const evaluatedAt = clock();
       const evaluations = buildExploratoryEvaluationInventory(runtimeTenders, profiles, evidence, evaluatedAt);
       if (evaluations.length !== runtimeTenders.length * profiles.length || new Set(evaluations.map((entry) => entry.key)).size !== evaluations.length) throw new Error("The Supplier × Tender evaluation inventory is incomplete or duplicated.");
       const datasetSummary = summary(profiles, evidence, evaluatedAt);
-      if (JSON.stringify(datasetSummary.readiness) !== JSON.stringify({ ready_for_exploratory_matching: 2, usable_with_limitations: 94, requires_enrichment: 4, exclude_from_current_matching_run: 0 })) throw new Error("Supplier contract readiness totals do not match the approved batch.");
-      if (JSON.stringify(datasetSummary.profileClaims) !== JSON.stringify({ VERIFIED: 0, INFERRED: 1429, UNKNOWN: 971 })) throw new Error("Supplier profile claim totals do not match the approved batch.");
-      if (JSON.stringify(datasetSummary.evidenceStatuses) !== JSON.stringify({ VERIFIED: 0, INFERRED: 1415, UNKNOWN: 885 })) throw new Error("Supplier evidence totals do not match the approved safe projection.");
-      if (JSON.stringify(datasetSummary.artifacts) !== JSON.stringify({ available: 2070, unavailable: 230 })) throw new Error("Supplier artifact-link totals do not match the approved safe projection.");
+      if (JSON.stringify(datasetSummary.classification) !== JSON.stringify({ GOODS: 14, WORKS: 3 })) throw new Error("Supplier classification totals do not match the approved v1.3 contract.");
+      if (JSON.stringify(datasetSummary.readiness) !== JSON.stringify({ ready_for_exploratory_matching: 0, usable_with_limitations: 17, requires_enrichment: 0, exclude_from_current_matching_run: 0 })) throw new Error("Supplier contract readiness totals do not match the approved batch.");
+      if (JSON.stringify(datasetSummary.profileClaims) !== JSON.stringify({ VERIFIED: 0, INFERRED: 17, STATED_UNVERIFIED: 226, UNKNOWN: 46 })) throw new Error("Supplier profile claim totals do not match the approved batch.");
+      if (JSON.stringify(datasetSummary.evidenceStatuses) !== JSON.stringify({ VERIFIED: 0, INFERRED: 17, STATED_UNVERIFIED: 226, UNKNOWN: 46 })) throw new Error("Supplier evidence totals do not match the approved safe projection.");
+      if (JSON.stringify(datasetSummary.artifacts) !== JSON.stringify({ available: TENDERMATCH_SUPPLIER_EXPECTED_ARTIFACT_COUNT, unavailable: TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT - TENDERMATCH_SUPPLIER_EXPECTED_ARTIFACT_COUNT })) throw new Error("Supplier artifact-link totals do not match the approved safe projection.");
       const evaluationSummary = summarizeExploratoryEvaluations(evaluations);
       const runtime = { status: "ready", mode: "neon-read-only", summary: datasetSummary, suppliers: profiles, evaluations, evaluationSummary };
       state = { status: "ready", startedAt: state.startedAt, error: null, runtime, runtimeGzip: gzipSync(JSON.stringify(runtime), { level: 6 }) };
@@ -89,7 +107,24 @@ export async function createTenderMatchLocalServer({ store, distDir = resolve("a
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     try {
       if (url.pathname === "/api/tendermatch/health") {
-        return json(response, state.status === "error" ? 503 : 200, { status: state.status, mode: "neon-read-only", supplierCount: state.runtime?.summary.profileCount ?? null, evidenceCount: state.runtime?.summary.evidenceCount ?? null, evaluationCount: state.runtime?.evaluationSummary.total ?? null, error: state.error });
+        return json(response, state.status === "error" ? 503 : 200, {
+          status: state.status,
+          mode: "neon-read-only",
+          contractVersion: TENDERMATCH_SUPPLIER_CONTRACT_VERSION,
+          profileVersion: TENDERMATCH_SUPPLIER_PROFILE_VERSION,
+          batchCode: TENDERMATCH_SUPPLIER_BATCH_CODE,
+          consumerRole: TENDERMATCH_SUPPLIER_CONSUMER_ROLE,
+          views: {
+            currentProfiles: TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW,
+            currentEvidence: TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW,
+            versionedProfiles: TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW,
+            versionedEvidence: TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW,
+          },
+          supplierCount: state.runtime?.summary.profileCount ?? null,
+          evidenceCount: state.runtime?.summary.evidenceCount ?? null,
+          evaluationCount: state.runtime?.evaluationSummary.total ?? null,
+          error: state.error,
+        });
       }
       if (url.pathname === "/api/tendermatch/runtime") {
         if (state.status === "loading") return json(response, 202, { status: "loading", mode: "neon-read-only" });

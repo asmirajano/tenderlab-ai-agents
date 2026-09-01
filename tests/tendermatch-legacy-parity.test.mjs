@@ -51,10 +51,10 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.match(page, /role="alert"/);
   assert.match(page, /MISSING · insufficient evidence/);
-  assert.match(page, /UNKNOWN remains MISSING\. Neither becomes verified, zero, or negative evidence/);
+  assert.match(page, /STATED_UNVERIFIED remains stated and INFERRED remains inferred\. UNKNOWN remains MISSING\. None becomes verified, zero, or negative evidence/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
   assert.match(page, /data-map-mode="local-geographic"/);
-  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "neon-supplier-v2\.1"\}/);
+  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "neon-supplier-v1\.3"\}/);
   assert.match(page, /CENTRAL ASIA CURRENT-TENDER SNAPSHOT/);
   assert.match(page, /COUNTRY-LEVEL PLACEMENT · VISUAL SPACING ONLY/);
   assert.match(page, /GEOGRAPHIC SUPPLIER DENSITY · UNDER REVIEW/);
@@ -63,8 +63,8 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   assert.doesNotMatch(page, /<aside className="tb3-radar-detail"|Detailed Case Review/);
   assert.match(page, /tb3-radar-layout aggregate/);
   assert.match(styles, /url\("\/tendermatch\/maps\/world-map\.png"\)/);
-  assert.match(styles, /url\("\/tendermatch\/maps\/china-prefectures\.png"\)/);
-  assert.match(styles, /\.tb3-geo-map-shell\.china \.tb3-geo-map-geometry[^}]+opacity: \.86/);
+  assert.match(styles, /\.tb3-geo-map-shell\.world \.tb3-geo-map-geometry, \.tb3-geo-map-shell\.supplier-world/);
+  assert.doesNotMatch(page, /kind="china"|country-level China placement/);
   assert.match(styles, /\.tb3-directory-row\.tender[^}]+min-height: 112px/);
   assert.match(page, /viewSurfaceRef\.current\?\.focus\(\)/);
   assert.match(page, /role="region"[\s\S]+tabIndex=\{-1\}/);

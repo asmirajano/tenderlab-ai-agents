@@ -1,22 +1,50 @@
-# TenderMatch Neon supplier pilot — browser QA status
+# TenderMatch Neon supplier v1.3 — browser QA evidence
 
-Recorded for the local `codex/tendermatch-final-integration` checkpoint prepared from base `0d2eebbea144` on 2026-09-01.
+Recorded on 2026-09-01 for `codex/tendermatch-final-integration`, from pre-commit base `02ba6f676b7507a2864068c1b617543fddd04b5d`, against the local production build and same-origin read-only runtime at `http://127.0.0.1:4177`.
 
-## Rendered-browser result
+## Rendered matrix
 
-The enabled in-app browser rejected the local `http://127.0.0.1:4177/tendermatch` target under its URL security policy. The mandated browser tool policy prohibits switching to a different browser-control mechanism after that rejection. Consequently, this checkpoint does **not** claim completed automated desktop, tablet, or mobile screenshot QA; it does not claim rendered focus order, console cleanliness, or overflow inspection.
+The in-app browser exercised every active TenderMatch view at four layout conditions:
 
-The production preview is still served at `http://127.0.0.1:4177/tendermatch` for direct user inspection. Opening that URL in the Codex review panel is a review handoff, not replacement evidence for the blocked automated matrix.
+- desktop Standard: 1440 × 900;
+- desktop Wide: 1440 × 900;
+- tablet: 834 × 1112;
+- mobile: 390 × 844.
 
-## Checks completed without a browser claim
+The nine views were Overview, Tender Radar, Supplier Radar, Supplier Profiles, Evidence Review, Tender Snapshot, Full Match Matrix, Review by Tenders and Review by Suppliers. All 36 combinations rendered their expected heading and view-region label, retained exactly five workflow families, exposed the active direct-load view, and had no page-level horizontal overflow, runtime alert, console warning or console error.
 
-- Direct HTTP load and refresh returned `200` HTML for `/tendermatch`, `/tenderboost`, and `/tenderboost-ai`.
-- The same-origin health endpoint returned `ready` with 100 suppliers, 2,300 safe evidence records, and 6,000 completed evaluations.
-- Supplier list pagination, filters, detail, evidence, invalid parameters, and disconnected/error behavior are covered by automated tests.
-- The client renders explicit loading, ready, offline/error, and retry surfaces; no historical-supplier fallback exists.
-- Existing layout/navigation tests cover the five-family, nine-view registry, compatibility routes, responsive navigation contracts, and stale-view fallback.
-- The strict TenderMatch TypeScript check, targeted lint, focused suites, complete repository suite, and production builds are recorded in the final handoff.
+Additional interaction checks passed:
 
-## Remaining visual review
+- the Overview primary action activated by keyboard and moved focus to `Review by Tenders workspace`;
+- direct-load nested views expand the owning navigation family and expose the active child;
+- the responsive workflow menu opened by keyboard, navigated to Supplier Radar, then closed with its active family/item updated;
+- the local supplier world map loaded `world-map.png`, exposed 14 country clusters and 17 supplier markers, zoomed to 120%, and accepted keyboard pan;
+- Evidence Review loaded 17 safe records for the sampled supplier: 1 INFERRED, 14 STATED_UNVERIFIED and 2 UNKNOWN, with `0 verified` visible and no contact/raw-content fields;
+- explicit Case save and reload succeeded, and reload stated that deadline context was recomputed;
+- `/tendermatch`, `/tenderboost` and `/tenderboost-ai` loaded the TenderMatch title and refreshed without horizontal overflow;
+- a static-host/disconnected check rejected the malformed API body and rendered an accessible offline alert, retry control and `No fixture fallback was applied` message instead of a blank page.
 
-Manual or future policy-permitted browser inspection is still required at representative Standard desktop, Wide desktop, tablet, and mobile viewports for the Overview, Market Radar, Suppliers, Tenders, Full Matrix, Tender Review, Supplier Review, loading, disconnected, and error states. That review should verify keyboard order, active/expanded navigation, evidence-detail interactions, matrix pagination, clipping, page-level overflow, and console/network errors.
+## Practical-Agent callout refinement
+
+TenderBalance and Tender Logistics Cost were checked at desktop Standard, desktop Wide, tablet and mobile (8 rendered combinations). Both callouts now begin on the first Overview heading row at desktop. Their local images load successfully; the TenderBalance image is an original generated Chinese male finance analyst visibly working with a calculator and statement. Tablet/mobile stacking remains readable, and no checked route has horizontal overflow.
+
+## Runtime truth checked in the browser
+
+- Supplier contract: `tendermatch-supplier-goods-works-v1.3`.
+- Active suppliers: 17 (14 GOODS, 3 WORKS), all under review and usable with limitations.
+- Safe evidence: 289 (0 VERIFIED, 17 INFERRED, 226 STATED_UNVERIFIED, 46 UNKNOWN).
+- Pair inventory: 60 × 17 = 1,020 completed evaluations.
+- Numeric exploratory results: 0.
+- MISSING results: 1,020.
+
+## Automated evidence paired with the browser review
+
+- Focused regression set: 56 passed, 0 failed.
+- Final full repository suite: 270 passed, 0 failed.
+- Root lint: passed.
+- Strict TenderMatch changed-surface TypeScript: passed.
+- Full repository build: passed for Command Center/Firebase export, Ecosystem Atlas, unified TenderApps and 64 generated Agent specifications.
+- Full TenderApps TypeScript baseline: 19 errors remain only in unchanged TenderBalance/Logistics Excel, PDF, FX and ES-lib surfaces; the changed TenderMatch and callout surfaces add none.
+- Exact secret scan: 318 tracked/build files checked, 0 exact credential matches.
+
+This evidence is local verification only. Nothing was pushed, merged, deployed or published.

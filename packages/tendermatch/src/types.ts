@@ -23,7 +23,7 @@ export type SourceRole =
 
 export type ValueClass = "SOURCE" | "CALCULATED" | "ESTIMATED" | "ASSUMED" | "MISSING";
 export type ConfidenceLevel = "high" | "medium" | "low" | "unknown";
-export type EvidenceReviewStatus = "LEGACY_VERIFIED" | "VERIFIED" | "INFERRED" | "UNKNOWN" | "REVIEWED";
+export type EvidenceReviewStatus = "LEGACY_VERIFIED" | "VERIFIED" | "INFERRED" | "STATED_UNVERIFIED" | "UNKNOWN" | "REVIEWED";
 export type ConsultantDecision = "pending" | "approved" | "hold" | "rejected";
 export type WorkflowState = "preliminary" | "reviewed";
 
@@ -131,7 +131,7 @@ export type SupplierRecord = VersionedIdentity & {
   risks: string[];
   verificationQuestions: string[];
   snapshotId: string;
-  sourceKind?: "LEGACY_FIXTURE" | "NEON_SUPPLIER_V2_1";
+  sourceKind?: "LEGACY_FIXTURE" | "NEON_SUPPLIER_V1_3";
   profile?: import("./supplier-contract.ts").SupplierProfileApiRecord;
 };
 

@@ -2,19 +2,17 @@ import type { SupplierEvidenceApiRecord, SupplierProfileApiRecord } from "./supp
 import type { ConsultantDecision, MatchAssessment, TenderFreshness, TenderRecord } from "./types.ts";
 import { calculateDeadlineUrgency, deriveTenderFreshness } from "./engine.ts";
 
-export const TENDERMATCH_EXPLORATORY_ENGINE_VERSION = "tendermatch-exploratory-fit/4.0.0" as const;
-export const TENDERMATCH_EXPLORATORY_POLICY_VERSION = "tendermatch-evidence-overlap/1.0.0" as const;
+export const TENDERMATCH_EXPLORATORY_ENGINE_VERSION = "tendermatch-exploratory-fit/5.0.0" as const;
+export const TENDERMATCH_EXPLORATORY_POLICY_VERSION = "tendermatch-goods-works-evidence-overlap/2.0.0" as const;
 
 const TECHNICAL_FIELDS = new Set([
-  "main_activity",
-  "product_categories",
-  "products_portfolio",
-  "materials_specs",
-  "manufacturing_capabilities_capacity",
-  "installation_after_sales",
+  "product_families",
+  "works_specializations",
+  "industries_served",
+  "materials",
 ]);
 
-const MARKET_FIELDS = new Set(["export_markets", "local_presence"]);
+const MARKET_FIELDS = new Set(["geographic_markets"]);
 const GENERIC = new Set([
   "about", "all", "and", "based", "company", "consultant", "consulting", "contract", "development", "equipment",
   "firm", "for", "from", "goods", "implementation", "international", "manufacturer", "manufacturing", "market", "new",
@@ -52,6 +50,10 @@ export type ExploratoryReasonCode =
   | "MARKET_DELIVERY_UNKNOWN"
   | "MARKET_DELIVERY_SUPPORTED"
   | "CITED_ARTIFACT_UNAVAILABLE"
+  | "PROCUREMENT_CLASSIFICATION_MISMATCH"
+  | "STATED_UNVERIFIED_INPUT"
+  | "CAPACITY_NOT_USED_IN_TECHNICAL_FIT"
+  | "TURNOVER_NOT_USED_IN_TECHNICAL_FIT"
   | "TENDER_NOT_CURRENT";
 
 export type ExploratoryMatchEvaluation = {
@@ -78,12 +80,15 @@ export type ExploratoryMatchEvaluation = {
     evidenceIds: string[];
     reasonCodes: ExploratoryReasonCode[];
   };
+  procurementApplicability: { supplierClassification: SupplierProfileApiRecord["classification"]; tenderProcurementType: string; compatible: boolean };
   marketDelivery: {
     value: null;
     state: "supported" | "unknown";
     evidenceIds: string[];
     reasonCodes: ExploratoryReasonCode[];
   };
+  capacity: { value: null; state: "stated-unverified" | "unknown"; evidenceIds: string[]; usedInTechnicalFit: false };
+  turnover: { value: null; state: "stated-unverified" | "unknown"; evidenceIds: string[]; usedInTechnicalFit: false };
   evidenceCoverage: { cited: number; availableArtifacts: number; unavailableArtifacts: number };
   supplierReadinessStatus: SupplierProfileApiRecord["readinessStatus"];
   verificationStatus: "under_review";
@@ -140,13 +145,13 @@ export function evaluateExploratoryPair(
   evaluatedAt: string,
 ): ExploratoryMatchEvaluation {
   const supplierEvidence = evidence.filter((record) => record.canonicalEntityId === supplier.canonicalEntityId);
-  const technicalClaims = supplierEvidence.filter((record) => TECHNICAL_FIELDS.has(record.field) && record.status === "INFERRED" && Boolean(record.value?.trim()));
+  const technicalClaims = supplierEvidence.filter((record) => TECHNICAL_FIELDS.has(record.field) && (record.status === "INFERRED" || record.status === "STATED_UNVERIFIED") && Boolean(record.value?.trim()));
   const tenderText = tenderCorpora(tender);
   const tenderTokens = tokens(tenderText.complete);
   const tenderPrimaryTokens = tokens(tenderText.primary);
   const tenderConcepts = concepts(tenderTokens);
   const tenderPrimaryConcepts = concepts(tenderPrimaryTokens);
-  const cited = technicalClaims.map((record) => {
+  const overlapCandidates = technicalClaims.map((record) => {
     const claimTokens = tokens(record.value ?? "");
     const direct = [...claimTokens].filter((token) => tenderTokens.has(token));
     const sharedConcepts = [...concepts(claimTokens)].filter((concept) => tenderConcepts.has(concept));
@@ -154,6 +159,7 @@ export function evaluateExploratoryPair(
     const primaryConcepts = [...concepts(claimTokens)].filter((concept) => tenderPrimaryConcepts.has(concept));
     return { record, direct, concepts: sharedConcepts, primaryDirect, primaryConcepts };
   }).filter((candidate) => candidate.direct.length > 0 || candidate.concepts.length > 0);
+  const cited = overlapCandidates.filter((candidate) => candidate.record.artifactAvailable);
   const matchedTerms = [...new Set(cited.flatMap((candidate) => candidate.direct))].sort();
   const matchedConcepts = [...new Set(cited.flatMap((candidate) => candidate.concepts))].sort();
   const matchedPrimaryTerms = [...new Set(cited.flatMap((candidate) => candidate.primaryDirect))].sort();
@@ -161,7 +167,7 @@ export function evaluateExploratoryPair(
   const evidenceIds = cited.map((candidate) => candidate.record.claimId).sort();
   const artifactAvailable = cited.filter((candidate) => candidate.record.artifactAvailable).length;
   const supplierBlocked = supplier.readinessStatus === "exclude_from_current_matching_run";
-  const procurementEligible = tender.procurementType === "GOODS" || tender.procurementType === "WORKS";
+  const procurementEligible = (tender.procurementType === "GOODS" || tender.procurementType === "WORKS") && tender.procurementType === supplier.classification;
   const thresholdMet = !supplierBlocked
     && procurementEligible
     && cited.length >= 2
@@ -172,8 +178,9 @@ export function evaluateExploratoryPair(
   const technicalReasonCodes: ExploratoryReasonCode[] = [];
   if (supplierBlocked) technicalReasonCodes.push("SUPPLIER_EXCLUDED");
   if (supplier.readinessStatus === "requires_enrichment") technicalReasonCodes.push("SUPPLIER_REQUIRES_ENRICHMENT");
+  if (!procurementEligible) technicalReasonCodes.push("PROCUREMENT_CLASSIFICATION_MISMATCH");
   if (cited.length < 2) technicalReasonCodes.push("INSUFFICIENT_RELEVANT_EVIDENCE");
-  if (!procurementEligible || matchedPrimaryConcepts.length < 1 || (matchedPrimaryTerms.length < 1 && matchedTerms.length < 3)) technicalReasonCodes.push("INSUFFICIENT_NORMALIZED_OVERLAP");
+  if (matchedPrimaryConcepts.length < 1 || (matchedPrimaryTerms.length < 1 && matchedTerms.length < 3)) technicalReasonCodes.push("INSUFFICIENT_NORMALIZED_OVERLAP");
   if (thresholdMet) technicalReasonCodes.push("EXPLORATORY_TECHNICAL_FIT_AVAILABLE");
 
   const technicalValue = thresholdMet
@@ -181,22 +188,27 @@ export function evaluateExploratoryPair(
     : null;
 
   const countryTokens = tokens(`${tender.country} ${tender.countryCode ?? ""} Central Asia`);
-  const marketClaims = supplierEvidence.filter((record) => MARKET_FIELDS.has(record.field) && record.status === "INFERRED" && Boolean(record.value?.trim()));
+  const marketClaims = supplierEvidence.filter((record) => MARKET_FIELDS.has(record.field) && record.status === "STATED_UNVERIFIED" && record.artifactAvailable && Boolean(record.value?.trim()));
   const supportedMarket = marketClaims.filter((record) => [...tokens(record.value ?? "")].some((token) => countryTokens.has(token)));
   const marketState = supportedMarket.length ? "supported" as const : "unknown" as const;
   const freshness = deriveTenderFreshness(tender, evaluatedAt);
-  const complianceClaim = supplierEvidence.find((record) => record.field === "compliance_risks");
-  const referenceClaim = supplierEvidence.find((record) => record.field === "project_references");
-  const reasonCodes = [...technicalReasonCodes, "NO_VERIFIED_SUPPLIER_CLAIMS" as const];
+  const complianceClaim = undefined;
+  const referenceClaim = undefined;
+  const capacityClaims = supplierEvidence.filter((record) => record.field === "capacity" && record.status === "STATED_UNVERIFIED" && record.artifactAvailable);
+  const turnoverClaims = supplierEvidence.filter((record) => record.field === "financial" && record.status === "STATED_UNVERIFIED" && record.artifactAvailable);
+  const reasonCodes = [...technicalReasonCodes, "NO_VERIFIED_SUPPLIER_CLAIMS" as const, "CAPACITY_NOT_USED_IN_TECHNICAL_FIT" as const, "TURNOVER_NOT_USED_IN_TECHNICAL_FIT" as const];
+  if (cited.some((candidate) => candidate.record.status === "STATED_UNVERIFIED")) reasonCodes.push("STATED_UNVERIFIED_INPUT");
   reasonCodes.push(marketState === "supported" ? "MARKET_DELIVERY_SUPPORTED" : "MARKET_DELIVERY_UNKNOWN");
   if (isUnknownClaim(complianceClaim)) reasonCodes.push("COMPLIANCE_UNKNOWN");
   if (isUnknownClaim(referenceClaim)) reasonCodes.push("REFERENCES_UNKNOWN");
-  if (cited.some((candidate) => !candidate.record.artifactAvailable)) reasonCodes.push("CITED_ARTIFACT_UNAVAILABLE");
+  if (overlapCandidates.some((candidate) => !candidate.record.artifactAvailable)) reasonCodes.push("CITED_ARTIFACT_UNAVAILABLE");
   if (freshness.status === "closed") reasonCodes.push("TENDER_NOT_CURRENT");
 
   const limitations = [
-    "All supplier claims are under review; this batch contains zero VERIFIED claims.",
+    "All supplier claims are under review; this v1.3 batch contains zero VERIFIED claims.",
+    "STATED_UNVERIFIED claims are exploratory inputs only when linked to a saved artifact; they are never presented as VERIFIED.",
     "Technical relevance is exploratory and does not establish eligibility, compliance, capacity, delivery, price, or past performance.",
+    "Capacity and revenue/turnover remain separate source claims and are not used in technical fit unless a comparable tender requirement is explicitly mapped and reviewed.",
     marketState === "unknown" ? "Market and delivery fit remain UNKNOWN; absence of a market claim is not negative evidence." : "A source claim overlaps the tender market, but delivery feasibility remains unverified.",
     isUnknownClaim(complianceClaim) ? "Independent compliance and integrity screening is UNKNOWN." : "A source-backed compliance finding exists; it is not a clearance.",
     isUnknownClaim(referenceClaim) ? "Comparable project references are UNKNOWN." : "Comparable references are inferred and require review.",
@@ -220,13 +232,20 @@ export function evaluateExploratoryPair(
     valueClass: technicalValue === null ? "MISSING" : "ESTIMATED",
     label: technicalValue === null ? "insufficient-evidence" : "exploratory-technical-fit",
     technicalRelevance: { value: technicalValue, matchedConcepts, matchedTerms, evidenceIds, reasonCodes: technicalReasonCodes },
+    procurementApplicability: { supplierClassification: supplier.classification, tenderProcurementType: tender.procurementType ?? "UNKNOWN", compatible: procurementEligible },
     marketDelivery: {
       value: null,
       state: marketState,
       evidenceIds: supportedMarket.map((record) => record.claimId).sort(),
       reasonCodes: [marketState === "supported" ? "MARKET_DELIVERY_SUPPORTED" : "MARKET_DELIVERY_UNKNOWN"],
     },
-    evidenceCoverage: { cited: cited.length, availableArtifacts: artifactAvailable, unavailableArtifacts: cited.length - artifactAvailable },
+    capacity: { value: null, state: capacityClaims.length ? "stated-unverified" : "unknown", evidenceIds: capacityClaims.map((record) => record.claimId).sort(), usedInTechnicalFit: false },
+    turnover: { value: null, state: turnoverClaims.length ? "stated-unverified" : "unknown", evidenceIds: turnoverClaims.map((record) => record.claimId).sort(), usedInTechnicalFit: false },
+    evidenceCoverage: {
+      cited: overlapCandidates.length,
+      availableArtifacts: artifactAvailable,
+      unavailableArtifacts: overlapCandidates.length - artifactAvailable,
+    },
     supplierReadinessStatus: supplier.readinessStatus,
     verificationStatus: "under_review",
     eligibility: "unknown",
@@ -276,7 +295,7 @@ export function assessmentFromExploratoryEvaluation(evaluation: ExploratoryMatch
     exactLegacyPair: false,
     matchScore: { value: null, valueClass: "MISSING", method: "No historical or source-authored pair score exists for this Neon supplier and pilot tender." },
     legacyBaseline: {
-      policyVersion: "not-applicable/neon-supplier-v2.1",
+      policyVersion: "not-applicable/neon-supplier-v1.3",
       matchScore: null,
       supplierReadiness: null,
       globalVerificationQuality: 0,

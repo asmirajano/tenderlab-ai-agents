@@ -1,10 +1,22 @@
 import { readFile } from "node:fs/promises";
 import pg from "pg";
+import {
+  TENDERMATCH_SUPPLIER_BATCH_CODE,
+  TENDERMATCH_SUPPLIER_CONSUMER_ROLE,
+  TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW,
+  TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW,
+  TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT,
+  TENDERMATCH_SUPPLIER_PROFILE_VERSION,
+  TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW,
+  TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW,
+} from "../../packages/tendermatch/src/supplier-contract.ts";
 
 const { Pool } = pg;
 const API_SCHEMA = "tendermatch_supplier_api";
-const EXPECTED_LOGIN = "tendermatch_supplier_consumer_dev";
+const EXPECTED_LOGIN = TENDERMATCH_SUPPLIER_CONSUMER_ROLE;
 const EXPECTED_GRANT_ROLE = "tendermatch_supplier_reader";
+const EXPECTED_HOST_FINGERPRINT = "ep-dark-dew-b15ctyr1";
+const EXPECTED_DATABASE = "tender_entity_registry";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const READINESS = new Set(["ready_for_exploratory_matching", "usable_with_limitations", "requires_enrichment", "exclude_from_current_matching_run"]);
 
@@ -24,26 +36,21 @@ function profileFromRow(row) {
     profileVersion: row.profile_version,
     batchId: row.batch_id,
     batchCode: row.batch_code,
-    canonicalMarketplaceProfileUrl: row.canonical_marketplace_profile_url,
+    sourceCandidateId: row.source_candidate_id,
     legalName: row.legal_name,
     displayName: row.display_name,
     countryCode: row.country_code?.trim() || null,
-    operatingGeography: row.operating_geography,
-    mainActivity: row.main_activity,
-    productPortfolio: row.product_portfolio,
-    productCategories: row.product_categories,
-    materialsSpecifications: row.materials_specifications,
-    capabilities: row.capabilities,
-    capacity: row.capacity,
+    city: row.city,
+    region: row.region,
+    classification: row.classification,
+    productFamilies: row.product_families,
+    worksSpecializations: row.works_specializations,
+    industriesServed: row.industries_served,
+    materials: row.materials,
     certifications: row.certifications,
-    exportMarkets: row.export_markets,
-    localPresence: row.local_presence,
-    serviceCapabilities: row.service_capabilities,
-    commercialTerms: row.commercial_terms,
-    comparableReferences: row.comparable_references,
-    scaleIndicators: row.scale_indicators,
-    complianceAndIntegrity: row.compliance_and_integrity,
-    unresolvedChecks: row.unresolved_checks,
+    operatingGeography: row.operating_geography,
+    capacity: row.capacity,
+    revenueOrTurnover: row.revenue_or_turnover,
     readinessStatus: row.readiness_status,
     readinessReasons: row.readiness_reasons,
     readinessGateResults: row.readiness_gate_results,
@@ -53,6 +60,7 @@ function profileFromRow(row) {
     evidenceClaimCount: row.evidence_claim_count,
     evidenceVerifiedCount: row.evidence_verified_count,
     evidenceInferredCount: row.evidence_inferred_count,
+    evidenceStatedUnverifiedCount: row.evidence_stated_unverified_count,
     evidenceUnknownCount: row.evidence_unknown_count,
     claimsWithSavedArtifact: row.claims_with_saved_artifact,
     sourceRecordIds: row.source_record_ids ?? [],
@@ -65,9 +73,12 @@ function evidenceFromRow(row) {
     canonicalEntityId: row.canonical_entity_id,
     profileVersionId: row.profile_version_id,
     claimId: row.claim_id,
+    externalClaimId: row.external_claim_id,
     field: row.field,
-    value: row.value,
+    value: row.display_value,
+    normalizedValue: row.normalized_value,
     status: row.status,
+    sourceSystem: row.source_system,
     sourceTitle: row.source_title,
     sourceUrl: row.source_url,
     retrievedAt: new Date(row.retrieved_at).toISOString(),
@@ -77,9 +88,16 @@ function evidenceFromRow(row) {
     artifactStatus: row.artifact_status,
     artifactSha256: row.artifact_sha256,
     artifactLimitation: row.artifact_limitation,
-    supersedesClaimId: row.supersedes_claim_id,
-    policyCorrectionCode: row.policy_correction_code,
   };
+}
+
+export function validateSupplierConnectionTarget(connectionString) {
+  const target = new URL(connectionString);
+  if (!target.hostname.includes(EXPECTED_HOST_FINGERPRINT) || target.pathname.replace(/^\//, "") !== EXPECTED_DATABASE) {
+    throw new Error("Supplier read contract refused: the development target fingerprint does not match the approved release.");
+  }
+  if (target.searchParams.get("sslmode") !== "verify-full") throw new Error("Supplier read contract refused: TLS verify-full is required.");
+  return true;
 }
 
 export function validateSupplierId(value) {
@@ -94,16 +112,17 @@ export function parseSupplierListParameters(params) {
   if (readiness.some((value) => !READINESS.has(value))) throw Object.assign(new Error("An unsupported readiness filter was supplied."), { statusCode: 400 });
   const country = params.get("country");
   if (country && !/^[A-Za-z]{2}$/.test(country)) throw Object.assign(new Error("country must be a two-letter ISO code."), { statusCode: 400 });
-  const category = params.get("category");
-  if (category && category.length > 120) throw Object.assign(new Error("category is too long."), { statusCode: 400 });
+  const classification = params.get("classification");
+  if (classification && classification !== "GOODS" && classification !== "WORKS") throw Object.assign(new Error("classification must be GOODS or WORKS."), { statusCode: 400 });
   const afterName = params.get("afterName");
   const afterId = params.get("afterId");
   if (Boolean(afterName) !== Boolean(afterId)) throw Object.assign(new Error("afterName and afterId must be supplied together."), { statusCode: 400 });
   if (afterId) validateSupplierId(afterId);
-  return { limit, readiness, country: country?.toUpperCase() ?? null, category: category || null, afterName: afterName || null, afterId: afterId || null };
+  return { limit, readiness, country: country?.toUpperCase() ?? null, classification: classification || null, afterName: afterName || null, afterId: afterId || null };
 }
 
 export function createSupplierStore(connectionString) {
+  validateSupplierConnectionTarget(connectionString);
   const pool = new Pool({ connectionString, max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 });
 
   async function readOnly(operation) {
@@ -127,16 +146,16 @@ export function createSupplierStore(connectionString) {
 
   async function listSuppliers(filters) {
     const readiness = filters.readiness.length ? filters.readiness : null;
-    const category = filters.category ? JSON.stringify([filters.category]) : null;
     const result = await readOnly((client) => client.query(`
-      select * from ${API_SCHEMA}.current_supplier_profiles
-      where ($1::text[] is null or readiness_status = any($1::text[]))
-        and ($2::char(2) is null or country_code = $2::char(2))
-        and ($3::jsonb is null or product_categories @> $3::jsonb)
-        and ($4::text is null or (lower(display_name), canonical_entity_id) > ($4::text, $5::uuid))
+      select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW}
+      where profile_version = $1::text and batch_code = $2::text
+        and ($3::text[] is null or readiness_status = any($3::text[]))
+        and ($4::char(2) is null or country_code = $4::char(2))
+        and ($5::text is null or classification = $5::text)
+        and ($6::text is null or (lower(display_name), canonical_entity_id) > ($6::text, $7::uuid))
       order by lower(display_name), canonical_entity_id
-      limit least($6::integer, 100)
-    `, [readiness, filters.country, category, filters.afterName, filters.afterId, filters.limit]));
+      limit least($8::integer, 100)
+    `, [TENDERMATCH_SUPPLIER_PROFILE_VERSION, TENDERMATCH_SUPPLIER_BATCH_CODE, readiness, filters.country, filters.classification, filters.afterName, filters.afterId, filters.limit]));
     const profiles = result.rows.map(profileFromRow);
     const final = profiles.at(-1);
     return {
@@ -147,17 +166,17 @@ export function createSupplierStore(connectionString) {
 
   async function supplierDetail(id) {
     validateSupplierId(id);
-    const result = await readOnly((client) => client.query(`select * from ${API_SCHEMA}.current_supplier_profiles where canonical_entity_id = $1::uuid`, [id]));
+    const result = await readOnly((client) => client.query(`select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW} where canonical_entity_id = $1::uuid and profile_version = $2::text and batch_code = $3::text`, [id, TENDERMATCH_SUPPLIER_PROFILE_VERSION, TENDERMATCH_SUPPLIER_BATCH_CODE]));
     return result.rows[0] ? profileFromRow(result.rows[0]) : null;
   }
 
   async function supplierEvidence(id) {
     validateSupplierId(id);
     const result = await readOnly((client) => client.query(`
-      select canonical_entity_id, profile_version_id, claim_id, field, value, status, source_title, source_url,
+      select canonical_entity_id, profile_version_id, claim_id, external_claim_id, field, display_value, normalized_value, status, source_system, source_title, source_url,
         retrieved_at, source_record_id, source_artifact_id, artifact_available, artifact_status, artifact_sha256,
-        artifact_limitation, supersedes_claim_id, policy_correction_code
-      from ${API_SCHEMA}.current_supplier_evidence
+        artifact_limitation
+      from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW}
       where canonical_entity_id = $1::uuid
       order by field, claim_id
     `, [id]));
@@ -165,13 +184,25 @@ export function createSupplierStore(connectionString) {
   }
 
   async function loadAll() {
-    const first = await listSuppliers({ limit: 100, readiness: [], country: null, category: null, afterName: null, afterId: null });
-    if (first.profiles.length !== 100) throw new Error(`Supplier contract expected 100 profiles; received ${first.profiles.length}.`);
+    const first = await listSuppliers({ limit: 100, readiness: [], country: null, classification: null, afterName: null, afterId: null });
+    if (first.profiles.length !== TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT) throw new Error(`Supplier contract expected ${TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT} profiles; received ${first.profiles.length}.`);
+    const aliasesPinned = await readOnly((client) => client.query(`
+      select not exists (
+        (select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW} except select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW})
+        union all
+        (select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_VERSIONED_PROFILE_VIEW} except select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_PROFILE_VIEW})
+      ) and not exists (
+        (select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW} except select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW})
+        union all
+        (select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_VERSIONED_EVIDENCE_VIEW} except select * from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW})
+      ) as pinned
+    `, [])).then((result) => result.rows[0]?.pinned === true);
+    if (!aliasesPinned) throw new Error("Supplier contract refused: current aliases drifted from the approved immutable v1.3 views.");
     const evidence = await readOnly((client) => client.query(`
-      select canonical_entity_id, profile_version_id, claim_id, field, value, status, source_title, source_url,
+      select canonical_entity_id, profile_version_id, claim_id, external_claim_id, field, display_value, normalized_value, status, source_system, source_title, source_url,
         retrieved_at, source_record_id, source_artifact_id, artifact_available, artifact_status, artifact_sha256,
-        artifact_limitation, supersedes_claim_id, policy_correction_code
-      from ${API_SCHEMA}.current_supplier_evidence
+        artifact_limitation
+      from ${API_SCHEMA}.${TENDERMATCH_SUPPLIER_CURRENT_EVIDENCE_VIEW}
       order by canonical_entity_id, field, claim_id
     `, [])).then((result) => result.rows.map(evidenceFromRow));
     return { profiles: first.profiles, evidence };

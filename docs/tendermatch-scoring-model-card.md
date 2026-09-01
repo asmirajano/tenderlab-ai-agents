@@ -1,12 +1,12 @@
 # TenderMatch audited scoring model card
 
-Status: the active local controlled pilot uses `tendermatch-exploratory-fit/4.0.0` with policy `tendermatch-evidence-overlap/1.0.0` over 60 current-at-extraction tenders and 100 policy-corrected Neon supplier profiles. The Stage 2 `tendermatch-audited-match/3.0.0` fixture experiment below is historical regression evidence only. Campaign Studio and outreach workflows are not part of TenderMatch.
+Status: the active local controlled pilot uses `tendermatch-exploratory-fit/5.0.0` with policy `tendermatch-goods-works-evidence-overlap/2.0.0` over 60 current-at-extraction tenders and 17 pinned Neon v1.3 GOODS/WORKS supplier profiles. The Stage 2 `tendermatch-audited-match/3.0.0` fixture experiment below and the superseded 100-profile release are historical regression evidence only. Campaign Studio and outreach workflows are not part of TenderMatch.
 
 ## Active v4 pilot policy
 
 The active policy and its complete input, evidence, formula, reason-code, experiment, security, UI, and limitation contract are recorded in [`tendermatch-neon-supplier-matching-pilot.md`](./tendermatch-neon-supplier-matching-pilot.md). It emits only a coarse exploratory technical-fit estimate when the documented evidence gate passes; otherwise the completed evaluation remains `MISSING`. Readiness, VERIFIED/INFERRED/UNKNOWN evidence quality, market/delivery, compliance, references, freshness, and human disposition are separate dimensions.
 
-The active 6,000-pair inventory contains 4 numeric exploratory results and 5,996 MISSING results. This is evidence that the deterministic gate operates, not evidence of predictive accuracy. The remaining content in this model card documents the older frozen-fixture policy and must not be used to interpret Neon supplier results.
+The active v1.3 inventory contains 1,020 completed pair evaluations and all 1,020 remain MISSING: none jointly passes procurement applicability, saved-artifact evidence and minimum semantic relevance. This is evidence that the deterministic gate refuses unsupported precision, not evidence of predictive accuracy. The remaining content in this model card documents the older frozen-fixture policy and must not be used to interpret current Neon supplier results.
 
 ## Intended use
 

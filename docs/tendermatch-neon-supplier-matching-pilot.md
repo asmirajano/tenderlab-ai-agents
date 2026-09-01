@@ -1,124 +1,98 @@
-# TenderMatch Neon supplier and exploratory-matching pilot
+# TenderMatch Neon v1.3 supplier and exploratory-matching pilot
 
-Status: local controlled pilot, 2026-09-01. This document records the approved read-only supplier integration and the isolated matching-method gate for `agent:TL-A031`. It does not authorize deployment, Neon writes, supplier outreach, Bid/No-Bid, or production operation.
+Status: local controlled pilot, 2026-09-01. This records the approved development-only, read-only supplier integration and matching-method gate for `agent:TL-A031`. It does not authorize deployment, Neon writes, supplier selection, qualification, Bid/No-Bid, outreach, or production operation.
 
-## Boundaries and source identities
+## Pinned source and authority boundary
 
-- Tender input remains the committed 60-record Central Asia current-at-extraction snapshot. No tender was added, removed, or re-extracted in this stage.
-- Supplier input is the policy-corrected batch `accio-neutral-suppliers-2026-09-01-v2.1-policy-corrected` from the development project `tender-entity-registry`.
-- Consumer contract: `tendermatch_supplier_api.current_supplier_profiles` and `current_supplier_evidence`, backed by immutable v2.1 views.
-- The local server verifies the dedicated read-only login and reader-role membership inside a read-only transaction before every query.
-- The database credential is read only by the Node server from the explicit local environment file or process environment. It is never passed through `VITE_*`, serialized to an API response, or included in the browser bundle.
-- The API exposes normalized profiles and safe non-contact evidence only. Contacts and raw marketplace content are outside the contract.
-- A failed supplier connection produces an explicit offline/error state. The ten frozen supplier fixtures remain historical regression evidence and are never a runtime fallback.
+- Tender input remains the committed 60-record Central Asia current-at-extraction snapshot. It was not re-extracted in this stage.
+- Supplier input is exactly 17 profiles from batch `accio-goods-works-suppliers-2026-09-01-v1.3-critical-evidence-corrected-db-staged`, profile version `v1.3-critical-evidence-corrected-2026-09-01`.
+- Consumer contract: `tendermatch-supplier-goods-works-v1.3`; immutable views `supplier_profiles_goods_works_v1_3` and `supplier_evidence_goods_works_v1_3`; current aliases must be byte-set-equivalent to those views.
+- Target is the development branch of `tender-entity-registry`, database `tender_entity_registry`, endpoint fingerprint `ep-dark-dew-b15ctyr1`. Production is not connected.
+- The dedicated login must be `tendermatch_supplier_consumer_dev`, solely a member of `tendermatch_supplier_reader`, inside a read-only transaction using TLS `verify-full`.
+- Only the four approved views are selectable. Old v2.1 views, base tables, writes, DDL, roles, contacts, messaging fields, named people, addresses, raw bodies, raw payloads and private notes are denied.
+- A connection, identity, count, version, batch, alias or projection mismatch fails closed. No historical 100-supplier release or frozen ten-supplier fixture is substituted.
 
-## Same-origin local architecture
+## Same-origin local boundary
 
-`Browser → http://127.0.0.1:4177 → built TenderApps files + /api/tendermatch/* → read-only Neon consumer views`
+`Browser → local Node origin → built TenderApps + /api/tendermatch/* → parameterized read-only queries → approved Neon views`
 
-The local Node adapter serves the production Vite build and the API from one origin, so the existing `connect-src 'self'` CSP remains intact. It provides:
+The adapter keeps the existing `connect-src 'self'` CSP. The credential is loaded only by Node from the explicit local environment file or process environment; it is never placed in `VITE_*`, an API response, client code, a bundle, a log, or this document.
 
-| Endpoint | Purpose |
+| Endpoint | Contract |
 | --- | --- |
-| `GET /api/tendermatch/health` | Non-secret loading/ready/error state and aggregate cardinalities |
-| `GET /api/tendermatch/runtime` | The 100 normalized profiles, 6,000 precomputed evaluations, and aggregate contract summaries |
-| `GET /api/tendermatch/suppliers` | Paginated profile list, with validated readiness/country/category filters and keyset cursor |
-| `GET /api/tendermatch/suppliers/:uuid` | One normalized supplier profile |
-| `GET /api/tendermatch/suppliers/:uuid/evidence` | Safe non-contact evidence for that supplier |
+| `GET /api/tendermatch/health` | Loading/ready/error plus pinned non-secret contract/profile/batch, role, four-view set and counts |
+| `GET /api/tendermatch/runtime` | 17 normalized profiles, 1,020 cached evaluations and aggregate summaries with the same pinned non-secret identities |
+| `GET /api/tendermatch/suppliers` | Keyset list ordered by `lower(display_name), canonical_entity_id`; limit 1–100; exact ISO2, GOODS/WORKS and readiness filters |
+| `GET /api/tendermatch/suppliers/:uuid` | One approved normalized profile |
+| `GET /api/tendermatch/suppliers/:uuid/evidence` | That supplier's safe non-contact evidence projection |
 
-List order is exactly `lower(display_name), canonical_entity_id`; the page limit is 1–100. IDs, filters, paired cursor fields, and limits fail closed. SQL operands are parameterized. Static SPA routes are resolved only inside the built distribution directory.
+Invalid IDs, filters, cursor pairs and limits fail before a data query. Operands are parameterized. A failed source or a malformed same-origin response renders a visible recoverable error and never a blank page or silent fixture fallback. Firebase remains static and unchanged; a production API host, authentication, tenant authorization, managed secret, durable cache and monitoring are later approval gates.
 
-Firebase remains a static deployment and has not been changed. Selecting a production API host, authentication model, tenant authorization, managed secret location, serverless/container runtime, cache invalidation strategy, and operational monitoring is a later approval gate.
+## Canonical mapping and contract totals
 
-## Canonical supplier mapping
+The workspace retains canonical entity/profile/batch/source-candidate identities, legal/display name, supported ISO country/city/region, GOODS/WORKS classification, product families, works specializations, industries, materials, certifications, supported geography, capacity, revenue/turnover, readiness state, claim counts and artifact identities. Empty values stay Unknown / not disclosed.
 
-The active `SupplierRecord` retains stable canonical entity/profile/batch identities, legal/display name, supported country, structured activities/categories/products/materials/capabilities/services/markets, explicit unresolved checks, readiness status, claim totals, and source/artifact identities. Empty or unsupported values render as Unknown / not disclosed.
+The mapper does not create contacts, URLs outside the safe projection, precise coordinates, legacy technical-fit/readiness scores, evidence-completeness percentages, legacy pair scores, VERIFIED claims or automatic decisions. Supplier markers use a local world map and country-level placement with deterministic visual spacing only.
 
-The mapper deliberately does not produce legacy `technicalFit`, numeric readiness, export-readiness, evidence-completeness, legacy match rows, contacts, precise coordinates, or VERIFIED claims. Readiness is a source state, not a Match Score. Supplier markers use country-level China placement with deterministic visual spacing and are labelled non-precise.
-
-Verified contract totals at the recorded checkpoint:
-
-| Dimension | Result |
+| Dimension | Pinned v1.3 result |
 | --- | ---: |
-| Profiles | 100 |
-| Readiness: ready / usable / enrich / excluded | 2 / 94 / 4 / 0 |
-| Profile claims: VERIFIED / INFERRED / UNKNOWN | 0 / 1,429 / 971 |
-| Safe evidence: VERIFIED / INFERRED / UNKNOWN | 0 / 1,415 / 885 |
-| Safe evidence with / without linked artifact | 2,070 / 230 |
+| Profiles | 17 |
+| Classification GOODS / WORKS | 14 / 3 |
+| Readiness usable-with-limitations | 17 |
+| Evidence rows | 289 |
+| VERIFIED / INFERRED / STATED_UNVERIFIED / UNKNOWN | 0 / 17 / 226 / 46 |
+| Artifact available / unavailable with limitation | 243 / 46 |
+| Supplier countries | 14 |
 
-## Experimental policy
+`STATED_UNVERIFIED` is source-backed but unverified. It may support exploratory matching only when the claim has a saved artifact. It never becomes VERIFIED. UNKNOWN stays MISSING and is never zero or negative evidence.
 
-- Engine: `tendermatch-exploratory-fit/4.0.0`
-- Policy: `tendermatch-evidence-overlap/1.0.0`
-- Output label: `exploratory-technical-fit` or `insufficient-evidence`
-- Value class: `ESTIMATED` or `MISSING`
+## Matching policy v5
 
-Tender text comes only from title, object, description, tags, procurement type, country, and region. Supplier text comes only from the approved non-contact evidence fields for activities, categories, products, materials/specifications, manufacturing/capacity, installation/after-sales, capabilities, services, markets, and local presence.
+- Engine: `tendermatch-exploratory-fit/5.0.0`
+- Policy: `tendermatch-goods-works-evidence-overlap/2.0.0`
+- Outputs: `exploratory-technical-fit` / `ESTIMATED`, or `insufficient-evidence` / `MISSING`
 
-Normalization lowercases and tokenizes text, removes a documented generic vocabulary, and maps a small versioned procurement alias taxonomy. A numeric exploratory technical-fit value is permitted only when all gates pass:
+Tender text is limited to the committed title, object, description, tags, procurement type and geography. Supplier technical text is limited to the approved `product_families`, `works_specializations`, `industries_served` and `materials` evidence. Normalization uses a small versioned alias taxonomy and a generic-token stop set.
 
-1. procurement type is GOODS or WORKS;
-2. the supplier is not excluded from the run;
-3. at least two relevant INFERRED technical evidence records exist for that supplier;
-4. at least one cited record has a saved artifact;
-5. at least one concept overlaps the tender's primary title/object/procurement text; and
-6. there is at least one direct primary term or three full-corpus matched terms.
+A numeric exploratory value is allowed only when all conditions pass:
 
-When eligible, the deliberately coarse 5-point-banded estimate is:
+1. the source tender procurement type is explicitly GOODS or WORKS and exactly matches the supplier classification;
+2. the supplier is not excluded;
+3. at least two relevant technical claims overlap the tender;
+4. each cited input used by the score has a saved artifact and is INFERRED or STATED_UNVERIFIED;
+5. at least one versioned concept overlaps the primary tender title/object/procurement corpus; and
+6. at least one direct primary term or three full-corpus terms overlap.
+
+Eligible values remain coarse and capped:
 
 `min(85, roundTo5(40 + min(20, concepts × 10) + min(15, terms × 3) + min(10, evidence beyond two × 2)))`
 
-The ceiling prevents the exploratory lexical method from appearing definitive. A completed evaluation that fails any minimum gate has `value: null`, `valueClass: MISSING`, explicit reason codes, and the relevant missing-input explanation. MISSING is not zero.
+Market/delivery, eligibility, compliance, references, readiness, freshness and human disposition remain separate. Capacity and revenue/turnover are stored as separate source components and are not used in technical fit unless a future tender-specific comparable requirement is explicitly mapped and reviewed. Every evaluation records tender snapshot/version, supplier profile/batch version, cited evidence IDs, engine/policy version, timestamp, components, limitations, reason codes and a pending consultant disposition.
 
-Market/delivery overlap is recorded separately as supported or unknown with `value: null`; it is never blended into technical fit. Eligibility, compliance, references, deadline freshness, evidence coverage, supplier readiness, and consultant disposition are also separate. Every result binds tender snapshot/version, supplier profile/batch version, evidence IDs, engine/policy version, evaluation timestamp, component outputs, limitations, reason codes, and a pending human disposition.
+## Isolated experiment, expansion gate and actual output audit
 
-## Isolated experiment and audit
+The isolated fixtures prove one strong GOODS pair can produce an artifact-linked, evidence-cited ESTIMATED result, while procurement mismatch, weak overlap, UNKNOWN-only evidence, artifact-unavailable evidence, and capacity/turnover-only evidence remain MISSING. Repeated fixed-version results are deterministic.
 
-The experiment first covered synthetic strong-overlap, weak-overlap, UNKNOWN, and wrong-supplier evidence cases, then replayed the full authorized contract. Repeated runs with the same inputs, versions, and clock are byte-equivalent after serialization.
-
-An initial broad lexical candidate admitted 48 numeric results, including generic training/technical overlaps. This failed the relevance audit.
-
-`What happened →` generic description terms created false-positive numeric candidates.
-`Root cause →` overlap was allowed anywhere in the tender corpus without requiring a primary procurement concept.
-`Correction →` require a title/object/procurement concept, restrict numeric evaluation to GOODS/WORKS for v1, require two supplier evidence records and one artifact, and keep a coarse ceiling.
-`Reusable rule →` source-grounded text is necessary but not sufficient; a numeric semantic claim also needs a versioned minimum-relevance gate.
-`Regression evidence →` deterministic strong/weak/missing/foreign-evidence tests and the audited 6,000-pair distribution below.
-
-Final fixed-contract result:
+The method then evaluated all 60 × 17 identities at the fixed audit clock `2026-09-01T10:30:00.000Z`:
 
 | Outcome | Count |
 | --- | ---: |
-| Unique Supplier × Tender keys | 6,000 |
-| Numeric exploratory technical fit | 4 |
-| MISSING / insufficient evidence | 5,996 |
-| Score distribution | 60 × 1; 65 × 1; 75 × 2 |
+| Unique pair identities | 1,020 |
+| Numeric exploratory results | 0 |
+| MISSING results | 1,020 |
 
-Reason codes are non-exclusive: insufficient relevant evidence 5,590; insufficient normalized overlap 5,996; zero VERIFIED claims 6,000; market/delivery unknown 5,700 and source-overlap present 300; compliance unknown 5,760; references unknown 4,380; supplier enrichment required 240; cited artifact unavailable 130. At the recorded evaluation clock `2026-09-01T00:20:03.796Z`, eight tenders had passed their deadline, producing 800 separate freshness findings without changing technical fit. This clock-derived count may change on a later server replay while the tender snapshot remains unchanged.
+Gate audit: 48 pairs had exact procurement-class applicability; 89 had at least two artifact-linked relevant claims; 45 passed the normalized-overlap sub-gate; zero passed all gates jointly. There were 313 pairs with at least one overlapping STATED_UNVERIFIED input, but none were promoted into a numeric result without the complete gate. This is the intended conservative outcome, not a failed calculation.
 
-Four sparse estimates are enough to show that the method can emit a bounded numeric result, not enough to establish predictive validity. No historical legacy score is copied, no outcome calibration exists, no supplier claim is upgraded to VERIFIED, and no consultant decision is automatic.
+Non-exclusive reason counts: procurement mismatch 972; insufficient relevant evidence 931; insufficient normalized overlap 975; zero VERIFIED claims 1,020; capacity separated 1,020; turnover separated 1,020; market/delivery unknown 900; market claim overlap 120; compliance unknown 1,020; references unknown 1,020; STATED_UNVERIFIED overlap 313; tender no longer current at the audit clock 136.
 
-## Canonical result and UI behavior
+`What happened →` the approved release produced no all-gates-passing pair.
+`Root cause →` the exact procurement-class gate, artifact-linked minimum evidence gate and primary semantic-overlap gate had no joint intersection in the authorized 60 × 17 inputs.
+`Correction →` preserve all 1,020 completed outcomes as MISSING; do not loosen a gate merely to manufacture scores.
+`Reusable rule →` expansion means completing the evaluation inventory, not guaranteeing numeric scores; sparse or zero numeric output is truthful when evidence is insufficient.
+`Regression evidence →` strong/weak/mismatch/artifact/capacity tests, deterministic 1,020-key replay, aggregate false-positive audit and live read-only contract checks.
 
-The server precomputes and caches the deterministic 6,000-result inventory before returning ready state, avoiding browser-side database or matching work. The shared app consumes that one inventory for the radar counts, directories, paginated 100 × 60 matrix, tender-first review, supplier-first review, selected Case, explanations, and human disposition.
+## UI and remaining limits
 
-The UI distinguishes supplier connection/loading/error, retrieved under-review profiles, completed evaluation count, numeric exploratory eligibility, MISSING results, evidence classes, freshness, and human decision. Evidence detail loads on demand. Existing saved Cases retain their explicit supplier identity; historical fixture Cases remain compatible historical records and are not silently remapped to Neon entities.
+The server precomputes and caches all 1,020 results before ready state, so the browser performs no database or bulk matching work. The Overview, radar, 17-profile directory, evidence review, 60-tender directory, 17 × 60 full matrix, tender-first review, supplier-first review and explicit Case reconstruction consume the same inventory. Current counts are data-derived. Historical Cases keep their supplier identity and are not silently remapped.
 
-## Remaining limitations and next gate
-
-- Supplier data are read live only through a local development adapter; production hosting and authorization are unresolved.
-- The 60 tenders remain a committed snapshot, while suppliers come from a stable read view. Their refresh cadence is not jointly orchestrated.
-- The lexical taxonomy is small, English-oriented, not outcome-trained, and not a replacement for technical specification, eligibility, capacity, commercial, delivery, integrity, or reference review.
-- Zero claims are VERIFIED in this batch. INFERRED overlap must be reviewed against saved artifacts before business use.
-- Browser-local Case persistence is not tenant-isolated or durable.
-- Production rollout requires approved authentication, tenant storage, secret management, immutable result/artifact persistence, operational monitoring, and deployed-equivalent representative replay.
-
-## Local checkpoint verification
-
-- Focused TenderMatch, boundary, registry, layout, and methodology tests: 62 passed, 0 failed, 0 skipped.
-- Complete repository tests: 267 passed, 0 failed, 0 skipped.
-- Full-repository ESLint and the strict TenderMatch changed-surface TypeScript project passed.
-- The full TenderApps TypeScript project still reports only pre-existing errors in unchanged TenderBalance and Logistics sources; no changed TenderMatch file appears in that output.
-- The complete repository production build passed, including TenderLab, Atlas, TenderApps, Firebase export preparation, and generation of all 64 Agent specifications. Nothing was deployed.
-- The regression-harness observation document passed the skill validator with zero failures.
-- A content scan of repository files and the built TenderApps distribution found zero occurrences of the actual database credential; client source/build files also contain no database URL, login, or supplier secret-variable marker.
-- Automated rendered-browser QA is explicitly blocked by the enabled browser tool's localhost URL policy and is not claimed. Direct HTTP route/API checks passed, and the review preview remains available for user inspection; see `docs/evidence/tendermatch-neon-supplier-browser-qa.md`.
+This remains an `isolated-method-validated` development pilot. Predictive validity, joint tender/supplier refresh, multilingual taxonomy depth, technical-specification parsing, qualification, capacity comparison, commercial/delivery analysis, authentication, tenant isolation, durable result/artifact storage and production hosting remain unresolved. Consultant disposition is explicit and separate; TenderMatch never selects a bidder, issues Bid/No-Bid, promotes a tender or sends outreach.

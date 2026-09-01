@@ -35,9 +35,9 @@ test("registers all practical Agents as pages in one Tender Apps product", () =>
   assert.match(tenderMatchProduct.surfaceStatus, /read-only supplier API/);
   assert.match(tenderMatchProduct.surfaceStatus, /human disposition/);
   assert.match(tenderMatchProduct.dataNotice, /60-tender snapshot/);
-  assert.match(tenderMatchProduct.dataNotice, /100 policy-corrected supplier profiles/);
-  assert.match(tenderMatchProduct.dataNotice, /6,000 completed evaluations/);
-  assert.match(tenderMatchProduct.dataNotice, /numeric exploratory fit only above the evidence gate/);
+  assert.match(tenderMatchProduct.dataNotice, /17 pinned v1\.3 supplier profiles/);
+  assert.match(tenderMatchProduct.dataNotice, /1,020 completed evaluations/);
+  assert.match(tenderMatchProduct.dataNotice, /currently all MISSING under the evidence gate/);
   assert.match(tenderMatchProduct.dataNotice, /no direct browser database connection/);
   assert.doesNotMatch(`${tenderMatchProduct.descriptor} ${tenderMatchProduct.surfaceStatus} ${tenderMatchProduct.dataNotice}`, /draft|campaign|outreach|not[_ -]?sent|delivery|CRM|response tracking/i);
   assert.equal(tenderBalanceProduct.access.commandCenterAudience, "team-admin-only");

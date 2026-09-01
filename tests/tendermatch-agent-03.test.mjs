@@ -102,6 +102,8 @@ test("maps all 9 TenderMatch views exactly once into the five-family matching wo
   assert.match(page, /aria-controls=\{`tb3-nav-children-/);
   assert.match(page, /aria-expanded=\{isExpanded\}/);
   assert.match(page, /aria-current=\{view === item\.id \? "page" : undefined\}/);
+  assert.match(page, /resolvedInitialWorkspaceView = useMemo\(\(\) => initialWorkspaceView\(\), \[\]\)[\s\S]+initialNavGroup = navGroupForView\(resolvedInitialWorkspaceView, navGroups\)\.id/);
+  assert.match(page, /market: initialNavGroup === "market"[\s\S]+suppliers: initialNavGroup === "suppliers"[\s\S]+match: initialNavGroup === "match"/);
   assert.match(page, /aria-controls="tb3-mobile-workflow-tree"/);
   assert.match(page, /setMobileNavOpen\(false\)/);
   assert.match(page, /activateNavigationFromKeyboard[\s\S]+event\.key !== "Enter"[\s\S]+event\.key !== " "/);
@@ -299,14 +301,14 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(main, /"\/tendermatch\/followups": "\/tendermatch"/);
   const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
   assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
-  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*6,000 completed pair evaluations)(?=[^"]*MISSING results)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*1,020 completed pair evaluations)(?=[^"]*MISSING results)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /data-map-mode="local-geographic"/);
-  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "neon-supplier-v2\.1"\}/);
+  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "neon-supplier-v1\.3"\}/);
   assert.match(page, /No fixture fallback was applied/);
-  assert.match(page, /100 Neon profiles/);
+  assert.match(page, /17 Neon v1\.3 profiles/);
   assert.match(page, /Retry supplier service/);
   assert.match(page, /runtime\.evaluations\.map\(assessmentFromExploratoryEvaluation\)/);
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);

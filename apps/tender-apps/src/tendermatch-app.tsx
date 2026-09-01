@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import {
   assessmentFromExploratoryEvaluation,
-  chinaRadarClusters,
   countryTenderRadarClusters,
   createCaseResult,
   runtimeTenders,
@@ -153,6 +152,7 @@ function scoreBand(value: number | null) {
 function evidenceStatusClass(status: string) {
   if (["LEGACY_VERIFIED", "REVIEWED"].includes(status)) return "verified";
   if (status === "INFERRED") return "inferred";
+  if (status === "STATED_UNVERIFIED") return "stated";
   return "unknown";
 }
 
@@ -160,10 +160,29 @@ function bestLegacyMatch(matches: MatchAssessment[]) {
   return [...matches].sort((left, right) => (right.auditedMatch.value ?? -1) - (left.auditedMatch.value ?? -1) || left.key.localeCompare(right.key))[0];
 }
 
+const supplierCountryCoordinates: Record<string, { x: number; y: number }> = {
+  DE: { x: 51, y: 25 }, EG: { x: 57, y: 43 }, FR: { x: 47, y: 29 }, IN: { x: 70, y: 45 }, IT: { x: 52, y: 33 },
+  JP: { x: 87, y: 35 }, KR: { x: 83, y: 37 }, MY: { x: 77, y: 58 }, PH: { x: 84, y: 56 }, PL: { x: 55, y: 25 },
+  SA: { x: 62, y: 44 }, TH: { x: 77, y: 52 }, TR: { x: 57, y: 35 }, TW: { x: 83, y: 47 },
+};
+
+const supplierCountryNames: Record<string, string> = { DE: "Germany", EG: "Egypt", FR: "France", IN: "India", IT: "Italy", JP: "Japan", KR: "South Korea", MY: "Malaysia", PH: "Philippines", PL: "Poland", SA: "Saudi Arabia", TH: "Thailand", TR: "Türkiye", TW: "Taiwan" };
+
 function supplierCountryCoordinate(supplier: SupplierRecord, index: number) {
   let hash = 0;
   for (const character of supplier.id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  return { x: 46 + ((hash + index * 17) % 25), y: 25 + ((Math.floor(hash / 29) + index * 11) % 42), group: "China · country-level" };
+  const code = supplier.profile?.countryCode ?? "";
+  const base = supplierCountryCoordinates[code] ?? { x: 50, y: 50 };
+  return { x: base.x + (((hash + index * 17) % 7) - 3) * .8, y: base.y + (((Math.floor(hash / 29) + index * 11) % 7) - 3) * .8, group: `${(supplierCountryNames[code] ?? code) || "Unknown"} · country-level` };
+}
+
+function supplierCountryClusters(suppliers: SupplierRecord[]) {
+  const groups = new Map<string, number>();
+  for (const supplier of suppliers) {
+    const code = supplier.profile?.countryCode ?? "UNKNOWN";
+    groups.set(code, (groups.get(code) ?? 0) + 1);
+  }
+  return [...groups.entries()].map(([code, count]) => ({ id: `supplier-country:${code}`, label: supplierCountryNames[code] ?? code, count, x: (supplierCountryCoordinates[code] ?? { x: 50, y: 50 }).x, y: (supplierCountryCoordinates[code] ?? { x: 50, y: 50 }).y, group: "Supplier country" }));
 }
 
 function Metric({ label, value, note, signal = false, onClick }: { label: string; value: string | number; note: string; signal?: boolean; onClick?: () => void }) {
@@ -202,7 +221,7 @@ export default function TenderMatchApp() {
         if (error instanceof DOMException && error.name === "AbortError") return;
         const offline = error instanceof TypeError;
         setRuntimeState({ status: offline ? "offline" : "error", message: offline
-          ? "Supplier API unavailable. No fixture fallback was applied; start the approved same-origin local runtime to load the 100 Neon profiles."
+          ? "Supplier API unavailable. No fixture fallback was applied; start the approved same-origin local runtime to load the 17 Neon v1.3 profiles."
           : error instanceof Error ? error.message : "Supplier runtime failed safely." });
       });
     return () => controller.abort();
@@ -235,13 +254,15 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   const initialSupplier = suppliers.find((entry) => entry.id === initialAssessment.supplierId) ?? suppliers[0]!;
   const initialResult = useMemo(() => createCaseResult(caseIdFor(initialTender, initialSupplier), initialTender, initialSupplier, sessionNow, initialAssessment), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [view, setView] = useState<WorkspaceView>(initialWorkspaceView);
+  const resolvedInitialWorkspaceView = useMemo(() => initialWorkspaceView(), []);
+  const [view, setView] = useState<WorkspaceView>(resolvedInitialWorkspaceView);
+  const initialNavGroup = navGroupForView(resolvedInitialWorkspaceView, navGroups).id;
   const [expandedNavGroups, setExpandedNavGroups] = useState<Record<NavGroupId, boolean>>({
     overview: true,
-    market: false,
-    suppliers: false,
+    market: initialNavGroup === "market",
+    suppliers: initialNavGroup === "suppliers",
     "tender-directory": true,
-    match: false,
+    match: initialNavGroup === "match",
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
@@ -281,7 +302,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     const nowIso = new Date().toISOString();
     const key = matchKey(nextTender, nextSupplier);
     const assessment = matchByKey.get(key);
-    if (!assessment) { setActionError("The selected pair is not present in the 6,000-result inventory."); return; }
+    if (!assessment) { setActionError(`The selected pair is not present in the ${allMatches.length.toLocaleString()}-result inventory.`); return; }
     const existing = caseResults[key];
     const nextResult = existing
       ? resumeCaseResult(existing, nextTender, nextSupplier, nowIso, assessment)
@@ -378,8 +399,9 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   const tenderClusters = countryTenderRadarClusters(runtimeTenders);
   const visibleTenderClusters = tenderRadarFilter === "All countries" ? tenderClusters : tenderClusters.filter((entry) => entry.label === tenderRadarFilter);
   const visibleTenders = tenderRadarFilter === "All countries" ? runtimeTenders : runtimeTenders.filter((entry) => entry.country === tenderRadarFilter);
-  const visibleSupplierClusters = supplierRadarFilter === "All suppliers" ? [{ id: "china", label: "China", count: suppliers.length, x: 58, y: 45, group: "China · country-level" }] : [];
-  const visibleSuppliers = supplierRadarFilter === "All suppliers" ? suppliers : [];
+  const supplierClusters = supplierCountryClusters(suppliers);
+  const visibleSupplierClusters = supplierRadarFilter === "All suppliers" ? supplierClusters : supplierClusters.filter((entry) => entry.label === supplierRadarFilter);
+  const visibleSuppliers = supplierRadarFilter === "All suppliers" ? suppliers : suppliers.filter((entry) => supplierCountryNames[entry.profile?.countryCode ?? ""] === supplierRadarFilter);
 
   const caseControls = <section className="tb3-case-strip">
     <div><span>EXPLICIT CASE</span><code>{result.caseIdentity.id}</code><small>{supplier.legalEnglishName} × {tender.reference}</small></div>
@@ -413,7 +435,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
           {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} caseResults={caseResults} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
           {view === "radar-tenders" && <TenderRadarView allMatches={allMatches} suppliers={suppliers} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={changeView} />}
-          {view === "radar-suppliers" && <SupplierRadarView filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={changeView} />}
+          {view === "radar-suppliers" && <SupplierRadarView filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} countryFilters={supplierClusters.map((entry) => entry.label).sort()} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={changeView} />}
           {view === "suppliers" && <SupplierDirectoryView view={view} suppliers={suppliers} profiles={supplierProfiles} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
           {view === "tenders" && <TenderDirectoryView allMatches={allMatches} suppliers={suppliers} onOpen={openAssessment} />}
           {view === "matrix" && <MatrixView view={view} suppliers={suppliers} matchByKey={matchByKey} onView={changeView} onOpen={openAssessment} />}
@@ -525,15 +547,13 @@ type GeographicRadarMarker = {
 };
 
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex -- The self-hosted geographic canvas is an ARIA application with explicit drag and arrow-key pan; focusable cluster labels preserve the source map's tooltip access without inventing actions. */
-function GeographicRadarMap({ kind, zoom, clusters, markers, clusterNoun }: { kind: "world" | "china"; zoom: number; clusters: typeof worldRadarClusters; markers: GeographicRadarMarker[]; clusterNoun: string }) {
+function GeographicRadarMap({ kind, zoom, clusters, markers, clusterNoun }: { kind: "world" | "supplier-world"; zoom: number; clusters: typeof worldRadarClusters; markers: GeographicRadarMarker[]; clusterNoun: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ pointerId: number; x: number; y: number; left: number; top: number } | null>(null);
-  const sourceHref = kind === "world"
-    ? "https://commons.wikimedia.org/wiki/File:BlankMap-World.png"
-    : "https://commons.wikimedia.org/wiki/File:China_blank_map_by_prefectures.png";
+  const sourceHref = "https://commons.wikimedia.org/wiki/File:BlankMap-World.png";
   const mapScope = kind === "world"
     ? "Central Asia country-level current-tender placement. Visual spacing is not a precise location."
-    : "China country-level supplier placement. Marker spread is deterministic visual spacing, not a precise supplier location.";
+    : "Global country-level supplier placement. Marker spread is deterministic visual spacing, not a precise supplier location.";
   const pan = (left: number, top: number) => viewportRef.current?.scrollBy({ left, top, behavior: "smooth" });
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const movement: Record<string, [number, number]> = { ArrowLeft: [-80, 0], ArrowRight: [80, 0], ArrowUp: [0, -80], ArrowDown: [0, 80] };
@@ -560,7 +580,7 @@ function GeographicRadarMap({ kind, zoom, clusters, markers, clusterNoun }: { ki
     delete event.currentTarget.dataset.dragging;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
-  return <div className={`tb3-geo-map-shell ${kind}`} data-map-mode="local-geographic" data-map-snapshot={kind === "world" ? "current-pilot" : "neon-supplier-v2.1"}>
+  return <div className={`tb3-geo-map-shell ${kind}`} data-map-mode="local-geographic" data-map-snapshot={kind === "world" ? "current-pilot" : "neon-supplier-v1.3"}>
     <div className="tb3-geo-map-viewport" ref={viewportRef} role="application" tabIndex={0} aria-label={`${mapScope} Use arrow keys or drag to pan after zooming.`} onKeyDown={onKeyDown} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={stopDragging} onPointerCancel={stopDragging}>
       <div className="tb3-geo-map-inner" style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%` }}>
         <div className="tb3-geo-map-geometry" aria-hidden="true" />
@@ -590,22 +610,22 @@ function TenderRadarView({ allMatches, suppliers, filter, zoom, clusters, visibl
   </>;
 }
 
-function SupplierRadarView({ filter, zoom, clusters, visibleSuppliers, allMatches, onFilter, onZoom, onOpen, onView }: { filter: string; zoom: number; clusters: typeof chinaRadarClusters; visibleSuppliers: SupplierRecord[]; allMatches: MatchAssessment[]; onFilter: (filter: string) => void; onZoom: React.Dispatch<React.SetStateAction<number>>; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void; onView: (view: WorkspaceView) => void }) {
+function SupplierRadarView({ filter, zoom, clusters, countryFilters, visibleSuppliers, allMatches, onFilter, onZoom, onOpen, onView }: { filter: string; zoom: number; clusters: typeof worldRadarClusters; countryFilters: string[]; visibleSuppliers: SupplierRecord[]; allMatches: MatchAssessment[]; onFilter: (filter: string) => void; onZoom: React.Dispatch<React.SetStateAction<number>>; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void; onView: (view: WorkspaceView) => void }) {
   return <>
-    <ViewHeader eyebrow="02 · MARKET RADAR / SUPPLIER MARKET" title="Supplier Market" description="Inspect the 100 under-review supplier profiles through the approved read-only Neon contract. Placement is country-level only; no precise location is inferred." aside={<div className="tb3-view-badge"><span>NEON · READ ONLY</span><b>{visibleSuppliers.length} suppliers</b></div>} />
+    <ViewHeader eyebrow="02 · MARKET RADAR / SUPPLIER MARKET" title="Supplier Market" description="Inspect the 17 under-review GOODS/WORKS supplier profiles through the pinned Neon v1.3 read-only contract. Placement is country-level only; no precise location is inferred." aside={<div className="tb3-view-badge"><span>NEON V1.3 · READ ONLY</span><b>{visibleSuppliers.length} suppliers</b></div>} />
     <nav className="tb3-subtabs" aria-label="Market Radar views"><button onClick={() => onView("radar-tenders")}><b>Tenders</b><span>Global procurement demand</span></button><button className="active" aria-current="page"><b>Suppliers</b><span>Global supplier market</span></button></nav>
-    <section className="tb3-radar-kpis"><Metric label="SUPPLIER PROFILES" value={visibleSuppliers.length} note="under review" signal /><Metric label="VERIFIED CLAIMS" value="0" note="no semantic inflation" /><Metric label="PAIR INVENTORY" value={allMatches.length.toLocaleString()} note="server-computed" /><Metric label="GEOGRAPHY" value="CN" note="country-level evidence" /></section>
-    <section className="tb3-radar-flow"><div><b>{runtimeTenders.length}</b><span>Tenders</span></div><i>→</i><div><b>{allMatches.length.toLocaleString()}</b><span>Pair Evaluations</span></div><strong>↕</strong><div className="engine"><small>TENDERMATCH</small><b>Explore</b></div><strong>↕</strong><div className="selected"><b>{visibleSuppliers.length}</b><span>Supplier Profiles</span></div><i>←</i><div><b>1</b><span>Supported Country</span></div></section>
-    <section className="tb3-radar-layout aggregate"><article className="tb3-map-card"><header><div><span>GEOGRAPHIC SUPPLIER DENSITY · UNDER REVIEW</span><h2>Country-level supplier distribution</h2></div><div className="tb3-zoom"><button aria-label="Zoom supplier map out" onClick={() => onZoom((value) => Math.max(1, +(value - .2).toFixed(1)))}>−</button><b>{Math.round(zoom * 100)}%</b><button aria-label="Zoom supplier map in" onClick={() => onZoom((value) => Math.min(1.8, +(value + .2).toFixed(1)))}>+</button></div></header><div className="tb3-filter-row">{["All suppliers"].map((entry) => <button aria-pressed={filter === entry} className={filter === entry ? "active" : ""} key={entry} onClick={() => onFilter(entry)}>{entry}</button>)}</div><GeographicRadarMap kind="china" zoom={zoom} clusters={clusters} clusterNoun="suppliers" markers={visibleSuppliers.map((entry, index) => { const coordinate = supplierCountryCoordinate(entry, index); return { id: entry.id, label: `Open supplier profile ${entry.legalEnglishName}; country-level China placement with visual spacing only`, shortLabel: String(index + 1).padStart(2, "0"), selected: false, x: coordinate.x, y: coordinate.y, onSelect: () => { const nextBest = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (nextBest) onOpen(nextBest, "verification"); } }; })} /></article></section>
+    <section className="tb3-radar-kpis"><Metric label="SUPPLIER PROFILES" value={visibleSuppliers.length} note="under review" signal /><Metric label="VERIFIED CLAIMS" value="0" note="no semantic inflation" /><Metric label="PAIR INVENTORY" value={allMatches.length.toLocaleString()} note="server-computed" /><Metric label="COUNTRIES" value={new Set(visibleSuppliers.map((entry) => entry.profile?.countryCode)).size} note="country-level evidence" /></section>
+    <section className="tb3-radar-flow"><div><b>{runtimeTenders.length}</b><span>Tenders</span></div><i>→</i><div><b>{allMatches.length.toLocaleString()}</b><span>Pair Evaluations</span></div><strong>↕</strong><div className="engine"><small>TENDERMATCH</small><b>Explore</b></div><strong>↕</strong><div className="selected"><b>{visibleSuppliers.length}</b><span>Supplier Profiles</span></div><i>←</i><div><b>{new Set(visibleSuppliers.map((entry) => entry.profile?.countryCode)).size}</b><span>Supported Countries</span></div></section>
+    <section className="tb3-radar-layout aggregate"><article className="tb3-map-card"><header><div><span>GEOGRAPHIC SUPPLIER DENSITY · UNDER REVIEW</span><h2>Global country-level supplier distribution</h2></div><div className="tb3-zoom"><button aria-label="Zoom supplier map out" onClick={() => onZoom((value) => Math.max(1, +(value - .2).toFixed(1)))}>−</button><b>{Math.round(zoom * 100)}%</b><button aria-label="Zoom supplier map in" onClick={() => onZoom((value) => Math.min(1.8, +(value + .2).toFixed(1)))}>+</button></div></header><div className="tb3-filter-row">{["All suppliers", ...countryFilters].map((entry) => <button aria-pressed={filter === entry} className={filter === entry ? "active" : ""} key={entry} onClick={() => onFilter(entry)}>{entry}</button>)}</div><GeographicRadarMap kind="supplier-world" zoom={zoom} clusters={clusters} clusterNoun="suppliers" markers={visibleSuppliers.map((entry, index) => { const coordinate = supplierCountryCoordinate(entry, index); return { id: entry.id, label: `Open supplier profile ${entry.legalEnglishName}; country-level placement in ${coordinate.group}`, shortLabel: String(index + 1).padStart(2, "0"), selected: false, x: coordinate.x, y: coordinate.y, onSelect: () => { const nextBest = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (nextBest) onOpen(nextBest, "verification"); } }; })} /></article></section>
   </>;
 }
 
 function SupplierDirectoryView({ view, suppliers, profiles, allMatches, onView, onOpen }: { view: WorkspaceView; suppliers: SupplierRecord[]; profiles: SupplierProfileApiRecord[]; allMatches: MatchAssessment[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
   const profileById = new Map(profiles.map((profile) => [`supplier:NEON:${profile.canonicalEntityId}`, profile]));
   return <>
-    <ViewHeader eyebrow="03 · SUPPLIERS / PROFILES" title="Supplier Profiles" description="Review the normalized v2.1 supplier profiles, readiness states, inferred evidence coverage, products, capabilities and explicit unknowns." aside={<div className="tb3-directory-count"><b>{suppliers.length}</b><span>Neon profiles · under review</span></div>} />
+    <ViewHeader eyebrow="03 · SUPPLIERS / PROFILES" title="Supplier Profiles" description="Review the normalized v1.3 GOODS/WORKS supplier profiles, source readiness, STATED_UNVERIFIED and INFERRED evidence, products, capabilities and explicit unknowns." aside={<div className="tb3-directory-count"><b>{suppliers.length}</b><span>Neon v1.3 · under review</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-directory" aria-label="Supplier profile directory"><div className="tb3-directory-head supplier"><span>SUPPLIER</span><span>READINESS</span><span>MARKETS</span><span>EVIDENCE</span><span>ACTION</span></div>{suppliers.map((entry) => { const profile = profileById.get(entry.id)!; return <button className="tb3-directory-row supplier" key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best, "verification"); }}><div className="identity"><span>{profile.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{supplierActivity(entry)}</small><em>{profile.verificationStatus.replace("_", " ")} · {profile.profileVersion}</em></p></div><strong>{readinessLabel(profile.readinessStatus)}<small>source state · not a score</small></strong><p>{entry.exportMarkets.slice(0, 2).join(" · ") || "Unknown / not disclosed"}<small>{entry.categories.slice(0, 3).join(" · ") || "Categories not disclosed"}</small></p><div className="evidence"><span className="verified">{profile.evidenceVerifiedCount} verified</span><span className="inferred">{profile.evidenceInferredCount} inferred</span><span className="unknown">{profile.evidenceUnknownCount} unknown</span></div><em>Review evidence →</em></button>; })}</section>
+    <section className="tb3-directory" aria-label="Supplier profile directory"><div className="tb3-directory-head supplier"><span>SUPPLIER</span><span>READINESS</span><span>GEOGRAPHY</span><span>EVIDENCE</span><span>ACTION</span></div>{suppliers.map((entry) => { const profile = profileById.get(entry.id)!; return <button className="tb3-directory-row supplier" key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best, "verification"); }}><div className="identity"><span>{profile.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{profile.classification} · {supplierActivity(entry)}</small><em>{profile.verificationStatus.replace("_", " ")} · {profile.profileVersion}</em></p></div><strong>{readinessLabel(profile.readinessStatus)}<small>source state · not a score</small></strong><p>{entry.exportMarkets.slice(0, 2).join(" · ") || supplierCountryNames[profile.countryCode ?? ""] || "Unknown / not disclosed"}<small>{entry.categories.slice(0, 3).join(" · ") || "Categories not disclosed"}</small></p><div className="evidence"><span className="verified">{profile.evidenceVerifiedCount} verified</span><span className="stated">{profile.evidenceStatedUnverifiedCount} stated</span><span className="inferred">{profile.evidenceInferredCount} inferred</span><span className="unknown">{profile.evidenceUnknownCount} unknown</span></div><em>Review evidence →</em></button>; })}</section>
   </>;
 }
 
@@ -647,7 +667,7 @@ function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceE
   return <>
     <ViewHeader eyebrow="03 · SUPPLIERS / VERIFICATION" title="Evidence Review" description="Inspect the safe non-contact evidence projection, claim class, source record, artifact availability and explicit unknowns. This batch contains zero VERIFIED claims." aside={<div className="tb3-directory-count"><b>0/{profile.evidenceClaimCount}</b><span>verified profile claims</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V2.1 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{supplierActivity(supplier)} · {profile.profileVersion}</small></div></header><div className="tb3-evidence-legend"><span className="verified">0 verified</span><span className="inferred">INFERRED · source-backed, not verified</span><span className="unknown">UNKNOWN / MISSING</span></div>{evidenceStatus === "loading" && <div className="tb3-evidence-state" role="status">Loading safe non-contact evidence…</div>}{evidenceStatus === "error" && <div className="tb3-evidence-state error" role="alert">{evidenceError}</div>}<div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>ARTIFACT</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "Unknown / MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus}</span><strong>{entry.notes.startsWith("Saved") ? "Linked" : "Unavailable"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source reference ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>INFERRED remains inferred. UNKNOWN remains MISSING. Neither becomes verified, zero, or negative evidence.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length || "—"}</b><small>safe evidence records loaded</small></div><div><b>{profile.evidenceInferredCount}</b><small>inferred profile claims</small></div><div><b>{profile.evidenceUnknownCount}</b><small>unknown profile claims</small></div><p>Contacts and raw source content are excluded by the database view and the same-origin API.</p><section><b>CONSULTANT LIMITS</b>{supplier.verificationQuestions.slice(0, 3).map((question) => <p key={question}>? {question}</p>)}</section>{supplier.officialWebsite && <a href={supplier.officialWebsite} target="_blank" rel="noreferrer">Canonical marketplace profile ↗</a>}<button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
+    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{profile.classification} · {supplierActivity(supplier)} · {profile.profileVersion}</small></div></header><div className="tb3-evidence-legend"><span className="verified">0 verified</span><span className="stated">STATED_UNVERIFIED · saved artifact, not verified</span><span className="inferred">INFERRED · source-backed, not verified</span><span className="unknown">UNKNOWN / MISSING</span></div>{evidenceStatus === "loading" && <div className="tb3-evidence-state" role="status">Loading safe non-contact evidence…</div>}{evidenceStatus === "error" && <div className="tb3-evidence-state error" role="alert">{evidenceError}</div>}<div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>ARTIFACT</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "Unknown / MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus}</span><strong>{entry.notes.startsWith("Saved") ? "Linked" : "Unavailable"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source reference ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>STATED_UNVERIFIED remains stated and INFERRED remains inferred. UNKNOWN remains MISSING. None becomes verified, zero, or negative evidence.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length || "—"}</b><small>safe evidence records loaded</small></div><div><b>{profile.evidenceStatedUnverifiedCount}</b><small>stated-unverified profile claims</small></div><div><b>{profile.evidenceInferredCount}</b><small>inferred profile claims</small></div><div><b>{profile.evidenceUnknownCount}</b><small>unknown profile claims</small></div><p>Contacts, messaging fields, named people, addresses and raw source content are excluded by the database view and same-origin API.</p><section><b>CONSULTANT LIMITS</b>{supplier.verificationQuestions.slice(0, 3).map((question) => <p key={question}>? {question}</p>)}</section><button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
   </>;
 }
 

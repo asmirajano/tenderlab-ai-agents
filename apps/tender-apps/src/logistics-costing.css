@@ -323,7 +323,7 @@
 .cost-product-heading h1 { font-size: clamp(51px, 5.8vw, 91px); font-weight: 580; letter-spacing: -.073em; line-height: .91; margin: 0; }
 .cost-product-heading h1 em { color: var(--costing-green); font-style: normal; }
 .cost-product-heading-copy > p:not(.costing-eyebrow) { color: #607068; font-size: var(--type-body); line-height: 1.55; margin: 24px 0 0; max-width: 920px; }
-.cost-role-callout { --agent-role-accent: var(--costing-signal); --agent-role-ink: var(--costing-ink); --agent-role-label: var(--costing-green); --agent-role-surface-from: #f0faef; --agent-role-surface-to: #dff2e5; margin-top: 42px; }
+.cost-role-callout { --agent-role-accent: var(--costing-signal); --agent-role-ink: var(--costing-ink); --agent-role-label: var(--costing-green); --agent-role-surface-from: #f0faef; --agent-role-surface-to: #dff2e5; margin-top: 0; }
 .cost-product-story { align-items: stretch; display: grid; gap: clamp(16px, 1.5vw, 24px); grid-template-columns: minmax(250px, .62fr) minmax(96px, .18fr) minmax(650px, 1.55fr); }
 .raw-cost-inputs { background: #eaf0ec; border: 1px solid #cad8d0; border-radius: 19px; display: flex; flex-direction: column; min-height: 600px; overflow: hidden; padding: 22px; }
 .raw-cost-inputs > header { align-items: center; display: flex; gap: 11px; }
