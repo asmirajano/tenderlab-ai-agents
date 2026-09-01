@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/tendermatch-app.tsx",
+    "src/tendermatch-supplier-api.ts",
+    "src/practical-agent-overview.tsx",
+    "../../packages/tendermatch/src"
+  ]
+}

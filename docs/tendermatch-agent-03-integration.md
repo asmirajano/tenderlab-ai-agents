@@ -1,6 +1,6 @@
 # TenderMatch — TenderApps Agent 03 integration and placement record
 
-Status: local current-tender pilot over a deterministic read-only Central Asia snapshot, 2026-08-30. The active tender runtime is documented in `docs/tendermatch-central-asia-current-pilot.md`; the older 16-tender TenderBoost fixture and formula experiment below remain historical regression evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
+Status: local controlled supplier-and-matching pilot, 2026-09-01. The active inputs are the unchanged 60-record Central Asia tender snapshot and 100 policy-corrected supplier profiles loaded through the read-only Neon supplier contract. The 6,000-pair experimental inventory contains sparse exploratory technical-fit estimates and explicit MISSING results. See `docs/tendermatch-neon-supplier-matching-pilot.md`. The older TenderBoost fixture remains historical regression evidence only. Campaign Studio and follow-up workflows remain outside TenderMatch. This work does not modify the canonical 64-Agent registry or authorize deployment.
 
 ## Mandatory placement re-audit
 
@@ -94,6 +94,12 @@ Primary finished product: one versioned TenderMatch Case result containing:
 
 Consumers are the consultant and separately governed Participation Solution-Fit or Bid/No-Bid work. TenderMatch does not decide the participation structure or overall Bid/No-Bid recommendation.
 
+Active pilot input/result contract:
+
+`60-record tender snapshot × 100 Neon supplier profiles + 2,300 safe evidence rows → 6,000 deterministic evaluations → exploratory technical fit for 4 policy-eligible pairs / MISSING for 5,996 pairs → explanation → consultant disposition`
+
+Supplier retrieval is server-side through a local same-origin read-only adapter; the browser has no database credential or direct Neon connection. The ten frozen suppliers and legacy 160-pair matrix are historical tests only and are never a silent fallback.
+
 Negative scope of the **TL-A031 result and authority**:
 
 - tender promotion, advertising, or offering a tender to a company;
@@ -144,21 +150,21 @@ Browser-local state is operational demonstration state, not a canonical `COMPANY
 
 | Projection | Adjusted state |
 | --- | --- |
-| Playbook and model card | TL-A031 matching TOR, frozen matching-source contract, explicit downstream exclusion, lineage, formula 3.0.0. |
+| Playbook and model card | TL-A031 matching TOR, v4 read-only supplier/matching pilot, explicit downstream exclusion, and frozen formula 3.0.0 history. |
 | Client-product registry | Display name TenderMatch, order 03, TL-A031, `/tendermatch`; stable migrated product ID retained. |
 | Real implementation registry | TenderMatch name/slug/TOR/output/limitations; stable migrated implementation ID retained. |
 | Practical UI registry and shared shell | TenderMatch card, five navigation families, nine reachable views, concept visual, title, shared Standard/Wide control. |
 | Routes | `/tendermatch` canonical; both legacy paths normalize to it and activate the same navigation item. |
 | Command Center Products and Atlas | Both derive their projections from the shared product/implementation registries. |
-| Domain engine and Case result | Matching, evidence explanation, deadline context, review findings, decision provenance, and explicit Case persistence only. |
+| Domain engine and Case result | Versioned v4 exploratory matching, evidence explanation, deadline context, review findings, decision provenance, and explicit Case persistence only. |
 | Tests and maturity | Frozen-source matching UI plus bounded matching experiment; no promotion, outreach, live, or enterprise claim. |
-| Security/runtime | Static browser-local demonstration; no auth, tenant storage, live refresh, scheduler, or external integration. |
+| Security/runtime | Local same-origin read-only supplier API plus static client build; no production hosting, auth, tenant storage, scheduler, or external integration. |
 
 Practical order `03` is not used as a canonical ID, matching is not conflated with downstream commercial action, and the shared TenderApps page is not represented as a new canonical Agent.
 
 ## Source-to-target parity matrix
 
-The active typed matching inventory is `packages/tendermatch/src/legacy-parity.ts`. It contains **65** audited matching-source items: **24 preserved**, **11 adapted to TenderApps design**, **30 truth-corrected**, and **0 missing**. The five restored map items are the tender legend, tender focus signal, supplier legend, supplier focus signal, and supplier-map pan. Campaign Studio and Follow-ups entries were removed from the active manifest after the approved boundary decision; this is a deliberate scope exclusion, not a claim that those frozen-source capabilities migrated into TenderMatch.
+The active typed frozen-source inventory is `packages/tendermatch/src/legacy-parity.ts`. It contains **62** matching-source items: **13 preserved**, **11 adapted to TenderApps design**, **38 truth-corrected**, and **0 missing** after the current supplier/runtime corrections. Campaign Studio and Follow-ups entries were removed after the approved boundary decision; this is a deliberate scope exclusion, not a claim that those capabilities migrated into TenderMatch.
 
 The historical 48-state strict-parity review is retained in `docs/tendermatch-strict-parity-browser-qa.md` as evidence for the superseded parity checkpoint. Current navigation evidence is recorded separately and covers the five-family, ten-view matching workspace.
 
@@ -205,4 +211,4 @@ The historical 48-state strict-parity review is retained in `docs/tendermatch-st
 
 ## Current maturity
 
-This is a local `concept-or-simulation` implementation with a complete frozen matching workspace and a bounded, dated-fixture experiment. All matching data rows, map/radar interactions, directories, match modes, evidence views, Case controls, and consultant decisions remain functional inside the TenderApps design system. Campaign Studio and Follow-ups are absent from navigation, runtime, persistence, and the active parity manifest. Live-source validity, production accuracy, tenant security, durable records, Dataset activation, downstream marketing capability, and deployment remain unproven and out of scope.
+This is an `isolated-method-validated` local controlled pilot, not a deployed production runtime. The read-only supplier contract, 100 profiles, 2,300 safe evidence rows, deterministic 6,000-result inventory, sparse policy-gated estimates, MISSING behavior, maps, directories, matrix modes, Case controls, evidence details, and consultant decisions are integrated into the TenderApps build. Campaign Studio and Follow-ups remain absent. Predictive validity, live tender refresh, production hosting, authentication, tenant isolation, durable artifacts, Dataset activation, and deployment remain unproven and out of scope.

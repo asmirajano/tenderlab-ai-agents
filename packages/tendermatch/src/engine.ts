@@ -165,6 +165,7 @@ export function evaluateAuditedMatch(
 ): AuditedMatchResult {
   if (legacyScore === null) {
     return {
+      engineVersion: TENDERMATCH_ENGINE_VERSION,
       policyVersion: TENDERMATCH_AUDITED_MATCH_POLICY_VERSION,
       value: null,
       valueClass: "MISSING",
@@ -204,6 +205,7 @@ export function evaluateAuditedMatch(
     : null;
   const evidenceIds = [...new Set(components.flatMap((component) => component.evidenceIds))];
   return {
+    engineVersion: TENDERMATCH_ENGINE_VERSION,
     policyVersion: TENDERMATCH_AUDITED_MATCH_POLICY_VERSION,
     value,
     valueClass: value === null ? "MISSING" : "ESTIMATED",
@@ -308,7 +310,8 @@ function finding(code: ReviewFinding["code"], message: string, nextAction: strin
 
 export function evaluateConsultantReviewSupport(match: MatchAssessment, supplier: SupplierRecord): ConsultantReviewSupport {
   const findings: ReviewFinding[] = [];
-  if (!match.exactLegacyPair || match.matchScore.value === null) {
+  const exploratory = match.auditedMatch.policyVersion.startsWith("tendermatch-evidence-overlap/");
+  if ((!match.exactLegacyPair || match.matchScore.value === null) && !exploratory) {
     findings.push(finding("MATCH_UNASSESSED", "This Company × Tender pair has not been evaluated.", "Run a separately approved pair assessment; do not convert MISSING to zero.", "agent:TL-A031"));
   } else if (match.auditedMatch.value === null) {
     findings.push(finding("AUDITED_MATCH_REQUIRED", "The audited calculation lacks one or more required evidence components.", `Resolve: ${match.auditedMatch.missingInputs.join("; ")}.`, "agent:TL-A031"));
@@ -358,9 +361,9 @@ function reviseResult(result: TenderMatchCaseResult, changes: Partial<TenderMatc
   };
 }
 
-export function createCaseResult(caseId: string, tender: TenderRecord, supplier: SupplierRecord, nowIso: string): TenderMatchCaseResult {
+export function createCaseResult(caseId: string, tender: TenderRecord, supplier: SupplierRecord, nowIso: string, assessment?: MatchAssessment): TenderMatchCaseResult {
   if (!caseId.trim()) throw new Error("An explicit Case ID is required.");
-  const match = assessMatch(tender, supplier, nowIso);
+  const match = assessment ?? assessMatch(tender, supplier, nowIso);
   const { version, artifacts } = identities(caseId, 1);
   return {
     schemaVersion: TENDERMATCH_SCHEMA_VERSION,
@@ -379,8 +382,9 @@ export function createCaseResult(caseId: string, tender: TenderRecord, supplier:
     reviewSupport: evaluateConsultantReviewSupport(match, supplier),
     knownLimitations: [
       "The tender set is a deterministic local snapshot of records current at extraction time, not a live browser connection or continuously refreshed feed.",
-      "Every Supplier × Tender pair in this pilot is unassessed and remains MISSING until a separately validated matching process evaluates it.",
-      "Supplier readiness remains a historical demonstration estimate and does not create a Match Score for the pilot tenders.",
+      "Exploratory technical relevance is emitted only when the versioned evidence-overlap threshold is met; every other completed evaluation remains MISSING.",
+      "Supplier readiness is retained as a source state and never creates or changes a Match Score.",
+      "This supplier batch contains zero VERIFIED claims. INFERRED and UNKNOWN statuses remain explicit.",
       "Browser-local Case storage is not durable tenant-isolated persistence or a canonical Dataset write.",
       "TenderMatch provides fit explanation and consultant decision support only; Bid/No-Bid and participation design remain downstream responsibilities.",
       "Tender markers use honest country-level placement only; they do not represent a precise tender location, distance, routing, or live map accuracy.",
@@ -441,9 +445,11 @@ export function saveCaseResult(storage: StorageLike, result: TenderMatchCaseResu
   return result.caseIdentity.id;
 }
 
-export function resumeCaseResult(result: TenderMatchCaseResult, tender: TenderRecord, supplier: SupplierRecord, nowIso: string) {
+export function resumeCaseResult(result: TenderMatchCaseResult, tender: TenderRecord, supplier: SupplierRecord, nowIso: string, assessment?: MatchAssessment) {
   if (result.tenderIdentity.id !== tender.id || result.supplierIdentity.id !== supplier.id) throw new Error("Resume context does not match the persisted TenderMatch Case identities.");
-  const reassessed = assessMatch(tender, supplier, nowIso, result.match.consultantDecision);
+  const reassessed = assessment
+    ? { ...assessment, consultantDecision: result.match.consultantDecision, decisionHistory: result.match.decisionHistory ?? [] }
+    : assessMatch(tender, supplier, nowIso, result.match.consultantDecision);
   const match: MatchAssessment = {
     ...reassessed,
     version: nextVersion(result.match.version),
@@ -501,7 +507,7 @@ function migrateHistoricalCase(parsed: HistoricalPersistedCase, caseId: string, 
 export function loadCaseResult(
   storage: StorageLike,
   caseId: string,
-  context: { tender: TenderRecord; supplier: SupplierRecord; nowIso: string },
+  context: { tender: TenderRecord; supplier: SupplierRecord; nowIso: string; assessment?: MatchAssessment },
 ): TenderMatchCaseResult | null {
   const currentRaw = storage.getItem(currentStorageKey(caseId));
   const legacyRaw = currentRaw ? null : storage.getItem(legacyStorageKey(caseId));
@@ -510,7 +516,7 @@ export function loadCaseResult(
   const parsed = JSON.parse(raw) as HistoricalPersistedCase;
   if (parsed.caseIdentity?.id !== caseId) throw new Error("Persisted Case identity does not match the requested Case.");
   if (parsed.schemaVersion === TENDERMATCH_SCHEMA_VERSION) {
-    return resumeCaseResult(parsed as TenderMatchCaseResult, context.tender, context.supplier, context.nowIso);
+    return resumeCaseResult(parsed as TenderMatchCaseResult, context.tender, context.supplier, context.nowIso, context.assessment);
   }
   if (parsed.schemaVersion === TENDERBOOST_LEGACY_SCHEMA_VERSION || parsed.schemaVersion === TENDERBOOST_STAGE_2_SCHEMA_VERSION) {
     return migrateHistoricalCase(parsed, caseId, context.tender, context.supplier, context.nowIso);

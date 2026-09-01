@@ -25,7 +25,7 @@ The active parity inventory has 62 items after removing the two aggregate-page s
 - Full repository tests: 261 passed.
 - Repository lint: passed.
 - TenderApps production build and complete repository build: passed.
-- Snapshot invariants remain 60 tenders, 10 suppliers and 600 explicitly MISSING/unassessed pairs.
+- At this historical browser-review checkpoint, snapshot invariants were 60 tenders, 10 frozen suppliers and 600 explicitly MISSING/unassessed pairs. The later Neon supplier integration supersedes these active-runtime counts without rewriting this evidence record.
 - The local production preview is served at `http://127.0.0.1:4177/tendermatch`.
 
 Rendered browser automation could not complete because the in-app browser rejected localhost inspection under its URL safety policy. No alternate browser surface or policy workaround was used. The preview remains available for the user's direct visual review; no automated viewport screenshot claim is made for this checkpoint.

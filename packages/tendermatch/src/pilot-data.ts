@@ -1,6 +1,7 @@
 import pilotFixture from "./fixtures/central-asia-current-tenders.pilot.json" with { type: "json" };
 import pilotManifestFixture from "./fixtures/central-asia-current-tenders.pilot.manifest.json" with { type: "json" };
 import { TENDERMATCH_PILOT_SNAPSHOT_SCHEMA_VERSION, type TenderRecord } from "./types.ts";
+import { TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT } from "./supplier-contract.ts";
 
 type PilotFixture = {
   schemaVersion: typeof TENDERMATCH_PILOT_SNAPSHOT_SCHEMA_VERSION;
@@ -87,8 +88,8 @@ export const pilotSnapshot = {
   selectionPolicyVersion: fixture.selectionPolicyVersion,
   classification: "BOUNDED READ-ONLY CURRENT-TENDER PILOT",
   tenderCount: runtimeTenders.length,
-  supplierCount: 10,
-  pairCount: runtimeTenders.length * 10,
+  supplierCount: TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT,
+  pairCount: runtimeTenders.length * TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT,
 } as const;
 
 export const pilotExtractionManifest = pilotManifestFixture;

@@ -17,7 +17,7 @@ The prior matching-only baseline contained 60 items. Five source-supported match
 
 Five numbered workflow families contain exactly nine views, each registered once: Overview; Market Radar / Tenders; Market Radar / Suppliers; Suppliers / Profiles; Suppliers / Verification; Tenders; Match Matrix / Portfolio; Match Matrix / By tender; and Match Matrix / By supplier. Detailed Case Review was removed by explicit product decision; stale `audit` view values resolve to Full Match Matrix.
 
-The frozen-source parity checkpoint established 16 tenders, 10 suppliers, 160 explicit pairs, 18 evaluated historical pairs, and 142 MISSING pairs. Those counts are historical regression evidence only. The active pilot tender and pair counts now derive from the committed Central Asia current-tender snapshot, and every active pilot pair is MISSING/unassessed.
+The frozen-source parity checkpoint established 16 tenders, 10 suppliers, 160 explicit pairs, 18 evaluated historical pairs, and 142 MISSING pairs. Those counts are historical regression evidence only. The active controlled pilot now combines the committed 60-record Central Asia tender snapshot with 100 policy-corrected Neon supplier profiles. Its 6,000 completed evaluations contain 4 numeric exploratory technical-fit results and 5,996 MISSING results under the v4 evidence gate.
 
 ## Explicitly excluded later scope
 

@@ -57,7 +57,7 @@ test("preserves missing source values and traceable source identities without fa
   assert.equal(pilotExtractionManifest.fieldCoverage.sourceNoticeUrl, 44);
 });
 
-test("keeps all pilot Supplier × Tender pairs explicitly unassessed and MISSING", () => {
+test("keeps the historical ten-supplier compatibility matrix explicitly unassessed and MISSING", () => {
   const matches = buildAllMatches(runtimeTenders, demoSuppliers, pilotSnapshot.asOf);
   assert.equal(matches.length, runtimeTenders.length * demoSuppliers.length);
   assert.equal(matches.length, 600);
@@ -83,9 +83,12 @@ test("uses honest country-level map placement and runtime-derived counts", async
   assert.notDeepEqual(first, second);
   const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
   assert.match(page, /COUNTRY-LEVEL PLACEMENT · VISUAL SPACING ONLY/);
-  assert.match(page, /runtimeTenders\.length \* demoSuppliers\.length/);
+  assert.match(page, /suppliers\.length \* runtimeTenders\.length/);
+  assert.match(page, /runtime\.evaluations\.map\(assessmentFromExploratoryEvaluation\)/);
+  assert.match(page, /No fixture fallback was applied/);
   assert.doesNotMatch(page, /16 opportunities|10 × 16|142 source combinations|All sixteen/);
   assert.doesNotMatch(page, /demoTenders/);
+  assert.doesNotMatch(page, /demoSuppliers/);
 });
 
 test("keeps database access server-side/local and contains no credential material", async () => {

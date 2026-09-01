@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "tendermatch-supplier-pilot-evidence/1.0.0",
+  "recordedAt": "2026-09-01T00:20:03.796Z",
+  "scope": "local controlled pilot; aggregate non-secret evidence only",
+  "supplierContract": {
+    "contractVersion": "tendermatch-supplier-read-contract-v1",
+    "profileVersion": "v2.1-policy-corrected-2026-09-01",
+    "batchCode": "accio-neutral-suppliers-2026-09-01-v2.1-policy-corrected",
+    "profiles": 100,
+    "safeEvidenceRecords": 2300,
+    "readiness": { "ready": 2, "usableWithLimitations": 94, "requiresEnrichment": 4, "excluded": 0 },
+    "profileClaims": { "VERIFIED": 0, "INFERRED": 1429, "UNKNOWN": 971 },
+    "safeEvidenceClaims": { "VERIFIED": 0, "INFERRED": 1415, "UNKNOWN": 885 },
+    "artifacts": { "linked": 2070, "unavailableOrNotLinked": 230 }
+  },
+  "tenderSnapshot": {
+    "records": 60,
+    "selectionIdentity": "tendermatch-current-central-asia-pilot-2026-08-27T10:57:50.186Z"
+  },
+  "matching": {
+    "engineVersion": "tendermatch-exploratory-fit/4.0.0",
+    "policyVersion": "tendermatch-evidence-overlap/1.0.0",
+    "uniquePairs": 6000,
+    "numericExploratory": 4,
+    "missing": 5996,
+    "scoreDistribution": { "60": 1, "65": 1, "75": 2 },
+    "reasonCounts": {
+      "INSUFFICIENT_RELEVANT_EVIDENCE": 5590,
+      "INSUFFICIENT_NORMALIZED_OVERLAP": 5996,
+      "NO_VERIFIED_SUPPLIER_CLAIMS": 6000,
+      "MARKET_DELIVERY_UNKNOWN": 5700,
+      "MARKET_DELIVERY_SUPPORTED": 300,
+      "COMPLIANCE_UNKNOWN": 5760,
+      "REFERENCES_UNKNOWN": 4380,
+      "SUPPLIER_REQUIRES_ENRICHMENT": 240,
+      "CITED_ARTIFACT_UNAVAILABLE": 130,
+      "TENDER_NOT_CURRENT": 800,
+      "EXPLORATORY_TECHNICAL_FIT_AVAILABLE": 4
+    }
+  },
+  "evaluationClock": "2026-09-01T00:20:03.796Z",
+  "security": {
+    "databaseOperation": "read-only",
+    "browserDatabaseConnection": false,
+    "sameOriginApi": true,
+    "silentFixtureFallback": false,
+    "contactsExposed": false,
+    "rawSourceContentExposed": false,
+    "secretRecorded": false
+  }
+}

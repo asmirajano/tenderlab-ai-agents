@@ -23,7 +23,7 @@ export type SourceRole =
 
 export type ValueClass = "SOURCE" | "CALCULATED" | "ESTIMATED" | "ASSUMED" | "MISSING";
 export type ConfidenceLevel = "high" | "medium" | "low" | "unknown";
-export type EvidenceReviewStatus = "LEGACY_VERIFIED" | "INFERRED" | "UNKNOWN" | "REVIEWED";
+export type EvidenceReviewStatus = "LEGACY_VERIFIED" | "VERIFIED" | "INFERRED" | "UNKNOWN" | "REVIEWED";
 export type ConsultantDecision = "pending" | "approved" | "hold" | "rejected";
 export type WorkflowState = "preliminary" | "reviewed";
 
@@ -118,13 +118,21 @@ export type SupplierRecord = VersionedIdentity & {
   exportMarkets: string[];
   evidence: EvidenceRecord[];
   legacyTenderMatches: LegacyTenderMatch[];
-  readiness: { value: number; valueClass: "ESTIMATED"; method: string };
-  technicalFit: number;
-  exportReadiness: number;
-  legacyEvidenceCompleteness: number;
+  readiness: {
+    value: number | null;
+    valueClass: "ESTIMATED" | "MISSING";
+    method: string;
+    status?: import("./supplier-contract.ts").SupplierReadinessStatus;
+    label?: string;
+  };
+  technicalFit: number | null;
+  exportReadiness: number | null;
+  legacyEvidenceCompleteness: number | null;
   risks: string[];
   verificationQuestions: string[];
-  snapshotId: typeof TENDERBOOST_DEMO_SNAPSHOT_ID;
+  snapshotId: string;
+  sourceKind?: "LEGACY_FIXTURE" | "NEON_SUPPLIER_V2_1";
+  profile?: import("./supplier-contract.ts").SupplierProfileApiRecord;
 };
 
 export type EvidenceLinkedClaim = {
@@ -145,7 +153,8 @@ export type AuditedReasonCode =
   | "EVIDENCE_NOT_VERIFIED"
   | "EVIDENCE_CONFIDENCE_BELOW_THRESHOLD"
   | "EVIDENCE_RECORD_REUSED"
-  | "LEGACY_SCORE_NOT_REPRODUCED";
+  | "LEGACY_SCORE_NOT_REPRODUCED"
+  | import("./exploratory-matching.ts").ExploratoryReasonCode;
 
 export type AuditedEvidenceAssignment = {
   component: AuditedComponentCode;
@@ -174,10 +183,11 @@ export type AuditedScoreComponent = {
 };
 
 export type AuditedMatchResult = {
-  policyVersion: typeof TENDERMATCH_AUDITED_MATCH_POLICY_VERSION;
+  engineVersion: string;
+  policyVersion: string;
   value: number | null;
   valueClass: "ESTIMATED" | "MISSING";
-  label: "strong" | "review" | "weak" | "insufficient-evidence";
+  label: "strong" | "review" | "weak" | "insufficient-evidence" | "exploratory-technical-fit";
   components: AuditedScoreComponent[];
   evidenceIds: string[];
   reasonCodes: AuditedReasonCode[];
@@ -188,9 +198,9 @@ export type AuditedMatchResult = {
 };
 
 export type LegacyBaselineMetrics = {
-  policyVersion: typeof TENDERBOOST_LEGACY_BASELINE_POLICY_VERSION;
+  policyVersion: string;
   matchScore: number | null;
-  supplierReadiness: number;
+  supplierReadiness: number | null;
   globalVerificationQuality: number;
   method: string;
 };
@@ -221,7 +231,7 @@ export type MatchAssessment = VersionedIdentity & {
   matchScore: { value: number | null; valueClass: "ESTIMATED" | "MISSING"; method: string };
   legacyBaseline: LegacyBaselineMetrics;
   auditedMatch: AuditedMatchResult;
-  supplierReadiness: { value: number; valueClass: "ESTIMATED"; method: string };
+  supplierReadiness: { value: number | null; valueClass: "ESTIMATED" | "MISSING"; method: string; status?: import("./supplier-contract.ts").SupplierReadinessStatus; label?: string };
   verificationQuality: CalculatedMetric;
   deadlineUrgency: CalculatedMetric;
   consultantDecision: ConsultantDecision;

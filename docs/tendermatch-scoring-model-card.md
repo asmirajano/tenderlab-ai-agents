@@ -1,6 +1,12 @@
 # TenderMatch audited scoring model card
 
-Status: Stage 2 matching-policy evidence experiment retained inside the TenderMatch frozen-source matching baseline, 2026-08-30. This model card governs the TL-A031 result only. Campaign Studio and outreach workflows are not part of TenderMatch. Active policy: `tendermatch-audited-match/3.0.0`. Deadline-context policy: `tendermatch-deadline-context/3.0.0`. Frozen legacy TenderBoost comparison: `tenderboost-legacy-baseline/1.0.0`.
+Status: the active local controlled pilot uses `tendermatch-exploratory-fit/4.0.0` with policy `tendermatch-evidence-overlap/1.0.0` over 60 current-at-extraction tenders and 100 policy-corrected Neon supplier profiles. The Stage 2 `tendermatch-audited-match/3.0.0` fixture experiment below is historical regression evidence only. Campaign Studio and outreach workflows are not part of TenderMatch.
+
+## Active v4 pilot policy
+
+The active policy and its complete input, evidence, formula, reason-code, experiment, security, UI, and limitation contract are recorded in [`tendermatch-neon-supplier-matching-pilot.md`](./tendermatch-neon-supplier-matching-pilot.md). It emits only a coarse exploratory technical-fit estimate when the documented evidence gate passes; otherwise the completed evaluation remains `MISSING`. Readiness, VERIFIED/INFERRED/UNKNOWN evidence quality, market/delivery, compliance, references, freshness, and human disposition are separate dimensions.
+
+The active 6,000-pair inventory contains 4 numeric exploratory results and 5,996 MISSING results. This is evidence that the deterministic gate operates, not evidence of predictive accuracy. The remaining content in this model card documents the older frozen-fixture policy and must not be used to interpret Neon supplier results.
 
 ## Intended use
 
@@ -13,7 +19,7 @@ The only authorized evidence for this experiment is the non-confidential frozen 
 | Input | Role/value meaning | Active use |
 | --- | --- | --- |
 | 16 tender records | Dated `SUPPORTING_DOCUMENT`; tender fields are `ASSUMED` until refreshed | Pair identity, description, absolute deadline, time context |
-| 10 company records | Dated `SUPPORTING_DOCUMENT` | Company identity and evidence lookup |
+| Historical 10 company records | Dated `SUPPORTING_DOCUMENT` | Company identity and evidence lookup |
 | 18 legacy pair rows | Historical curated `ESTIMATED` values | Comparison only; not an audited operand |
 | 142 absent pair rows | `MISSING`, not zero | Excluded from evaluated/audited results |
 | Evidence records | Legacy-reviewed, inferred, unknown, or reviewed records with confidence and provenance | Component eligibility and explanation |
@@ -22,11 +28,11 @@ The only authorized evidence for this experiment is the non-confidential frozen 
 | Absolute deadline + injected clock | Dated source fact + runtime context | Separate calculated urgency/freshness; never an audited operand |
 | Consultant decision | `SOURCE` user assertion with actor/time/rationale | Separate human disposition; never an audited operand |
 
-## Frozen baseline versus active policy
+## Frozen baseline versus historical Stage 2 policy
 
 The legacy 65–95 pair scores are retained exactly but their formula cannot be replayed from the fixture. The engine does not manufacture evidence to reproduce them. Their compatibility status is historical estimate only.
 
-The active policy uses two distinct components:
+The historical Stage 2 policy uses two distinct components:
 
 `Audited Match Support = technical relevance × 70% + market/delivery relevance × 30%`
 
@@ -81,7 +87,7 @@ The audited values differ from historical scores because the historical scores a
 
 ## Formula audit findings
 
-| Risk found | Correction in active policy |
+| Risk found | Historical Stage 2 correction |
 | --- | --- |
 | Historical score has no replayable operands | Retain as immutable comparison only |
 | Company readiness could double-count broad capability evidence | Exclude it from pair Match Support |

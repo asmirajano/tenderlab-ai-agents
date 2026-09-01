@@ -1,5 +1,7 @@
 # TenderMatch final integration browser QA
 
+Historical evidence notice: this record predates the Neon supplier pilot. Its 10-supplier screenshots and interactions describe the frozen-fixture checkpoint only; the active local runtime now requires the read-only 100-supplier contract and never falls back to those fixtures.
+
 This is the durable browser record for the pre-commit integration candidate based on `573af695690a5e128f1264f9f70451a57d38a5bc`. Screenshot filenames, pixel dimensions, and hashes are recorded in [`evidence/tendermatch-final-integration/manifest.json`](evidence/tendermatch-final-integration/manifest.json). The final local checkpoint identity is recorded in the integration handoff because the screenshots necessarily predate that commit.
 
 ## Retained screenshot evidence

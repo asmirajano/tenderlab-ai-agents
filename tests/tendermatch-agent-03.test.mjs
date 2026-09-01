@@ -74,7 +74,7 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
 test("maps all 9 TenderMatch views exactly once into the five-family matching workflow", async () => {
   const page = await read("apps/tender-apps/src/tendermatch-app.tsx");
   const styles = await read("apps/tender-apps/src/tendermatch.css");
-  const registry = page.match(/const navGroups: NavGroup\[\] = \[[\s\S]+?\r?\n\];\r?\n\r?\nconst navItems/)?.[0] ?? "";
+  const registry = page.match(/function navGroupsFor\(supplierCount: number\): NavGroup\[\] \{ return \[[\s\S]+?\r?\n\]; \}\r?\n\r?\nconst workspaceViewIds/)?.[0] ?? "";
   const expectedViews = [
     ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
     ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "Review by Tenders", "05B"],
@@ -299,12 +299,16 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(main, /"\/tendermatch\/followups": "\/tendermatch"/);
   const tenderMatchDisplay = registry.match(/productId: "product:TA-TENDERBOOST"[\s\S]+?visual: "tendermatch"/)?.[0] ?? "";
   assert.match(tenderMatchDisplay, /displayName: "TenderMatch"/);
-  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*MISSING pair support)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
+  assert.match(tenderMatchDisplay, /description: "(?=[^"]*TenderMatch)(?=[^"]*6,000 completed pair evaluations)(?=[^"]*MISSING results)(?=[^"]*human-controlled consultant disposition)[^"]+"/);
   assert.doesNotMatch(tenderMatchDisplay, /Complete TenderBoost migration|complete frozen TenderBoost workspace/);
   assert.match(page, /TENDERAPPS AGENT 03/);
   assert.match(page, /Tender<em>Match<\/em>/);
   assert.match(page, /data-map-mode="local-geographic"/);
-  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "frozen"\}/);
+  assert.match(page, /data-map-snapshot=\{kind === "world" \? "current-pilot" : "neon-supplier-v2\.1"\}/);
+  assert.match(page, /No fixture fallback was applied/);
+  assert.match(page, /100 Neon profiles/);
+  assert.match(page, /Retry supplier service/);
+  assert.match(page, /runtime\.evaluations\.map\(assessmentFromExploratoryEvaluation\)/);
   assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
@@ -344,8 +348,8 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "tb3-agent-medallion",
     "KEEP MISSING",
     "WHAT YOU RECEIVE",
-    "PILOT TENDER + DEMO SUPPLIER · UNASSESSED",
-    "MATCH SUPPORT",
+    "NEON SUPPLIER + PILOT TENDER · EXPLORATORY",
+    "EXPLORATORY FIT",
     "LINKED EVIDENCE",
     "MISSING / BLOCKER",
     "FRESHNESS",
@@ -381,6 +385,7 @@ test("ends the Overview after the approved infographic and authority boundary", 
     "Evidence to decision",
     "Evaluated legacy matches",
   ]) assert.doesNotMatch(orientation, new RegExp(rejectedOverviewContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), rejectedOverviewContent);
+  assert.doesNotMatch(orientation, /tb3-runtime-summary|READ-ONLY SUPPLIER RUNTIME/);
   assert.doesNotMatch(page, /<DashboardView[^>]*caseControls=/);
   for (const roleContent of ["Tender matching workspace", "Turn an open tender and supplier evidence into a reviewable match", "#Discover", "#Compare", "#Explain"]) {
     assert.match(orientation, new RegExp(roleContent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), roleContent);

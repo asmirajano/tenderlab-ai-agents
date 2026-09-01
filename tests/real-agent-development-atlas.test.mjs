@@ -43,16 +43,18 @@ test("registers Real Agent implementations with stable Agent and product identit
       assert.doesNotMatch(implementation.primaryOutput, /campaign|outreach|crm/i);
       assert.match(implementation.tor, /matching-only human-review workspace/i);
       assert.ok(implementation.knownLimitations.some((item) => /Historical Campaign Studio and follow-up simulation pages were removed[\s\S]+Git\/source history/i.test(item)));
-      assert.equal(implementation.maturity, "concept-or-simulation");
+      assert.equal(implementation.maturity, "isolated-method-validated");
       assert.equal(implementation.evidenceStrength, "isolated-authorized-realistic-document");
       assert.ok(implementation.knownLimitations.some((item) => /deterministic local snapshot of records current at extraction/i.test(item)));
-      assert.ok(implementation.knownLimitations.some((item) => /all pilot Supplier × Tender pairs are unassessed/i.test(item)));
+      assert.ok(implementation.knownLimitations.some((item) => /6,000 pair evaluations are experimental/i.test(item)));
+      assert.ok(implementation.knownLimitations.some((item) => /zero VERIFIED claims/i.test(item)));
+      assert.equal(implementation.runtimeReadiness, "controlled-pilot-runtime");
       assert.equal(implementation.deploymentStatus, "not-deployed");
     } else {
       assert.equal(implementation.maturity, "validated-client-workflow");
       assert.equal(implementation.deploymentStatus, "deployed-test-surface");
     }
-    assert.equal(implementation.runtimeReadiness, "static-client-workflow");
+    if (implementation.id !== "implementation:TEA-RAI-TENDERBOOST") assert.equal(implementation.runtimeReadiness, "static-client-workflow");
     assert.notEqual(implementation.maturity, "enterprise-runtime");
     assert.ok(implementation.primaryInputs.length > 0);
     assert.ok(implementation.primaryOutput);
