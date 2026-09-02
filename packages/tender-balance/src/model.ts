@@ -247,15 +247,15 @@ const conceptRules: Array<{
   { concept: "personal_assets", classification: "asset", patterns: [/^(?:total )?personal assets$/i] },
   { concept: "personal_liabilities", classification: "liability", patterns: [/^(?:total )?personal liabilities$/i] },
   { concept: "personal_net_worth", classification: "equity", patterns: [/^personal net worth$/i] },
-  { concept: "total_assets", classification: "asset", isTotal: true, patterns: [/^total (?:farm )?assets$/i, /^assets total$/i, /^итого активы?$/i, /^баланс.*актив/i, /^jami aktivlar$/i, /^баланс активи бўйича жами/i] },
-  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|partners?[’'s\s-]*(?:equity|deficit)|net worth)$/i] },
-  { concept: "total_liabilities", classification: "liability", isTotal: true, patterns: [/^total (?:farm )?liabilities$/i, /^итого обязательств/i, /^jami majburiyatlar$/i, /^ii бўлим бўйича жами/i] },
-  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^(?:total )?partners?[’'s\s-]*(?:equity|deficit)$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
+  { concept: "total_assets", classification: "asset", isTotal: true, patterns: [/^total (?:farm )?assets$/i, /^assets(?: total)?$/i, /^итого активы?$/i, /^баланс.*актив/i, /^jami aktivlar$/i, /^баланс активи бўйича жами/i] },
+  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|partners?[’'s\s-]*(?:equity|deficit)|net worth)$/i, /^equity and liabilities$/i, /^liabilities,?\s*provisions and equity$/i] },
+  { concept: "total_liabilities", classification: "liability", isTotal: true, patterns: [/^total (?:farm )?liabilities$/i, /^liabilities$/i, /^итого обязательств/i, /^jami majburiyatlar$/i, /^ii бўлим бўйича жами/i] },
+  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^(?:total )?partners?[’'s\s-]*(?:equity|deficit)$/i, /^members?[’']? funds$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
   { concept: "net_assets", classification: "equity", isTotal: true, patterns: [/^net assets$/i, /^чистые активы$/i, /^sof aktivlar$/i] },
   { concept: "current_assets", classification: "current_asset", isTotal: true, patterns: [/^total current assets$/i, /^current assets$/i, /^оборотные активы$/i, /^jami joriy aktivlar$/i, /^ii бўлим бўйича жами/i] },
-  { concept: "non_current_assets", classification: "non_current_asset", isTotal: true, patterns: [/^total non.?current assets$/i, /^non.?current assets$/i, /^i бўлим бўйича жами/i] },
-  { concept: "current_liabilities", classification: "current_liability", isTotal: true, patterns: [/^total current liabilities$/i, /^current liabilities$/i, /^краткосрочные обязательства$/i, /^jami joriy majburiyatlar$/i, /^жорий мажбуриятлар, жами/i] },
-  { concept: "non_current_liabilities", classification: "non_current_liability", isTotal: true, patterns: [/^total non.?current liabilities$/i, /^non.?current liabilities$/i, /^total long.?term liabilities$/i, /^узоқ муддатли мажбуриятлар, жами/i] },
+  { concept: "non_current_assets", classification: "non_current_asset", isTotal: true, patterns: [/^total non.?current assets$/i, /^non.?current assets$/i, /^fixed assets$/i, /^i бўлим бўйича жами/i] },
+  { concept: "current_liabilities", classification: "current_liability", isTotal: true, patterns: [/^total current liabilities$/i, /^current liabilities$/i, /^short.?term liabilities$/i, /^amounts falling due within one year$/i, /^краткосрочные обязательства$/i, /^jami joriy majburiyatlar$/i, /^жорий мажбуриятлар, жами/i] },
+  { concept: "non_current_liabilities", classification: "non_current_liability", isTotal: true, patterns: [/^total non.?current liabilities$/i, /^non.?current liabilities$/i, /^(?:total )?long.?term liabilities$/i, /^узоқ муддатли мажбуриятлар, жами/i] },
   { concept: "cash_and_cash_equivalents", classification: "current_asset", patterns: [/cash( and cash equivalents)?/i, /денежн/i, /pul mablag/i, /пул маблағлари/i, /ҳисоб-китоб счётидаги пул/i] },
   { concept: "trade_receivables", classification: "current_asset", patterns: [/trade (and other )?receivables/i, /accounts receivable/i, /^receivables from affiliates$/i, /дебитор/i, /debitor/i] },
   { concept: "inventories", classification: "current_asset", patterns: [/inventor/i, /запас/i, /tovar.?moddiy/i, /товар-моддий/i, /fertilizer and supplies/i, /growing crops/i, /crops held for sale/i, /market livestock/i] },
@@ -267,7 +267,7 @@ const conceptRules: Array<{
   { concept: "short_term_borrowings", classification: "current_liability", patterns: [/short.?term borrow/i, /current borrow/i, /current loans? due within/i, /current portion(?:\s*[-:]| of).*long.?term debt/i, /current portion of term debt/i, /^commercial paper$/i, /operating debt/i, /borrowed principal due within/i, /краткосрочн.*за[её]м/i, /qisqa muddatli qarz/i] },
   { concept: "other_current_liabilities", classification: "current_liability", patterns: [/other current liabilities/i, /accrued expenses?/i, /accrued interest/i, /income (?:&|and) social security taxes payable/i, /^current portion:\s*deferred taxes/i, /real estate and personal property taxes/i, /^taxes payable$/i, /^(?:unearned|deferred) revenue$/i, /salar(?:y|ies) payable/i, /income taxes? payable/i, /warranty liabilit/i, /прочие краткосрочные/i, /boshqa joriy majburiyat/i] },
   { concept: "long_term_borrowings", classification: "non_current_liability", patterns: [/long.?term (?:borrow|debt|loans?)/i, /intermediate loans?/i, /term debt/i, /non.?current borrow/i, /долгосрочн.*за[её]м/i, /uzoq muddatli qarz/i] },
-  { concept: "other_non_current_liabilities", classification: "non_current_liability", patterns: [/other (?:non.?current|long.?term) liabilities/i, /noncurrent portion:\s*deferred taxes/i, /прочие долгосрочные/i, /boshqa uzoq muddatli majburiyat/i] },
+  { concept: "other_non_current_liabilities", classification: "non_current_liability", patterns: [/other (?:non.?current|long.?term) liabilities/i, /^provisions(?: for liabilities and charges)?$/i, /^deferred income$/i, /noncurrent portion:\s*deferred taxes/i, /прочие долгосрочные/i, /boshqa uzoq muddatli majburiyat/i] },
   { concept: "share_capital", classification: "equity", patterns: [/(?:share|equity) capital/i, /common stock.*additional paid.?in capital/i, /уставн.*капитал/i, /ustav kapital/i, /устав капитали/i] },
   { concept: "retained_earnings", classification: "equity", patterns: [/retained earnings/i, /accumulated (deficit|loss|profit)/i, /нераспределенн.*прибыл/i, /непокрыт.*убыт/i, /taqsimlanmagan/i, /тақсимланмаган фойда/i] },
   { concept: "other_equity", classification: "equity", patterns: [/other (reserves|equity)/i, /accumulated other comprehensive (?:income|loss)/i, /прочие резервы/i, /boshqa kapital/i] },
@@ -285,8 +285,8 @@ const statementPatterns = [/balance sheet/i, /statement of financial position/i,
 
 function isStatementTitleLine(line: string) {
   const normalized = line.replace(/\s+/g, " ").trim();
-  return /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
-    || /^statements? of financial position(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
+  return /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s+as\s+(?:of|at)\s+.+)?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
+    || /^(?:consolidated\s+)?statements? of financial position(?:\s+as\s+(?:of|at)\s+.+)?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
     || /^accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\s+(?:no\.?|n[eo])?\s*1\b/i.test(normalized)
     || /^бухгалтерия баланси(?:\s|№|$)/iu.test(normalized)
     || /^бухгалтерский баланс(?:\s|№|$)/iu.test(normalized);
@@ -294,8 +294,9 @@ function isStatementTitleLine(line: string) {
 
 function isIncomeStatementTitleLine(line: string) {
   const normalized = line.replace(/\s+/g, " ").trim();
-  return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?(?:\s*\(unaudited\))?$/i.test(normalized)
+  return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:(?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?|comprehensive income)(?:\s+for(?:\s+the)?\s+period)?(?:\s*\(unaudited\))?$/i.test(normalized)
     || /^(?:consolidated\s+)?income statements?(?:\s*\(unaudited\))?$/i.test(normalized)
+    || /^profit and loss account(?:\s+for)?$/i.test(normalized)
     || /^reports? on financial results?\s*[-–]?\s*form\s+(?:no\.?|n[eo])?\s*2\b/i.test(normalized)
     || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
 }
@@ -469,7 +470,7 @@ function cleanLabel(label: string) {
 }
 
 export function normalizeConcept(label: string, sourceRowCode?: string) {
-  const cleaned = cleanLabel(label);
+  const cleaned = cleanLabel(label).replace(/\s+(?:\(\d+(?:,\s*\d+)*\)|\d{1,2}\)?)$/, "");
   // Uzbekistan Form No. 1 row codes retain the same meaning when the
   // statutory statement is rendered in English, Russian, or Uzbek.
   const rowConcept = sourceRowCode ? uzbekForm1Concept(sourceRowCode) : undefined;
@@ -493,10 +494,10 @@ type StatementSection = BalanceSheetClassification | null;
 function sectionForHeading(line: string): StatementSection | undefined {
   const normalized = cleanLabel(line).replace(/:$/, "").trim();
   if (/^(?:current assets|оборотные активы|joriy aktivlar)$/i.test(normalized)) return "current_asset";
-  if (/^(?:non.?current assets|long.?term assets|внеоборотные активы|uzoq muddatli aktivlar)$/i.test(normalized)) return "non_current_asset";
+  if (/^(?:non.?current assets|long.?term assets|fixed assets|внеоборотные активы|uzoq muddatli aktivlar)$/i.test(normalized)) return "non_current_asset";
   if (/^(?:current liabilities|short.?term liabilities|краткосрочные обязательства|joriy majburiyatlar)$/i.test(normalized)) return "current_liability";
   if (/^(?:non.?current liabilities|long.?term liabilities|долгосрочные обязательства|uzoq muddatli majburiyatlar)$/i.test(normalized)) return "non_current_liability";
-  if (/^(?:(?:share|stock)holders?[’'s\s-]*equity|owners?[’'s\s-]*equity|equity|net worth)$/i.test(normalized)) return "equity";
+  if (/^(?:(?:share|stock)holders?[’'s\s-]*equity|owners?[’'s\s-]*equity|equity|net worth|reserves)$/i.test(normalized)) return "equity";
   if (/^assets$/i.test(normalized)) return "asset";
   if (/^liabilities(?: and (?:(?:share|stock)holders?[’'s\s-]*equity|net worth))?$/i.test(normalized)) return "liability";
   return undefined;
@@ -575,7 +576,8 @@ function detectCurrency(text: string) {
   // Prefer an explicit statement-level measurement declaration over isolated
   // symbols elsewhere on the page. OCR can turn table artefacts into "$", and
   // a local-currency statement may legitimately mention foreign-currency cash.
-  const declaredCurrency = text.match(/\b(?:unit of measurement|currency(?:\s*\/\s*units?)?|amounts?(?:\s+are)?(?:\s+(?:reported|presented|stated))?\s+in)\b[^\r\n]{0,100}\b(USD|EUR|UZS|RUB|KZT|GBP|GEL|US dollars?|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)\b/iu)?.[1] ?? "";
+  const declaredCurrency = text.match(/\b(?:unit of measurement|currency(?:\s*\/\s*units?)?|amounts?(?:\s+are)?(?:\s+(?:reported|presented|stated))?\s+in|in)\b[^\r\n]{0,100}\b(k?DKK|USD|EUR|UZS|RUB|KZT|GBP|GEL|US dollars?|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)\b/iu)?.[1] ?? "";
+  if (/^k?DKK$/i.test(declaredCurrency)) return "DKK";
   if (/^(?:UZS|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)$/iu.test(declaredCurrency)) return "UZS";
   if (/^(?:USD|US dollars?)$/i.test(declaredCurrency)) return "USD";
   if (/^EUR$/i.test(declaredCurrency)) return "EUR";
@@ -584,6 +586,7 @@ function detectCurrency(text: string) {
   if (/^GBP$/i.test(declaredCurrency)) return "GBP";
   if (/^GEL$/i.test(declaredCurrency)) return "GEL";
   if (/\b(?:USD|US dollars?)\b|\$/i.test(text)) return "USD";
+  if (/\bkDKK\b|\bDKK\b/i.test(text)) return "DKK";
   if (/\bEUR\b|€/i.test(text)) return "EUR";
   if (/\bUZS\b|с[ўу]м|\b(?:sou?ms?|so['’]?m)\b/i.test(text)) return "UZS";
   if (/\bRUB\b|руб/i.test(text)) return "RUB";
@@ -595,12 +598,12 @@ function detectCurrency(text: string) {
 
 function detectUnits(text: string) {
   if (/\b(?:million|millions|mln|млн)\b/i.test(text)) return { unitLabel: "millions", unitScale: 1_000_000 };
-  if (/\b(?:thousand|thousands|тыс\.?|ming)\b/i.test(text) || /минг/iu.test(text)) return { unitLabel: "thousands", unitScale: 1_000 };
+  if (/\b(?:thousand|thousands|тыс\.?|ming|k(?:DKK|EUR|USD|GBP))\b/i.test(text) || /минг/iu.test(text)) return { unitLabel: "thousands", unitScale: 1_000 };
   return { unitLabel: "units", unitScale: 1 };
 }
 
 function hasExplicitUnitScale(text: string) {
-  return /\b(?:million|millions|mln|млн|thousand|thousands|тыс\.?|ming)\b/i.test(text) || /минг/iu.test(text);
+  return /\b(?:million|millions|mln|млн|thousand|thousands|тыс\.?|ming|k(?:DKK|EUR|USD|GBP))\b/i.test(text) || /минг/iu.test(text);
 }
 
 function hasStatementCurrencyFigures(text: string) {
@@ -680,6 +683,19 @@ export function detectPeriods(text: string, reportingYear?: string | null) {
     }
     if (periods.length >= 2) return periods.slice(0, 4);
   }
+  const numericDateYears = Array.from(headerText.matchAll(/\b\d{1,2}[./-]\d{1,2}[./-]((?:19|20)\d{2})\b/g), (match) => match[1]);
+  for (const year of numericDateYears) if (!periods.includes(year)) periods.push(year);
+  if (periods.length >= 2) return periods.slice(0, 4);
+  const hasPrimaryStatementTitle = headerLines.some((line) => isStatementTitleLine(line) || isIncomeStatementTitleLine(line));
+  if (hasPrimaryStatementTitle) {
+    // Primary statements often print the comparative years as separate cells
+    // (for example `Note 2023 2022`) or on separate lines. Retain their
+    // left-to-right/source order instead of sorting them chronologically.
+    for (const match of headerLines.slice(0, 16).join(" ").matchAll(/\b(?:19|20)\d{2}\b/g)) {
+      if (!periods.includes(match[0])) periods.push(match[0]);
+    }
+    if (periods.length >= 2) return periods.slice(0, 4);
+  }
   const ordinalPeriods = Array.from(headerText.matchAll(/\b(?:month|period|quarter|qtr|column)\s*[-:]?\s*\d+\b/gi));
   if (ordinalPeriods.length >= 2) {
     for (const match of ordinalPeriods) {
@@ -701,7 +717,20 @@ function repairEntityOcr(value: string) {
   return value.replace(/(?<=[A-Z])!(?=\s+[A-Z])/g, "I");
 }
 
+function legalEntityFromLines(text: string) {
+  const lines = text.split(/\r?\n/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+  for (const line of lines) {
+    const memberMatch = line.match(/\bmembers? of\s+([A-Z][A-Za-z&.'’ -]{2,80}?\s+Society of the UK)\b/i);
+    if (memberMatch?.[1]) return repairEntityOcr(memberMatch[1].trim());
+    const legalMatch = line.match(/^(?:\d+\s+)?(.{2,100}?\b(?:A\/S|AG|GmbH|Ltd\.?|LLC|JSC|Inc\.?|plc))(?=\s|$|[,;:()])/i);
+    if (legalMatch?.[1]) return repairEntityOcr(legalMatch[1].trim());
+  }
+  return null;
+}
+
 function detectEntity(text: string) {
+  const legalEntity = legalEntityFromLines(text);
+  if (legalEntity) return legalEntity;
   const uzbekCompany = text.match(/["“«]([^"”»\r\n]{2,100})["”»]\s+MAS[`'’]?ULIYATI\s+CHEKLANGAN\s+JAMIYAT/iu);
   if (uzbekCompany?.[1]) return `${repairEntityOcr(uzbekCompany[1].trim())} LLC`;
   const reportAddressee = text.match(/(?:auditor(?:'s)?\s+report\s+is\s+addressed\s+to|founders?\s+and\s+management)\s*:\s*(?:OOO|ООО)\s+[«"“]?([A-Z][A-Z0-9 &'().-]{2,80}?)(?=[»"”]?\s*(?:\r?\n|$))/imu);
@@ -724,6 +753,16 @@ function detectEntity(text: string) {
   return repairEntityOcr(candidates.find((line) => credibleCandidate(line) && /\b(?:ltd|llc|jsc|inc|plc|company|corp|mchj|ооо|ао)\b/i.test(line))
     ?? preamble.find((line) => credibleCandidate(line) && normalizeConcept(line).concept === "unmapped" && !/^(?:description|assets?:?|liabilities:?|equity:?|notes?|average|month\s*\d+|period\s*\d+)$/i.test(line))
     ?? "Unconfirmed reporting entity");
+}
+
+function reportingDateFromText(text: string, reportingYear?: string | null) {
+  const month = "January|February|March|April|May|June|July|August|September|October|November|December";
+  const dayFirst = new RegExp(`\\b(?:balance sheets?|statements? of financial position)\\s+as\\s+(?:of|at)\\s+(\\d{1,2}\\s+(?:${month})\\s+(?:19|20)\\d{2})`, "i");
+  const monthFirst = new RegExp(`\\b(?:balance sheets?|statements? of financial position)\\s+as\\s+(?:of|at)\\s+((?:${month})\\s+\\d{1,2},?\\s+(?:19|20)\\d{2})`, "i");
+  const explicit = text.match(dayFirst)?.[1] ?? text.match(monthFirst)?.[1];
+  if (explicit) return explicit.replace(/\s+/g, " ").trim();
+  const dayMonth = text.match(new RegExp(`\\b(?:balance sheets?|statements? of financial position)\\s+as\\s+(?:of|at)\\s+(\\d{1,2}\\s+(?:${month}))\\b`, "i"))?.[1];
+  return dayMonth && reportingYear ? `${dayMonth} ${reportingYear}` : null;
 }
 
 function inferClassification(concept: BalanceSheetConcept): BalanceSheetClassification {
@@ -774,7 +813,9 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
   const pipeParts = line.split(/\s*\|\s*|\t+/).filter(Boolean);
   if (pipeParts.length >= 2) {
     const values = pipeParts.slice(1).filter((part) => /^(?:[$€£₾]\s*)?(?:\(?[-−]?\d[\d,.'’\s]*\)?|—|–|-)$/.test(part.trim()));
-    if (values.length && (expectedValueCount === 0 || values.length >= expectedValueCount)) return { label: pipeParts[0], rawValues: values };
+    if (values.length && (expectedValueCount === 0 || values.length >= expectedValueCount)) {
+      return { label: pipeParts[0], rawValues: expectedValueCount > 0 ? values.slice(-expectedValueCount) : values };
+    }
   }
 
   if (expectedValueCount > 0) {
@@ -842,7 +883,7 @@ function hasBalanceStatementTitle(page: SourcePageInput) {
 
 function hasOtherPrimaryStatementTitle(page: SourcePageInput) {
   return pageLeadingLines(page).some((line) => isIncomeStatementTitleLine(line)
-    || /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:cash flows?|shareholders?[’'s\s-]*equity|stockholders?[’'s\s-]*equity|comprehensive income|changes in equity)\b/i.test(line)
+    || /^(?:audited\s+)?(?:consolidated\s+)?(?:(?:statements? of )?(?:cash flows?|shareholders?[’'s\s-]*equity|stockholders?[’'s\s-]*equity|changes in equity)|cash flow statement)\b/i.test(line)
     || /^notes? to (?:the )?(?:consolidated )?financial statements?\b/i.test(line));
 }
 
@@ -922,11 +963,41 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       }
       const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?(?:\s+(?:(?:19|20)\d{2})(?:\s*(?:,|and)?\s*(?:19|20)\d{2})*)?\s*$/i.test(line)
         || /^(?:(?:19|20)\d{2}[\s|,;]*){1,4}$/.test(line)
+        || /^notes?\b.*\b(?:19|20)\d{2}\b.*\b(?:19|20)\d{2}\b/i.test(line)
         || /^description(?:\s|\t)/i.test(line)
         || /^assets(?:\s|\t)+(?:19|20)\d{2}(?:\s|\t)+(?:19|20)\d{2}$/i.test(line);
-      if (isStatementTitleLine(line) || (!pendingLabel && /^(?:assets|current assets|liabilities(?: and (?:net worth|stockholders.? equity))?|current liabilities|stockholders.? equity):?$/i.test(line)) || /^commitments? and contingencies\b/i.test(line) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line) || isPeriodHeader) {
+      if (/^the financial statements\b.*\b(?:approved|authorised|authorized)\b/i.test(line)) break;
+      if (isStatementTitleLine(line) || (!pendingLabel && /^(?:assets|current assets|liabilities(?: and (?:net worth|stockholders.? equity))?|current liabilities|stockholders.? equity):?$/i.test(line)) || /^commitments? and contingencies\b/i.test(line) || /^the financial statements\b.*\b(?:approved|authorised|authorized)\b/i.test(line) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line) || isPeriodHeader) {
         pendingLabel = "";
         continue;
+      }
+      const unlabelledSubtotalConcept = activeSection === "current_asset"
+        ? "current_assets"
+        : activeSection === "non_current_asset"
+          ? "non_current_assets"
+          : null;
+      if (!pendingLabel && unlabelledSubtotalConcept && /^(?:[$€£₾]\s*)?[({[]?[-−]?\d/.test(line)) {
+        const subtotal = parseStatementLine(`continued-row ${line}`, usedPeriods.length);
+        if (subtotal?.label === "continued-row" && subtotal.rawValues.length === usedPeriods.length) {
+          items.push({
+            page: page.pageNumber,
+            originalLabel: "[no printed label]",
+            englishLabel: CONCEPT_ENGLISH_LABELS[unlabelledSubtotalConcept],
+            concept: unlabelledSubtotalConcept,
+            classification: activeSection,
+            isTotal: true,
+            values: subtotal.rawValues.map((raw, index) => ({
+              period: usedPeriods[index] ?? `column-${index + 1}`,
+              raw,
+              value: parseReportedNumber(raw),
+              confidence: page.confidence,
+              columnIndex: index,
+            })),
+            extractionMethod: page.extractionMethod,
+            confidence: page.confidence,
+          });
+          continue;
+        }
       }
       const shareDescription = /^common stock.*\b(?:par value|shares? authorized)\b/i.test(line);
       if (shareDescription) {
@@ -1292,9 +1363,9 @@ function pagesWithReportingContext(pages: SourcePageInput[]) {
   });
 }
 
-function orderedUniquePeriods(periods: string[]) {
+function orderedUniquePeriods(periods: string[], chronological = false) {
   const unique = [...new Set(periods)];
-  return unique.every((period) => /^(?:19|20)\d{2}$/.test(period))
+  return chronological && unique.every((period) => /^(?:19|20)\d{2}$/.test(period))
     ? unique.sort((left, right) => Number(left) - Number(right))
     : unique;
 }
@@ -1316,7 +1387,9 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
   const statementPages = input.lineItems?.length ? contextualPages : selectStatementPages(contextualPages);
   const statementText = statementPages.map((page) => page.text ?? "").join("\n");
   const documentText = contextualPages.map((page) => page.text ?? "").join("\n");
-  const detectedPeriods = orderedUniquePeriods(statementPages.flatMap((page) => detectPeriods(page.text ?? "", page.reportingYear)));
+  const statutoryComparatives = /accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\s+(?:no\.?|n[eo])?\s*1\b/i.test(statementText)
+    || /бухгалтерия баланси|бухгалтерский баланс/iu.test(statementText);
+  const detectedPeriods = orderedUniquePeriods(statementPages.flatMap((page) => detectPeriods(page.text ?? "", page.reportingYear)), statutoryComparatives);
   const statementYears = statementPages.map((page) => page.reportingYear).filter((year): year is string => Boolean(year));
   const inferredReportingYear = detectedPeriods.flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
     .sort((left, right) => Number(left) - Number(right)).at(-1)
@@ -1326,7 +1399,8 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
   const periodYears = periods
     .flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
     .sort((left, right) => Number(left) - Number(right));
-  const inferredReportingDate = latestPeriodLabel(periods)
+  const inferredReportingDate = reportingDateFromText(statementText, inferredReportingYear)
+    ?? latestPeriodLabel(periods)
     ?? inferredReportingYear
     ?? periodYears.at(-1)
     ?? "Unconfirmed";

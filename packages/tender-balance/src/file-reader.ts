@@ -93,7 +93,7 @@ async function renderPdfPageForOcr(page: PDFPageProxy, scale = 2, rotation = 0) 
 }
 
 const balanceSheetTitlePattern = /\b(?:balance sheets?|accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form|statement of financial position|statement of assets and liabilities|бухгалтерский баланс|moliyaviy holat)\b/i;
-const incomeStatementTitlePattern = /\b(?:reports? on financial results?|statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?|income statements?|молиявий натижалар)\b/i;
+const incomeStatementTitlePattern = /\b(?:reports? on financial results?|statements? of (?:(?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?|comprehensive income)|income statements?|profit and loss account|молиявий натижалар)\b/i;
 const statementTotalPatterns = [/\btotal assets\b/i, /\btotal liabilities\b/i, /\b(?:stockholders.?|shareholders.?|owners.?) equity\b/i, /\bnet (?:assets|worth)\b/i];
 export const OCR_DISCOVERY_BATCH_SIZE = 12;
 
