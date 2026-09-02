@@ -374,11 +374,17 @@ function valueForConcept(
     if (item.normalizedConcept !== concept) return [];
     const lineValue = item.values.find((candidate) => candidate.period === originalPeriod);
     if (!lineValue) return [];
-    const value = effectiveNormalizedValue(item, originalPeriod) ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null);
-    if (value === null) return [];
-    const provenance: FinancialProvenance = lineValue.correction ? "USER_INPUT" : "SOURCE";
-    const source = sourceFor(review, item, originalPeriod, displayYear, role, provenance);
-    return source ? [{ item, lineValue, value, provenance, source }] : [];
+    const sourceValue = effectiveNormalizedValue(item, originalPeriod) ?? (isExplicitReportedZero(lineValue.rawReportedValue) ? 0 : null);
+    if (sourceValue === null) return [];
+    const liabilityPresentedAsDeduction = ["total_liabilities", "current_liabilities"].includes(field)
+      && item.isTotal
+      && sourceValue < 0
+      && /^\s*\(.*\)\s*$/.test(lineValue.rawReportedValue);
+    const value = liabilityPresentedAsDeduction ? Math.abs(sourceValue) : sourceValue;
+    const sourceProvenance: FinancialProvenance = lineValue.correction ? "USER_INPUT" : "SOURCE";
+    const provenance: FinancialProvenance = liabilityPresentedAsDeduction ? "CALCULATED" : sourceProvenance;
+    const source = sourceFor(review, item, originalPeriod, displayYear, role, sourceProvenance);
+    return source ? [{ item, lineValue, value, provenance, source, liabilityPresentedAsDeduction }] : [];
   });
   if (!candidates.length) return null;
 
@@ -391,7 +397,10 @@ function valueForConcept(
     candidate.source.documentId !== primary.source.documentId
       || Math.abs(candidate.value - primary.value) > tolerance(review.statement.unitScale));
   const extractionProblem = candidates.some((candidate) => candidate.item.confidence < 0.8);
-  const provenance: FinancialProvenance = candidates.some((candidate) => candidate.provenance === "USER_INPUT") ? "USER_INPUT" : "SOURCE";
+  const presentationNormalized = candidates.some((candidate) => candidate.liabilityPresentedAsDeduction);
+  const provenance: FinancialProvenance = candidates.some((candidate) => candidate.provenance === "USER_INPUT")
+    ? "USER_INPUT"
+    : presentationNormalized ? "CALCULATED" : "SOURCE";
   return {
     id: `value:${field}:${displayYear}:${review.source.documentId}`,
     field,
@@ -400,10 +409,12 @@ function valueForConcept(
     currency: review.statement.currency,
     unitScale: review.statement.unitScale,
     reportedValue: primary.lineValue.normalizedValue ?? (isExplicitReportedZero(primary.lineValue.rawReportedValue) ? 0 : null),
-    calculatedValue: null,
+    calculatedValue: presentationNormalized ? primary.value : null,
     difference: null,
     provenance,
     sourceIds: candidates.map((candidate) => candidate.source.sourceId),
+    calculationFormula: presentationNormalized ? "Liability presented as a deduction in the source; normalized to a positive obligation amount" : undefined,
+    operandSourceIds: presentationNormalized ? candidates.map((candidate) => candidate.source.sourceId) : undefined,
     status: conflicting ? "source-inconsistency" : extractionProblem ? "extraction-problem" : "ready",
     problemType: conflicting ? "source-inconsistency" : extractionProblem ? "extraction-problem" : undefined,
   };
@@ -453,7 +464,46 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
       }
     }
 
-    const totalLiabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
+    const reportedNetWorth = valueForConcept(review, "owners_equity", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources)
+      ?? valueForConcept(review, "net_assets", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources);
+    const nonCurrentAssets = valueForConcept(review, "non_current_assets", "total_assets", period.originalPeriod, period.displayYear, input.role, dataset.sources);
+    const nonCurrentLiabilities = valueForConcept(review, "non_current_liabilities", "total_liabilities", period.originalPeriod, period.displayYear, input.role, dataset.sources);
+    const calculatedField = (field: Fin1FieldId, operands: CanonicalFinancialValue[], calculationFormula: string, value: number): CanonicalFinancialValue => ({
+      id: `value:${field}:${period.displayYear}:calculated`,
+      field,
+      displayYear: period.displayYear as string,
+      value,
+      currency: review.statement.currency,
+      unitScale: review.statement.unitScale,
+      reportedValue: null,
+      calculatedValue: value,
+      difference: null,
+      provenance: "CALCULATED",
+      sourceIds: Array.from(new Set(operands.flatMap((operand) => operand.sourceIds))),
+      calculationFormula,
+      operandSourceIds: Array.from(new Set(operands.flatMap((operand) => operand.sourceIds))),
+      status: operands.some((operand) => operand.status === "extraction-problem" || operand.status === "mapping-problem") ? "extraction-problem" : "ready",
+      problemType: operands.some((operand) => operand.status === "extraction-problem" || operand.status === "mapping-problem") ? "extraction-problem" : undefined,
+    });
+
+    let assets = dataset.values.find((value) => value.field === "total_assets" && value.displayYear === period.displayYear);
+    const currentAssetsForDerivation = dataset.values.find((value) => value.field === "current_assets" && value.displayYear === period.displayYear);
+    if (!assets && currentAssetsForDerivation && nonCurrentAssets) {
+      assets = calculatedField("total_assets", [currentAssetsForDerivation, nonCurrentAssets], "Current Assets + Non-current Assets", currentAssetsForDerivation.value + nonCurrentAssets.value);
+      dataset.values.push(assets);
+    }
+
+    let totalLiabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
+    const currentLiabilitiesForDerivation = dataset.values.find((value) => value.field === "current_liabilities" && value.displayYear === period.displayYear);
+    if (!totalLiabilities && currentLiabilitiesForDerivation && nonCurrentLiabilities) {
+      totalLiabilities = calculatedField("total_liabilities", [currentLiabilitiesForDerivation, nonCurrentLiabilities], "Current Liabilities + Non-current Liabilities", currentLiabilitiesForDerivation.value + nonCurrentLiabilities.value);
+      dataset.values.push(totalLiabilities);
+    }
+    if (!totalLiabilities && assets && reportedNetWorth) {
+      totalLiabilities = calculatedField("total_liabilities", [assets, reportedNetWorth], "Total Assets − reported Net Worth", assets.value - reportedNetWorth.value);
+      dataset.values.push(totalLiabilities);
+    }
+
     const mappedCurrentLiabilities = dataset.values.find((value) => value.field === "current_liabilities" && value.displayYear === period.displayYear);
     const hasNonZeroLiabilityComponent = review.lineItems.some((item) => {
       if (!["current_liability", "non_current_liability"].includes(item.classification) || item.normalizedConcept === "total_liabilities") return false;
@@ -479,9 +529,6 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
       });
     }
 
-    const reportedNetWorth = valueForConcept(review, "owners_equity", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources)
-      ?? valueForConcept(review, "net_assets", "net_worth", period.originalPeriod, period.displayYear, input.role, dataset.sources);
-    const assets = dataset.values.find((value) => value.field === "total_assets" && value.displayYear === period.displayYear);
     const liabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
     const calculatedNetWorth = assets && liabilities ? assets.value - liabilities.value : null;
     if (reportedNetWorth) {
@@ -548,8 +595,8 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
   { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^(?:total )?net sales$/i, /^net (?:revenue|income) from (?:the )?sales\b/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
-  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?tax(?:es| expense)?\b/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
-  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^net profit(?: \(loss\))?(?: for the reporting period)?\b/i, /^profit after tax$/i, /ҳисобот даврининг соф фойдаси/iu] },
+  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?(?:tax(?:es| expense)?|taxation)\b/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^net profit(?: \(loss\))?(?: for the reporting period)?\b/i, /^profit after tax$/i, /^profit.*after.*tax/i, /^profit(?:\s*\/\s*loss| or loss) for (?:the )?year$/i, /^consolidated profit$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];
 
 const STATUTORY_INCOME_ROW_FIELDS: Partial<Record<string, Fin1FieldId>> = {
@@ -563,8 +610,9 @@ const TURNOVER_REVIEW_PATTERNS = [/^(?:total )?sales$/i, /^(?:total )?receipts$/
 function incomeStatementPages(review: BalanceSheetReview) {
   const hasIncomeTitle = (page: BalanceSheetReview["pages"][number]) => page.text?.split(/\r?\n/).some((line) => {
     const normalized = line.replace(/\s+/g, " ").trim();
-    return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?$/i.test(normalized)
+    return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:(?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?|comprehensive income)(?:\s+for(?:\s+the)?\s+period)?$/i.test(normalized)
       || /^(?:consolidated\s+)?income statements?$/i.test(normalized)
+      || /^profit and loss account(?:\s+for)?$/i.test(normalized)
       || /^report on financial results\s*[-–—]?\s*form n(?:o|e)\.?\s*(?:2\b)?/i.test(normalized)
       || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
   });
@@ -585,6 +633,10 @@ function normalizeIncomeLabel(label: string) {
     .trim();
 }
 
+function stripIncomeNoteReference(label: string) {
+  return label.replace(/\s+(?:\(\d+(?:,\s*\d+)*\)|\d{1,2}\)?)$/, "");
+}
+
 function incomeDefinitionForLabel(label: string) {
   const normalized = normalizeIncomeLabel(label).replace(/[:\s]+$/, "");
   return INCOME_FIELD_PATTERNS.find((candidate) => candidate.patterns.some((pattern) => pattern.test(normalized)));
@@ -593,13 +645,13 @@ function incomeDefinitionForLabel(label: string) {
 function parseIncomeStatementLine(sourceLine: string, expectedValueCount: number) {
   const tabular = sourceLine.includes("\t") ? parseStatementLine(sourceLine, expectedValueCount) : undefined;
   if (tabular) {
-    const label = normalizeIncomeLabel(tabular.label).replace(/\s+\d{3}$/, "");
+    const label = stripIncomeNoteReference(normalizeIncomeLabel(tabular.label).replace(/\s+\d{3}$/, ""));
     if (incomeDefinitionForLabel(label)) return { ...tabular, label };
   }
   const normalized = normalizeIncomeLabel(sourceLine);
   const parsed = parseStatementLine(normalized, expectedValueCount);
   if (parsed) {
-    const label = normalizeIncomeLabel(parsed.label).replace(/\s+\d{3}$/, "");
+    const label = stripIncomeNoteReference(normalizeIncomeLabel(parsed.label).replace(/\s+\d{3}$/, ""));
     if (incomeDefinitionForLabel(label)) return { ...parsed, label };
   }
 
