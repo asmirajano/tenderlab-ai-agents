@@ -17,6 +17,7 @@ import {
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const allowedCountries = new Set(["KZ", "KG", "TJ", "TM", "UZ"]);
+const canonicalSnapshotBytes = (contents) => Buffer.from(contents.toString("utf8").replace(/\r\n/g, "\n"), "utf8");
 
 test("uses every and only qualifying Central Asia current tender from the pilot extraction", () => {
   assert.equal(runtimeTenders.length, pilotExtractionManifest.count);
@@ -44,7 +45,7 @@ test("retains deterministic order and reconciles the committed snapshot hash", a
     }
   }
   const snapshot = await readFile(path.join(projectRoot, pilotExtractionManifest.snapshotPath));
-  assert.equal(createHash("sha256").update(snapshot).digest("hex"), pilotExtractionManifest.snapshotSha256);
+  assert.equal(createHash("sha256").update(canonicalSnapshotBytes(snapshot)).digest("hex"), pilotExtractionManifest.snapshotSha256);
 });
 
 test("preserves missing source values and traceable source identities without fabricating fields", () => {

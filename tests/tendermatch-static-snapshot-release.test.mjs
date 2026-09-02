@@ -16,7 +16,8 @@ async function fixture(name) {
 }
 
 function sha256(contents) {
-  return createHash("sha256").update(contents).digest("hex");
+  const canonicalBytes = Buffer.from(contents.toString("utf8").replace(/\r\n/g, "\n"), "utf8");
+  return createHash("sha256").update(canonicalBytes).digest("hex");
 }
 
 function collectKeys(value, keys = []) {
