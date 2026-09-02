@@ -172,10 +172,10 @@
 
 /* Overview is the product orientation surface: keep the complete three-part
    story and its dominant finished result in the first desktop viewport. */
-.tb3-page-overview { padding-top: 82px; }
+.tb3-page-overview { padding-top: 148px; }
 .tb3-page-overview .tb3-overview-manifesto { margin: 0 0 14px; }
-.tb3-page-overview .tb3-overview-heading { align-items: center; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); padding: 11px 14px 16px; }
-.tb3-page-overview .tb3-overview-heading h1 { font-size: clamp(29px, 2.7vw, 39px); line-height: .94; margin: 5px 0 6px; }
+.tb3-page-overview .tb3-overview-heading { align-items: center; gap: var(--practical-overview-heading-gap); grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); padding: 18px 20px 22px; }
+.tb3-page-overview .tb3-overview-heading h1 { font-size: var(--practical-overview-title-size); line-height: .94; margin: 7px 0 8px; }
 .tb3-page-overview .tb3-overview-heading > div > p { font-size: var(--type-micro); line-height: 1.35; }
 .tb3-page-overview .tb3-role-callout { border-radius: 24px; }
 .tb3-page-overview .tb3-overview-story > article { padding: 10px; }
@@ -200,8 +200,8 @@
 .tb3-page-overview .tb3-overview-actions button { min-height: 36px; padding-block: 5px; }
 
 /* Approved d2834b2 Overview composition: illustrated pair → Agent → result. */
-.tb3-page-overview .tb3-overview-heading { grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); padding: 11px 14px 16px; }
-.tb3-page-overview .tb3-overview-heading h1 { font-size: clamp(30px, 2.8vw, 41px); }
+.tb3-page-overview .tb3-overview-heading { grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); padding: 18px 20px 22px; }
+.tb3-page-overview .tb3-overview-heading h1 { font-size: var(--practical-overview-title-size); }
 .tb3-page-overview .tb3-role-callout { grid-template-columns: minmax(88px, .72fr) minmax(0, 1.28fr); }
 .tb3-page-overview .tb3-overview-story { grid-template-columns: minmax(225px, .76fr) minmax(118px, .34fr) minmax(470px, 1.58fr); }
 .tb3-page-overview .tb3-story-input { background: #e7ede9; display: flex; flex-direction: column; padding: 12px; }

@@ -23,7 +23,7 @@ test("uses one accessible role-callout grammar with distinct Agent-specific mean
   assert.match(styles, /border-radius: 42% 58% 48% 52% \/ 35% 42% 58% 65%/);
   assert.match(styles, /@media \(max-width: 440px\)[\s\S]+grid-template-columns: 1fr/);
 
-  assert.match(balance, /AgentRoleCallout[\s\S]+CLIENT FINANCIAL EVIDENCE WORKSPACE[\s\S]+#Digitize[\s\S]+#Reconcile[\s\S]+#Trace[\s\S]+Financial evidence workspace/);
+  assert.match(balance, /AgentRoleCallout[\s\S]+CLIENT FINANCIAL EVIDENCE WORKSPACE[\s\S]+#Digitize[\s\S]+#Map[\s\S]+#Prepare[\s\S]+Tender financial forms workspace/);
   assert.match(logistics, /AgentRoleCallout[\s\S]+CLIENT LOGISTICS PLANNING WORKSPACE[\s\S]+#Scope[\s\S]+#Cost[\s\S]+#Explain[\s\S]+Delivery cost workspace/);
   assert.match(match, /AgentRoleCallout[\s\S]+TENDERLAB CONSULTANT WORKSPACE[\s\S]+#Discover[\s\S]+#Compare[\s\S]+#Explain[\s\S]+Tender matching workspace/);
 

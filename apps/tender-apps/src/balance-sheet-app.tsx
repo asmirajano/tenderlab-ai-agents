@@ -670,8 +670,8 @@ function BalanceSheetWorkspace() {
           audience="client"
           eyebrow={<p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>}
           productId="product:TA-BALANCE"
-          title={<>Raw statements become a<br /><em>finished digital balance sheet.</em></>}
-          promise={<>You provide the source. TenderBalance finds the statement, digitizes every readable value, checks the arithmetic, reports genuine findings, and saves the completed result.</>}
+          title={<>Raw statements become<br /><em>tender-ready financial forms.</em></>}
+          promise={<>You provide the financial statements. TenderBalance digitizes and reconciles the evidence, maps eligible values, and prepares reviewable FIN-1 and FIN-2 forms for tender use.</>}
           roleCallout={(
             <AgentRoleCallout
               className="bs-role-callout"
@@ -679,9 +679,9 @@ function BalanceSheetWorkspace() {
               imageAlt="Finance analyst calculating and reconciling balance-sheet totals"
               imagePosition="50% 42%"
               imageSrc="/tenderbalance/illustrations/tenderbalance-finance-reviewer.png"
-              subtitle="Turn raw financial statements into a traceable digital balance sheet"
-              tags={["#Digitize", "#Reconcile", "#Trace"]}
-              title="Financial evidence workspace"
+              subtitle="Turn financial statements into traceable, reviewable FIN-1 and FIN-2 forms"
+              tags={["#Digitize", "#Map", "#Prepare"]}
+              title="Tender financial forms workspace"
               titleId="tenderbalance-role-title"
             />
           )}
@@ -700,38 +700,36 @@ function BalanceSheetWorkspace() {
             <div className="bs-manifesto-agent" aria-label="TenderBalance transformation">
               <span className="bs-story-arrow" aria-hidden="true">→</span>
               <div className="bs-agent-core"><small>TENDER APPS</small><strong>Tender<br />Balance</strong></div>
-              <ol><li>Read</li><li>Identify</li><li>Extract</li><li>Structure</li><li>Check</li></ol>
+              <ol><li>Read</li><li>Digitize</li><li>Reconcile</li><li>Map</li><li>Prepare</li></ol>
               <span className="bs-story-arrow" aria-hidden="true">→</span>
             </div>
           )}
           output={(
-            <article className="bs-finished-package">
-              <div className="bs-manifesto-label"><span>03</span><b>WHAT YOU RECEIVE</b><em>FINISHED PRODUCT</em></div>
-              <header>
-                <div><small>ILLUSTRATIVE PRODUCT PREVIEW · NOT CLIENT EVIDENCE</small><h2>Digitized Balance Sheet</h2><p>Illustrative Company Ltd · 2025 / 2024</p></div>
-                <span className="bs-example-approved">COMPLETED EXAMPLE</span>
-              </header>
-              <div className="bs-output-preview-table" role="table" aria-label="Illustrative structured balance-sheet output">
-                <div role="row" className="is-header"><span role="columnheader">Original</span><span role="columnheader">Normalized</span><span role="columnheader">2025</span><span role="columnheader">Trace</span><span role="columnheader">Status</span></div>
-                <div role="row"><span role="cell">Cash and cash equivalents</span><span role="cell">Cash & equivalents</span><span role="cell">125,400</span><span role="cell">✓ p.2</span><span role="cell">Digitized</span></div>
-                <div role="row"><span role="cell">Trade receivables</span><span role="cell">Receivables</span><span role="cell">84,200</span><span role="cell">✓ p.2</span><span role="cell">Digitized</span></div>
-                <div role="row"><span role="cell">Total assets</span><span role="cell">Total assets</span><span role="cell">481,900</span><span role="cell">✓ p.2</span><span role="cell">Reconciled</span></div>
+            <article className="bs-result-receipt">
+              <div className="bs-manifesto-label"><span>03</span><b>WHAT YOU RECEIVE</b></div>
+              <div className="bs-fin-packet" aria-label="Illustrative output: a reviewable, source-linked tender finance packet containing FIN-1 and FIN-2">
+                <div className="bs-fin-packet-folder" aria-hidden="true">
+                  <span>TENDER FINANCE</span>
+                </div>
+                <div className="bs-fin-packet-doc fin-one" aria-hidden="true">
+                  <span>FIN-1</span>
+                  <b>HISTORICAL<br />PERFORMANCE</b>
+                  <i /><i /><i />
+                </div>
+                <div className="bs-fin-packet-doc fin-two" aria-hidden="true">
+                  <span>FIN-2</span>
+                  <b>ANNUAL<br />TURNOVER</b>
+                  <i /><i /><i />
+                </div>
+                <strong>READY FOR REVIEW</strong>
               </div>
-              <ul className="bs-finished-checks" aria-label="Finished evidence package contents">
-                <li><span>✓</span> Company & periods structured</li>
-                <li><span>✓</span> Original labels preserved</li>
-                <li><span>✓</span> Source traceability</li>
-                <li><span>✓</span> Arithmetic reconciled</li>
-                <li><span>✓</span> Exceptions reported</li>
-                <li><span>✓</span> Automatically saved & versioned</li>
-              </ul>
-              <div className="bs-package-release"><span>COMPLETED RESULT</span><b>Ready for downstream tender analysis</b><i>→</i></div>
+              <div className="bs-input-chips" aria-label="Output qualities"><span>FIN-1</span><span>FIN-2</span><span>Source-linked</span></div>
             </article>
           )}
           actions={(
             <>
-              <p className="bs-manifesto-action-copy"><b>One client action.</b><span>Upload the statement; TenderBalance does the work and returns the product.</span></p>
-              <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Digitize a balance sheet <span aria-hidden="true">→</span></button>
+              <p className="bs-manifesto-action-copy"><b>One client action.</b><span>Upload the financial statements; TenderBalance prepares the reviewable tender forms.</span></p>
+              <button className="bs-primary-action" onClick={startNewAnalysis} type="button">Prepare tender financial forms <span aria-hidden="true">→</span></button>
               <button className="bs-secondary-action" onClick={() => navigateTo({ surface: "cases", caseId: "", demo: false })} type="button">Open previous cases</button>
             </>
           )}
@@ -742,11 +740,11 @@ function BalanceSheetWorkspace() {
           <div className="bs-client-journey" aria-label="How TenderBalance works">
             <article><span>01</span><strong>Upload statements</strong><p>Add one balance sheet or several related source documents.</p></article>
             <article><span>02</span><strong>The agent works</strong><p>TenderBalance identifies, extracts, structures, reconciles, and validates the statement independently.</p></article>
-            <article><span>03</span><strong>Receive the result</strong><p>The complete digital balance sheet, checks, and findings appear in the app and save automatically.</p></article>
+            <article><span>03</span><strong>Receive the result</strong><p>The reconciled evidence Case and reviewable FIN-1 and FIN-2 forms appear in the app and save automatically.</p></article>
             <article><span>04</span><strong>Inspect only if useful</strong><p>Source trace, corrections, comparison, and formal approval remain optional professional controls.</p></article>
           </div>
           <section className="bs-trust-boundary">
-            <div><span>SCOPE</span><strong>Digitization and validation—not a tender eligibility decision</strong></div>
+            <div><span>SCOPE</span><strong>Financial-form preparation—not a tender eligibility decision</strong></div>
             <p>The product preserves original reported values and keeps corrections separate. It does not assess income statements, cash flows, audit opinions, financial health, supplier suitability, or final tender eligibility.</p>
             <button onClick={openDemo} type="button">Open a clearly labelled demo</button>
           </section>

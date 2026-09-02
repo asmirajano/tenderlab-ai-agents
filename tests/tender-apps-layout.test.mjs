@@ -31,22 +31,32 @@ test("provides one accessible persisted layout preference in the shared Tender A
   assert.match(switcher, />\s*Wide\s*</);
 });
 
-test("expands only shared workspace limits and lets responsive layouts override Wide", async () => {
-  const [shell, balanceSheet, landedCost] = await Promise.all([
+test("uses one practical-product coverage contract and lets responsive layouts override Wide", async () => {
+  const [shell, manifesto, balanceSheet, landedCost, tenderMatch] = await Promise.all([
     read("apps/tender-apps/src/client-shell.css"),
+    read("apps/tender-apps/src/client-product-manifesto.css"),
     read("apps/tender-apps/src/balance-sheet.css"),
     read("apps/tender-apps/src/logistics-costing.css"),
+    read("apps/tender-apps/src/tendermatch.css"),
   ]);
 
   assert.match(shell, /--catalog-content-max-width:\s*1500px/);
-  assert.match(shell, /--balance-content-max-width:\s*1580px/);
-  assert.match(shell, /--costing-content-max-width:\s*1640px/);
-  assert.match(shell, /@media \(min-width: 1280px\)[\s\S]+data-layout="wide"[\s\S]+2400px/);
+  assert.match(shell, /--practical-content-max-width:\s*2100px/);
+  assert.match(shell, /--balance-content-max-width:\s*var\(--practical-content-max-width\)/);
+  assert.match(shell, /--costing-content-max-width:\s*var\(--practical-content-max-width\)/);
+  assert.match(shell, /--match-content-max-width:\s*var\(--practical-content-max-width\)/);
+  assert.match(shell, /--practical-overview-title-size:\s*clamp\(48px, 4vw, 72px\)/);
+  assert.match(shell, /@media \(min-width: 1280px\)[\s\S]+data-layout="wide"[\s\S]+--practical-content-max-width:\s*2800px/);
   assert.match(shell, /@media \(max-width: 1040px\)[\s\S]+client-header-controls[\s\S]+overflow-x:\s*auto/);
   assert.match(shell, /client-layout-options[\s\S]+border-radius:\s*999px/);
   assert.match(shell, /client-header-controls[^}]+max-width:\s*100vw[^}]+width:\s*100%/);
   assert.match(balanceSheet, /max-width:\s*var\(--balance-content-max-width\)/);
   assert.match(landedCost, /max-width:\s*var\(--costing-content-max-width\)/);
+  assert.match(manifesto, /padding:\s*var\(--practical-overview-top-space\)/);
+  assert.match(manifesto, /font-size:\s*var\(--practical-overview-title-size\)/);
+  assert.match(landedCost, /\.cost-product-heading h1 \{[^}]+font-size:\s*var\(--practical-overview-title-size\)/);
+  assert.match(tenderMatch, /\.tb3-page-overview \.tb3-overview-heading h1 \{[^}]+font-size:\s*var\(--practical-overview-title-size\)/);
+  assert.match(tenderMatch, /\.tb3-page-overview \{\s*padding-top:\s*148px/);
   assert.doesNotMatch(shell, /data-layout="wide"[^}]+font-size/);
   assert.doesNotMatch(shell, /data-layout="wide"[^}]+zoom/);
 });

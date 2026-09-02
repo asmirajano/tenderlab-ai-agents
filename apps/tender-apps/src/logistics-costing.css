@@ -287,7 +287,7 @@
 .client-result-details,
 .audit-mode-banner {
   margin-inline: auto;
-  max-width: 1640px;
+  max-width: var(--costing-content-max-width);
   width: calc(100% - (var(--app-gutter) * 2));
 }
 
@@ -317,10 +317,10 @@
 .client-workspace-nav button:hover, .client-workspace-nav button:focus-visible { border-color: var(--costing-green); outline: 3px solid rgba(20,116,84,.12); }
 
 /* Overview manifesto: raw inputs → deterministic transformation → reviewed product */
-.cost-product-manifesto { padding-block: clamp(58px, 6vw, 96px) 26px; }
-.cost-product-heading { align-items: start; display: grid; gap: clamp(20px, 3vw, 42px); grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); margin-bottom: clamp(38px, 4vw, 62px); }
+.cost-product-manifesto { padding-block: var(--practical-overview-top-space) 26px; }
+.cost-product-heading { align-items: start; display: grid; gap: var(--practical-overview-heading-gap); grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); margin-bottom: clamp(24px, 2.4vw, 36px); }
 .cost-product-heading-copy { min-width: 0; }
-.cost-product-heading h1 { font-size: clamp(51px, 5.8vw, 91px); font-weight: 580; letter-spacing: -.073em; line-height: .91; margin: 0; }
+.cost-product-heading h1 { font-size: var(--practical-overview-title-size); font-weight: 580; letter-spacing: -.073em; line-height: .91; margin: 0; }
 .cost-product-heading h1 em { color: var(--costing-green); font-style: normal; }
 .cost-product-heading-copy > p:not(.costing-eyebrow) { color: #607068; font-size: var(--type-body); line-height: 1.55; margin: 24px 0 0; max-width: 920px; }
 .cost-role-callout { --agent-role-accent: var(--costing-signal); --agent-role-ink: var(--costing-ink); --agent-role-label: var(--costing-green); --agent-role-surface-from: #f0faef; --agent-role-surface-to: #dff2e5; margin-top: 0; }

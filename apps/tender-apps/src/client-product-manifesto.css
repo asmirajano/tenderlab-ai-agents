@@ -1,15 +1,15 @@
 .client-product-manifesto {
   margin-inline: auto;
   max-width: var(--balance-content-max-width);
-  padding: clamp(44px, 6vw, 82px) var(--app-gutter) 28px;
+  padding: var(--practical-overview-top-space) var(--app-gutter) 28px;
 }
 
 .client-product-manifesto__header {
   align-items: start;
   display: grid;
-  gap: clamp(20px, 3vw, 42px);
+  gap: var(--practical-overview-heading-gap);
   grid-template-columns: minmax(0, 1fr) minmax(340px, 410px);
-  margin-bottom: clamp(28px, 4vw, 48px);
+  margin-bottom: clamp(24px, 2.4vw, 36px);
 }
 
 .client-product-manifesto__heading-copy {
@@ -19,7 +19,7 @@
 }
 
 .client-product-manifesto__heading-copy h1 {
-  font-size: clamp(46px, 5.7vw, 88px);
+  font-size: var(--practical-overview-title-size);
   font-weight: 590;
   letter-spacing: -.07em;
   line-height: .9;

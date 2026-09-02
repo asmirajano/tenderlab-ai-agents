@@ -1,7 +1,7 @@
-# TenderBalance — Balance Sheet Digitization MVP
+# TenderBalance — Tender Financial Forms MVP
 
 **Product family:** Tender Apps  
-**Product:** TenderBalance — verified balance-sheet digitization  
+**Product:** TenderBalance — source-traceable FIN-1 and FIN-2 preparation
 **Current maturity:** interactive MVP with a real-document benchmark; not a production client-data service
 
 ## Architecture placement
@@ -21,13 +21,13 @@ The persistent output extends the existing `dataset:TEA-DS-FINANCIAL-FILINGS` re
 
 ## TOR and execution contract
 
-`Client uploads balance sheet(s) → local intake/text extraction or OCR → identify the statement page and metadata → extract and preserve reported line items → normalize without overwriting → validate arithmetic and distinguish source findings from extraction uncertainty → automatically show and save the structured result → Prepare IFI Financial Forms → FIN-1 mapping review → generated FIN-1 → Company Profile / Eligibility / future comparison and matching consumers`
+`Client uploads financial statement(s) → local intake/text extraction or OCR → identify statement pages and metadata → extract and preserve reported line items → normalize without overwriting → validate arithmetic and distinguish source findings from extraction uncertainty → save the canonical financial evidence Case → map eligible evidence into IFI financial forms → client review → generated FIN-1 and FIN-2 → tender-submission preparation / later qualification consumers`
 
 The default product contract is **Upload → Agent works → Result**. Human intervention is exception-based: the client is asked only for evidence or information the agent genuinely cannot determine safely. Row inspection, corrections, provenance review, and formal approval remain available under **Advanced Review & Audit**, but do not gate a high-confidence result.
 
 ### Purpose
 
-Read, review, and digitize company balance sheets into trustworthy structured records suitable for later tender-related analysis. The capability stops at verified financial facts.
+Turn supplied financial statements into source-traceable, reviewable FIN-1 Historical Financial Performance and FIN-2 Average Annual Turnover forms for tender use. Balance-sheet digitization and reconciliation are intermediate evidence work; the capability does not decide tender eligibility or approve a submission.
 
 ### Inputs
 
@@ -57,7 +57,8 @@ No access to an originating-session client audit report is assumed.
 - FIN-2 schema: [`packages/catalog-schema/schema/fin2-size-of-operation.schema.json`](../packages/catalog-schema/schema/fin2-size-of-operation.schema.json)
 - Record grain: one processed balance-sheet document/version, with one line-item record per original label and one value per reported period/column.
 - Stable join keys: `reviewId`, `source.documentId`, line-item `id`, `period`, `normalizedConcept`.
-- Consumers: verified Company Profile facts, later tender-specific Eligibility checks, future financial comparisons, and future tender matching features.
+- Primary client output: reviewable FIN-1 and FIN-2 tender-form artifacts derived from the saved canonical financial evidence Case.
+- Consumers: client tender-submission preparation, verified Company Profile facts, later tender-specific Eligibility checks, future financial comparisons, and future tender matching features.
 - A processed result is immediately available and saved as a local case. Optional formal approval means only that a named reviewer reviewed the transcription and checks; it never means the company is financially healthy, eligible, or recommended.
 
 ## Downstream FIN Forms workflow

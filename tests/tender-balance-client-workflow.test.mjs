@@ -28,7 +28,7 @@ test("TenderBalance starts with a clean client surface and keeps demos separate"
 test("TenderBalance makes upload the only required client action before the result", async () => {
   const source = await readFile(appUrl, "utf8");
 
-  assert.match(source, /Digitize a balance sheet/);
+  assert.match(source, /Prepare tender financial forms/);
   assert.match(source, /type="file" multiple/);
   assert.match(source, /Add an optional internal company or case reference/);
   assert.match(source, /tenderapps:tenderbalance:case-contexts:v1/);
@@ -48,12 +48,19 @@ test("TenderBalance declares input, transformation, and the tangible finished pr
   assert.match(manifesto, /part="outcome-promise"[\s\S]*part="input"[\s\S]*part="agent-transformation"[\s\S]*part="finished-output"[\s\S]*part="primary-action"/);
   assert.match(manifesto, /Client input, agent transformation, and finished product/);
   assert.match(source, /WHAT YOU PROVIDE/);
-  assert.match(source, /Read[\s\S]*Identify[\s\S]*Extract[\s\S]*Structure[\s\S]*Check/);
+  assert.match(source, /Read[\s\S]*Digitize[\s\S]*Reconcile[\s\S]*Map[\s\S]*Prepare/);
   assert.match(source, /WHAT YOU RECEIVE/);
-  assert.match(source, /Digitized Balance Sheet/);
-  assert.match(source, /ILLUSTRATIVE PRODUCT PREVIEW · NOT CLIENT EVIDENCE/);
-  assert.match(source, /Original labels preserved/);
-  assert.match(source, /Ready for downstream tender analysis/);
+  assert.match(source, /tender-ready financial forms/);
+  assert.match(source, /bs-fin-packet/);
+  assert.match(source, /FIN-1[\s\S]*HISTORICAL[\s\S]*PERFORMANCE/);
+  assert.match(source, /FIN-2[\s\S]*ANNUAL[\s\S]*TURNOVER/);
+  assert.match(source, /READY FOR REVIEW/);
+  assert.match(source, /Source-linked/);
+  assert.doesNotMatch(source, /bs-fin-output-stage/);
+  assert.doesNotMatch(source, /bs-fin-form-card/);
+  assert.doesNotMatch(source, /bs-output-preview-table/);
+  assert.doesNotMatch(source, /bs-finished-checks/);
+  assert.doesNotMatch(source, /bs-result-receipt__panel/);
   assert.match(source, /How it works, accepted inputs, and scope/);
 });
 

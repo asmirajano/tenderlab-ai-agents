@@ -18,10 +18,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 
 .tender-apps-product {
-  --balance-content-max-width: 1580px;
+  --practical-content-max-width: 2100px;
+  --practical-overview-title-size: clamp(48px, 4vw, 72px);
+  --practical-overview-top-space: clamp(30px, 2.7vw, 46px);
+  --practical-overview-heading-gap: clamp(22px, 2.2vw, 36px);
+  --balance-content-max-width: var(--practical-content-max-width);
   --catalog-content-max-width: 1500px;
-  --costing-content-max-width: 1640px;
-  --match-content-max-width: 1640px;
+  --costing-content-max-width: var(--practical-content-max-width);
+  --match-content-max-width: var(--practical-content-max-width);
   --type-micro: clamp(.75rem, .7rem + .16vw, .9375rem);
   --type-label: clamp(.8125rem, .75rem + .2vw, 1rem);
   --type-small: clamp(.9rem, .82rem + .24vw, 1.125rem);
@@ -265,15 +269,12 @@ a { color: inherit; text-decoration: none; }
 
 @media (min-width: 1280px) {
   .tender-apps-product[data-layout="wide"] {
-    --balance-content-max-width: 2400px;
+    --practical-content-max-width: 2800px;
+    --balance-content-max-width: var(--practical-content-max-width);
     --catalog-content-max-width: 2400px;
-    --costing-content-max-width: 2400px;
-    --match-content-max-width: 2400px;
+    --costing-content-max-width: var(--practical-content-max-width);
+    --match-content-max-width: var(--practical-content-max-width);
   }
-}
-
-@media (min-width: 1680px) {
-  .tender-apps-product:not([data-layout="wide"]) { --costing-content-max-width: 1760px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
