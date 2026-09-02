@@ -158,6 +158,7 @@ test("maps one unified Tender Apps target and keeps old product hosts as redirec
   assert.equal(clientHosting.public, "apps/tender-apps/dist");
   assert.notEqual(clientHosting.public, firebaseConfig.hosting.find((entry) => entry.target === "tenderlab")?.public);
   assert.match(JSON.stringify(clientHosting.headers), /frame-ancestors 'none'/);
+  assert.match(JSON.stringify(clientHosting.headers), /script-src 'self' 'wasm-unsafe-eval'/);
   assert.match(JSON.stringify(clientHosting.headers), /noindex, nofollow, noarchive/);
   assert.match(rootPackage.scripts.build, /build:tender-apps/);
   assert.equal(rootPackage.scripts["build:tender-apps"], "npm --prefix apps/tender-apps run build");
