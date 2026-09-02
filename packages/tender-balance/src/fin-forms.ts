@@ -431,7 +431,21 @@ function pushIssue(dataset: CanonicalFinancialDataset, issue: CanonicalFinancial
 function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: FinancialDatasetInput) {
   const review = input.review;
   if (!review || input.role !== "FINANCIAL_SOURCE") return;
-  const periodMappings = review.statement.periods.map((period) => normalizeFinancialPeriod(review, period));
+  const periodMappings = review.statement.periods.map((period) => {
+    const mapping = normalizeFinancialPeriod(review, period);
+    if (!mapping.eligibleForFin) return mapping;
+    const hasReportedBalanceValue = review.lineItems.some((item) => {
+      const value = item.values.find((candidate) => candidate.period === period);
+      return Boolean(value) && (effectiveNormalizedValue(item, period) !== null || isExplicitReportedZero(value?.rawReportedValue ?? ""));
+    });
+    return hasReportedBalanceValue ? mapping : {
+      ...mapping,
+      status: "excluded" as const,
+      rationale: "The date appears in document metadata, but no reported balance value is attached to it.",
+      confidence: "high" as const,
+      eligibleForFin: false,
+    };
+  });
   dataset.periodMappings.push(...periodMappings);
 
   for (const period of periodMappings) {
@@ -675,6 +689,14 @@ function parseIncomeReportedNumber(raw: string) {
   return isExplicitReportedZero(raw) ? 0 : parseReportedNumber(raw);
 }
 
+function selectStatutoryIncomeValues(rawValues: string[], expectedPeriodCount: number) {
+  const reportedCells = rawValues.filter((raw) => raw.trim() && parseIncomeReportedNumber(raw) !== null);
+  if (reportedCells.length >= expectedPeriodCount * 2) {
+    return Array.from({ length: expectedPeriodCount }, (_, index) => reportedCells[index * 2]);
+  }
+  return reportedCells.slice(0, expectedPeriodCount);
+}
+
 function parseStatutoryIncomeRows(text: string, expectedPeriodCount: number) {
   const rows: Array<{ label: string; rawValues: string[]; field: Fin1FieldId }> = [];
   for (const sourceLine of text.split(/\r?\n/)) {
@@ -696,9 +718,11 @@ function parseStatutoryIncomeRows(text: string, expectedPeriodCount: number) {
     }
     const field = parsed?.sourceRowCode ? STATUTORY_INCOME_ROW_FIELDS[parsed.sourceRowCode] : undefined;
     if (!parsed || !field || !parsed.rawValues.length) continue;
-    const rawValues = parsed.rawValues.length >= expectedPeriodCount * 2 - 1
-      ? Array.from({ length: expectedPeriodCount }, (_, index) => parsed.rawValues[index * 2] ?? "—")
-      : parsed.rawValues.slice(-expectedPeriodCount);
+    // Statutory Form No.2 exports are not consistent about retaining empty
+    // income/expense separator cells. Recover the reported numeric cells first:
+    // paired income/expense rows use every second value, while rows whose blank
+    // separators collapsed simply use the first value for each period.
+    const rawValues = selectStatutoryIncomeValues(parsed.rawValues, expectedPeriodCount);
     if (rawValues.length === expectedPeriodCount) rows.push({ label: normalizeIncomeLabel(parsed.label), rawValues, field });
   }
   return rows;

@@ -1396,14 +1396,6 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
     ?? statementYears.sort((left, right) => Number(left) - Number(right)).at(-1)
     ?? reportingYearFromText(statementText);
   const periods = input.periods?.length ? input.periods : (detectedPeriods.length ? detectedPeriods : detectPeriods(statementText, inferredReportingYear));
-  const periodYears = periods
-    .flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
-    .sort((left, right) => Number(left) - Number(right));
-  const inferredReportingDate = reportingDateFromText(statementText, inferredReportingYear)
-    ?? latestPeriodLabel(periods)
-    ?? inferredReportingYear
-    ?? periodYears.at(-1)
-    ?? "Unconfirmed";
   const statementUnits = detectUnits(statementText);
   const units = hasExplicitUnitScale(statementText) || hasStatementCurrencyFigures(statementText)
     ? statementUnits
@@ -1412,6 +1404,19 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
   const unitScale = input.unitScale ?? units.unitScale;
   const parsedItems = input.lineItems?.length ? input.lineItems : parseLineItems(statementPages, periods);
   const lineItems = parsedItems.map((item, index) => lineItemFromInput(item, input.source, unitScale, index));
+  const reportedValuePeriods = lineItems.flatMap((item) => item.values
+    .filter((value) => value.reportedValue !== null)
+    .map((value) => value.period));
+  const evidenceBackedPeriods = orderedUniquePeriods(reportedValuePeriods, statutoryComparatives);
+  const statementPeriods = input.periods?.length || !evidenceBackedPeriods.length ? periods : evidenceBackedPeriods;
+  const periodYears = statementPeriods
+    .flatMap((period) => period.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? [])
+    .sort((left, right) => Number(left) - Number(right));
+  const evidenceReportingYear = periodYears.at(-1) ?? inferredReportingYear;
+  const inferredReportingDate = reportingDateFromText(statementText, evidenceReportingYear)
+    ?? latestPeriodLabel(statementPeriods)
+    ?? evidenceReportingYear
+    ?? "Unconfirmed";
   const statementEntity = detectEntity(statementText);
   const documentEntity = detectEntity(documentText);
   const base: Omit<BalanceSheetReview, "issues" | "arithmeticChecks"> = {
@@ -1428,7 +1433,7 @@ export function buildBalanceSheetReview(input: BalanceSheetInput): BalanceSheetR
     statement: {
       reportingEntity: input.reportingEntity ?? (documentEntity !== "Unconfirmed reporting entity" ? documentEntity : statementEntity),
       reportingDate: input.reportingDate ?? inferredReportingDate,
-      periods,
+      periods: statementPeriods,
       currency: input.currency ?? (statementCurrency !== "UNSPECIFIED" ? statementCurrency : detectCurrency(documentText)),
       unitLabel: input.unitLabel ?? units.unitLabel,
       unitScale,

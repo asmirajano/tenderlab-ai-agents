@@ -162,7 +162,7 @@ test("uses authoritative Form No.2 row codes with paired income and expense colu
       { pageNumber: 2, extractionMethod: "ocr", confidence: 0.95, text: [
         "Report on financial results-form Ne2", "Fourth quarter of 2022", "Unit of measurement, thousand soums",
         "For corresponding period last year", "For accounting period",
-        "Net revenue from sales of products (goods, works and services)\t010\t5 558 561,00\tx\t6 133 512,00\tx",
+        "Net revenue from sales of products (goods, works and services)\t010\t5 558 561,00\t\t\t6 133 512,00",
         "Profit (loss) before income tax (p. 220+/-230)\t240\t336 488,00\t0,00\t310 442,00\t0,00",
         "Net profit (loss) for the reporting period (p. 240-250-260)\t260 270\t286 015,00\t0,00\t263 872,00\t0,00",
       ].join("\n") },
@@ -175,6 +175,63 @@ test("uses authoritative Form No.2 row codes with paired income and expense colu
   assert.equal(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2021")?.value, 336_488_000);
   assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2022")?.value, 263_872_000);
   assert.equal(dataset.sources.find((source) => source.sourceId.includes("income:total_revenue:2021"))?.originalLabel.startsWith("Net revenue from sales"), true);
+});
+
+test("excludes metadata-only dates that have no attached balance values from FIN periods", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:metadata-years", fileName: "SYNTHETIC_METADATA_YEARS.pdf", sha256: "synthetic-metadata-years", synthetic: true },
+    pages: [{
+      pageNumber: 1,
+      extractionMethod: "digital-text",
+      confidence: 0.99,
+      text: [
+        "SYNTHETIC METADATA YEAR COMPANY LLC",
+        "Balance Sheets",
+        "December 31, 2024 and 2023",
+        "USD units",
+        "Total current assets 80 70",
+        "Total assets 100 90",
+        "Total current liabilities 20 18",
+        "Total liabilities 60 55",
+        "Total partners' equity 40 35",
+        "Total liabilities and partners' equity 100 90",
+      ].join("\n"),
+    }],
+  });
+  const contaminatedReview = {
+    ...review,
+    statement: { ...review.statement, periods: ["2002", ...review.statement.periods, "2025"] },
+  };
+  const { dataset, form } = prepareFin1FromBalanceReview(contaminatedReview);
+
+  assert.deepEqual(form.years, ["2023", "2024"]);
+  assert.equal(dataset.periodMappings.find((period) => period.originalPeriod === "2002")?.status, "excluded");
+  assert.equal(dataset.periodMappings.find((period) => period.originalPeriod === "2025")?.eligibleForFin, false);
+});
+
+test("does not promote administrative dates without reported values into canonical statement periods", () => {
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:administrative-dates", fileName: "SYNTHETIC_ADMINISTRATIVE_DATES.pdf", sha256: "synthetic-administrative-dates", synthetic: true },
+    pages: [{
+      pageNumber: 1,
+      extractionMethod: "digital-text",
+      confidence: 0.99,
+      text: ["Balance Sheet", "Approved by order dated 31.12.2002", "Electronically submitted 01.01.2025"].join("\n"),
+    }],
+    lineItems: [{
+      page: 1,
+      originalLabel: "Total assets",
+      concept: "total_assets",
+      classification: "current_asset",
+      isTotal: true,
+      values: [
+        { period: "2023", raw: "100", value: 100, confidence: 0.99 },
+        { period: "2024", raw: "120", value: 120, confidence: 0.99 },
+      ],
+    }],
+  });
+
+  assert.deepEqual(review.statement.periods, ["2023", "2024"]);
 });
 
 test("digitizes a synthetic Uzbek Form 1 into English canonical labels and generates FIN-1", () => {
