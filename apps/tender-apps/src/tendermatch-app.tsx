@@ -28,6 +28,7 @@ import {
 } from "../../../packages/tendermatch/src";
 import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
+import { TrialNotice } from "./trial-notice.tsx";
 import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState } from "./tendermatch-supplier-api.ts";
 import { tenderMatchFormulaToExcel } from "./tendermatch-formula-excel.ts";
 
@@ -488,6 +489,7 @@ function DashboardView({ allMatches, auditedMatches, evaluatedMatches, priorityM
   const previewSupplier = suppliers.find((entry) => entry.id === previewAssessment.supplierId) ?? suppliers[0]!;
   const previewTender = runtimeTenders.find((entry) => entry.id === previewAssessment.tenderId) ?? runtimeTenders[0]!;
   return <>
+    <TrialNotice product="match" productId="product:TA-TENDERBOOST" />
     <PracticalAgentOverview audience="consultant" className="tb3-overview-manifesto" productId="product:TA-TENDERBOOST" aria-labelledby="tendermatch-overview-title">
       <PracticalAgentOverviewPart as="header" className="tb3-overview-heading" part="outcome-promise">
         <div>

@@ -33,6 +33,7 @@ import {
 } from "../../../packages/logistics-costing/src";
 import { readClientDocument, type DocumentProcessingStage } from "./client-document-extraction";
 import { logisticsCalculationExcelFileName, logisticsCalculationToExcel, type LogisticsCalculationWorkbookModel } from "./logistics-calculation-excel";
+import { TrialNotice } from "./trial-notice.tsx";
 import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 
@@ -1242,6 +1243,7 @@ export default function LogisticsCostingApp() {
     return (
       <main className="costing-page client-first-page">
         {clientWorkspaceNav}
+        <TrialNotice product="logistics" productId="product:TA-LANDED-COST" />
         <PracticalAgentOverview audience="client" className="cost-product-manifesto" productId="product:TA-LANDED-COST">
           <PracticalAgentOverviewPart as="header" className="cost-product-heading" part="outcome-promise">
             <div className="cost-product-heading-copy">

@@ -18,6 +18,7 @@ import "../../../packages/design-system/src/tokens.css";
 import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { ClientProductManifesto } from "./client-product-manifesto.tsx";
 import { PracticalAgentOverviewBoundary } from "./practical-agent-overview.tsx";
+import { TrialNotice } from "./trial-notice.tsx";
 import {
   balanceNavigationHref,
   isCaseSurface,
@@ -666,6 +667,7 @@ function BalanceSheetWorkspace() {
     return (
       <main className="bs-page bs-client-start">
         {clientNav}
+        <TrialNotice product="balance" productId="product:TA-BALANCE" />
         <ClientProductManifesto
           audience="client"
           eyebrow={<p className="bs-eyebrow"><span /> TENDER APPS · VERIFIED COMPANY EVIDENCE</p>}
