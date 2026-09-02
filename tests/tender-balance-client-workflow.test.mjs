@@ -38,6 +38,8 @@ test("TenderBalance makes upload the only required client action before the resu
   assert.doesNotMatch(source, /Confirm and open review/);
   assert.match(source, /Please add the complete statement/);
   assert.match(source, /No figures have been invented/);
+  assert.match(source, /function fileReadErrorMessage\(error: unknown\)/);
+  assert.match(source, /const message = fileReadErrorMessage\(error\)/);
   assert.match(await readFile(new URL("./fixtures/SYNTHETIC_Client_Intake_Balance.txt", import.meta.url), "utf8"), /SYNTHETIC FIXTURE - NOT CLIENT EVIDENCE/);
 });
 

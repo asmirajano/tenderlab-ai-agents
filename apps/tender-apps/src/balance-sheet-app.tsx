@@ -117,6 +117,16 @@ function isSyntheticReview(review: Partial<BalanceSheetReview>) {
     || review.pages?.some((page) => /SYNTHETIC FIXTURE|NOT CLIENT EVIDENCE/i.test(page.text ?? "")) === true;
 }
 
+function fileReadErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message.trim();
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message.trim();
+  }
+  if (typeof error === "string" && error.trim()) return error.trim();
+  return "could not be read";
+}
+
 function readClientCases(): BalanceSheetReview[] {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(CLIENT_CASES_STORAGE_KEY) ?? "[]") as unknown;
@@ -454,7 +464,7 @@ function BalanceSheetWorkspace() {
           setAgentStage(progress.stage === "reading" ? "reading" : progress.stage === "structuring" ? "structuring" : "extracting");
         }));
       } catch (error) {
-        const message = error instanceof Error ? error.message : "could not be read";
+        const message = fileReadErrorMessage(error);
         const readableMessage = /dynamically imported module|importing a module script|modulepreload/i.test(message)
           ? "TenderApps was updated while this page was open. Refresh the page and choose the document again."
           : message;
