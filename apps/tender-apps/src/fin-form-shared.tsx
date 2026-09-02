@@ -1,11 +1,8 @@
 import type { FinPresentationCurrency } from "../../../packages/tender-balance/src/fin1-fx.ts";
+import { formatWholeFinancialFigure } from "../../../packages/tender-balance/src/financial-rounding.ts";
 
 export function formatFigure(value: number | null, scale: number) {
-  if (value === null) return "MISSING";
-  const displayed = value / scale;
-  return displayed < 0
-    ? `(${Math.abs(displayed).toLocaleString("en-US", { maximumFractionDigits: 2 })})`
-    : displayed.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return formatWholeFinancialFigure(value, scale);
 }
 
 export function FinCurrencySwitcher({ value, onChange }: { value: FinPresentationCurrency; onChange: (currency: FinPresentationCurrency) => void }) {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "r
 import { readBalanceSheetFile } from "../../../packages/tender-balance/src/file-reader.ts";
 import { balanceSheetExcelFileName, reviewToExcel } from "../../../packages/tender-balance/src/excel.ts";
 import { prepareFin1FromBalanceReview } from "../../../packages/tender-balance/src/fin-forms.ts";
+import { formatWholeFinancialFigure, roundFinancialFigure } from "../../../packages/tender-balance/src/financial-rounding.ts";
 import {
   approveEligibleLineItems,
   approveLineItem,
@@ -214,8 +215,41 @@ function clientIssueCopy(issue: BalanceSheetReview["issues"][number]) {
 
 function formatAmount(value: number | null | undefined, currency: string, scale = 1) {
   if (value === null || value === undefined) return "—";
-  const displayValue = value / scale;
-  return `${displayValue < 0 ? `(${Math.abs(displayValue).toLocaleString("en-US")})` : displayValue.toLocaleString("en-US")} ${currency}`;
+  return `${formatWholeFinancialFigure(value, scale)} ${currency}`;
+}
+
+function formatReportedAmount(value: { reportedValue: number | null; rawReportedValue: string } | undefined) {
+  if (!value || value.reportedValue === null) return "—";
+  return formatWholeFinancialFigure(value.reportedValue);
+}
+
+function wholeNumberReviewExport(review: BalanceSheetReview) {
+  return {
+    ...review,
+    lineItems: review.lineItems.map((item) => ({
+      ...item,
+      values: item.values.map((value) => ({
+        ...value,
+        reportedValue: value.reportedValue === null ? null : roundFinancialFigure(value.reportedValue),
+        normalizedValue: value.normalizedValue === null ? null : roundFinancialFigure(value.normalizedValue),
+        correction: value.correction ? {
+          ...value.correction,
+          correctedReportedValue: roundFinancialFigure(value.correction.correctedReportedValue),
+          correctedNormalizedValue: roundFinancialFigure(value.correction.correctedNormalizedValue),
+        } : undefined,
+      })),
+    })),
+    arithmeticChecks: review.arithmeticChecks.map((check) => ({
+      ...check,
+      leftValue: check.leftValue === null ? null : roundFinancialFigure(check.leftValue),
+      rightValue: check.rightValue === null ? null : roundFinancialFigure(check.rightValue),
+      difference: check.difference === null ? null : roundFinancialFigure(check.difference),
+    })),
+    issues: review.issues.map((issue) => ({
+      ...issue,
+      difference: issue.difference === undefined ? undefined : roundFinancialFigure(issue.difference),
+    })),
+  };
 }
 
 function download(name: string, content: string, mimeType: string) {
@@ -541,7 +575,7 @@ function BalanceSheetWorkspace() {
     if (!review || !selectedLine || !activePeriod || !correctionReason.trim()) return;
     const parsed = Number(correctionValue.replace(/,/g, ""));
     if (!Number.isFinite(parsed)) return;
-    replaceReview(correctLineItemValue(review, selectedLine.id, activePeriod, parsed, correctionReason.trim(), reviewer.trim() || "Unnamed reviewer"));
+    replaceReview(correctLineItemValue(review, selectedLine.id, activePeriod, roundFinancialFigure(parsed), correctionReason.trim(), reviewer.trim() || "Unnamed reviewer"));
     setCorrectionValue("");
     setCorrectionReason("");
   };
@@ -566,7 +600,7 @@ function BalanceSheetWorkspace() {
 
   const structuredPackageJson = () => JSON.stringify({
     schemaVersion: "tender-balance-client-package/v1",
-    review,
+    review: review ? wholeNumberReviewExport(review) : null,
     caseContext: review ? caseContexts[review.reviewId] ?? null : null,
     crossDocumentReview: review && comparisonReview && comparisonRelevant ? {
       comparisonReviewId: comparisonReview.reviewId,
@@ -574,9 +608,9 @@ function BalanceSheetWorkspace() {
       discrepancies: comparisonConflicts.map((item) => ({
         period: item.period,
         concept: item.concept,
-        leftValue: item.leftValue,
-        rightValue: item.rightValue,
-        difference: item.difference,
+        leftValue: roundFinancialFigure(item.leftValue),
+        rightValue: roundFinancialFigure(item.rightValue),
+        difference: roundFinancialFigure(item.difference),
         decision: comparisonDecisions[comparisonDecisionId(review.reviewId, comparisonReview.reviewId, item.period, item.concept)] ?? null,
       })),
     } : null,
@@ -967,7 +1001,7 @@ function BalanceSheetWorkspace() {
                       <td><b>{englishItemLabel(item)}</b>{item.originalLabel !== englishItemLabel(item) && <small>Source: {item.originalLabel}</small>}{item.values.some((value) => value.correction) && <small>Correction retained separately</small>}</td>
                       {review.statement.periods.map((period) => {
                         const value = item.values.find((candidate) => candidate.period === period);
-                        return <td className={value?.correction ? "is-corrected" : ""} key={period}><b>{value?.rawReportedValue ?? "—"}</b>{value?.correction && <small>corrected: {value.correction.correctedReportedValue.toLocaleString("en-US")}</small>}</td>;
+                        return <td className={value?.correction ? "is-corrected" : ""} key={period}><b>{formatReportedAmount(value)}</b>{value?.correction && <small>corrected: {formatWholeFinancialFigure(value.correction.correctedReportedValue)}</small>}</td>;
                       })}
                     </tr>
                   ))}
@@ -1041,14 +1075,14 @@ function BalanceSheetWorkspace() {
             <section className="bs-review-grid">
               <article className="bs-line-inspector" ref={inspectorRef} tabIndex={-1}>
                 <div className="bs-section-title"><div><span>OPTIONAL CORRECTION</span><h3>Inspect or correct selected row</h3></div></div>
-                {selectedLine ? <><div className="bs-inspector-head"><div><span>ENGLISH / ORIGINAL LABEL</span><b>{englishItemLabel(selectedLine)}</b><small>{selectedLine.originalLabel}</small></div><StatusBadge status={selectedLine.reviewStatus} /></div><div className="bs-value-pair">{selectedLine.values.map((value) => <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button"><span>{value.period}</span><b>{value.rawReportedValue}</b><small>normalized: {formatAmount(value.normalizedValue, review.statement.currency)}</small></button>)}</div><div className="bs-provenance-card"><span>SOURCE TRACE</span><code>{review.source.fileName} · p.{selectedLine.values.find((value) => value.period === activePeriod)?.source.page ?? selectedLine.values[0]?.source.page}</code><p>“{selectedLine.originalLabel}” · {selectedLine.values[0]?.source.extractionMethod} · {Math.round(selectedLine.confidence * 100)}% text confidence</p></div><div className="bs-correction-form"><label><span>Corrected value in reported units</span><input inputMode="decimal" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label><label><span>Reason — required</span><input value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="What was wrong in extraction?" /></label><button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button><p>The reported source remains immutable; a correction is stored separately and revalidates the result.</p></div></> : <p className="bs-empty-state">No line item is available.</p>}
+                {selectedLine ? <><div className="bs-inspector-head"><div><span>ENGLISH / ORIGINAL LABEL</span><b>{englishItemLabel(selectedLine)}</b><small>{selectedLine.originalLabel}</small></div><StatusBadge status={selectedLine.reviewStatus} /></div><div className="bs-value-pair">{selectedLine.values.map((value) => <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button"><span>{value.period}</span><b>{formatReportedAmount(value)}</b><small>normalized: {formatAmount(value.normalizedValue, review.statement.currency)}</small></button>)}</div><div className="bs-provenance-card"><span>SOURCE TRACE</span><code>{review.source.fileName} · p.{selectedLine.values.find((value) => value.period === activePeriod)?.source.page ?? selectedLine.values[0]?.source.page}</code><p>“{selectedLine.originalLabel}” · {selectedLine.values[0]?.source.extractionMethod} · {Math.round(selectedLine.confidence * 100)}% text confidence</p></div><div className="bs-correction-form"><label><span>Corrected whole value in reported units</span><input inputMode="numeric" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label><label><span>Reason — required</span><input value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="What was wrong in extraction?" /></label><button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button><p>The exact source token remains immutable; the client figure is rounded to the nearest whole reported unit.</p></div></> : <p className="bs-empty-state">No line item is available.</p>}
               </article>
               <article className="bs-checks-card"><div className="bs-section-title"><div><span>ARITHMETIC EVIDENCE</span><h3>Reported vs calculated</h3></div></div><div className="bs-check-list">{review.arithmeticChecks.map((check) => <div className={`check-${check.status}`} key={check.id}><span>{check.status === "passed" ? "✓" : check.status === "failed" ? "!" : "—"}</span><div><b>{check.formula}</b><small>{check.period}</small><p>{formatAmount(check.leftValue, review.statement.currency)} <i>vs</i> {formatAmount(check.rightValue, review.statement.currency)}</p></div></div>)}</div></article>
             </section>
 
             <section className="bs-compare-section" ref={comparisonRef}>
               <div className="bs-section-title bs-compare-title"><div><span>OPTIONAL COMPARISON</span><h3>Compare periods and documents</h3></div><select value={comparisonReview?.reviewId ?? ""} onChange={(event) => setComparisonId(event.target.value)} aria-label="Comparison document"><option value="">Select another document</option>{availableReviews.filter((candidate) => candidate.reviewId !== review.reviewId).map((candidate) => <option value={candidate.reviewId} key={candidate.reviewId}>{candidate.statement.reportingEntity} · {candidate.statement.reportingDate}</option>)}</select></div>
-              {comparison && comparisonRelevant && comparison.overlaps.length ? <div className="bs-comparison-rows">{comparison.overlaps.map((item) => <div className={item.matches ? "is-match" : "is-conflict"} key={`${item.period}:${item.concept}`}><span>{item.period}</span><b>{conceptLabels[item.concept]}</b><small>{formatAmount(item.leftValue, review.statement.currency)} ↔ {formatAmount(item.rightValue, comparisonReview?.statement.currency ?? "")}</small><em>{item.matches ? "MATCH" : `Δ ${item.difference.toLocaleString("en-US")}`}</em></div>)}</div> : <p className="bs-empty-state">Select a related document when cross-document comparison is useful.</p>}
+              {comparison && comparisonRelevant && comparison.overlaps.length ? <div className="bs-comparison-rows">{comparison.overlaps.map((item) => <div className={item.matches ? "is-match" : "is-conflict"} key={`${item.period}:${item.concept}`}><span>{item.period}</span><b>{conceptLabels[item.concept]}</b><small>{formatAmount(item.leftValue, review.statement.currency)} ↔ {formatAmount(item.rightValue, comparisonReview?.statement.currency ?? "")}</small><em>{item.matches ? "MATCH" : `Δ ${formatWholeFinancialFigure(item.difference)}`}</em></div>)}</div> : <p className="bs-empty-state">Select a related document when cross-document comparison is useful.</p>}
             </section>
 
             <section className="bs-approval-section" ref={approvalRef} tabIndex={-1}>
@@ -1217,7 +1251,7 @@ function BalanceSheetWorkspace() {
                       <td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td>
                       {review.statement.periods.map((period) => {
                         const value = item.values.find((candidate) => candidate.period === period);
-                        return <td className={value?.correction ? "is-corrected" : ""} key={period}><b>{value?.rawReportedValue ?? "—"}</b>{value?.correction && <small>corrected → {value.correction.correctedReportedValue.toLocaleString("en-US")}</small>}</td>;
+                        return <td className={value?.correction ? "is-corrected" : ""} key={period}><b>{formatReportedAmount(value)}</b>{value?.correction && <small>corrected → {formatWholeFinancialFigure(value.correction.correctedReportedValue)}</small>}</td>;
                       })}
                       <td><span className={`bs-confidence ${item.confidence < 0.8 ? "is-low" : ""}`}>{Math.round(item.confidence * 100)}%</span><small>p.{item.values[0]?.source.page ?? "—"}</small></td>
                       <td><StatusBadge status={item.reviewStatus} /></td>
@@ -1243,7 +1277,7 @@ function BalanceSheetWorkspace() {
                     {selectedLine.values.map((value) => (
                       <button className={value.period === activePeriod ? "is-active" : ""} key={value.period} onClick={() => setActivePeriod(value.period)} type="button">
                         <span>{value.period}</span>
-                        <b>{value.rawReportedValue}</b>
+                        <b>{formatReportedAmount(value)}</b>
                         <small>normalized: {formatAmount(value.normalizedValue, review.statement.currency)}</small>
                         {value.correction && <em>approved correction: {formatAmount(value.correction.correctedNormalizedValue, review.statement.currency)}</em>}
                       </button>
@@ -1257,7 +1291,7 @@ function BalanceSheetWorkspace() {
                     </div>
                   )}
                   <div className="bs-correction-form">
-                    <label><span>Corrected value in reported units</span><input inputMode="decimal" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label>
+                    <label><span>Corrected whole value in reported units</span><input inputMode="numeric" value={correctionValue} onChange={(event) => setCorrectionValue(event.target.value)} placeholder="e.g. 12,500" /></label>
                     <label><span>Reason — required</span><input value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="What was wrong in extraction?" /></label>
                     <button type="button" disabled={!correctionReason.trim() || !Number.isFinite(Number(correctionValue.replace(/,/g, "")))} onClick={submitCorrection}>Record correction</button>
                     <p>The source value remains immutable. A correction is added as a separate reviewed value and triggers arithmetic revalidation.</p>
@@ -1314,7 +1348,7 @@ function BalanceSheetWorkspace() {
                     return (
                       <div className={item.matches ? "is-match" : decision ? "is-reviewed-conflict" : "is-conflict"} key={`${item.period}:${item.concept}`}>
                         <span>{item.period}</span><b>{conceptLabels[item.concept]}</b><small>{formatAmount(item.leftValue, review.statement.currency)} ↔ {formatAmount(item.rightValue, comparisonReview?.statement.currency ?? "")}</small>
-                        {item.matches ? <em>MATCH</em> : decision ? <em>REVIEWED ✓</em> : <div className="bs-conflict-action"><i>Δ {item.difference.toLocaleString("en-US")}</i><button type="button" onClick={() => acknowledgeComparisonConflict(item.period, item.concept)}>Acknowledge & retain</button></div>}
+                        {item.matches ? <em>MATCH</em> : decision ? <em>REVIEWED ✓</em> : <div className="bs-conflict-action"><i>Δ {formatWholeFinancialFigure(item.difference)}</i><button type="button" onClick={() => acknowledgeComparisonConflict(item.period, item.concept)}>Acknowledge & retain</button></div>}
                       </div>
                     );
                   })}

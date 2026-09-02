@@ -8,6 +8,7 @@ import type {
   CanonicalFinancialDataset,
   FinancialProvenance,
 } from "./fin-forms.ts";
+import { roundFinancialFigure } from "./financial-rounding.ts";
 
 export const FIN2_SCHEMA_VERSION = "1.1.0";
 
@@ -127,6 +128,10 @@ function auditNumber(value: number) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 12 });
 }
 
+function auditAmount(value: number) {
+  return roundFinancialFigure(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
 export function fin2ReportedUnitName(unitLabel: string, unitScale: number, currency: string) {
   if (unitScale === 1 || /^units?$/i.test(unitLabel)) return currency;
   if (/^thousands?$/i.test(unitLabel)) return `thousand ${currency}`;
@@ -141,7 +146,7 @@ function sourceScaleFormula(
   currency: string,
   fullValue: number,
 ) {
-  return `${auditNumber(reportedValue)} ${fin2ReportedUnitName(unitLabel, unitScale, currency)} × ${auditNumber(unitScale)} = ${auditNumber(fullValue)} ${currency}`;
+  return `${auditAmount(reportedValue)} ${fin2ReportedUnitName(unitLabel, unitScale, currency)} × ${auditAmount(unitScale)} = ${auditAmount(fullValue)} ${currency}`;
 }
 
 function mappingForYear(
@@ -233,7 +238,7 @@ function mappingForYear(
 
   const convertedValue = value.value * resolvedRate.rate;
   const sourceUnitsPerComparisonUnit = 1 / resolvedRate.rate;
-  const conversionFormula = `${scaleFormula}; ${auditNumber(value.value)} ${value.currency} × ${auditNumber(resolvedRate.rate)} ${comparisonCurrency}/${value.currency}${value.currency === comparisonCurrency ? " (identity)" : ""} = ${auditNumber(convertedValue)} ${comparisonCurrency}`;
+  const conversionFormula = `${scaleFormula}; ${auditAmount(value.value)} ${value.currency} × ${auditNumber(resolvedRate.rate)} ${comparisonCurrency}/${value.currency}${value.currency === comparisonCurrency ? " (identity)" : ""} = ${auditAmount(convertedValue)} ${comparisonCurrency}`;
   return {
     ...base,
     sourceProvenance: value.provenance,
@@ -310,7 +315,7 @@ export function generateFin2(dataset: CanonicalFinancialDataset, options: Genera
       mappingIds: eligible.map((mapping) => mapping.id),
       formula: average === null
         ? "No eligible converted annual-turnover values are available"
-        : `Average of full-unit ${options.comparisonCurrency} equivalents after source-unit scaling and FX: (${eligible.map((mapping) => `${auditNumber(mapping.convertedValue ?? 0)} ${options.comparisonCurrency}`).join(" + ")}) ÷ ${eligible.length} = ${auditNumber(average)} ${options.comparisonCurrency}`,
+        : `Average of full-unit ${options.comparisonCurrency} equivalents after source-unit scaling and FX: (${eligible.map((mapping) => `${auditAmount(mapping.convertedValue ?? 0)} ${options.comparisonCurrency}`).join(" + ")}) ÷ ${eligible.length} = ${auditAmount(average)} ${options.comparisonCurrency}`,
     },
     readiness: {
       status: readinessStatus,
@@ -357,16 +362,16 @@ export function fin2ToCsv(form: Fin2Form) {
     ["Year", "Original reported amount", "Source currency", "Source unit", "Source unit scale", "Full source-currency amount", "Original label", `FX rate (${form.comparisonCurrency} per ${form.sourceCurrency})`, `Published quote (${form.sourceCurrency} per ${form.comparisonCurrency})`, "Rate basis/date", `Full ${form.comparisonCurrency} equivalent`, "Conversion formula", "Source", "Status"],
     ...form.mappings.map((mapping) => [
       mapping.displayYear,
-      mapping.sourceReportedValue ?? "MISSING",
+      mapping.sourceReportedValue === null ? "MISSING" : roundFinancialFigure(mapping.sourceReportedValue),
       mapping.sourceCurrency,
       mapping.sourceUnitLabel,
       mapping.sourceUnitScale,
-      mapping.sourceValue ?? "MISSING",
+      mapping.sourceValue === null ? "MISSING" : roundFinancialFigure(mapping.sourceValue),
       mapping.originalLabels.join(" / "),
       mapping.exchangeRate?.targetUnitsPerSourceUnit ?? "MISSING",
       mapping.sourceUnitsPerComparisonUnit ?? "MISSING",
       mapping.exchangeRate ? `${mapping.exchangeRate.rateType}${mapping.exchangeRate.closingDate ? ` · ${mapping.exchangeRate.closingDate}` : ""}` : "MISSING",
-      mapping.convertedValue ?? "MISSING",
+      mapping.convertedValue === null ? "MISSING" : roundFinancialFigure(mapping.convertedValue),
       mapping.conversionFormula ?? "MISSING",
       mapping.sourceSummary,
       mapping.status,

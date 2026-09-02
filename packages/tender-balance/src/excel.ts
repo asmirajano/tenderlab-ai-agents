@@ -3,6 +3,7 @@ import type { BalanceSheetReview } from "./model.ts";
 import { FIN1_FIELDS, type Fin1Form } from "./fin-forms.ts";
 import type { PresentedFin1Form } from "./fin1-fx.ts";
 import type { Fin2Form } from "./fin2.ts";
+import { roundFinancialFigure, roundedFinancialFigure } from "./financial-rounding.ts";
 
 type CellValue = string | number | null | undefined;
 type CellSpec = { value: CellValue; style?: number };
@@ -123,6 +124,10 @@ function number(value: number | null | undefined, style = 4): CellSpec {
   return { value, style };
 }
 
+function wholeNumber(value: number | null | undefined, style = 4): CellSpec {
+  return { value: value === null || value === undefined ? value : roundFinancialFigure(value), style };
+}
+
 const stylesXml = `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><numFmts count=\"1\"><numFmt numFmtId=\"164\" formatCode=\"#,##0;[Red](#,##0);-\"/></numFmts><fonts count=\"4\"><font><sz val=\"10\"/><name val=\"Aptos\"/></font><font><b/><sz val=\"16\"/><color rgb=\"FF0F5132\"/><name val=\"Aptos Display\"/></font><font><b/><sz val=\"10\"/><color rgb=\"FF0F2A24\"/><name val=\"Aptos\"/></font><font><b/><sz val=\"10\"/><color rgb=\"FFFFFFFF\"/><name val=\"Aptos\"/></font></fonts><fills count=\"5\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF0F2A24\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFEAF3EE\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFF4D6\"/><bgColor indexed=\"64\"/></patternFill></fill></fills><borders count=\"2\"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top style=\"thin\"><color rgb=\"FF799387\"/></top><bottom/><diagonal/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"10\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/><xf numFmtId=\"0\" fontId=\"2\" fillId=\"3\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\"/><xf numFmtId=\"0\" fontId=\"3\" fillId=\"2\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"0\" fontId=\"2\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\"/><xf numFmtId=\"164\" fontId=\"2\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyNumberFormat=\"1\"/><xf numFmtId=\"10\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"0\" fontId=\"0\" fillId=\"4\" borderId=\"0\" xfId=\"0\" applyFill=\"1\" applyAlignment=\"1\"><alignment vertical=\"top\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyAlignment=\"1\"><alignment vertical=\"top\" wrapText=\"1\"/></xf></cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles></styleSheet>`;
 
 function workbookZip(sheets: Array<{ name: string; xml: string }>) {
@@ -164,7 +169,7 @@ export function reviewToExcel(review: BalanceSheetReview) {
         text(item.originalLabel, item.isTotal ? 5 : 0),
         text(item.sourceRowCode ?? "", item.isTotal ? 5 : 0),
         text(item.normalizedConcept, item.isTotal ? 5 : 0),
-        ...periods.map((period) => number(item.values.find((value) => value.period === period)?.reportedValue, item.isTotal ? 6 : 4)),
+        ...periods.map((period) => wholeNumber(item.values.find((value) => value.period === period)?.reportedValue, item.isTotal ? 6 : 4)),
         text(pages, item.isTotal ? 5 : 0),
         number(item.confidence, 7),
         text(item.reviewStatus, item.isTotal ? 5 : 0),
@@ -175,13 +180,13 @@ export function reviewToExcel(review: BalanceSheetReview) {
   const checkRows: CellSpec[][] = [
     [text("TenderBalance — Arithmetic Checks", 1)],
     [text("Period", 3), text("Relationship", 3), text("Reported / left", 3), text("Calculated / right", 3), text("Difference", 3), text("Status", 3)],
-    ...review.arithmeticChecks.map((check) => [text(check.period), text(check.formula), number(check.leftValue), number(check.rightValue), number(check.difference), text(check.status, check.status === "failed" ? 8 : 0)]),
+    ...review.arithmeticChecks.map((check) => [text(check.period), text(check.formula), wholeNumber(check.leftValue), wholeNumber(check.rightValue), wholeNumber(check.difference), text(check.status, check.status === "failed" ? 8 : 0)]),
   ];
 
   const findingRows: CellSpec[][] = [
     [text("TenderBalance — Validation Findings", 1)],
     [text("Severity", 3), text("Code", 3), text("Period", 3), text("Message", 3), text("Difference", 3), text("Source pages", 3)],
-    ...review.issues.map((issue) => [text(issue.severity, issue.severity === "warning" ? 8 : 0), text(issue.code), text(issue.period ?? "Document"), text(issue.message, 9), number(issue.difference), text(Array.from(new Set(issue.sourceRefs.map((reference) => reference.page))).join(", "))]),
+    ...review.issues.map((issue) => [text(issue.severity, issue.severity === "warning" ? 8 : 0), text(issue.code), text(issue.period ?? "Document"), text(issue.message, 9), wholeNumber(issue.difference), text(Array.from(new Set(issue.sourceRefs.map((reference) => reference.page))).join(", "))]),
   ];
 
   const traceRows: CellSpec[][] = [
@@ -189,7 +194,7 @@ export function reviewToExcel(review: BalanceSheetReview) {
     ["Line ID", "Section", "English label", "Original label", "Translation status", "Source row", "Normalized concept", "Period", "Raw reported value", "Numeric reported value", "Normalized value", "Corrected value", "Page", "Extraction method", "Text confidence", "Review status"].map((header) => text(header, 3)),
     ...review.lineItems.flatMap((item) => item.values.map((value) => [
       text(item.id), text(item.classification), text(item.englishLabel), text(item.originalLabel), text(item.translationStatus), text(item.sourceRowCode ?? ""), text(item.normalizedConcept), text(value.period), text(value.rawReportedValue),
-      number(value.reportedValue), number(value.normalizedValue), number(value.correction?.correctedNormalizedValue), number(value.source.page, 0), text(value.source.extractionMethod), number(value.source.confidence, 7), text(item.reviewStatus),
+      wholeNumber(value.reportedValue), wholeNumber(value.normalizedValue), wholeNumber(value.correction?.correctedNormalizedValue), number(value.source.page, 0), text(value.source.extractionMethod), number(value.source.confidence, 7), text(item.reviewStatus),
     ])),
   ];
 
@@ -224,7 +229,7 @@ export function fin1ToExcel(form: Fin1Form | PresentedFin1Form) {
       text(field.sourceType === "calculated" ? `${field.label} (calculated)` : field.label),
       ...form.years.map((year) => {
         const mapping = form.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
-        return mapping?.value === null || mapping?.value === undefined ? text("MISSING", 8) : number(mapping.value / mapping.unitScale);
+        return mapping?.value === null || mapping?.value === undefined ? text("MISSING", 8) : wholeNumber(roundedFinancialFigure(mapping.value, mapping.unitScale));
       }),
     ]),
   ];
@@ -236,10 +241,10 @@ export function fin1ToExcel(form: Fin1Form | PresentedFin1Form) {
         ...form.mappings.map((mapping) => {
           const issueStyle = mapping.status === "missing" || mapping.status === "source-inconsistency" ? 8 : 0;
           return [
-            text(mapping.label, issueStyle), text(mapping.displayYear), number(mapping.sourceValue), text(mapping.sourceCurrency), number(mapping.sourceUnitScale, 0),
-            text(mapping.sourceProvenance ?? "MISSING", issueStyle), number(mapping.sourceReportedValue), number(mapping.sourceCalculatedValue), number(mapping.sourceDifference),
-            number(mapping.value), text(mapping.currency), number(mapping.unitScale, 0), text(mapping.provenance ?? "MISSING", issueStyle),
-            number(mapping.reportedValue), number(mapping.calculatedValue), number(mapping.difference), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
+            text(mapping.label, issueStyle), text(mapping.displayYear), wholeNumber(mapping.sourceValue), text(mapping.sourceCurrency), number(mapping.sourceUnitScale, 0),
+            text(mapping.sourceProvenance ?? "MISSING", issueStyle), wholeNumber(mapping.sourceReportedValue), wholeNumber(mapping.sourceCalculatedValue), wholeNumber(mapping.sourceDifference),
+            wholeNumber(mapping.value), text(mapping.currency), number(mapping.unitScale, 0), text(mapping.provenance ?? "MISSING", issueStyle),
+            wholeNumber(mapping.reportedValue), wholeNumber(mapping.calculatedValue), wholeNumber(mapping.difference), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
             text(mapping.status, issueStyle), text(mapping.sourceIds.join(" | "), 9),
           ];
         }),
@@ -250,9 +255,9 @@ export function fin1ToExcel(form: Fin1Form | PresentedFin1Form) {
         ...form.mappings.map((mapping) => {
           const issueStyle = mapping.status === "missing" || mapping.status === "source-inconsistency" ? 8 : 0;
           return [
-            text(mapping.label, issueStyle), text(mapping.displayYear), number(mapping.value), text(mapping.currency), number(mapping.unitScale, 0),
+            text(mapping.label, issueStyle), text(mapping.displayYear), wholeNumber(mapping.value), text(mapping.currency), number(mapping.unitScale, 0),
             text(mapping.provenance ?? "MISSING", issueStyle), text(mapping.sourceSummary, 9), text(mapping.originalPeriods.join(" / ")),
-            number(mapping.reportedValue), number(mapping.calculatedValue), number(mapping.difference), text(mapping.calculationFormula ?? ""),
+            wholeNumber(mapping.reportedValue), wholeNumber(mapping.calculatedValue), wholeNumber(mapping.difference), text(mapping.calculationFormula ?? ""),
             text(mapping.status, issueStyle), text(mapping.sourceIds.join(" | "), 9),
           ];
         }),
@@ -274,7 +279,7 @@ export function fin1ToExcel(form: Fin1Form | PresentedFin1Form) {
       [],
       ["Field", "Year", "Source value", "Source currency", "Presented value", "FIN currency", "Rate type", "Target / source rate", "Closing date", "Observations", "Provider", "Dataset", "Formula", "Provenance"].map((header) => text(header, 3)),
       ...form.mappings.map((mapping) => [
-        text(mapping.label), text(mapping.displayYear), number(mapping.sourceValue), text(mapping.sourceCurrency), number(mapping.value), text(mapping.currency),
+        text(mapping.label), text(mapping.displayYear), wholeNumber(mapping.sourceValue), text(mapping.sourceCurrency), wholeNumber(mapping.value), text(mapping.currency),
         text(mapping.fx?.rateType ?? "MISSING", mapping.fx ? 0 : 8), number(mapping.fx?.targetUnitsPerSourceUnit), text(mapping.fx?.closingDate ?? ""),
         number(mapping.fx?.observationCount, 0), text(mapping.fx?.provider ?? ""), text(mapping.fx?.datasetId ?? ""), text(mapping.fx?.formula ?? "", 9),
         text(mapping.fx?.provenance ?? "MISSING", mapping.fx ? 0 : 8),
@@ -303,17 +308,17 @@ export function fin2ToExcel(form: Fin2Form) {
       const issueStyle = mapping.status === "ready" ? 0 : 8;
       return [
         text(mapping.displayYear, issueStyle),
-        mapping.sourceReportedValue === null ? text("MISSING", issueStyle) : number(mapping.sourceReportedValue),
+        mapping.sourceReportedValue === null ? text("MISSING", issueStyle) : wholeNumber(mapping.sourceReportedValue),
         text(`${mapping.sourceCurrency} · ${mapping.sourceUnitLabel}`, issueStyle),
         number(mapping.sourceUnitScale, 0),
-        mapping.sourceValue === null ? text("MISSING", issueStyle) : number(mapping.sourceValue),
+        mapping.sourceValue === null ? text("MISSING", issueStyle) : wholeNumber(mapping.sourceValue),
         mapping.exchangeRate === null ? text("MISSING", issueStyle) : number(mapping.exchangeRate.targetUnitsPerSourceUnit),
-        mapping.convertedValue === null ? text("MISSING", issueStyle) : number(mapping.convertedValue),
+        mapping.convertedValue === null ? text("MISSING", issueStyle) : wholeNumber(mapping.convertedValue),
         text(mapping.status, issueStyle),
       ];
     }),
     [],
-    [text("Average Annual Turnover", 4), text(""), text(""), text(""), text(""), text(""), form.averageAnnualTurnover.value === null ? text("MISSING", 8) : number(form.averageAnnualTurnover.value, 4), text(`${form.comparisonCurrency} · full units`, 4)],
+    [text("Average Annual Turnover", 4), text(""), text(""), text(""), text(""), text(""), form.averageAnnualTurnover.value === null ? text("MISSING", 8) : wholeNumber(form.averageAnnualTurnover.value, 4), text(`${form.comparisonCurrency} · full units`, 4)],
     [text("Calculation", 2), text(form.averageAnnualTurnover.formula, 9), text("Years included", 2), text(form.averageAnnualTurnover.yearsIncluded.join(" · ") || "NONE"), text("Operand basis", 2), text(`Full ${form.comparisonCurrency} units after source scaling and FX`, 9)],
   ];
 
@@ -324,9 +329,9 @@ export function fin2ToExcel(form: Fin2Form) {
       const issueStyle = mapping.status === "ready" ? 0 : 8;
       return [
         text(mapping.displayYear, issueStyle), text(mapping.label, issueStyle), text(mapping.originalLabels.join(" / ")), text(mapping.originalPeriods.join(" / ")),
-        text(mapping.rawReportedValues.join(" / ")), number(mapping.sourceReportedValue), text(mapping.sourceCurrency), text(mapping.sourceUnitLabel), number(mapping.sourceUnitScale, 0),
-        number(mapping.sourceValue), text(mapping.sourceScaleFormula ?? "", 9), text(mapping.sourceProvenance, issueStyle), text(mapping.sourcePages.join(", ")), text(mapping.sourceSummary, 9),
-        number(mapping.exchangeRate?.targetUnitsPerSourceUnit), number(mapping.convertedValue), text(mapping.comparisonCurrency), text(mapping.conversionFormula ?? "", 9),
+        text(mapping.rawReportedValues.join(" / ")), wholeNumber(mapping.sourceReportedValue), text(mapping.sourceCurrency), text(mapping.sourceUnitLabel), number(mapping.sourceUnitScale, 0),
+        wholeNumber(mapping.sourceValue), text(mapping.sourceScaleFormula ?? "", 9), text(mapping.sourceProvenance, issueStyle), text(mapping.sourcePages.join(", ")), text(mapping.sourceSummary, 9),
+        number(mapping.exchangeRate?.targetUnitsPerSourceUnit), wholeNumber(mapping.convertedValue), text(mapping.comparisonCurrency), text(mapping.conversionFormula ?? "", 9),
         text(mapping.status, issueStyle), text(mapping.action ?? ""), text(mapping.sourceIds.join(" | "), 9),
       ];
     }),
@@ -342,9 +347,9 @@ export function fin2ToExcel(form: Fin2Form) {
     [],
     ["Year", "Source reported amount", "Source unit label", "Source unit scale", "Full source amount", "Rate basis", `Published quote (${form.sourceCurrency} per ${form.comparisonCurrency})`, "Applied target/source rate", "Full target amount", "Closing date", "Observations", "Provider", "Dataset", "Formula", "Provenance"].map((header) => text(header, 3)),
     ...form.mappings.map((mapping) => [
-      text(mapping.displayYear), number(mapping.sourceReportedValue), text(`${mapping.sourceCurrency} · ${mapping.sourceUnitLabel}`), number(mapping.sourceUnitScale, 0), number(mapping.sourceValue),
+      text(mapping.displayYear), wholeNumber(mapping.sourceReportedValue), text(`${mapping.sourceCurrency} · ${mapping.sourceUnitLabel}`), number(mapping.sourceUnitScale, 0), wholeNumber(mapping.sourceValue),
       text(mapping.exchangeRate?.rateType ?? "MISSING", mapping.exchangeRate ? 0 : 8), number(mapping.sourceUnitsPerComparisonUnit),
-      number(mapping.exchangeRate?.targetUnitsPerSourceUnit), number(mapping.convertedValue), text(mapping.exchangeRate?.closingDate ?? ""), number(mapping.exchangeRate?.observationCount, 0),
+      number(mapping.exchangeRate?.targetUnitsPerSourceUnit), wholeNumber(mapping.convertedValue), text(mapping.exchangeRate?.closingDate ?? ""), number(mapping.exchangeRate?.observationCount, 0),
       text(mapping.exchangeRate?.provider ?? ""), text(mapping.exchangeRate?.datasetId ?? ""), text(mapping.conversionFormula ?? "", 9),
       text(mapping.exchangeRate?.provenance ?? "MISSING", mapping.exchangeRate ? 0 : 8),
     ]),

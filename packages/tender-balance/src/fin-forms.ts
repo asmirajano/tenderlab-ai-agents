@@ -7,6 +7,7 @@ import {
   type BalanceSheetLineItem,
   type BalanceSheetReview,
 } from "./model.ts";
+import { formatWholeFinancialFigure, roundedFinancialFigure } from "./financial-rounding.ts";
 
 export const FIN_FORMS_SCHEMA_VERSION = "1.0.0";
 
@@ -559,7 +560,7 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
           type: "source-inconsistency",
           field: "net_worth",
           displayYear: period.displayYear,
-          message: `Reported Net Worth differs from Assets − Liabilities by ${difference.toLocaleString("en-US")} ${review.statement.currency}. The reported value remains unchanged.`,
+          message: `Reported Net Worth differs from Assets − Liabilities by ${formatWholeFinancialFigure(difference)} ${review.statement.currency}. The reported value remains unchanged.`,
           action: "Review reported and calculated values",
         });
       }
@@ -1146,7 +1147,7 @@ export function fin1ToCsv(form: Fin1Form) {
       field.label,
       ...form.years.map((year) => {
         const mapping = form.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
-        return mapping?.value === null || mapping?.value === undefined ? "MISSING" : mapping.value / mapping.unitScale;
+        return mapping?.value === null || mapping?.value === undefined ? "MISSING" : roundedFinancialFigure(mapping.value, mapping.unitScale) ?? "MISSING";
       }),
     ]),
   ];

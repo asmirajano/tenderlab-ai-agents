@@ -1,4 +1,6 @@
 /** Shared, UI-agnostic balance-sheet review engine for TenderBalance. */
+import { formatWholeFinancialFigure, roundFinancialFigure } from "./financial-rounding.ts";
+
 export const BALANCE_SHEET_SCHEMA_VERSION = "1.0.0";
 
 export type DocumentLanguage = "en" | "ru" | "uz" | "und";
@@ -1294,7 +1296,7 @@ function validate(review: Omit<BalanceSheetReview, "issues" | "arithmeticChecks"
       id: `issue:${check.id}`,
       code: isRoundingDifference ? "ROUNDING_DIFFERENCE" : check.formula === "assets = liabilities + equity" || check.formula === "reported liabilities + equity total = liabilities + equity" ? "ACCOUNTING_EQUATION_MISMATCH" : check.formula === "net assets = assets - liabilities" ? "NET_ASSETS_MISMATCH" : "SUBTOTAL_MISMATCH",
       severity: isRoundingDifference || check.formula === "subtotal = underlying lines" ? "warning" : "blocking",
-      message: `${check.formula} differs by ${check.difference?.toLocaleString("en-US") ?? "an unknown amount"} for ${check.period}. ${isRoundingDifference ? "This small difference is reported as a possible rounding effect. " : ""}Reported figures were not changed.`,
+      message: `${check.formula} differs by ${check.difference === null ? "an unknown amount" : formatWholeFinancialFigure(check.difference)} for ${check.period}. ${isRoundingDifference ? "This small difference is reported as a possible rounding effect. " : ""}Reported figures were not changed.`,
       period: check.period,
       difference: check.difference ?? undefined,
       sourceRefs: lineRefs,
@@ -1534,7 +1536,7 @@ export function compareBalanceSheetReviews(left: BalanceSheetReview, right: Bala
           id: `issue:comparative:${period}:${concept}:${left.reviewId}:${right.reviewId}`,
           code: "COMPARATIVE_PERIOD_DISCREPANCY",
           severity: "warning",
-          message: `${concept} for comparative period ${period} differs across documents by ${difference.toLocaleString("en-US")}.`,
+          message: `${concept} for comparative period ${period} differs across documents by ${formatWholeFinancialFigure(difference)}.`,
           period,
           difference,
           sourceRefs: [...sourceRefsFor(leftItem, period), ...sourceRefsFor(rightItem, period)],
@@ -1574,10 +1576,10 @@ export function reviewToCsv(review: BalanceSheetReview) {
     item.classification,
     value.period,
     value.rawReportedValue,
-    value.reportedValue ?? "",
-    value.normalizedValue ?? "",
-    value.correction?.correctedReportedValue ?? "",
-    value.correction?.correctedNormalizedValue ?? "",
+    value.reportedValue === null ? "" : roundFinancialFigure(value.reportedValue),
+    value.normalizedValue === null ? "" : roundFinancialFigure(value.normalizedValue),
+    value.correction ? roundFinancialFigure(value.correction.correctedReportedValue) : "",
+    value.correction ? roundFinancialFigure(value.correction.correctedNormalizedValue) : "",
     review.statement.currency,
     review.statement.unitScale,
     value.source.confidence,

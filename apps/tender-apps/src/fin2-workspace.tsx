@@ -11,6 +11,7 @@ import {
   type Fin2TurnoverMapping,
 } from "../../../packages/tender-balance/src/fin2.ts";
 import { fin2ExcelFileName, fin2ToExcel } from "../../../packages/tender-balance/src/excel.ts";
+import { formatWholeFinancialFigure } from "../../../packages/tender-balance/src/financial-rounding.ts";
 import { FinCurrencySwitcher, formatFigure } from "./fin-form-shared.tsx";
 
 type Fin2View = "mapping" | "form";
@@ -74,7 +75,7 @@ function statusLabel(mapping: Fin2TurnoverMapping) {
 }
 
 function formatFullAmount(value: number | null, currency: string) {
-  return value === null ? "MISSING" : `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${currency}`;
+  return value === null ? "MISSING" : `${formatWholeFinancialFigure(value)} ${currency}`;
 }
 
 function sourceReportedAmount(mapping: Fin2TurnoverMapping) {
@@ -210,7 +211,7 @@ export function Fin2Workspace({
 
         <section className="fin2-average-audit">
           <div><span>CALCULATED RESULT · FULL {comparisonCurrency} UNITS</span><h2>Average Annual Turnover</h2><p>{form.averageAnnualTurnover.formula}</p></div>
-          <dl><div><dt>Years included</dt><dd>{form.averageAnnualTurnover.yearsIncluded.join(" · ") || "NONE"}</dd></div><div><dt>Average</dt><dd>{form.averageAnnualTurnover.value === null ? "MISSING" : `${form.averageAnnualTurnover.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${comparisonCurrency}`}</dd></div><div><dt>Provenance</dt><dd>{form.averageAnnualTurnover.provenance}</dd></div></dl>
+          <dl><div><dt>Years included</dt><dd>{form.averageAnnualTurnover.yearsIncluded.join(" · ") || "NONE"}</dd></div><div><dt>Average</dt><dd>{form.averageAnnualTurnover.value === null ? "MISSING" : `${formatWholeFinancialFigure(form.averageAnnualTurnover.value)} ${comparisonCurrency}`}</dd></div><div><dt>Provenance</dt><dd>{form.averageAnnualTurnover.provenance}</dd></div></dl>
         </section>
 
         <section className="fin-review-actions"><div><span>NEXT STEP</span><h3>{form.readiness.canGenerate ? `Generate the ${comparisonCurrency} FIN-2.` : "Resolve the turnover evidence blockers."}</h3><p>{form.readiness.canGenerate ? "The generated form will remain linked to the original turnover, year-end rate, conversion formula, and average calculation." : form.readiness.message}</p></div><div>{form.readiness.canGenerate ? <button className="bs-primary-action" onClick={() => setView("form")} type="button">Generate {comparisonCurrency} FIN-2 <span aria-hidden="true">→</span></button> : <button className="bs-primary-action" onClick={onStartNewReview} type="button">Add or re-digitize source <span aria-hidden="true">→</span></button>}<button className="bs-secondary-action" onClick={onBackToCatalog} type="button">Back to forms</button></div></section>
@@ -236,7 +237,7 @@ export function Fin2Workspace({
           <p><span>Purchaser</span><b>{form.purchaser.value ?? "MISSING"}</b></p>
         </div>
         <div className="fin-form-table-wrap"><table><caption>Every target amount is calculated from the displayed source-reported amount, its unit scale, and the applicable FX rate.</caption><thead><tr><th>Year</th><th>Source reported amount ({form.sourceCurrency} · {form.sourceUnitLabel})</th><th>To full source units</th><th>FX rate</th><th>Full {comparisonCurrency} equivalent</th></tr></thead><tbody>{form.mappings.map((mapping) => <tr key={mapping.id}><td><b>{mapping.displayYear}</b></td><td className={mapping.sourceValue === null ? "is-missing" : ""}><b>{sourceReportedAmount(mapping)}</b><small>source reported</small></td><td className={mapping.sourceValue === null ? "is-missing" : ""}><b>× {mapping.sourceUnitScale.toLocaleString("en-US")}</b><small>= {formatFullAmount(mapping.sourceValue, mapping.sourceCurrency)}</small></td><td className={mapping.sourceUnitsPerComparisonUnit === null ? "is-missing" : ""}><b>{fxMultiplier(mapping)}</b><small>{fxExplanation(mapping)}</small></td><td className={mapping.convertedValue === null ? "is-missing" : ""}><b>{formatFullAmount(mapping.convertedValue, comparisonCurrency)}</b><small>full target-currency units</small></td></tr>)}</tbody></table></div>
-        <div className="fin2-average-result"><span>Average Annual Turnover</span><strong>{form.averageAnnualTurnover.value === null ? "MISSING" : `${form.averageAnnualTurnover.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${comparisonCurrency}`}</strong><small>{form.averageAnnualTurnover.yearsIncluded.join(" · ")} · CALCULATED from full {comparisonCurrency} units after source scaling and FX</small></div>
+        <div className="fin2-average-result"><span>Average Annual Turnover</span><strong>{form.averageAnnualTurnover.value === null ? "MISSING" : `${formatWholeFinancialFigure(form.averageAnnualTurnover.value)} ${comparisonCurrency}`}</strong><small>{form.averageAnnualTurnover.yearsIncluded.join(" · ")} · CALCULATED from full {comparisonCurrency} units after source scaling and FX · rounded to the nearest whole unit</small></div>
         <footer><p>Source-driven years only. Template examples and JV/Consortium fields are excluded from this single-bidder form.</p><span>{form.coverage.message}</span></footer>
       </section>
 
