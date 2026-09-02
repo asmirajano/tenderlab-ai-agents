@@ -9,6 +9,7 @@
     "preview": "vite preview --port 4174"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
     "@vitejs/plugin-react": "6.0.2",
     "exceljs": "4.4.0",
     "pdfjs-dist": "5.4.149",

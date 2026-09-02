@@ -49,6 +49,7 @@ test("registers all practical Agents as pages in one Tender Apps product", () =>
 test("builds TenderBalance inside the unified client app without Command Center navigation", async () => {
   const index = await readFile(path.join(tenderAppsRoot, "dist", "index.html"), "utf8");
   const assetNames = await readdir(path.join(tenderAppsRoot, "dist", "assets"));
+  const ocrAssetNames = await readdir(path.join(tenderAppsRoot, "dist", "ocr"));
   const javascript = (await Promise.all(
     assetNames.filter((name) => name.endsWith(".js")).map((name) => readFile(path.join(tenderAppsRoot, "dist", "assets", name), "utf8")),
   )).join("\n");
@@ -61,6 +62,14 @@ test("builds TenderBalance inside the unified client app without Command Center 
   assert.match(javascript, /TENDER LOGISTICS COST/);
   assert.match(javascript, /balance-sheet-review/);
   assert.match(javascript, /landed-cost/);
+  assert.match(javascript, /\/ocr\/tesseract-worker\.min\.js/);
+  assert.match(javascript, /\/ocr\/tesseract-core-lstm\.wasm\.js/);
+  assert.match(javascript, /\/ocr/);
+  assert.deepEqual(ocrAssetNames.sort(), [
+    "eng.traineddata.gz",
+    "tesseract-core-lstm.wasm.js",
+    "tesseract-worker.min.js",
+  ]);
   assert.match(javascript, /TenderMatch/);
   assert.match(javascript, /tendermatch/);
   assert.doesNotMatch(javascript, /href:"\/(?:agents|architecture|case-simulation|products)/);

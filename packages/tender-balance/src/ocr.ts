@@ -41,6 +41,11 @@ function broadcastBrowserProgress(progress: OcrProgress) {
 async function configuredWorker(onProgress?: (progress: OcrProgress) => void) {
   const options = {
     cacheMethod: typeof window === "undefined" ? "none" : "write",
+    ...(typeof window === "undefined" ? {} : {
+      workerPath: "/ocr/tesseract-worker.min.js",
+      corePath: "/ocr/tesseract-core-lstm.wasm.js",
+      langPath: "/ocr",
+    }),
     logger(message: { status: string; progress: number }) {
       onProgress?.({ status: message.status, progress: message.progress });
     },
