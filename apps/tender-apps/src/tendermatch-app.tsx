@@ -29,6 +29,7 @@ import {
 import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 import { TrialNotice } from "./trial-notice.tsx";
+import { TenderMatchFormulaView } from "./tendermatch-formula-view.tsx";
 import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState } from "./tendermatch-supplier-api.ts";
 import { tenderMatchFormulaToExcel } from "./tendermatch-formula-excel.ts";
 
@@ -41,10 +42,11 @@ type WorkspaceView =
   | "tenders"
   | "matrix"
   | "match-tenders"
-  | "match-suppliers";
+  | "match-suppliers"
+  | "formula";
 
 type NavItem = { id: WorkspaceView; label: string; short: string; sublabel: string };
-type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match";
+type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match" | "formula";
 type NavGroup = {
   id: NavGroupId;
   label: string;
@@ -70,6 +72,7 @@ function navGroupsFor(supplierCount: number): NavGroup[] { return [
     { id: "match-tenders", label: "Review by Tenders", short: "05B", sublabel: "Tender-first" },
     { id: "match-suppliers", label: "Review by Suppliers", short: "05C", sublabel: "Supplier-first" },
   ] },
+  { id: "formula", label: "Formula", short: "06", family: "analysis", sublabel: "How scoring works", items: [{ id: "formula", label: "Formula", short: "06", sublabel: "How scoring works" }] },
 ]; }
 
 const workspaceViewIds = new Set<WorkspaceView>(navGroupsFor(0).flatMap((group) => group.items).map((item) => item.id));
@@ -352,6 +355,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     suppliers: initialNavGroup === "suppliers",
     "tender-directory": true,
     match: initialNavGroup === "match",
+    formula: true,
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
@@ -365,7 +369,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   const [supplierEvidence, setSupplierEvidence] = useState<Record<string, SupplierEvidenceApiRecord[]>>({});
   const [evidenceErrors, setEvidenceErrors] = useState<Record<string, string>>({});
   const viewSurfaceRef = useRef<HTMLDivElement>(null);
-  const lastFocusedViewRef = useRef<WorkspaceView>("dashboard");
+  const lastFocusedViewRef = useRef<WorkspaceView>(resolvedInitialWorkspaceView);
 
   const matchByKey = useMemo(() => new Map(allMatches.map((entry) => [entry.key, entry])), [allMatches]);
   const result = caseResults[selectedKey] ?? initialResult;
@@ -498,15 +502,15 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     <div className="tb3-case-actions"><button onClick={saveCase}>Save Case</button><button onClick={loadCase}>Load Case</button><small>{persistenceMessage}</small></div>
   </section>;
 
-  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : ""}`}>
-    {view !== "dashboard" && <section className="tb3-product-intro">
+  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : view === "formula" ? "tb3-page-formula" : ""}`}>
+    {view !== "dashboard" && view !== "formula" && <section className="tb3-product-intro">
       <div><p><i /> TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE</p><h1>Tender<em>Match</em></h1><h2>Company × Tender evidence review for TenderLab Consultants.</h2><span>Select an explicit pair, inspect evidence-linked match support, gaps and freshness, then keep the consultant’s match disposition visible and human-controlled.</span></div>
       <aside><span>OPERATING ROLE</span><b>TL-A031</b><small>Company-to-Tender Match Score Agent · internal consultant workspace</small><strong>MATCH SUPPORT · EVIDENCE REVIEW · HUMAN DISPOSITION</strong></aside>
     </section>}
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>5 page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
+        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>{navGroups.length} page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
         <WorkspaceNavigation expanded={expandedNavGroups} navGroups={navGroups} onToggle={toggleNavGroup} onView={changeView} view={view} />
       </aside>
 
@@ -519,7 +523,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
         </section>
         {actionError && <div className="tb3-alert" role="alert"><b>Action needs attention</b><span>{actionError}</span><button onClick={() => setActionError("")} aria-label="Dismiss action error">×</button></div>}
 
-        {view !== "dashboard" && caseControls}
+        {view !== "dashboard" && view !== "formula" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
           {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
@@ -530,6 +534,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
           {view === "matrix" && <MatrixView view={view} suppliers={suppliers} profiles={supplierProfiles} evaluations={runtime.evaluations} matchByKey={matchByKey} onView={changeView} onOpen={openAssessment} />}
           {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} onView={changeView} onOpen={openAssessment} onDecision={decide} />}
           {view === "verification" && <VerificationView view={view} supplier={supplier} suppliers={suppliers} evidenceStatus={evidenceStatus} evidenceError={evidenceError} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
+          {view === "formula" && <TenderMatchFormulaView />}
         </div>
       </section>
     </section>
