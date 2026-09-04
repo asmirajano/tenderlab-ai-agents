@@ -737,6 +737,132 @@ button.tb3-metric:hover { border-color: var(--tb3-green); transform: translateY(
 .tb3-formula-table .tb3-data-table th:first-child { min-width: 250px; }
 .tb3-formula-table .tb3-data-table th > span { display: block; text-transform: capitalize; }
 .tb3-formula-table .tb3-data-table code { color: #697871; display: block; font-size: 8px; margin-top: 3px; overflow-wrap: anywhere; }
+
+/* Entity Readiness Grid reference treatment — requested for pages 03A, 03B, 04 and 05. */
+.tb3-data-table.tb3-entity-grid {
+  border: 1px solid #94a3b8;
+  border-collapse: collapse;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", monospace, sans-serif;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.tb3-data-table.tb3-entity-grid th,
+.tb3-data-table.tb3-entity-grid td {
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+.tb3-data-table.tb3-entity-grid thead th {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.tb3-data-table.tb3-entity-grid tbody th { font-weight: 600; }
+.tb3-data-table.tb3-entity-grid tbody tr:nth-child(even) > * { background: #f8fafc; }
+.tb3-data-table.tb3-entity-grid tbody tr:hover > * { background: #fef08a; }
+.tb3-data-table.tb3-entity-grid tbody tr.selected:not(:hover) > * { background: #fff7d6; }
+.tb3-data-table.tb3-entity-grid .numeric {
+  font-family: "Courier New", Courier, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.tb3-data-table.tb3-entity-grid .tb3-table-primary b { font-weight: 600; }
+.tb3-data-table.tb3-entity-grid .tb3-score-text {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+.tb3-data-table.tb3-entity-grid .tb3-status-text {
+  color: #d97706 !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.tb3-data-table.tb3-entity-grid .tb3-status-text::before { display: none; }
+.tb3-data-table.tb3-entity-grid .tb3-status-text.success,
+.tb3-data-table.tb3-entity-grid .tb3-status-text.verified { color: #16a34a !important; }
+.tb3-data-table.tb3-entity-grid .tb3-status-text.stated { color: #2563a6 !important; }
+.tb3-data-table.tb3-entity-grid .tb3-status-text.danger { color: #b91c1c !important; }
+.tb3-data-table.tb3-entity-grid .tb3-status-text.unknown { color: #64748b !important; }
+.tb3-data-table.tb3-entity-grid .tb3-table-action {
+  border-color: #94a3b8;
+  border-radius: 2px;
+  min-height: 26px;
+}
+
+.tb3-entity-grid-panel { border-color: #94a3b8; border-radius: 0; }
+.tb3-entity-grid-panel .tb3-matrix-scroll { border-top-color: #94a3b8; }
+.tb3-entity-matrix {
+  background: #fff;
+  border-left: 1px solid #94a3b8;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", monospace, sans-serif;
+  font-size: 12px;
+}
+.tb3-entity-matrix .tb3-matrix-header { background: #e2e8f0; color: #1e293b; }
+.tb3-entity-matrix .tb3-matrix-header > div {
+  background: #e2e8f0;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  gap: 2px;
+  min-height: 62px;
+  padding: 6px 10px;
+}
+.tb3-entity-matrix .tb3-matrix-header b {
+  color: #1e293b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.tb3-entity-matrix .tb3-matrix-header span,
+.tb3-entity-matrix .tb3-matrix-header small,
+.tb3-entity-matrix .tb3-matrix-header em { color: #475569; font-size: 9px; }
+.tb3-entity-matrix .tb3-matrix-row { border-top: 0; }
+.tb3-entity-matrix .tb3-matrix-row:nth-child(odd) > * { background: #f8fafc !important; }
+.tb3-entity-matrix .tb3-matrix-company,
+.tb3-entity-matrix .tb3-matrix-cell {
+  background: #fff !important;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  min-height: 48px;
+  padding: 6px 10px;
+}
+.tb3-entity-matrix .tb3-matrix-company { grid-template-columns: 28px minmax(0, 1fr); }
+.tb3-entity-matrix .tb3-matrix-company > span {
+  background: transparent;
+  border-radius: 0;
+  color: #475569;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  height: auto;
+}
+.tb3-entity-matrix .tb3-matrix-company p b { color: #0f172a; font-size: 11px; font-weight: 600; }
+.tb3-entity-matrix .tb3-matrix-company p small,
+.tb3-entity-matrix .tb3-matrix-company p em { color: #64748b; font-size: 9px; }
+.tb3-entity-matrix .tb3-matrix-cell {
+  place-content: center end;
+  text-align: right;
+}
+.tb3-entity-matrix .tb3-matrix-cell b {
+  color: #0f172a;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+.tb3-entity-matrix .tb3-matrix-cell span { color: #475569; font-size: 9px; }
+.tb3-entity-matrix .tb3-matrix-cell.priority b { color: #16a34a; }
+.tb3-entity-matrix .tb3-matrix-cell.review b { color: #d97706; }
+.tb3-entity-matrix .tb3-matrix-row:hover > .tb3-matrix-company,
+.tb3-entity-matrix .tb3-matrix-row:hover > .tb3-matrix-cell,
+.tb3-entity-matrix .tb3-matrix-cell:hover { background: #fef08a !important; }
+.tb3-entity-matrix .tb3-matrix-cell:hover { box-shadow: inset 0 0 0 1px #d97706; }
 .tb3-gate-audit article { display: grid; grid-template-columns: 5.8rem 1fr; gap: .5rem; padding: .5rem 0; border-top: 1px solid rgba(255,255,255,.1); }
 .tb3-gate-audit article > b { font: 700 .62rem/1.25 var(--tb3-mono); color: var(--tb3-lime); }
 .tb3-gate-audit article.state-fail > b { color: #ff967c; }
