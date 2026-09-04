@@ -66,3 +66,54 @@ test("keeps the specialist matrix compact, sticky, grid-styled and independently
   assert.match(styles, /\.tb3-entity-matrix \.tb3-matrix-cell b[^}]+"Courier New"[^}]+font-weight: 700/);
   assert.match(styles, /\.tb3-entity-matrix \.tb3-matrix-row:hover > \.tb3-matrix-company,[\s\S]+?background: #fef08a/);
 });
+
+test("uses standard capitalization for table headers, labels, categories and statuses while preserving acronyms", async () => {
+  const page = await source("apps/tender-apps/src/tendermatch-app.tsx");
+  const styles = await source("apps/tender-apps/src/tendermatch.css");
+
+  assert.match(page, /const tableAcronyms = new Set\(\[[\s\S]+?"ADB"[\s\S]+?"EBRD"[\s\S]+?"ID"/);
+  assert.match(page, /export function standardTableText/);
+  assert.match(page, /standardTableText\(entry\.object\)/);
+  assert.match(page, /standardTableText\(best\.tenderFreshness\.status\)/);
+  assert.match(page, /standardTableText\(entry\.reviewStatus\)/);
+  assert.match(page, /standardTableValue\(entry\.value\)/);
+  assert.match(page, /standardTableText\(component\.valueClass\)/);
+  assert.doesNotMatch(page, /\{entry\.reviewStatus\.replaceAll\("_", " "\)\}/);
+  assert.match(styles, /\.tb3-data-search > span, \.tb3-data-controls label > span[^}]+text-transform: none/);
+  assert.match(styles, /\.tb3-data-table thead th[^}]+text-transform: none/);
+  assert.match(styles, /\.tb3-status-text[^}]+text-transform: none/);
+  assert.match(styles, /\.tb3-data-table\.tb3-entity-grid thead th[^}]+text-transform: none/);
+  assert.match(styles, /\.tb3-entity-matrix \.tb3-matrix-header b[^}]+text-transform: none/);
+});
+
+test("keeps tender and supplier selectors compact, minimal and accessible at large scale", async () => {
+  const page = await source("apps/tender-apps/src/tendermatch-app.tsx");
+  const styles = await source("apps/tender-apps/src/tendermatch.css");
+
+  assert.ok((page.match(/className="tb3-picker tb3-compact-picker" data-density="compact"/g) ?? []).length >= 2);
+  assert.match(page, /className={`tb3-picker-row tb3-picker-tender/);
+  assert.match(page, /className={`tb3-picker-row tb3-picker-supplier/);
+  assert.match(page, /aria-pressed=\{entry\.id === tender\.id\}/);
+  assert.match(page, /aria-pressed=\{entry\.id === supplier\.id\}/);
+  assert.doesNotMatch(page, /className={`tb3-picker-row[^\n]+<i>→<\/i>/);
+  assert.match(styles, /\.tb3-compact-picker > button\.tb3-picker-row[^}]+min-height: 48px[^}]+padding: 6px 9px/);
+  assert.match(styles, /\.tb3-compact-picker \.tb3-picker-tender > p[^}]+-webkit-line-clamp: 2/);
+  assert.match(styles, /\.tb3-compact-picker \.tb3-picker-supplier[^}]+grid-template-columns: 27px minmax\(0, 1fr\)/);
+  assert.match(styles, /\.tb3-compact-picker > button\.tb3-picker-row\.active[^}]+box-shadow: inset 3px 0 0/);
+});
+
+test("places complete profile provenance in a compact horizontal strip above the verification table", async () => {
+  const page = await source("apps/tender-apps/src/tendermatch-app.tsx");
+  const styles = await source("apps/tender-apps/src/tendermatch.css");
+
+  assert.match(page, /<section className="tb3-audit-strip" aria-label="Profile provenance and audit summary">/);
+  for (const label of ["Safe evidence records", "Stated-unverified claims", "Inferred claims", "Unknown claims", "Consultant limits", "Back to match review"]) {
+    assert.match(page, new RegExp(label));
+  }
+  assert.match(page, /Contacts, messaging fields, named people, addresses and raw source content are excluded/);
+  assert.doesNotMatch(page, /<aside className="tb3-audit-aside">/);
+  assert.doesNotMatch(styles, /\.tb3-audit-aside/);
+  assert.match(styles, /\.tb3-evidence-layout[^}]+grid-template-columns: minmax\(160px, \.32fr\) minmax\(0, 1\.68fr\)/);
+  assert.match(styles, /\.tb3-audit-strip[^}]+display: grid[^}]+grid-template-columns: auto minmax\(208px, 1fr\) minmax\(110px, \.5fr\) auto auto/);
+  assert.match(styles, /@media \(max-width: 640px\)[\s\S]+?\.tb3-audit-strip \{ grid-template-columns: 1fr; \}/);
+});
