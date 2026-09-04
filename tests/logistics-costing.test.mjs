@@ -641,6 +641,126 @@ test("physical contradiction gate preserves source lower bounds and blocks unqua
   assert.equal(d3.costLines.some((line) => line.component === "main_freight"), false);
 });
 
+test("second public-offer regression batch preserves common invoice tables, typed packing evidence and commercial ambiguity", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const d1 = extractSemanticBusinessFacts([{ label: "electronics-proforma.pdf · page 1", pageNumber: 1, text: `PROFORMA INVOICE
+Company Name:Yueqing ZhuSun Electronics Co., Ltd.
+Yueqing City,Zhejiang
+Country: China
+Quantity EXW Amount
+ITEM Marks and
+Description of Goods
+NO. Numbers
+PCS USD USD
+ZG2401NL
+1 350 0.3 105
+LP5004NL
+LAN Transformers
+finished products without marking
+ZG4802NL
+2 1750 0.5 875
+LP5014NL
+ZG2401NL
+3 200 0.27 54
+LAN Transformer
+LP5004NL
+assembly kit (case + core with
+ZG4802NL
+winding)
+4 1500 0.44 660
+LP5014NL
+Total Amount (USD) 1694` }]);
+  assert.equal(d1.row.contract_value, 1_694);
+  assert.equal(d1.row.currency, "USD");
+  assert.equal(d1.row.current_incoterm, "EXW");
+  assert.equal(d1.row.source_named_place, undefined);
+  assert.equal(d1.row.line_count, 4);
+  assert.match(String(d1.row.quantity_package_count), /^3800 item units across 4/);
+  assert.deepEqual(d1.row.commercial_items.map((item) => item.quantity), [350, 1750, 200, 1500]);
+  assert.deepEqual(d1.row.commercial_items.map((item) => item.lineTotal), [105, 875, 54, 660]);
+  assert.doesNotMatch(String(d1.row.supplier_origin), /company name:/i);
+
+  const d2 = extractSemanticBusinessFacts([{ label: "filling-machine.pdf · page 1", pageNumber: 1, text: `WUXI YK AUTOMATION TECHNOLOGY CO., LTD.
+Quotation of GS-2 Filling machine
+One, price list (USD)
+Unit Price (USD) Qty
+Item Quantity Specifications
+FOB(Shanghai) (set)
+20-150ml USD 1,450 1
+GS-2 Pneumatic liquid filling machine
+5-15 ml USD 1,450 1
+7.Dimension:
+500mm*450mm*1500mm
+8. Weight: 50Kg
+Remarks:
+3. Package: seaworthy wooden case.` }]);
+  assert.equal(d2.row.contract_value, 2_900);
+  assert.equal(d2.fieldEvidence.contract_value.confidence, "medium");
+  assert.equal(d2.row.current_incoterm, "FOB");
+  assert.equal(d2.row.source_named_place, "Shanghai");
+  assert.equal(d2.row.line_count, 2);
+  assert.ok(d2.warnings.some((warning) => warning.code === "UNCONFIRMED_MULTI_ROW_BASELINE"));
+  assert.deepEqual(d2.physicalEvidence.find((item) => item.role === "product-dimensions").dimensionsCm, { length: 50, width: 45, height: 150 });
+  assert.equal(d2.physicalEvidence.find((item) => item.role === "product-weight").weightKg, 50);
+  assert.equal(d2.physicalEvidence.some((item) => item.role === "packed-dimensions" || item.role === "packed-gross-weight"), false);
+
+  const d3 = extractSemanticBusinessFacts([{ label: "photo-booth.pdf · page 1", pageNumber: 1, text: `Proforma Invoice
+Guangzhou Xiaoduo Amusement Equipment Co., Ltd.
+Qty UNIT PRICE TOTAL
+Items Picture Description
+(PCS) (USD) (USD)
+2. Product size: L97* W52*H195 cm
+Korean-style photo booth
+1 $2,365.00 $2,365.00
+108cm x 68cm x 210cm, with a
+wooden weight of 147kg and
+1 $70.00 $70.00
+packaging 50cm × 50cm × 60cm, with a
+weight of 55kg
+Total $2,435.00
+Payment Terms:
+1.EXW #101, Building 2, Tongfu Technology Innovation Park, Panyu District, Guangzhou City` }]);
+  assert.equal(d3.row.contract_value, 2_435);
+  assert.equal(d3.row.current_incoterm, "EXW");
+  assert.match(String(d3.row.source_named_place), /Guangzhou City/);
+  assert.equal(d3.row.line_count, 1);
+  assert.match(String(d3.row.quantity_package_count), /^1 item unit across 1/);
+  assert.equal(d3.row.export_packing_amount, 70);
+  assert.deepEqual(d3.physicalEvidence.find((item) => item.role === "product-dimensions").dimensionsCm, { length: 97, width: 52, height: 195 });
+  assert.equal(d3.physicalEvidence.filter((item) => item.role === "packed-dimensions").length, 2);
+  assert.deepEqual(d3.physicalEvidence.filter((item) => item.role === "packed-gross-weight").map((item) => item.weightKg), [147, 55]);
+});
+
+test("commercial quantities without a per-unit packing basis block freight while explicit packing lots reconcile", async () => {
+  const { buildProductionLogisticsEstimate } = await load("packages/logistics-costing/src/index.ts");
+  const base = { currency: "USD", destination: "Tashkent, Uzbekistan", transportMode: "road" };
+  const d1 = buildProductionLogisticsEstimate({ ...base, sourceValue: 1_694, origin: "Yueqing, China", cargoDescription: "LAN transformers and assembly kits", sourceLineCount: 4, commercialItems: [
+    { id: "d1-1", description: "LAN transformer", quantity: 350, lineTotal: 105, sourceRef: "electronics-proforma.pdf · page 1", workingBaselineIncluded: true },
+    { id: "d1-2", description: "LAN transformer", quantity: 1750, lineTotal: 875, sourceRef: "electronics-proforma.pdf · page 1", workingBaselineIncluded: true },
+    { id: "d1-3", description: "assembly kit", quantity: 200, lineTotal: 54, sourceRef: "electronics-proforma.pdf · page 1", workingBaselineIncluded: true },
+    { id: "d1-4", description: "assembly kit", quantity: 1500, lineTotal: 660, sourceRef: "electronics-proforma.pdf · page 1", workingBaselineIncluded: true },
+  ] });
+  assert.equal(d1.readiness.status, "blocked");
+  assert.ok(d1.readiness.blockers.some((blocker) => blocker.code === "UNRESOLVED_COMMERCIAL_QUANTITY_BASIS"));
+  assert.equal(d1.cargo.packedVolumeStatus, "missing");
+  assert.equal(d1.cargo.grossWeightStatus, "missing");
+  assert.equal(d1.costLines.some((line) => line.component === "main_freight"), false);
+
+  const d3 = buildProductionLogisticsEstimate({ ...base, sourceValue: 2_435, origin: "Guangzhou, China", cargoDescription: "Korean-style photo booth", sourceLineCount: 1, physicalEvidence: [
+    { id: "d3-pack-1", role: "packed-dimensions", scope: "lot", dimensionsCm: { length: 108, width: 68, height: 210 }, sourceText: "packing lot one", sourceRef: "photo-booth.pdf · page 1", confidence: "high", basis: "packed dimensions" },
+    { id: "d3-pack-2", role: "packed-dimensions", scope: "lot", dimensionsCm: { length: 50, width: 50, height: 60 }, sourceText: "packing lot two", sourceRef: "photo-booth.pdf · page 1", confidence: "high", basis: "packed dimensions" },
+    { id: "d3-weight-1", role: "packed-gross-weight", scope: "lot", weightKg: 147, sourceText: "packing lot one", sourceRef: "photo-booth.pdf · page 1", confidence: "high", basis: "packed gross weight" },
+    { id: "d3-weight-2", role: "packed-gross-weight", scope: "lot", weightKg: 55, sourceText: "packing lot two", sourceRef: "photo-booth.pdf · page 1", confidence: "high", basis: "packed gross weight" },
+  ] });
+  assert.equal(d3.readiness.status, "ready");
+  assert.equal(d3.cargo.packedVolumeM3.value, 1.69224);
+  assert.equal(d3.cargo.grossWeightKg.value, 202);
+  assert.equal(d3.cargo.calculationRows.some((row) => row.id === "shipment-source-input"), false);
+  assert.equal(d3.cargo.calculationRows.reduce((sum, row) => sum + row.estimatedVolumeM3, 0), d3.cargo.packedVolumeM3.value);
+  assert.equal(d3.cargo.calculationRows.reduce((sum, row) => sum + row.estimatedGrossWeightKg, 0), d3.cargo.grossWeightKg.value);
+  assert.equal(d3.transport.requiredTruckCount, 1);
+});
+
 test("spreadsheet quotation extraction calculates the commercial total from priced rows", async () => {
   const { extractSpreadsheetCommercialSummary } = await load("packages/logistics-costing/src/index.ts");
   const rows = [
@@ -735,7 +855,7 @@ test("Excel export carries canonical formulas, cargo rows, provenance and a reco
   const { buildCanonicalInsuranceDerivation, buildProductionLogisticsEstimate, calculateScenario } = await load("packages/logistics-costing/src/index.ts");
   const { logisticsCalculationToExcel } = await load("apps/tender-apps/src/logistics-calculation-excel.ts");
   const ExcelJS = (await import(pathToFileURL(path.join(projectRoot, "apps", "tender-apps", "node_modules", "exceljs", "excel.js")).href)).default;
-  const commercialItems = Array.from({ length: 13 }, (_, index) => ({ id: `line-${index + 1}`, itemCode: `LAB-${index + 1}`, description: `Laboratory equipment line ${index + 1}`, quantity: index + 1, unitPrice: 1_000, lineTotal: (index + 1) * 1_000, currency: "USD", sourceRef: `quotation.xlsx · row ${index + 8}`, workingBaselineIncluded: true }));
+  const commercialItems = Array.from({ length: 13 }, (_, index) => ({ id: `line-${index + 1}`, itemCode: `LAB-${index + 1}`, description: `Laboratory equipment line ${index + 1}`, quantity: 1, unitPrice: 1_000, lineTotal: 1_000, currency: "USD", sourceRef: `quotation.xlsx · row ${index + 8}`, workingBaselineIncluded: true }));
   const estimate = buildProductionLogisticsEstimate({ sourceValue: 100_000, currency: "USD", cargoDescription: "Laboratory equipment", sourceLineCount: 13, commercialItems, origin: "Shandong, China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
   const input = { id: "excel-regression", mode: "incoterm-conversion", sourceContractTotal: 100_000, currency: "USD", sourceTerm: "EXW", sourceNamedPlace: "Shandong, China", targetTerm: "CIP", targetNamedPlace: "Tashkent, Uzbekistan", incotermsVersion: "2020", transportMode: "road", costLines: estimate.costLines, insurance: { enabled: true, premiumRate: estimate.insuranceRate, coverageFactor: estimate.insuranceCoverageFactor, basis: "final-contract-value", clauses: "A" } };
   const result = calculateScenario(input);

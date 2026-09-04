@@ -21,7 +21,7 @@ export type TruckAllocation = {
 export type LimitingFactor = "VOLUME / LOADABILITY" | "WEIGHT" | "BOTH";
 
 export type PhysicalReadinessBlocker = {
-  code: "MISSING_PACKED_DIMENSIONS" | "MISSING_PACKED_GROSS_WEIGHT" | "UNIT_FIT_CONTRADICTION" | "GENERIC_MODE_FALLBACK_NOT_APPLICABLE";
+  code: "MISSING_PACKED_DIMENSIONS" | "MISSING_PACKED_GROSS_WEIGHT" | "UNIT_FIT_CONTRADICTION" | "GENERIC_MODE_FALLBACK_NOT_APPLICABLE" | "UNRESOLVED_COMMERCIAL_QUANTITY_BASIS";
   message: string;
   nextAction: string;
   sourceRefs: string[];
@@ -250,9 +250,9 @@ const hsReferences: Array<{ code: string; description: string; terms: RegExp[] }
   { code: "8421", description: "Centrifuges and filtering or purifying machinery", terms: [/centrifuge|purification|filter/i] },
 ];
 
-function parsedCount(value?: string) {
+function parsedLineCount(value?: string) {
   if (!value) return undefined;
-  const candidate = Number(value.match(/\b(\d{1,5})\b/)?.[1]);
+  const candidate = Number(value.match(/\b(\d{1,5})\s+(?:(?:quotation|commercial|priced|source)\s+)?(?:lines?|rows?)\b/i)?.[1]);
   return Number.isFinite(candidate) && candidate > 0 ? candidate : undefined;
 }
 
@@ -365,7 +365,7 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
   const proxy = selectCargoProxy(evidenceText);
   const commercialItems = input.commercialItems?.filter((item) => item.workingBaselineIncluded) ?? [];
   const physicalEvidence = input.physicalEvidence ?? [];
-  const lineCount = input.sourceLineCount ?? (commercialItems.length || undefined) ?? parsedCount(input.quantityDescription) ?? 1;
+  const lineCount = input.sourceLineCount ?? (commercialItems.length || undefined) ?? parsedLineCount(input.quantityDescription) ?? 1;
   const sourcePackedDimensions = physicalEvidence.filter((item) => item.role === "packed-dimensions" && item.dimensionsCm);
   const sourceProductDimensions = physicalEvidence.filter((item) => item.role === "product-dimensions" && item.dimensionsCm);
   const sourcePackedWeights = physicalEvidence.filter((item) => item.role === "packed-gross-weight" && item.weightKg);
@@ -373,7 +373,7 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
   const sourceProductWeights = physicalEvidence.filter((item) => item.role === "product-weight" && item.weightKg);
   const packedDimensionsVolume = sourcePackedDimensions.reduce((sum, item) => sum + dimensionsVolumeM3(item.dimensionsCm!, item.quantity ?? 1), 0);
   const minimumEquipmentEnvelopeVolumeM3 = sourceProductDimensions.length ? Math.max(...sourceProductDimensions.map((item) => dimensionsVolumeM3(item.dimensionsCm!, item.quantity ?? 1))) : undefined;
-  const packedEvidenceWeight = sourcePackedWeights.length ? Math.max(...sourcePackedWeights.map((item) => item.weightKg!)) : undefined;
+  const packedEvidenceWeight = sourcePackedWeights.length ? sourcePackedWeights.reduce((sum, item) => sum + item.weightKg! * (item.quantity ?? 1), 0) : undefined;
   const declaredWeightLowerBound = sourceDeclaredWeights.length ? Math.max(...sourceDeclaredWeights.map((item) => item.weightKg!)) : undefined;
   const productWeightLowerBound = sourceProductWeights.length ? (lineCount === 1 ? sourceProductWeights.reduce((sum, item) => sum + item.weightKg!, 0) : Math.max(...sourceProductWeights.map((item) => item.weightKg!))) : undefined;
   const explicitWeightLowerBoundKg = Math.max(declaredWeightLowerBound ?? 0, productWeightLowerBound ?? 0) || undefined;
@@ -469,7 +469,11 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     sourceRef: item.sourceRef,
     confidence: item.confidence,
   }));
-  const calculationRows = physicalCalculationRows.length ? [...physicalCalculationRows, ...cargoCalculationRows] : cargoCalculationRows;
+  // Explicit physical evidence rows are already the canonical operands behind the
+  // shipment totals. Appending the shipment summary row would duplicate those
+  // operands in the UI and make the Excel SUM formulas recalculate to twice the
+  // actual cube and weight.
+  const calculationRows = physicalCalculationRows.length ? physicalCalculationRows : cargoCalculationRows;
   const benchmark = selectBenchmark(input.origin, input.destination, input.transportMode);
   const unit = selectedUnit(benchmark, input.transportMode, input.preferredUnitId);
   const fitFailures = physicalEvidence.filter((item) => item.dimensionsCm && !fitsLoadingEnvelope(item.dimensionsCm, unit.internalDimensionsCm));
@@ -481,6 +485,13 @@ export function buildProductionLogisticsEstimate(input: ProductionEstimateInput)
     sourceRefs: fitFailures.map((item) => item.sourceRef),
   });
   const physicalProxyRequiresPacking = proxy.id === "mixed-machinery" || benchmark.id === "generic-mode-fallback-2026q3";
+  const unresolvedCommercialQuantityBasis = !volumeFromSource && commercialItems.some((item) => (item.quantity ?? 1) > 1);
+  if (unresolvedCommercialQuantityBasis) blockers.push({
+    code: "UNRESOLVED_COMMERCIAL_QUANTITY_BASIS",
+    message: "Commercial item quantities are explicit, but no per-unit packed dimensions, per-unit gross weight or consolidated packing list connects those quantities to the cargo model. A quotation-line proxy cannot safely represent the shipment.",
+    nextAction: "Obtain a supplier packing list or provide per-unit packed dimensions and gross weight for the priced items.",
+    sourceRefs: commercialItems.filter((item) => (item.quantity ?? 1) > 1).map((item) => item.sourceRef),
+  });
   if (!volumeFromSource && physicalProxyRequiresPacking) blockers.push({
     code: "MISSING_PACKED_DIMENSIONS",
     message: `Packed shipment dimensions or a supplier packing list are missing. ${minimumEquipmentEnvelopeVolumeM3 ? `The ${minimumEquipmentEnvelopeVolumeM3.toFixed(3)} m³ equipment envelope is only a minimum fit constraint and cannot be treated as packed cube.` : "The machinery proxy is not sufficient to qualify a transport unit."}`,
