@@ -2,6 +2,8 @@
 
 Status: **source census completed; full execution blocked at the access/target gate**. This is not a completed all-to-all run, not a replacement snapshot, and not a deployment.
 
+Follow-on preparation (not applied): [development database runbook](tendermatch-development-database-runbook.md) defines the additive full-117-company read contract and separate development result store. The prior census below remains historical evidence; no real all-to-all scoring has run.
+
 Base: `origin/main` at `d230590cf5ee99a679f162b2e3a19b65752c0f16`, freshly fetched after deployment. Isolated worktree: `C:/CodexWork/tendermatch-neon-all-to-all`, branch `codex/tendermatch-neon-all-to-all`. Other worktrees and previews are preserved. Owner stays `agent:TL-A031`; consultant decisions remain explicit.
 
 ## Actual read-only evidence
