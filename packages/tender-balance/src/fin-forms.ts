@@ -510,12 +510,17 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 
     let totalLiabilities = dataset.values.find((value) => value.field === "total_liabilities" && value.displayYear === period.displayYear);
     const currentLiabilitiesForDerivation = dataset.values.find((value) => value.field === "current_liabilities" && value.displayYear === period.displayYear);
-    if (!totalLiabilities && currentLiabilitiesForDerivation && nonCurrentLiabilities) {
-      totalLiabilities = calculatedField("total_liabilities", [currentLiabilitiesForDerivation, nonCurrentLiabilities], "Current Liabilities + Non-current Liabilities", currentLiabilitiesForDerivation.value + nonCurrentLiabilities.value);
-      dataset.values.push(totalLiabilities);
-    }
+    // Some reporting frameworks present provisions (or another obligation
+    // class) outside the current/non-current subtotals. When Total Liabilities
+    // is not itself reported, Assets − reported Equity is the complete
+    // accounting-equation total; the two liability subtotals are only a
+    // fallback when that source-grounded equation cannot be formed.
     if (!totalLiabilities && assets && reportedNetWorth) {
       totalLiabilities = calculatedField("total_liabilities", [assets, reportedNetWorth], "Total Assets − reported Net Worth", assets.value - reportedNetWorth.value);
+      dataset.values.push(totalLiabilities);
+    }
+    if (!totalLiabilities && currentLiabilitiesForDerivation && nonCurrentLiabilities) {
+      totalLiabilities = calculatedField("total_liabilities", [currentLiabilitiesForDerivation, nonCurrentLiabilities], "Current Liabilities + Non-current Liabilities", currentLiabilitiesForDerivation.value + nonCurrentLiabilities.value);
       dataset.values.push(totalLiabilities);
     }
 
@@ -609,9 +614,9 @@ function addBalanceSourceValues(dataset: CanonicalFinancialDataset, input: Finan
 }
 
 const INCOME_FIELD_PATTERNS: Array<{ field: Fin1FieldId; patterns: RegExp[] }> = [
-  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^(?:total )?net sales$/i, /^net (?:revenue|income) from (?:the )?sales\b/i, /^annual turnover$/i, /^turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
-  { field: "profit_before_tax", patterns: [/^(?:income|loss|profit).*before.*(?:income )?(?:tax(?:es| expense)?|taxation)\b/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
-  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^net profit(?: \(loss\))?(?: for the reporting period)?\b/i, /^profit after tax$/i, /^profit.*after.*tax/i, /^profit(?:\s*\/\s*loss| or loss) for (?:the )?year$/i, /^consolidated profit$/i, /ҳисобот даврининг соф фойдаси/iu] },
+  { field: "total_revenue", patterns: [/^net revenue$/i, /^total revenue$/i, /^revenue$/i, /^sales revenue$/i, /^(?:total )?net sales$/i, /^net (?:revenue|income) from (?:the )?sales\b/i, /^annual turnover$/i, /^turnover$/i, /^net turnover$/i, /^sales turnover$/i, /маҳсулот.*сотишдан соф тушум/iu] },
+  { field: "profit_before_tax", patterns: [/^(?:\(?loss\)?\s*\/\s*)?(?:income|loss|profit|result).*before.*(?:income )?(?:tax(?:es| expense)?|taxation)\b/i, /^profit before tax$/i, /фойда солиғини тўлагунга қадар фойда/iu] },
+  { field: "profit_after_tax", patterns: [/^net income.*net loss/i, /^net (?:income|loss)$/i, /^total net (?:income|loss)$/i, /^net profit(?: \(loss\))?(?: for the reporting period)?\b/i, /^net result for (?:the )?year$/i, /^profit after tax$/i, /^profit.*after.*tax/i, /^(?:\(?loss\)?\s*\/\s*)?profit(?:\s*\/\s*loss| or loss)? for (?:the )?year$/i, /^consolidated profit$/i, /ҳисобот даврининг соф фойдаси/iu] },
 ];
 
 const STATUTORY_INCOME_ROW_FIELDS: Partial<Record<string, Fin1FieldId>> = {
@@ -623,14 +628,22 @@ const STATUTORY_INCOME_ROW_FIELDS: Partial<Record<string, Fin1FieldId>> = {
 const TURNOVER_REVIEW_PATTERNS = [/^(?:total )?sales$/i, /^(?:total )?receipts$/i, /^(?:total )?income$/i, /^gross income$/i];
 
 function incomeStatementPages(review: BalanceSheetReview) {
-  const hasIncomeTitle = (page: BalanceSheetReview["pages"][number]) => page.text?.split(/\r?\n/).some((line) => {
-    const normalized = line.replace(/\s+/g, " ").trim();
-    return /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:(?:operations|income|profit(?: or loss)?)(?: and comprehensive income)?|comprehensive income)(?:\s+for(?:\s+the)?\s+period)?$/i.test(normalized)
-      || /^(?:consolidated\s+)?income statements?$/i.test(normalized)
-      || /^profit and loss account(?:\s+for)?$/i.test(normalized)
-      || /^report on financial results\s*[-–—]?\s*form n(?:o|e)\.?\s*(?:2\b)?/i.test(normalized)
-      || /молиявий натижалар.*(?:ҳисобот|хисобот)/iu.test(normalized);
-  });
+  const hasIncomeTitle = (page: BalanceSheetReview["pages"][number]) => {
+    const lines = (page.text ?? "")
+      .split(/\r?\n/)
+      .map((line) => line.replace(/\s+/g, " ").trim())
+      .filter(Boolean)
+      .slice(0, 24);
+    const candidates = lines.flatMap((_, index) => [1, 2, 3]
+      .map((count) => lines.slice(index, index + count).join(" "))
+      .filter(Boolean));
+    return candidates.some((title) =>
+      /^(?:audited\s+)?(?:consolidated\s+)?statements? of (?:(?:operations|income(?: and expenses)?|profit(?: or loss)?)(?: and (?:other )?comprehensive income)?|comprehensive income)(?:\s+for(?:\s+the)?\s+(?:year|period)(?:\s+ended)?\b.*)?$/i.test(title)
+      || /^(?:consolidated\s+)?income statements?(?:\s+for(?:\s+the)?\s+(?:year|period)(?:\s+ended)?\b.*)?$/i.test(title)
+      || /^(?:consolidated\s+)?profit and loss account(?: and (?:other )?comprehensive income)?(?:\s+for(?:\s+the)?\s+(?:year|period)(?:\s+ended)?\b.*)?$/i.test(title)
+      || /^report on financial results\s*[-–—]?\s*form n(?:o|e)\.?\s*2\b.*$/i.test(title)
+      || /^молиявий натижалар.*(?:ҳисобот|хисобот).*$/iu.test(title));
+  };
   const titled = review.pages.filter(hasIncomeTitle);
   const withTargetRows = titled.filter((page) => (page.text ?? "").split(/\r?\n/).some((sourceLine) => {
     const parsed = parseStatementLine(sourceLine.trim());
@@ -658,6 +671,17 @@ function incomeDefinitionForLabel(label: string) {
 }
 
 function parseIncomeStatementLine(sourceLine: string, expectedValueCount: number) {
+  if (sourceLine.includes("\t") && expectedValueCount > 0) {
+    const cells = sourceLine.split("\t").map((cell) => cell.trim()).filter(Boolean);
+    const valueCells = cells
+      .map((cell, index) => ({ cell, index }))
+      .filter(({ cell }, index) => index > 0 && /^(?:[$€£₾]\s*)?(?:\(?[-−]?\d[\d,.'’\s]*\)?|[—–-]\s*(?:[*†‡]+|\([A-Za-z0-9]+\))?)$/.test(cell));
+    if (valueCells.length >= expectedValueCount) {
+      const selected = valueCells.slice(-expectedValueCount);
+      const label = stripIncomeNoteReference(normalizeIncomeLabel(cells.slice(0, selected[0].index).join(" ")).replace(/\s+\d{3}$/, ""));
+      if (incomeDefinitionForLabel(label)) return { label, rawValues: selected.map(({ cell }) => cell) };
+    }
+  }
   const tabular = sourceLine.includes("\t") ? parseStatementLine(sourceLine, expectedValueCount) : undefined;
   if (tabular) {
     const label = stripIncomeNoteReference(normalizeIncomeLabel(tabular.label).replace(/\s+\d{3}$/, ""));
@@ -678,6 +702,36 @@ function parseIncomeStatementLine(sourceLine: string, expectedValueCount: number
   const label = normalized.slice(0, firstIndex).replace(/[:\s]+$/, "");
   if (!incomeDefinitionForLabel(label)) return undefined;
   return { label, rawValues: selected.map((match) => match[0].trim()) };
+}
+
+function parseGeneralIncomeRows(text: string, expectedValueCount: number) {
+  const rows: Array<NonNullable<ReturnType<typeof parseIncomeStatementLine>>> = [];
+  let pendingLabel = "";
+  for (const sourceLine of text.split(/\r?\n/)) {
+    const line = normalizeIncomeLabel(sourceLine);
+    if (!line) continue;
+    const parsed = parseIncomeStatementLine(sourceLine.trim(), expectedValueCount);
+    if (parsed) {
+      rows.push(parsed);
+      pendingLabel = "";
+      continue;
+    }
+    if (pendingLabel) {
+      const combined = parseIncomeStatementLine(`${pendingLabel}\t${sourceLine.trim()}`, expectedValueCount);
+      if (combined) {
+        rows.push(combined);
+        pendingLabel = "";
+        continue;
+      }
+      const combinedLabel = normalizeIncomeLabel(`${pendingLabel} ${line}`);
+      if (incomeDefinitionForLabel(combinedLabel)) {
+        pendingLabel = combinedLabel;
+        continue;
+      }
+    }
+    pendingLabel = incomeDefinitionForLabel(line) ? line : "";
+  }
+  return rows;
 }
 
 function incomeDefinitionForLine(sourceLine: string) {
@@ -833,7 +887,7 @@ function addIncomeSourceValues(dataset: CanonicalFinancialDataset, input: Financ
 
     const labelRows = /[ўқғҳ]/i.test(page.text ?? "")
       ? parseUzbekIncomeRows(page.text ?? "")
-      : (page.text ?? "").split(/\r?\n/).map((sourceLine) => parseIncomeStatementLine(sourceLine.trim(), periods.length)).filter((parsed): parsed is NonNullable<typeof parsed> => Boolean(parsed));
+      : parseGeneralIncomeRows(page.text ?? "", periods.length);
     const statutoryFields = new Set(statutoryRows.map((row) => row.field));
     const sourceRows = [
       ...statutoryRows,

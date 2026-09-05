@@ -250,29 +250,29 @@ const conceptRules: Array<{
   { concept: "personal_liabilities", classification: "liability", patterns: [/^(?:total )?personal liabilities$/i] },
   { concept: "personal_net_worth", classification: "equity", patterns: [/^personal net worth$/i] },
   { concept: "total_assets", classification: "asset", isTotal: true, patterns: [/^total (?:farm )?assets$/i, /^assets(?: total)?$/i, /^итого активы?$/i, /^баланс.*актив/i, /^jami aktivlar$/i, /^баланс активи бўйича жами/i] },
-  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|partners?[’'s\s-]*(?:equity|deficit)|net worth)$/i, /^equity and liabilities$/i, /^liabilities,?\s*provisions and equity$/i] },
+  { concept: "total_liabilities_and_equity", classification: "equity", isTotal: true, patterns: [/^total liabilities\s*(?:&|and)\s*(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|partners?[’'s\s-]*(?:equity|deficit)|net worth)$/i, /^total (?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*(?:equity)?|net worth)\s*(?:&|and)\s*liabilities$/i, /^(?:total )?equity and liabilities$/i, /^liabilities,?\s*provisions and equity$/i] },
   { concept: "total_liabilities", classification: "liability", isTotal: true, patterns: [/^total (?:farm )?liabilities$/i, /^liabilities$/i, /^итого обязательств/i, /^jami majburiyatlar$/i, /^ii бўлим бўйича жами/i] },
-  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^(?:total )?partners?[’'s\s-]*(?:equity|deficit)$/i, /^members?[’']? funds$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
+  { concept: "owners_equity", classification: "equity", isTotal: true, patterns: [/^(?:total )?(?:(?:owners?|(?:share|stock)holders?)[’'s\s-]*)?equity$/i, /^(?:total )?equity (?:share|stock)holders?[’'s\s-]*(?:funds?)$/i, /^(?:total )?partners?[’'s\s-]*(?:equity|deficit)$/i, /^(?:reserves\s+)?members?[’']? funds$/i, /^farm net worth$/i, /^капитал( и резервы)?$/i, /^собственный капитал$/i, /^jami xususiy kapital$/i] },
   { concept: "net_assets", classification: "equity", isTotal: true, patterns: [/^net assets$/i, /^чистые активы$/i, /^sof aktivlar$/i] },
   { concept: "current_assets", classification: "current_asset", isTotal: true, patterns: [/^total current assets$/i, /^current assets$/i, /^оборотные активы$/i, /^jami joriy aktivlar$/i, /^ii бўлим бўйича жами/i] },
-  { concept: "non_current_assets", classification: "non_current_asset", isTotal: true, patterns: [/^total non.?current assets$/i, /^non.?current assets$/i, /^fixed assets$/i, /^i бўлим бўйича жами/i] },
-  { concept: "current_liabilities", classification: "current_liability", isTotal: true, patterns: [/^total current liabilities$/i, /^current liabilities$/i, /^short.?term liabilities$/i, /^amounts falling due within one year$/i, /^краткосрочные обязательства$/i, /^jami joriy majburiyatlar$/i, /^жорий мажбуриятлар, жами/i] },
+  { concept: "non_current_assets", classification: "non_current_asset", isTotal: true, patterns: [/^total non.?current assets$/i, /^non.?current assets$/i, /^(?:total )?fixed assets$/i, /^i бўлим бўйича жами/i] },
+  { concept: "current_liabilities", classification: "current_liability", isTotal: true, patterns: [/^total current liabilities$/i, /^current liabilities$/i, /^short.?term liabilities$/i, /^(?:creditors?:?\s*)?amounts falling due within (?:one|1) year$/i, /^краткосрочные обязательства$/i, /^jami joriy majburiyatlar$/i, /^жорий мажбуриятлар, жами/i] },
   { concept: "non_current_liabilities", classification: "non_current_liability", isTotal: true, patterns: [/^total non.?current liabilities$/i, /^non.?current liabilities$/i, /^(?:total )?long.?term liabilities$/i, /^узоқ муддатли мажбуриятлар, жами/i] },
   { concept: "cash_and_cash_equivalents", classification: "current_asset", patterns: [/cash( and cash equivalents)?/i, /денежн/i, /pul mablag/i, /пул маблағлари/i, /ҳисоб-китоб счётидаги пул/i] },
-  { concept: "trade_receivables", classification: "current_asset", patterns: [/trade (and other )?receivables/i, /accounts receivable/i, /^receivables from affiliates$/i, /дебитор/i, /debitor/i] },
-  { concept: "inventories", classification: "current_asset", patterns: [/inventor/i, /запас/i, /tovar.?moddiy/i, /товар-моддий/i, /fertilizer and supplies/i, /growing crops/i, /crops held for sale/i, /market livestock/i] },
+  { concept: "trade_receivables", classification: "current_asset", patterns: [/trade (and other )?receivables/i, /accounts receivable/i, /^receivables(?: from affiliates)?$/i, /^debtors$/i, /дебитор/i, /debitor/i] },
+  { concept: "inventories", classification: "current_asset", patterns: [/inventor/i, /^stocks?$/i, /запас/i, /tovar.?moddiy/i, /товар-моддий/i, /fertilizer and supplies/i, /growing crops/i, /crops held for sale/i, /market livestock/i] },
   { concept: "other_current_assets", classification: "current_asset", patterns: [/other current assets/i, /prepaid expenses?/i, /current portion of savings/i, /прочие оборотные/i, /boshqa joriy aktiv/i] },
-  { concept: "property_plant_equipment", classification: "non_current_asset", patterns: [/property.*plant.*equipment/i, /^equipment$/i, /^property$/i, /machinery and equipment/i, /^buildings$/i, /^land$/i, /fixed assets/i, /основные средства/i, /asosiy vositalar/i, /асосий воситалар/i] },
+  { concept: "property_plant_equipment", classification: "non_current_asset", patterns: [/property.*plant.*equipment/i, /^tangible assets$/i, /^equipment$/i, /^property$/i, /machinery and equipment/i, /^buildings$/i, /^land$/i, /fixed assets/i, /основные средства/i, /asosiy vositalar/i, /асосий воситалар/i] },
   { concept: "intangible_assets", classification: "non_current_asset", patterns: [/intangible assets/i, /goodwill.*intangibles/i, /^goodwill$/i, /нематериальные активы/i, /nomoddiy aktivlar/i, /номоддий активлар/i] },
-  { concept: "other_non_current_assets", classification: "non_current_asset", patterns: [/other non.?current assets/i, /^other assets$/i, /breeding livestock/i, /investments? in cooperatives/i, /прочие внеоборотные/i, /boshqa uzoq muddatli aktiv/i] },
+  { concept: "other_non_current_assets", classification: "non_current_asset", patterns: [/other non.?current assets/i, /^(?:other assets|financial fixed assets?|investments?)$/i, /breeding livestock/i, /investments? in cooperatives/i, /прочие внеоборотные/i, /boshqa uzoq muddatli aktiv/i] },
   { concept: "trade_payables", classification: "current_liability", patterns: [/trade (and other )?payables/i, /accounts payable/i, /кредитор/i, /kreditor/i, /мол етказиб берувчилар ва пудратчиларга қарз/i] },
   { concept: "short_term_borrowings", classification: "current_liability", patterns: [/short.?term borrow/i, /current borrow/i, /current loans? due within/i, /current portion(?:\s*[-:]| of).*long.?term debt/i, /current portion of term debt/i, /^commercial paper$/i, /operating debt/i, /borrowed principal due within/i, /краткосрочн.*за[её]м/i, /qisqa muddatli qarz/i] },
   { concept: "other_current_liabilities", classification: "current_liability", patterns: [/other current liabilities/i, /accrued expenses?/i, /accrued interest/i, /income (?:&|and) social security taxes payable/i, /^current portion:\s*deferred taxes/i, /real estate and personal property taxes/i, /^taxes payable$/i, /^(?:unearned|deferred) revenue$/i, /salar(?:y|ies) payable/i, /income taxes? payable/i, /warranty liabilit/i, /прочие краткосрочные/i, /boshqa joriy majburiyat/i] },
   { concept: "long_term_borrowings", classification: "non_current_liability", patterns: [/long.?term (?:borrow|debt|loans?)/i, /intermediate loans?/i, /term debt/i, /non.?current borrow/i, /долгосрочн.*за[её]м/i, /uzoq muddatli qarz/i] },
   { concept: "other_non_current_liabilities", classification: "non_current_liability", patterns: [/other (?:non.?current|long.?term) liabilities/i, /^provisions(?: for liabilities and charges)?$/i, /^deferred income$/i, /noncurrent portion:\s*deferred taxes/i, /прочие долгосрочные/i, /boshqa uzoq muddatli majburiyat/i] },
-  { concept: "share_capital", classification: "equity", patterns: [/(?:share|equity) capital/i, /common stock.*additional paid.?in capital/i, /уставн.*капитал/i, /ustav kapital/i, /устав капитали/i] },
-  { concept: "retained_earnings", classification: "equity", patterns: [/retained earnings/i, /accumulated (deficit|loss|profit)/i, /нераспределенн.*прибыл/i, /непокрыт.*убыт/i, /taqsimlanmagan/i, /тақсимланмаган фойда/i] },
-  { concept: "other_equity", classification: "equity", patterns: [/other (reserves|equity)/i, /accumulated other comprehensive (?:income|loss)/i, /прочие резервы/i, /boshqa kapital/i] },
+  { concept: "share_capital", classification: "equity", patterns: [/^issued capital$/i, /(?:share|equity) capital/i, /common stock.*additional paid.?in capital/i, /уставн.*капитал/i, /ustav kapital/i, /устав капитали/i] },
+  { concept: "retained_earnings", classification: "equity", patterns: [/retained earnings/i, /accumulated (deficit|loss|profit)/i, /^(?:profit and loss account|undistributed result)$/i, /нераспределенн.*прибыл/i, /непокрыт.*убыт/i, /taqsimlanmagan/i, /тақсимланмаган фойда/i] },
+  { concept: "other_equity", classification: "equity", patterns: [/^(?:share premium|other legal reserves|reserves)$/i, /other (reserves|equity)/i, /accumulated other comprehensive (?:income|loss)/i, /прочие резервы/i, /boshqa kapital/i] },
 ];
 
 const requiredConcepts: BalanceSheetConcept[] = [
@@ -287,8 +287,8 @@ const statementPatterns = [/balance sheet/i, /statement of financial position/i,
 
 function isStatementTitleLine(line: string) {
   const normalized = line.replace(/\s+/g, " ").trim();
-  return /^(?:audited\s+)?(?:consolidated\s+)?balance sheets?(?:\s+as\s+(?:of|at)\s+.+)?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
-    || /^(?:consolidated\s+)?statements? of financial position(?:\s+as\s+(?:of|at)\s+.+)?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
+  return /^(?:audited\s+)?(?:(?:consolidated|company|parent company|separate)\s+)?balance sheets?(?:\s+as\s+(?:of|at)\s+.+)?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
+    || /^(?:(?:consolidated|company|parent company|separate)\s+)?statements? of financial position(?:\s+as\s+(?:of|at)\s+.+)?(?:\s*\((?:continued|unaudited)\))?$/i.test(normalized)
     || /^accounting balance(?: sheet)?(?:\s*[-–]\s*|\s+)form\s+(?:no\.?|n[eo])?\s*1\b/i.test(normalized)
     || /^бухгалтерия баланси(?:\s|№|$)/iu.test(normalized)
     || /^бухгалтерский баланс(?:\s|№|$)/iu.test(normalized);
@@ -499,7 +499,7 @@ function sectionForHeading(line: string): StatementSection | undefined {
   if (/^(?:non.?current assets|long.?term assets|fixed assets|внеоборотные активы|uzoq muddatli aktivlar)$/i.test(normalized)) return "non_current_asset";
   if (/^(?:current liabilities|short.?term liabilities|краткосрочные обязательства|joriy majburiyatlar)$/i.test(normalized)) return "current_liability";
   if (/^(?:non.?current liabilities|long.?term liabilities|долгосрочные обязательства|uzoq muddatli majburiyatlar)$/i.test(normalized)) return "non_current_liability";
-  if (/^(?:(?:share|stock)holders?[’'s\s-]*equity|owners?[’'s\s-]*equity|equity|net worth|reserves)$/i.test(normalized)) return "equity";
+  if (/^(?:(?:share|stock)holders?[’'s\s-]*equity|owners?[’'s\s-]*equity|equity|net worth|capital and reserves)$/i.test(normalized)) return "equity";
   if (/^assets$/i.test(normalized)) return "asset";
   if (/^liabilities(?: and (?:(?:share|stock)holders?[’'s\s-]*equity|net worth))?$/i.test(normalized)) return "liability";
   return undefined;
@@ -516,6 +516,12 @@ function normalizeConceptInSection(label: string, sourceRowCode: string | undefi
   if (/^term debt$/i.test(cleaned)) {
     if (section === "current_liability") return { concept: "short_term_borrowings" as const, classification: "current_liability" as const, isTotal: false };
     if (section === "non_current_liability") return { concept: "long_term_borrowings" as const, classification: "non_current_liability" as const, isTotal: false };
+  }
+  if (/^(?:net current assets|total assets less current liabilities)$/i.test(cleaned)) {
+    return { ...base, classification: "asset" as const, isTotal: true };
+  }
+  if (/^provisions(?: for liabilities and charges)?$/i.test(cleaned) && section !== "non_current_liability") {
+    return { ...base, classification: "liability" as const, isTotal: false };
   }
   if (base.concept === "unmapped" && section && section !== "asset" && section !== "liability") {
     return { ...base, classification: section };
@@ -578,7 +584,7 @@ function detectCurrency(text: string) {
   // Prefer an explicit statement-level measurement declaration over isolated
   // symbols elsewhere on the page. OCR can turn table artefacts into "$", and
   // a local-currency statement may legitimately mention foreign-currency cash.
-  const declaredCurrency = text.match(/\b(?:unit of measurement|currency(?:\s*\/\s*units?)?|amounts?(?:\s+are)?(?:\s+(?:reported|presented|stated))?\s+in|in)\b[^\r\n]{0,100}\b(k?DKK|USD|EUR|UZS|RUB|KZT|GBP|GEL|US dollars?|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)\b/iu)?.[1] ?? "";
+  const declaredCurrency = text.match(/\b(?:unit of measurement|currency(?:\s*\/\s*units?)?|amounts?(?:\s+are)?(?:\s+(?:reported|presented|stated))?\s+in|in)\b[^\r\n]{0,100}\b(k?DKK|USD|EUR|UZS|RUB|KZT|GBP|GEL|RMB|CNY|HKD|US dollars?|Chinese yuan|renminbi|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)\b/iu)?.[1] ?? "";
   if (/^k?DKK$/i.test(declaredCurrency)) return "DKK";
   if (/^(?:UZS|sou?ms?|so['’]?m|с[ўу]м(?:ов)?)$/iu.test(declaredCurrency)) return "UZS";
   if (/^(?:USD|US dollars?)$/i.test(declaredCurrency)) return "USD";
@@ -587,6 +593,8 @@ function detectCurrency(text: string) {
   if (/^KZT$/i.test(declaredCurrency)) return "KZT";
   if (/^GBP$/i.test(declaredCurrency)) return "GBP";
   if (/^GEL$/i.test(declaredCurrency)) return "GEL";
+  if (/^(?:RMB|CNY|Chinese yuan|renminbi)$/i.test(declaredCurrency)) return "RMB";
+  if (/^HKD$/i.test(declaredCurrency)) return "HKD";
   if (/\b(?:USD|US dollars?)\b|\$/i.test(text)) return "USD";
   if (/\bkDKK\b|\bDKK\b/i.test(text)) return "DKK";
   if (/\bEUR\b|€/i.test(text)) return "EUR";
@@ -595,21 +603,30 @@ function detectCurrency(text: string) {
   if (/\bKZT\b|тенге/i.test(text)) return "KZT";
   if (/\bGBP\b|£/i.test(text)) return "GBP";
   if (/₾|\bGEL\b/i.test(text)) return "GEL";
+  if (/\b(?:RMB|CNY|Chinese yuan|renminbi)\b/i.test(text)) return "RMB";
+  if (/\bHKD\b/i.test(text)) return "HKD";
   return "UNSPECIFIED";
 }
 
 function detectUnits(text: string) {
+  if (/(?:\b(?:RMB|CNY|HKD|USD|EUR|GBP|DKK|UZS)|[$€£₾])\s*(?:['’]\s*)?0{3}\b/i.test(text)) return { unitLabel: "thousands", unitScale: 1_000 };
   if (/\b(?:million|millions|mln|млн)\b/i.test(text)) return { unitLabel: "millions", unitScale: 1_000_000 };
   if (/\b(?:thousand|thousands|тыс\.?|ming|k(?:DKK|EUR|USD|GBP))\b/i.test(text) || /минг/iu.test(text)) return { unitLabel: "thousands", unitScale: 1_000 };
   return { unitLabel: "units", unitScale: 1 };
 }
 
 function hasExplicitUnitScale(text: string) {
-  return /\b(?:million|millions|mln|млн|thousand|thousands|тыс\.?|ming|k(?:DKK|EUR|USD|GBP))\b/i.test(text) || /минг/iu.test(text);
+  return /\b(?:million|millions|mln|млн|thousand|thousands|тыс\.?|ming|k(?:DKK|EUR|USD|GBP))\b/i.test(text)
+    || /(?:\b(?:RMB|CNY|HKD|USD|EUR|GBP|DKK|UZS)|[$€£₾])\s*(?:['’]\s*)?0{3}\b/i.test(text)
+    || /минг/iu.test(text);
 }
 
 function hasStatementCurrencyFigures(text: string) {
-  return /(?:\b(?:USD|EUR|RUB|KZT|GBP|GEL)\b|(?:US|CA|AU|NZ|S)?[$€£₾])\s*\(?[-−]?\d/i.test(text);
+  if (/(?:\b(?:USD|EUR|RUB|KZT|GBP|GEL|RMB|CNY|HKD)\b|(?:US|CA|AU|NZ|S)?[$€£₾])\s*\(?[-−]?\d/i.test(text)) return true;
+  return text.split(/\r?\n/).some((line) => {
+    const cells = line.trim().split(/[ \t]+/).filter(Boolean);
+    return cells.length > 0 && cells.every((cell) => /^(?:[$€£₾]|(?:USD|EUR|RUB|KZT|GBP|GEL|RMB|CNY|HKD)(?:['’]0{3})?)$/i.test(cell));
+  });
 }
 
 function reportingYearFromText(text: string) {
@@ -724,7 +741,7 @@ function legalEntityFromLines(text: string) {
   for (const line of lines) {
     const memberMatch = line.match(/\bmembers? of\s+([A-Z][A-Za-z&.'’ -]{2,80}?\s+Society of the UK)\b/i);
     if (memberMatch?.[1]) return repairEntityOcr(memberMatch[1].trim());
-    const legalMatch = line.match(/^(?:\d+\s+)?(.{2,100}?\b(?:A\/S|AG|GmbH|Ltd\.?|LLC|JSC|Inc\.?|plc))(?=\s|$|[,;:()])/i);
+    const legalMatch = line.match(/^(?:\d+\s+)?(.{2,100}?\b(?:A\/S|AG|GmbH|Ltd\.?|LLC|JSC|Inc\.?|plc|B\.?\s*V\.?|N\.?\s*V\.?))(?=\s|$|[,;:()])/i);
     if (legalMatch?.[1]) return repairEntityOcr(legalMatch[1].trim());
   }
   return null;
@@ -778,8 +795,24 @@ function inferIsTotal(concept: BalanceSheetConcept) {
 export function parseStatementLine(line: string, expectedValueCount = 0) {
   const tabParts = line.split("\t").map((part) => part.trim());
   if (tabParts.length >= 2) {
-    const rowCodeIndex = tabParts.findIndex((part) => /^\d{3}$/.test(part));
-    const collapsedRowCode = rowCodeIndex < 0 ? tabParts[0]?.match(/^(.*?)\s+(\d{3})$/) : undefined;
+    const possibleRowCodeIndex = tabParts.findIndex((part, index) => index > 0 && index <= 2 && /^\d{3}$/.test(part));
+    const followingFinancialCells = possibleRowCodeIndex > 0
+      ? tabParts.slice(possibleRowCodeIndex + 1).filter((part) => /^(?:[$€£₾]\s*)?(?:\(?[-−]?\d[\d,.'’\s]*\)?|[—–-])$/.test(part)).length
+      : 0;
+    const hasRowCodeColumnShape = expectedValueCount === 0
+      || followingFinancialCells === 0
+      || followingFinancialCells >= expectedValueCount
+      || possibleRowCodeIndex === 2
+      || tabParts.length >= possibleRowCodeIndex + expectedValueCount + 1;
+    const rowCodeIndex = possibleRowCodeIndex > 0
+      && !tabParts[0].startsWith("continued-row")
+      && hasRowCodeColumnShape
+      && tabParts.slice(1, possibleRowCodeIndex).every((part) => !/^(?:[$€£₾]\s*)?\(?[-−]?\d[\d,.'’ ]*\)?$/.test(part))
+      ? possibleRowCodeIndex
+      : -1;
+    const collapsedRowCode = rowCodeIndex < 0 && !tabParts[0]?.startsWith("continued-row")
+      ? tabParts[0]?.match(/^(.*?)\s+(\d{3})$/)
+      : undefined;
     if (rowCodeIndex > 0 || collapsedRowCode) {
       const label = collapsedRowCode?.[1]?.trim() ?? tabParts.slice(0, rowCodeIndex).filter(Boolean).join(" ");
       const sourceRowCode = collapsedRowCode?.[2] ?? tabParts[rowCodeIndex];
@@ -814,7 +847,12 @@ export function parseStatementLine(line: string, expectedValueCount = 0) {
 
   const pipeParts = line.split(/\s*\|\s*|\t+/).filter(Boolean);
   if (pipeParts.length >= 2) {
-    const values = pipeParts.slice(1).filter((part) => /^(?:[$€£₾]\s*)?(?:\(?[-−]?\d[\d,.'’\s]*\)?|—|–|-)$/.test(part.trim()));
+    // A source can annotate a dash with a footnote marker (for example “–*”).
+    // Keep that cell in its original column so an adjacent note number is not
+    // promoted to a reported financial value. The annotated dash remains
+    // missing: only a literal, unannotated source dash can carry the separate
+    // explicit-zero convention used by downstream mappings.
+    const values = pipeParts.slice(1).filter((part) => /^(?:[$€£₾]\s*)?(?:\(?[-−]?\d[\d,.'’\s]*\)?|[—–-]\s*(?:[*†‡]+|\([A-Za-z0-9]+\))?)$/.test(part.trim()));
     if (values.length && (expectedValueCount === 0 || values.length >= expectedValueCount)) {
       return { label: pipeParts[0], rawValues: expectedValueCount > 0 ? values.slice(-expectedValueCount) : values };
     }
@@ -903,8 +941,14 @@ export function selectStatementPages(pages: SourcePageInput[]) {
   const ordered = [...pages].sort((left, right) => left.pageNumber - right.pageNumber);
   const explicitlyTitled = ordered.filter(hasBalanceStatementTitle);
   if (explicitlyTitled.length) {
+    // Annual reports often publish a consolidated statement immediately
+    // followed by a parent/company-only statement with the same headings and
+    // periods. The consolidated statement is the primary group evidence; the
+    // separate-company statement must not be merged into it as extra rows.
+    const consolidated = explicitlyTitled.filter((page) => pageLeadingLines(page).some((line) => /\bconsolidated\b.*\b(?:balance sheet|statement of financial position)\b/i.test(line)));
+    const statementStarts = consolidated.length ? consolidated : explicitlyTitled;
     const selected = new Map<number, SourcePageInput>();
-    for (const titled of explicitlyTitled) {
+    for (const titled of statementStarts) {
       selected.set(titled.pageNumber, titled);
       const startIndex = ordered.findIndex((page) => page.pageNumber === titled.pageNumber);
       for (let index = startIndex + 1; index < ordered.length; index += 1) {
@@ -964,11 +1008,16 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
         continue;
       }
       const isPeriodHeader = /^(?:as of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?(?:\s+(?:(?:19|20)\d{2})(?:\s*(?:,|and)?\s*(?:19|20)\d{2})*)?\s*$/i.test(line)
+        || /^(?:as\s+of|at)\s+\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+(?:19|20)\d{2}$/i.test(line)
+        || /^as\s+(?:of|at)\b.*\b(?:19|20)\d{2}\b/i.test(line)
         || /^(?:(?:19|20)\d{2}[\s|,;]*){1,4}$/.test(line)
         || /^notes?\b.*\b(?:19|20)\d{2}\b.*\b(?:19|20)\d{2}\b/i.test(line)
+        || /^notes?\b.*\b(?:RMB|CNY|HKD|USD|EUR|GBP|DKK|UZS)(?:['’]0{3})?\b/i.test(line)
+        || /^notes?(?:\s|\t)+(?:\d|[—–-]|[$€£₾])/i.test(line)
         || /^description(?:\s|\t)/i.test(line)
         || /^assets(?:\s|\t)+(?:19|20)\d{2}(?:\s|\t)+(?:19|20)\d{2}$/i.test(line);
-      if (/^the financial statements\b.*\b(?:approved|authorised|authorized)\b/i.test(line)) break;
+      if (/^the (?:consolidated )?financial statements\b.*\b(?:approved|authorised|authorized)\b/i.test(line)
+        || /^the notes on pages?\b.*\b(?:financial statements|approved|authorised|authorized)\b/i.test(line)) break;
       if (isStatementTitleLine(line) || (!pendingLabel && /^(?:assets|current assets|liabilities(?: and (?:net worth|stockholders.? equity))?|current liabilities|stockholders.? equity):?$/i.test(line)) || /^commitments? and contingencies\b/i.test(line) || /^the financial statements\b.*\b(?:approved|authorised|authorized)\b/i.test(line) || /^(?:January|February|March|April|May|June|July|August|September|October|November|December).+\bNotes\b/i.test(line) || isPeriodHeader) {
         pendingLabel = "";
         continue;
@@ -977,7 +1026,11 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
         ? "current_assets"
         : activeSection === "non_current_asset"
           ? "non_current_assets"
-          : null;
+          : activeSection === "current_liability"
+            ? "current_liabilities"
+            : activeSection === "non_current_liability"
+              ? "non_current_liabilities"
+              : null;
       if (!pendingLabel && unlabelledSubtotalConcept && /^(?:[$€£₾]\s*)?[({[]?[-−]?\d/.test(line)) {
         const subtotal = parseStatementLine(`continued-row ${line}`, usedPeriods.length);
         if (subtotal?.label === "continued-row" && subtotal.rawValues.length === usedPeriods.length) {
@@ -1039,7 +1092,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       }
       const valueOnlyContinuation = Boolean(pendingLabel) && /^(?:[$€£₾]|S?\$|[({[]?[-−]?\d|—|–)/.test(line);
       const parsed = valueOnlyContinuation
-        ? parseStatementLine(`continued-row ${line}`, usedPeriods.length)
+        ? parseStatementLine(line.includes("\t") ? `continued-row\t${line}` : `continued-row ${line}`, usedPeriods.length)
         : parseStatementLine(line, usedPeriods.length);
       let label = parsed?.label ?? "";
       if (valueOnlyContinuation && label === "continued-row") label = "";
@@ -1047,7 +1100,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
       if (pendingLabel && rawValues.length) {
         label = `${pendingLabel} ${label}`.trim();
         pendingLabel = "";
-      } else if (!rawValues.length && (/^\d+[.)]?\s*\p{L}/u.test(line) || /^common stock\b/i.test(line) || pendingLabel)) {
+      } else if (!rawValues.length && activeSection && /\p{L}/u.test(line)) {
         pendingLabel = `${pendingLabel} ${cleanLabel(line)}`.trim();
         continue;
       }
@@ -1112,9 +1165,15 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
     const liabilitiesItem = conceptForPeriod(items, "total_liabilities", period);
     const equityItem = conceptForPeriod(items, "owners_equity", period);
     const netAssetsItem = conceptForPeriod(items, "net_assets", period);
-    const assets = effectiveNormalizedValue(assetsItem, period);
-    const liabilities = effectiveNormalizedValue(liabilitiesItem, period);
+    const currentAssetSubtotal = conceptForPeriod(items, "current_assets", period);
+    const nonCurrentAssetSubtotal = conceptForPeriod(items, "non_current_assets", period);
+    const reportedAssets = effectiveNormalizedValue(assetsItem, period);
+    const currentAssets = effectiveNormalizedValue(currentAssetSubtotal, period);
+    const nonCurrentAssets = effectiveNormalizedValue(nonCurrentAssetSubtotal, period);
+    const assets = reportedAssets ?? (currentAssets !== null && nonCurrentAssets !== null ? currentAssets + nonCurrentAssets : null);
+    const reportedLiabilities = effectiveNormalizedValue(liabilitiesItem, period);
     const equity = effectiveNormalizedValue(equityItem, period);
+    const liabilities = reportedLiabilities ?? (assets !== null && equity !== null ? assets - equity : null);
     const equationRight = liabilities === null || equity === null ? null : liabilities + equity;
     const equationDifference = assets === null || equationRight === null ? null : assets - equationRight;
     checks.push({
@@ -1172,8 +1231,6 @@ function arithmetic(items: BalanceSheetLineItem[], periods: string[], unitScale:
       });
     }
 
-    const currentAssetSubtotal = conceptForPeriod(items, "current_assets", period);
-    const nonCurrentAssetSubtotal = conceptForPeriod(items, "non_current_assets", period);
     const currentLiabilitySubtotal = conceptForPeriod(items, "current_liabilities", period);
     const nonCurrentLiabilitySubtotal = conceptForPeriod(items, "non_current_liabilities", period);
     const subtotalSpecs: Array<{ concept: BalanceSheetConcept; components: BalanceSheetLineItem[] }> = [
@@ -1274,7 +1331,8 @@ function validate(review: Omit<BalanceSheetReview, "issues" | "arithmeticChecks"
   if (imageOnlyPages.length && review.lineItems.length === 0) {
     issues.push({ id: "issue:ocr-required", code: "OCR_REQUIRED", severity: "blocking", message: `No balance-sheet rows could be recovered. Page(s) ${imageOnlyPages.map((page) => page.pageNumber).join(", ")} contain no usable text layer; targeted OCR or manual transcription is required.`, sourceRefs: [] });
   }
-  const lowConfidencePages = review.pages.filter((page) => page.confidence !== undefined && page.confidence < 0.8);
+  const canonicalSourcePages = new Set(review.lineItems.flatMap((item) => item.values.map((value) => value.source.page)));
+  const lowConfidencePages = review.pages.filter((page) => canonicalSourcePages.has(page.pageNumber) && page.confidence !== undefined && page.confidence < 0.8);
   if (lowConfidencePages.length) {
     issues.push({ id: "issue:low-confidence-pages", code: "OCR_LOW_CONFIDENCE", severity: "warning", message: `Low-confidence extraction on page(s) ${lowConfidencePages.map((page) => page.pageNumber).join(", ")}; confirm affected values manually.`, sourceRefs: review.lineItems.flatMap((item) => item.values.filter((value) => lowConfidencePages.some((page) => page.pageNumber === value.source.page)).map((value) => value.source)) });
   }
@@ -1284,6 +1342,19 @@ function validate(review: Omit<BalanceSheetReview, "issues" | "arithmeticChecks"
   }
   for (const concept of requiredConcepts) {
     if (!firstConcept(review.lineItems, concept)) {
+      const derivableAssets = (period: string) => {
+        const reported = effectiveNormalizedValue(conceptForPeriod(review.lineItems, "total_assets", period), period);
+        if (reported !== null) return reported;
+        const current = effectiveNormalizedValue(conceptForPeriod(review.lineItems, "current_assets", period), period);
+        const nonCurrent = effectiveNormalizedValue(conceptForPeriod(review.lineItems, "non_current_assets", period), period);
+        return current !== null && nonCurrent !== null ? current + nonCurrent : null;
+      };
+      if (concept === "total_assets" && review.statement.periods.every((period) => derivableAssets(period) !== null)) continue;
+      if (concept === "total_liabilities" && review.statement.periods.every((period) => {
+        const assets = derivableAssets(period);
+        const equity = effectiveNormalizedValue(conceptForPeriod(review.lineItems, "owners_equity", period), period);
+        return assets !== null && equity !== null;
+      })) continue;
       issues.push({ id: `issue:missing:${concept}`, code: "REQUIRED_TOTAL_MISSING", severity: "blocking", message: `Required balance-sheet concept is missing: ${concept}.`, sourceRefs: [] });
     }
   }
@@ -1303,12 +1374,15 @@ function validate(review: Omit<BalanceSheetReview, "issues" | "arithmeticChecks"
     });
   }
   for (const item of review.lineItems) {
-    if (item.normalizedConcept === "unmapped") {
+    const understoodPresentationTotal = /^(?:net current assets|total assets less current liabilities)$/i.test(cleanLabel(item.originalLabel));
+    if (item.normalizedConcept === "unmapped" && !understoodPresentationTotal) {
       issues.push({ id: `issue:classification:${item.id}`, code: "CLASSIFICATION_ANOMALY", severity: "warning", message: `Original label “${item.originalLabel}” is not mapped to a normalized concept.`, lineItemId: item.id, sourceRefs: sourceRefsFor(item) });
     }
     for (const value of item.values) {
       const effective = value.correction?.correctedNormalizedValue ?? value.normalizedValue;
-      if (effective !== null && effective < 0 && item.isTotal && item.normalizedConcept !== "owners_equity" && item.normalizedConcept !== "net_assets") {
+      const liabilityPresentedAsDeduction = item.normalizedConcept === "current_liabilities"
+        && /^(?:creditors?:?\s*)?amounts falling due within (?:one|1) year$/i.test(cleanLabel(item.originalLabel));
+      if (effective !== null && effective < 0 && item.isTotal && !liabilityPresentedAsDeduction && item.normalizedConcept !== "owners_equity" && item.normalizedConcept !== "net_assets") {
         issues.push({ id: `issue:sign:${item.id}:${value.period}`, code: "SIGN_ANOMALY", severity: "warning", message: `Negative total reported for ${item.normalizedConcept} in ${value.period}; verify the sign convention.`, period: value.period, lineItemId: item.id, sourceRefs: [value.source] });
       }
     }
