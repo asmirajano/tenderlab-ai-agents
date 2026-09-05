@@ -71,20 +71,21 @@ test("places TenderMatch as practical page 03 under TL-A031 without creating or 
   assert.match(JSON.stringify(implementation), /Historical Campaign Studio and follow-up simulation pages were removed/);
   assert.match(implementation?.tor ?? "", /matching-only human-review workspace/);
 });
-test("maps all 9 TenderMatch views exactly once into the five-family matching workflow", async () => {
+test("maps all 10 TenderMatch views exactly once into the six-family matching workflow", async () => {
   const page = await read("apps/tender-apps/src/tendermatch-app.tsx");
   const styles = await read("apps/tender-apps/src/tendermatch.css");
   const registry = page.match(/function navGroupsFor\(supplierCount: number\): NavGroup\[\] \{ return \[[\s\S]+?\r?\n\]; \}\r?\n\r?\nconst workspaceViewIds/)?.[0] ?? "";
   const expectedViews = [
     ["dashboard", "Overview", "01"], ["radar-tenders", "Tenders", "02A"], ["radar-suppliers", "Suppliers", "02B"], ["suppliers", "Profiles", "03A"],
     ["verification", "Verification", "03B"], ["tenders", "Tenders", "04"], ["matrix", "Full Match Matrix", "05A"], ["match-tenders", "Review by Tenders", "05B"],
-    ["match-suppliers", "Review by Suppliers", "05C"],
+    ["match-suppliers", "Review by Suppliers", "05C"], ["formula", "Formula", "06"],
   ];
-  const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"]];
+  const expectedFamilies = [["overview", "Overview"], ["market", "Market Radar"], ["suppliers", "Suppliers"], ["tender-directory", "Tenders"], ["match", "Match Matrix"], ["formula", "Formula"]];
 
   assert.ok(registry);
   for (const [view, label, short] of expectedViews) {
-    assert.equal((registry.match(new RegExp(`id: "${view}", label: "${label}", short: "${short}"`, "g")) ?? []).length, 1, `${view} must appear exactly once in the navigation registry`);
+    const expectedOccurrences = view === "formula" ? 2 : 1;
+    assert.equal((registry.match(new RegExp(`id: "${view}", label: "${label}", short: "${short}"`, "g")) ?? []).length, expectedOccurrences, `${view} must have the expected family/item mapping in the navigation registry`);
   }
   let priorIndex = -1;
   for (const [id, family] of expectedFamilies) {
@@ -103,7 +104,7 @@ test("maps all 9 TenderMatch views exactly once into the five-family matching wo
   assert.match(page, /aria-expanded=\{isExpanded\}/);
   assert.match(page, /aria-current=\{view === item\.id \? "page" : undefined\}/);
   assert.match(page, /resolvedInitialWorkspaceView = useMemo\(\(\) => initialWorkspaceView\(\), \[\]\)[\s\S]+initialNavGroup = navGroupForView\(resolvedInitialWorkspaceView, navGroups\)\.id/);
-  assert.match(page, /market: initialNavGroup === "market"[\s\S]+suppliers: initialNavGroup === "suppliers"[\s\S]+match: initialNavGroup === "match"/);
+  assert.match(page, /market: initialNavGroup === "market"[\s\S]+suppliers: initialNavGroup === "suppliers"[\s\S]+match: initialNavGroup === "match"[\s\S]+formula: true/);
   assert.match(page, /aria-controls="tb3-mobile-workflow-tree"/);
   assert.match(page, /setMobileNavOpen\(false\)/);
   assert.match(page, /activateNavigationFromKeyboard[\s\S]+event\.key !== "Enter"[\s\S]+event\.key !== " "/);
@@ -332,14 +333,14 @@ test("ends the Overview after the approved infographic and authority boundary", 
   const dashboardEnd = page.indexOf("function TenderRadarView");
   assert.ok(overviewStart > -1, "product Overview must exist");
   assert.ok(dashboardEnd > overviewStart, "DashboardView must end before the first operational view");
-  const productShell = page.slice(page.indexOf('{view !== "dashboard" && <section className="tb3-product-intro"'), overviewStart);
+  const productShell = page.slice(page.indexOf('{view !== "dashboard" && view !== "formula" && <section className="tb3-product-intro"'), overviewStart);
   const orientation = page.slice(overviewStart, dashboardEnd);
 
   assert.match(productShell, /TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE/);
   assert.match(productShell, /Company × Tender evidence review for TenderLab Consultants/);
   assert.match(productShell, /MATCH SUPPORT · EVIDENCE REVIEW · HUMAN DISPOSITION/);
   assert.match(productShell, /TenderMatch workspace/);
-  assert.match(productShell, /view !== "dashboard" && caseControls/);
+  assert.match(productShell, /view !== "dashboard" && view !== "formula" && caseControls/);
   assert.doesNotMatch(productShell, /COMPLETE MIGRATION BASELINE|SOURCE BASELINE|Complete frozen TenderBoost workspace/);
 
   for (const content of [

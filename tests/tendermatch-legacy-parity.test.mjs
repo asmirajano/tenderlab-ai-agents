@@ -66,7 +66,10 @@ test("renders every matching view and no Campaign Studio runtime or styling", as
   assert.match(styles, /url\("\/tendermatch\/maps\/world-map\.png"\)/);
   assert.match(styles, /\.tb3-geo-map-shell\.world \.tb3-geo-map-geometry, \.tb3-geo-map-shell\.supplier-world/);
   assert.doesNotMatch(page, /kind="china"|country-level China placement/);
-  assert.match(styles, /\.tb3-directory-row\.tender[^}]+min-height: 112px/);
+  for (const tableClass of ["tb3-tender-table", "tb3-supplier-table", "tb3-evidence-table"]) {
+    assert.match(page, new RegExp(`<table className="[^"]*${tableClass}" data-table-format="entity-readiness-grid">`));
+  }
+  assert.match(styles, /\.tb3-data-table\.tb3-entity-grid th,[\s\S]+?padding: 6px 10px/);
   assert.match(page, /viewSurfaceRef\.current\?\.focus\(\)/);
   assert.match(page, /role="region"[\s\S]+tabIndex=\{-1\}/);
   assert.doesNotMatch(page, /Legacy Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|Create legacy local draft|SIMULATION_STARTED/);

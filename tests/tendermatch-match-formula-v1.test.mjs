@@ -217,5 +217,6 @@ test("exports a typed Formula v1.1 Excel workbook with 1,020 auditable pair rows
   const appSource = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "tendermatch-app.tsx"), "utf8");
   assert.match(appSource, /Export Formula v1\.1 CSV/);
   assert.match(appSource, /Export Formula v1\.1 Excel/);
-  assert.match(appSource, /const pageSize = 10/);
+  assert.match(appSource, /useState\(10\)[\s\S]+useState\(25\)/);
+  assert.match(appSource, /supplierPageSize[\s\S]+tenderPageSize[\s\S]+visibleMatrixTenders/);
 });

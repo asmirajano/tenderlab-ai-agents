@@ -29,6 +29,7 @@ import {
 import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 import { TrialNotice } from "./trial-notice.tsx";
+import { TenderMatchFormulaView } from "./tendermatch-formula-view.tsx";
 import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState } from "./tendermatch-supplier-api.ts";
 import { tenderMatchFormulaToExcel } from "./tendermatch-formula-excel.ts";
 
@@ -41,10 +42,11 @@ type WorkspaceView =
   | "tenders"
   | "matrix"
   | "match-tenders"
-  | "match-suppliers";
+  | "match-suppliers"
+  | "formula";
 
 type NavItem = { id: WorkspaceView; label: string; short: string; sublabel: string };
-type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match";
+type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match" | "formula";
 type NavGroup = {
   id: NavGroupId;
   label: string;
@@ -70,6 +72,7 @@ function navGroupsFor(supplierCount: number): NavGroup[] { return [
     { id: "match-tenders", label: "Review by Tenders", short: "05B", sublabel: "Tender-first" },
     { id: "match-suppliers", label: "Review by Suppliers", short: "05C", sublabel: "Supplier-first" },
   ] },
+  { id: "formula", label: "Formula", short: "06", family: "analysis", sublabel: "How scoring works", items: [{ id: "formula", label: "Formula", short: "06", sublabel: "How scoring works" }] },
 ]; }
 
 const workspaceViewIds = new Set<WorkspaceView>(navGroupsFor(0).flatMap((group) => group.items).map((item) => item.id));
@@ -230,6 +233,61 @@ function ViewHeader({ eyebrow, title, description, aside }: { eyebrow: string; t
   return <header className="tb3-view-head"><div><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>{aside}</header>;
 }
 
+function DataTableToolbar({ label, query, searchLabel, onQuery, resultLabel, children, pageSize, onPageSize }: {
+  label: string;
+  query: string;
+  searchLabel: string;
+  onQuery: (value: string) => void;
+  resultLabel: string;
+  children?: ReactNode;
+  pageSize?: number;
+  onPageSize?: (value: number) => void;
+}) {
+  return <div className="tb3-data-toolbar" aria-label={label}>
+    <label className="tb3-data-search"><span>Search</span><input type="search" value={query} placeholder={searchLabel} onChange={(event) => onQuery(event.target.value)} /></label>
+    <div className="tb3-data-controls">{children}{pageSize && onPageSize && <label><span>Rows</span><select value={pageSize} onChange={(event) => onPageSize(Number(event.target.value))}>{[10, 25, 50, 100].map((value) => <option value={value} key={value}>{value}</option>)}</select></label>}</div>
+    <output className="tb3-data-count" aria-live="polite">{resultLabel}</output>
+  </div>;
+}
+
+function TablePager({ count, page, pageSize, onPage, noun = "records" }: { count: number; page: number; pageSize: number; onPage: (page: number) => void; noun?: string }) {
+  const pageCount = Math.max(1, Math.ceil(count / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const start = count === 0 ? 0 : safePage * pageSize + 1;
+  const end = Math.min((safePage + 1) * pageSize, count);
+  return <nav className="tb3-table-pager" aria-label={`${noun} pages`}>
+    <span>{start}–{end} of {count.toLocaleString()} {noun}</span>
+    <div><button type="button" disabled={safePage === 0} onClick={() => onPage(safePage - 1)} aria-label={`Previous ${noun} page`}>Previous</button><b>Page {safePage + 1} of {pageCount}</b><button type="button" disabled={safePage >= pageCount - 1} onClick={() => onPage(safePage + 1)} aria-label={`Next ${noun} page`}>Next</button></div>
+  </nav>;
+}
+
+function normalizedSearch(value: string) {
+  return value.trim().toLocaleLowerCase();
+}
+
+const tableAcronyms = new Set([
+  "ADB", "API", "EBRD", "EPC", "EUR", "GIS", "ID", "ISO", "IT", "JPY", "JV", "KR", "MY", "PH", "PL", "QCBS", "RFP", "RFQ", "SA", "TH", "TR", "TW", "USD", "UZS", "VAT",
+]);
+
+export function standardTableText(value: string) {
+  let wordIndex = 0;
+  return value.trim().replaceAll("_", " ").toLocaleLowerCase().split(/(\s+|[/-])/).map((part) => {
+    if (!part || /^(\s+|[/-])$/.test(part)) return part;
+    const upper = part.toLocaleUpperCase();
+    if (tableAcronyms.has(upper)) { wordIndex += 1; return upper; }
+    const next = wordIndex === 0 ? `${part.charAt(0).toLocaleUpperCase()}${part.slice(1)}` : part;
+    wordIndex += 1;
+    return next;
+  }).join("");
+}
+
+function standardTableValue(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || !/^[A-Z0-9_ /-]+$/.test(trimmed)) return value;
+  if (tableAcronyms.has(trimmed) || /^[A-Z]{2}$/.test(trimmed)) return trimmed;
+  return standardTableText(trimmed);
+}
+
 function MatchModeTabs({ view, onChange, supplierCount }: { view: WorkspaceView; onChange: (view: WorkspaceView) => void; supplierCount: number }) {
   return <nav className="tb3-subtabs" aria-label="Match Matrix views">
     <button aria-current={view === "matrix" ? "page" : undefined} className={view === "matrix" ? "active" : ""} onClick={() => onChange("matrix")}><b>Full Match Matrix</b><span>{supplierCount} suppliers × {runtimeTenders.length} tenders</span></button>
@@ -297,6 +355,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     suppliers: initialNavGroup === "suppliers",
     "tender-directory": true,
     match: initialNavGroup === "match",
+    formula: true,
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
@@ -310,7 +369,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   const [supplierEvidence, setSupplierEvidence] = useState<Record<string, SupplierEvidenceApiRecord[]>>({});
   const [evidenceErrors, setEvidenceErrors] = useState<Record<string, string>>({});
   const viewSurfaceRef = useRef<HTMLDivElement>(null);
-  const lastFocusedViewRef = useRef<WorkspaceView>("dashboard");
+  const lastFocusedViewRef = useRef<WorkspaceView>(resolvedInitialWorkspaceView);
 
   const matchByKey = useMemo(() => new Map(allMatches.map((entry) => [entry.key, entry])), [allMatches]);
   const result = caseResults[selectedKey] ?? initialResult;
@@ -443,15 +502,15 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     <div className="tb3-case-actions"><button onClick={saveCase}>Save Case</button><button onClick={loadCase}>Load Case</button><small>{persistenceMessage}</small></div>
   </section>;
 
-  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : ""}`}>
-    {view !== "dashboard" && <section className="tb3-product-intro">
+  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : view === "formula" ? "tb3-page-formula" : ""}`}>
+    {view !== "dashboard" && view !== "formula" && <section className="tb3-product-intro">
       <div><p><i /> TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE</p><h1>Tender<em>Match</em></h1><h2>Company × Tender evidence review for TenderLab Consultants.</h2><span>Select an explicit pair, inspect evidence-linked match support, gaps and freshness, then keep the consultant’s match disposition visible and human-controlled.</span></div>
       <aside><span>OPERATING ROLE</span><b>TL-A031</b><small>Company-to-Tender Match Score Agent · internal consultant workspace</small><strong>MATCH SUPPORT · EVIDENCE REVIEW · HUMAN DISPOSITION</strong></aside>
     </section>}
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>5 page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
+        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>{navGroups.length} page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
         <WorkspaceNavigation expanded={expandedNavGroups} navGroups={navGroups} onToggle={toggleNavGroup} onView={changeView} view={view} />
       </aside>
 
@@ -464,7 +523,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
         </section>
         {actionError && <div className="tb3-alert" role="alert"><b>Action needs attention</b><span>{actionError}</span><button onClick={() => setActionError("")} aria-label="Dismiss action error">×</button></div>}
 
-        {view !== "dashboard" && caseControls}
+        {view !== "dashboard" && view !== "formula" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
           {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
@@ -475,6 +534,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
           {view === "matrix" && <MatrixView view={view} suppliers={suppliers} profiles={supplierProfiles} evaluations={runtime.evaluations} matchByKey={matchByKey} onView={changeView} onOpen={openAssessment} />}
           {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} onView={changeView} onOpen={openAssessment} onDecision={decide} />}
           {view === "verification" && <VerificationView view={view} supplier={supplier} suppliers={suppliers} evidenceStatus={evidenceStatus} evidenceError={evidenceError} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
+          {view === "formula" && <TenderMatchFormulaView />}
         </div>
       </section>
     </section>
@@ -713,26 +773,111 @@ function SupplierRadarView({ filter, zoom, clusters, countryFilters, visibleSupp
 
 function SupplierDirectoryView({ view, suppliers, profiles, allMatches, onView, onOpen }: { view: WorkspaceView; suppliers: SupplierRecord[]; profiles: SupplierProfileApiRecord[]; allMatches: MatchAssessment[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
   const profileById = new Map(profiles.map((profile) => [`supplier:NEON:${profile.canonicalEntityId}`, profile]));
+  const [query, setQuery] = useState("");
+  const [readiness, setReadiness] = useState("all");
+  const [sort, setSort] = useState("name-asc");
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(0);
+  const filteredSuppliers = useMemo(() => {
+    const search = normalizedSearch(query);
+    return suppliers.filter((entry) => {
+      const profile = profileById.get(entry.id)!;
+      const matchesSearch = !search || [entry.legalEnglishName, profile.classification, profile.countryCode, ...entry.categories, ...entry.exportMarkets].join(" ").toLocaleLowerCase().includes(search);
+      return matchesSearch && (readiness === "all" || profile.readinessStatus === readiness);
+    }).sort((left, right) => {
+      const leftProfile = profileById.get(left.id)!;
+      const rightProfile = profileById.get(right.id)!;
+      if (sort === "readiness-asc") return readinessLabel(leftProfile.readinessStatus).localeCompare(readinessLabel(rightProfile.readinessStatus)) || left.legalEnglishName.localeCompare(right.legalEnglishName);
+      if (sort === "evidence-desc") return (rightProfile.evidenceVerifiedCount + rightProfile.evidenceStatedUnverifiedCount + rightProfile.evidenceInferredCount) - (leftProfile.evidenceVerifiedCount + leftProfile.evidenceStatedUnverifiedCount + leftProfile.evidenceInferredCount) || left.legalEnglishName.localeCompare(right.legalEnglishName);
+      return sort === "name-desc" ? right.legalEnglishName.localeCompare(left.legalEnglishName) : left.legalEnglishName.localeCompare(right.legalEnglishName);
+    });
+  }, [profiles, query, readiness, sort, suppliers]); // eslint-disable-line react-hooks/exhaustive-deps
+  const safePage = Math.min(page, Math.max(0, Math.ceil(filteredSuppliers.length / pageSize) - 1));
+  const visibleSuppliers = filteredSuppliers.slice(safePage * pageSize, (safePage + 1) * pageSize);
   return <>
     <ViewHeader eyebrow="03 · SUPPLIERS / PROFILES" title="Supplier Profiles" description="Review the normalized v1.3 GOODS/WORKS supplier profiles, source readiness, STATED_UNVERIFIED and INFERRED evidence, products, capabilities and explicit unknowns." aside={<div className="tb3-directory-count"><b>{suppliers.length}</b><span>Neon v1.3 · under review</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-directory" aria-label="Supplier profile directory"><div className="tb3-directory-head supplier"><span>SUPPLIER</span><span>READINESS</span><span>GEOGRAPHY</span><span>EVIDENCE</span><span>ACTION</span></div>{suppliers.map((entry) => { const profile = profileById.get(entry.id)!; return <button className="tb3-directory-row supplier" key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best, "verification"); }}><div className="identity"><span>{profile.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{profile.classification} · {supplierActivity(entry)}</small><em>{profile.verificationStatus.replace("_", " ")} · {profile.profileVersion}</em></p></div><strong>{readinessLabel(profile.readinessStatus)}<small>source state · not a score</small></strong><p>{entry.exportMarkets.slice(0, 2).join(" · ") || supplierCountryNames[profile.countryCode ?? ""] || "Unknown / not disclosed"}<small>{entry.categories.slice(0, 3).join(" · ") || "Categories not disclosed"}</small></p><div className="evidence"><span className="verified">{profile.evidenceVerifiedCount} verified</span><span className="stated">{profile.evidenceStatedUnverifiedCount} stated</span><span className="inferred">{profile.evidenceInferredCount} inferred</span><span className="unknown">{profile.evidenceUnknownCount} unknown</span></div><em>Review evidence →</em></button>; })}</section>
+    <section className="tb3-data-card" aria-label="Supplier profile directory">
+      <DataTableToolbar label="Supplier table controls" query={query} searchLabel="Supplier, country, category or market" onQuery={setQuery} resultLabel={`${filteredSuppliers.length.toLocaleString()} of ${suppliers.length.toLocaleString()} suppliers`} pageSize={pageSize} onPageSize={setPageSize}>
+        <label><span>Readiness</span><select value={readiness} onChange={(event) => setReadiness(event.target.value)}><option value="all">All states</option>{[...new Set(profiles.map((profile) => profile.readinessStatus))].sort().map((value) => <option value={value} key={value}>{readinessLabel(value)}</option>)}</select></label>
+        <label><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="name-asc">Supplier A–Z</option><option value="name-desc">Supplier Z–A</option><option value="readiness-asc">Readiness</option><option value="evidence-desc">Evidence count</option></select></label>
+      </DataTableToolbar>
+      <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-supplier-table" data-table-format="entity-readiness-grid">
+        <thead><tr><th scope="col" className="sticky-column">Supplier</th><th scope="col">Readiness</th><th scope="col">Markets / categories</th><th scope="col" className="numeric">Verified</th><th scope="col" className="numeric">Stated</th><th scope="col" className="numeric">Inferred</th><th scope="col" className="numeric">Missing</th><th scope="col" className="action-column">Action</th></tr></thead>
+        <tbody>{visibleSuppliers.map((entry) => { const profile = profileById.get(entry.id)!; const openEvidence = () => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best, "verification"); }; return <tr key={entry.id}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={openEvidence}><b>{entry.legalEnglishName}</b><span>{profile.countryCode ?? "?"} · {standardTableText(profile.classification)} · {standardTableText(supplierActivity(entry))}</span><small>{standardTableText(profile.verificationStatus)} · {profile.profileVersion}</small></button></th><td><span className="tb3-status-text neutral">{readinessLabel(profile.readinessStatus)}</span><small>Source state · not a score</small></td><td><span>{entry.exportMarkets.slice(0, 2).join(" · ") || supplierCountryNames[profile.countryCode ?? ""] || "Not disclosed"}</span><small>{entry.categories.slice(0, 3).map(standardTableText).join(" · ") || "Categories not disclosed"}</small></td><td className="numeric">{profile.evidenceVerifiedCount}</td><td className="numeric">{profile.evidenceStatedUnverifiedCount}</td><td className="numeric">{profile.evidenceInferredCount}</td><td className="numeric">{profile.evidenceUnknownCount}</td><td className="action-column"><button className="tb3-table-action" onClick={openEvidence}>Review</button></td></tr>; })}</tbody>
+      </table></div>
+      {visibleSuppliers.length === 0 && <p className="tb3-table-empty">No suppliers match the current table filters.</p>}
+      <TablePager count={filteredSuppliers.length} page={safePage} pageSize={pageSize} onPage={setPage} noun="suppliers" />
+    </section>
   </>;
 }
 
 function TenderDirectoryView({ allMatches, suppliers, onOpen }: { allMatches: MatchAssessment[]; suppliers: SupplierRecord[]; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+  const [query, setQuery] = useState("");
+  const [country, setCountry] = useState("all");
+  const [sort, setSort] = useState("deadline-asc");
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(0);
+  const tenderRows = useMemo(() => runtimeTenders.map((entry) => ({ entry, best: bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)) })), [allMatches]);
+  const filteredTenders = useMemo(() => {
+    const search = normalizedSearch(query);
+    return tenderRows.filter(({ entry }) => (!search || [entry.title, entry.reference, entry.buyer, entry.country, entry.object, entry.sourceLabel].join(" ").toLocaleLowerCase().includes(search)) && (country === "all" || entry.country === country)).sort((left, right) => {
+      if (sort === "title-asc") return left.entry.title.localeCompare(right.entry.title);
+      if (sort === "score-desc") return (right.best.auditedMatch.value ?? -1) - (left.best.auditedMatch.value ?? -1) || left.entry.deadlineAt.localeCompare(right.entry.deadlineAt);
+      if (sort === "budget-desc") {
+        const budgetValue = (entry: TenderRecord) => Number(String(entry.budget?.usd ?? entry.budget?.amount ?? "-1").replace(/,/g, ""));
+        return budgetValue(right.entry) - budgetValue(left.entry) || left.entry.title.localeCompare(right.entry.title);
+      }
+      return sort === "deadline-desc" ? right.entry.deadlineAt.localeCompare(left.entry.deadlineAt) : left.entry.deadlineAt.localeCompare(right.entry.deadlineAt);
+    });
+  }, [country, query, sort, tenderRows]);
+  const safePage = Math.min(page, Math.max(0, Math.ceil(filteredTenders.length / pageSize) - 1));
+  const visibleTenders = filteredTenders.slice(safePage * pageSize, (safePage + 1) * pageSize);
   return <>
     <ViewHeader eyebrow="04 · CURRENT OPPORTUNITY DATABASE" title="Tender Snapshot" description={`All ${runtimeTenders.length} records met the approved Central Asia current-tender predicate at extraction. Deadline state is recalculated at review time; no browser-to-database connection exists.`} aside={<div className="tb3-directory-count"><b>{runtimeTenders.length}</b><span>current at extraction</span></div>} />
-    <section className="tb3-directory" aria-label="Tender snapshot directory"><div className="tb3-directory-head tender"><span>NO.</span><span>TENDER</span><span>OBJECT</span><span>SOURCE</span><span>BUDGET</span><span>DEADLINE</span><span>TOP SCORE</span><span>ACTION</span></div>{runtimeTenders.map((entry, index) => { const matches = allMatches.filter((match) => match.tenderId === entry.id); const best = bestLegacyMatch(matches); return <button className="tb3-directory-row tender" key={entry.id} onClick={() => best && onOpen(best, "match-tenders")}><span className="number">{index + 1}</span><div className="tender-name"><p><b>{entry.title}</b><small>{entry.buyer} · {entry.country}</small><em>{entry.reference}</em></p></div><span>{entry.object}</span><strong>{entry.sourceLabel}</strong><strong>{entry.budgetLabel}</strong><p>{best.tenderFreshness.daysRemaining} days<small>{dateLabel(entry.deadlineAt)} · {best.tenderFreshness.status}</small></p><div className="top-match"><b className={scoreBand(best.auditedMatch.value)}>{best.auditedMatch.value ?? 0}</b><p><strong>{suppliers.find((supplier) => supplier.id === best.supplierId)?.legalEnglishName ?? "Not evaluated"}</strong><small>{best.auditedMatch.dataCoverage ?? 0}% coverage · score only</small></p></div><em>Open pair →</em></button>; })}</section>
+    <section className="tb3-data-card" aria-label="Tender snapshot directory">
+      <DataTableToolbar label="Tender table controls" query={query} searchLabel="Reference, title, buyer, country or source" onQuery={setQuery} resultLabel={`${filteredTenders.length.toLocaleString()} of ${runtimeTenders.length.toLocaleString()} tenders`} pageSize={pageSize} onPageSize={setPageSize}>
+        <label><span>Country</span><select value={country} onChange={(event) => setCountry(event.target.value)}><option value="all">All countries</option>{[...new Set(runtimeTenders.map((entry) => entry.country))].sort().map((value) => <option value={value} key={value}>{value}</option>)}</select></label>
+        <label><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="deadline-asc">Deadline soonest</option><option value="deadline-desc">Deadline latest</option><option value="title-asc">Tender A–Z</option><option value="score-desc">Top pair score</option><option value="budget-desc">Budget high–low</option></select></label>
+      </DataTableToolbar>
+      <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-tender-table" data-table-format="entity-readiness-grid">
+        <thead><tr><th scope="col" className="sticky-column">Tender / buyer</th><th scope="col">Object</th><th scope="col">Country</th><th scope="col">Source</th><th scope="col" className="numeric">Budget</th><th scope="col">Deadline</th><th scope="col" className="numeric">Days</th><th scope="col" className="numeric">Top score</th><th scope="col">Best supplier</th><th scope="col" className="action-column">Action</th></tr></thead>
+        <tbody>{visibleTenders.map(({ entry, best }) => { const openPairReview = () => onOpen(best, "match-tenders"); return <tr key={entry.id}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={openPairReview}><b>{entry.title}</b><span>{entry.reference}</span><small>{entry.buyer}</small></button></th><td>{standardTableText(entry.object)}</td><td>{entry.country}</td><td>{entry.sourceLabel}</td><td className="numeric">{entry.budgetLabel}</td><td><time dateTime={entry.deadlineAt}>{dateLabel(entry.deadlineAt)}</time><small><span className={`tb3-status-text ${best.tenderFreshness.status === "closed" ? "danger" : "neutral"}`}>{standardTableText(best.tenderFreshness.status)}</span></small></td><td className="numeric">{best.tenderFreshness.daysRemaining}</td><td className="numeric"><b className={`tb3-score-text ${scoreBand(best.auditedMatch.value)}`}>{best.auditedMatch.value ?? 0}</b><small>{best.auditedMatch.dataCoverage ?? 0}% coverage</small></td><td>{suppliers.find((supplier) => supplier.id === best.supplierId)?.legalEnglishName ?? "Not evaluated"}</td><td className="action-column"><button className="tb3-table-action" onClick={openPairReview}>Open</button></td></tr>; })}</tbody>
+      </table></div>
+      {visibleTenders.length === 0 && <p className="tb3-table-empty">No tenders match the current table filters.</p>}
+      <TablePager count={filteredTenders.length} page={safePage} pageSize={pageSize} onPage={setPage} noun="tenders" />
+    </section>
   </>;
 }
 
 function MatrixView({ view, suppliers, profiles, evaluations, matchByKey, onView, onOpen }: { view: WorkspaceView; suppliers: SupplierRecord[]; profiles: SupplierProfileApiRecord[]; evaluations: ExploratoryMatchEvaluation[]; matchByKey: Map<string, MatchAssessment>; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
-  const pageSize = 10;
-  const [page, setPage] = useState(0);
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [tenderQuery, setTenderQuery] = useState("");
+  const [supplierSort, setSupplierSort] = useState("name-asc");
+  const [supplierPageSize, setSupplierPageSize] = useState(10);
+  const [tenderPageSize, setTenderPageSize] = useState(25);
+  const [supplierPage, setSupplierPage] = useState(0);
+  const [tenderPage, setTenderPage] = useState(0);
   const [excelExporting, setExcelExporting] = useState(false);
-  const pageCount = Math.ceil(suppliers.length / pageSize);
-  const visibleSuppliers = suppliers.slice(page * pageSize, (page + 1) * pageSize);
+  const filteredTenders = useMemo(() => {
+    const search = normalizedSearch(tenderQuery);
+    return runtimeTenders.filter((entry) => !search || [entry.reference, entry.title, entry.country, entry.object].join(" ").toLocaleLowerCase().includes(search));
+  }, [tenderQuery]);
+  const filteredSuppliers = useMemo(() => {
+    const search = normalizedSearch(supplierQuery);
+    const rows = suppliers.filter((entry) => !search || [entry.legalEnglishName, entry.profile?.countryCode, supplierActivity(entry)].join(" ").toLocaleLowerCase().includes(search));
+    return rows.sort((left, right) => {
+      if (supplierSort === "score-desc") {
+        const maximum = (supplier: SupplierRecord) => Math.max(...filteredTenders.map((tender) => matchByKey.get(matchKey(tender, supplier))?.auditedMatch.value ?? -1));
+        return maximum(right) - maximum(left) || left.legalEnglishName.localeCompare(right.legalEnglishName);
+      }
+      return supplierSort === "name-desc" ? right.legalEnglishName.localeCompare(left.legalEnglishName) : left.legalEnglishName.localeCompare(right.legalEnglishName);
+    });
+  }, [filteredTenders, matchByKey, supplierQuery, supplierSort, suppliers]);
+  const safeSupplierPage = Math.min(supplierPage, Math.max(0, Math.ceil(filteredSuppliers.length / supplierPageSize) - 1));
+  const safeTenderPage = Math.min(tenderPage, Math.max(0, Math.ceil(filteredTenders.length / tenderPageSize) - 1));
+  const visibleSuppliers = filteredSuppliers.slice(safeSupplierPage * supplierPageSize, (safeSupplierPage + 1) * supplierPageSize);
+  const visibleMatrixTenders = filteredTenders.slice(safeTenderPage * tenderPageSize, (safeTenderPage + 1) * tenderPageSize);
   const matches = [...matchByKey.values()];
   const numeric = matches.filter((entry) => typeof entry.auditedMatch.value === "number").length;
   const scoreBands = [
@@ -758,18 +903,65 @@ function MatrixView({ view, suppliers, profiles, evaluations, matchByKey, onView
     <section className="tb3-status-summary" aria-label="Formula v1.1 numeric score distribution">
       {scoreBands.map((band) => <div key={band.label}><b>{band.count}</b><span>{band.label}</span></div>)}
     </section>
-    <section className="tb3-matrix-panel"><header><div><span>FORMULA V1.1 · SCORING ONLY</span><h2>Evidence-aware pair scores</h2><p>Select any cell to inspect the score, weighted criteria, missing evidence, mandatory gates, coverage, confidence and separate human disposition.</p></div><div className="tb3-matrix-legend"><span className="priority">61–100</span><span className="review">41–60</span><span className="missing">0–40 · inspect coverage</span></div></header><div className="tb3-matrix-pagination" aria-label="Supplier matrix pages"><button disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>← Previous suppliers</button><span>Suppliers {page * pageSize + 1}–{Math.min((page + 1) * pageSize, suppliers.length)} of {suppliers.length}</span><button disabled={page >= pageCount - 1} onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}>Next suppliers →</button></div><div className="tb3-matrix-scroll" role="region" aria-label="Full supplier by tender score matrix"><div className="tb3-matrix-table" style={{ minWidth: `${280 + runtimeTenders.length * 104}px` }}><div className="tb3-matrix-header" style={{ gridTemplateColumns: `280px repeat(${runtimeTenders.length}, 104px)` }}><div><b>SUPPLIER</b><span>READINESS STATE</span></div>{runtimeTenders.map((entry, index) => <div key={entry.id} title={`${entry.reference} · ${entry.country} · ${entry.object}`}><span>T{String(index + 1).padStart(2, "0")}</span><b>{entry.reference}</b><small>{entry.country}</small><em>{entry.object}</em></div>)}</div>{visibleSuppliers.map((company) => <div className="tb3-matrix-row" style={{ gridTemplateColumns: `280px repeat(${runtimeTenders.length}, 104px)` }} key={company.id}><div className="tb3-matrix-company"><span>{company.profile?.countryCode ?? "?"}</span><p><b>{company.legalEnglishName}</b><small>{supplierActivity(company)}</small><em>{company.readiness.label}</em></p><strong>—</strong></div>{runtimeTenders.map((opportunity) => { const assessment = matchByKey.get(matchKey(opportunity, company))!; const score = assessment.auditedMatch.value ?? 0; const coverage = assessment.auditedMatch.dataCoverage ?? 0; return <button className={`tb3-matrix-cell ${scoreBand(score)}`} key={opportunity.id} onClick={() => onOpen(assessment, "match-tenders")} aria-label={`Open ${company.legalEnglishName} and ${opportunity.reference}; pair score ${score} of 100, ${coverage} percent coverage`}><b>{score}</b><span>{coverage}% coverage</span></button>; })}</div>)}</div></div></section>
+    <section className="tb3-matrix-panel tb3-entity-grid-panel" data-table-format="entity-readiness-grid"><header><div><span>FORMULA V1.1 · SCORING ONLY</span><h2>Evidence-aware pair scores</h2><p>Select a cell to inspect score, coverage, confidence, evidence and human disposition. Both axes are filtered and paginated for large inventories.</p></div><div className="tb3-matrix-legend"><span className="priority">61–100</span><span className="review">41–60</span><span className="missing">0–40 · inspect coverage</span></div></header>
+      <DataTableToolbar label="Match matrix controls" query={supplierQuery} searchLabel="Filter suppliers" onQuery={setSupplierQuery} resultLabel={`${filteredSuppliers.length.toLocaleString()} suppliers × ${filteredTenders.length.toLocaleString()} tenders · ${(filteredSuppliers.length * filteredTenders.length).toLocaleString()} visible-filter pairs`} pageSize={supplierPageSize} onPageSize={setSupplierPageSize}>
+        <label><span>Tender filter</span><input type="search" value={tenderQuery} placeholder="Reference, country or object" onChange={(event) => setTenderQuery(event.target.value)} /></label>
+        <label><span>Supplier sort</span><select value={supplierSort} onChange={(event) => setSupplierSort(event.target.value)}><option value="name-asc">Supplier A–Z</option><option value="name-desc">Supplier Z–A</option><option value="score-desc">Highest score</option></select></label>
+        <label><span>Tender columns</span><select value={tenderPageSize} onChange={(event) => setTenderPageSize(Number(event.target.value))}>{[10, 25, 50].map((value) => <option value={value} key={value}>{value}</option>)}</select></label>
+      </DataTableToolbar>
+      <div className="tb3-matrix-pagers"><TablePager count={filteredSuppliers.length} page={safeSupplierPage} pageSize={supplierPageSize} onPage={setSupplierPage} noun="suppliers" /><TablePager count={filteredTenders.length} page={safeTenderPage} pageSize={tenderPageSize} onPage={setTenderPage} noun="tenders" /></div>
+      <div className="tb3-matrix-scroll" role="region" aria-label="Full supplier by tender score matrix"><div className="tb3-matrix-table tb3-entity-matrix" role="grid" aria-rowcount={filteredSuppliers.length + 1} aria-colcount={filteredTenders.length + 1} style={{ minWidth: `${240 + visibleMatrixTenders.length * 88}px` }}><div className="tb3-matrix-header" role="row" style={{ gridTemplateColumns: `240px repeat(${visibleMatrixTenders.length}, 88px)` }}><div role="columnheader"><b>Supplier</b><span>Readiness</span></div>{visibleMatrixTenders.map((entry) => <div role="columnheader" key={entry.id} title={`${entry.reference} · ${entry.country} · ${standardTableText(entry.object)}`}><b>{entry.reference}</b><small>{entry.country}</small><em>{standardTableText(entry.object)}</em></div>)}</div>{visibleSuppliers.map((company) => <div className="tb3-matrix-row" role="row" style={{ gridTemplateColumns: `240px repeat(${visibleMatrixTenders.length}, 88px)` }} key={company.id}><div className="tb3-matrix-company" role="rowheader"><span>{company.profile?.countryCode ?? "?"}</span><p><b>{company.legalEnglishName}</b><small>{standardTableText(supplierActivity(company))}</small><em>{company.readiness.label}</em></p></div>{visibleMatrixTenders.map((opportunity) => { const assessment = matchByKey.get(matchKey(opportunity, company))!; const score = assessment.auditedMatch.value ?? 0; const coverage = assessment.auditedMatch.dataCoverage ?? 0; return <button role="gridcell" className={`tb3-matrix-cell ${scoreBand(score)}`} key={opportunity.id} onClick={() => onOpen(assessment, "match-tenders")} aria-label={`Open ${company.legalEnglishName} and ${opportunity.reference}; pair score ${score} of 100, ${coverage} percent coverage`}><b>{score}</b><span>{coverage}%</span></button>; })}</div>)}</div></div>
+      {(visibleSuppliers.length === 0 || visibleMatrixTenders.length === 0) && <p className="tb3-table-empty">No matrix pairs match the current filters.</p>}
+    </section>
   </>;
 }
 
 function MatchWorkspaceView({ view, tender, supplier, suppliers, result, allMatches, tenderMatches, supplierMatches, caseResults, onView, onOpen, onDecision }: { view: "match-tenders" | "match-suppliers"; tender: TenderRecord; supplier: SupplierRecord; suppliers: SupplierRecord[]; result: TenderMatchCaseResult; allMatches: MatchAssessment[]; tenderMatches: MatchAssessment[]; supplierMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void; onDecision: (decision: ConsultantDecision) => void }) {
+  const [selectorQuery, setSelectorQuery] = useState("");
+  const [rankingQuery, setRankingQuery] = useState("");
+  const [rankingSort, setRankingSort] = useState("score-desc");
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(0);
+  const selectorSearch = normalizedSearch(selectorQuery);
+  const selectorRecords = view === "match-tenders"
+    ? runtimeTenders.filter((entry) => !selectorSearch || [entry.reference, entry.title, entry.country, entry.sourceLabel].join(" ").toLocaleLowerCase().includes(selectorSearch))
+    : suppliers.filter((entry) => !selectorSearch || [entry.legalEnglishName, entry.profile?.countryCode, supplierActivity(entry)].join(" ").toLocaleLowerCase().includes(selectorSearch));
+  const baseMatches = view === "match-tenders" ? tenderMatches : supplierMatches;
+  const filteredMatches = useMemo(() => {
+    const search = normalizedSearch(rankingQuery);
+    return baseMatches.filter((assessment) => {
+      const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!;
+      const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!;
+      return !search || [rowSupplier.legalEnglishName, rowTender.reference, rowTender.title, rowTender.country, supplierActivity(rowSupplier)].join(" ").toLocaleLowerCase().includes(search);
+    }).sort((left, right) => {
+      if (rankingSort === "coverage-desc") return (right.auditedMatch.dataCoverage ?? -1) - (left.auditedMatch.dataCoverage ?? -1) || compareMatches(left, right);
+      if (rankingSort === "name-asc") {
+        const name = (assessment: MatchAssessment) => view === "match-tenders" ? suppliers.find((entry) => entry.id === assessment.supplierId)?.legalEnglishName ?? "" : runtimeTenders.find((entry) => entry.id === assessment.tenderId)?.title ?? "";
+        return name(left).localeCompare(name(right));
+      }
+      if (rankingSort === "decision-asc") {
+        const decision = (assessment: MatchAssessment) => caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision;
+        return decision(left).localeCompare(decision(right)) || compareMatches(left, right);
+      }
+      return compareMatches(left, right);
+    });
+  }, [baseMatches, caseResults, rankingQuery, rankingSort, suppliers, view]);
+  const safePage = Math.min(page, Math.max(0, Math.ceil(filteredMatches.length / pageSize) - 1));
+  const visibleMatches = filteredMatches.slice(safePage * pageSize, (safePage + 1) * pageSize);
   return <>
     <ViewHeader eyebrow={`05 · MATCH MATRIX / ${view === "match-tenders" ? "TENDER-FIRST" : "SUPPLIER-FIRST"}`} title={view === "match-tenders" ? "Review by Tenders" : "Review by Suppliers"} description="Inspect deterministic Formula v1.1 scores. Pair Score, assessed-only fit, Data Coverage, Evidence Confidence, supplier readiness, freshness and consultant disposition remain separate." aside={<div className="tb3-replay" role="status"><span>✓</span><p><b>Formula v1.1 ready</b><small>{allMatches.length} / {allMatches.length} numeric pair scores completed</small></p></div>} />
     <MatchModeTabs view={view} onChange={onView} supplierCount={suppliers.length} />
     <div className="tb3-progress" role="progressbar" aria-label="Server-computed pair inventory progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}><i style={{ width: "100%" }} /><span>100%</span></div>
     <section className="tb3-match-workspace">
-      <aside className="tb3-picker"><header><span>{view === "match-tenders" ? "TENDERS" : "SUPPLIERS"}</span><b>{view === "match-tenders" ? `${runtimeTenders.length} current-at-extraction records` : `${suppliers.length} under-review profiles`}</b></header>{view === "match-tenders" ? runtimeTenders.map((entry) => <button className={entry.id === tender.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)); if (best) onOpen(best); }}><span>{entry.sourceLabel}</span><b>{entry.reference}</b><p>{entry.title}</p><small>{entry.country} · {dateLabel(entry.deadlineAt)}</small></button>) : suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{supplierActivity(entry)} · {entry.readiness.label}</small></p><i>→</i></button>)}</aside>
-      <article className="tb3-ranking"><header><div><span>{view === "match-tenders" ? tender.sourceLabel : "SELECTED SUPPLIER"}</span><h2>{view === "match-tenders" ? tender.title : supplier.legalEnglishName}</h2><p>{view === "match-tenders" ? `${tender.buyer} · ${tender.country}` : `${supplierActivity(supplier)} · ${supplier.profile?.verificationStatus.replace("_", " ")}`}</p></div><div><small>{view === "match-tenders" ? "DEADLINE" : "READINESS"}</small><b>{view === "match-tenders" ? dateLabel(tender.deadlineAt) : supplier.readiness.label}</b><small>{view === "match-tenders" ? "STATUS" : "VERIFIED CLAIMS"}</small><b>{view === "match-tenders" ? result.match.tenderFreshness.status : "0"}</b></div></header><div className="tb3-ranking-head"><span>{view === "match-tenders" ? "SUPPLIER" : "TENDER"}</span><span>READINESS</span><span>PAIR SCORE</span><span>COVERAGE / CONFIDENCE</span><span>DECISION</span></div><div className="tb3-ranking-rows">{(view === "match-tenders" ? tenderMatches : supplierMatches).map((assessment) => { const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!; const cachedDecision = caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision; return <button className={assessment.key === result.match.key ? "selected" : ""} key={assessment.key} onClick={() => onOpen(assessment)}><div><span>{view === "match-tenders" ? rowSupplier.profile?.countryCode ?? "?" : rowTender.countryCode ?? "?"}</span><p><b>{view === "match-tenders" ? rowSupplier.legalEnglishName : rowTender.title}</b><small>{view === "match-tenders" ? supplierActivity(rowSupplier) : `${rowTender.reference} · ${rowTender.country} · ${rowTender.object}`}</small></p></div><strong>—<small>{rowSupplier.readiness.label}</small></strong><strong className={scoreBand(assessment.auditedMatch.value)}>{assessment.auditedMatch.value ?? 0}<small>score only · no threshold</small></strong><strong>{assessment.auditedMatch.dataCoverage ?? 0}%<small>{assessment.auditedMatch.evidenceConfidence ?? 0}% confidence · {assessment.auditedMatch.evidenceIds.length} cited</small></strong><em className={`tb3-state ${cachedDecision}`}>{decisionLabel[cachedDecision]}</em></button>; })}</div></article>
+      <aside className="tb3-picker tb3-compact-picker" data-density="compact"><header><span>{view === "match-tenders" ? "Tenders" : "Suppliers"}</span><b>{selectorRecords.length} of {view === "match-tenders" ? runtimeTenders.length : suppliers.length}</b><input aria-label={`Filter ${view === "match-tenders" ? "tenders" : "suppliers"}`} type="search" value={selectorQuery} placeholder={`Filter ${view === "match-tenders" ? "tenders" : "suppliers"}`} onChange={(event) => setSelectorQuery(event.target.value)} /></header>{view === "match-tenders" ? (selectorRecords as TenderRecord[]).map((entry) => <button aria-label={`${entry.reference}: ${entry.title}, ${entry.country}, deadline ${dateLabel(entry.deadlineAt)}`} aria-pressed={entry.id === tender.id} className={`tb3-picker-row tb3-picker-tender${entry.id === tender.id ? " active" : ""}`} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)); if (best) onOpen(best); }}><b>{entry.reference}</b><p title={entry.title}>{entry.title}</p><small>{entry.country} · {dateLabel(entry.deadlineAt)}</small></button>) : (selectorRecords as SupplierRecord[]).map((entry) => <button aria-pressed={entry.id === supplier.id} className={`tb3-picker-row tb3-picker-supplier${entry.id === supplier.id ? " active" : ""}`} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{standardTableText(supplierActivity(entry))} · {entry.readiness.label}</small></p></button>)}</aside>
+      <article className="tb3-ranking"><header><div><span>{view === "match-tenders" ? tender.sourceLabel : "Selected supplier"}</span><h2>{view === "match-tenders" ? tender.title : supplier.legalEnglishName}</h2><p>{view === "match-tenders" ? `${tender.buyer} · ${tender.country}` : `${standardTableText(supplierActivity(supplier))} · ${standardTableText(supplier.profile?.verificationStatus ?? "unknown")}`}</p></div><div><small>{view === "match-tenders" ? "Deadline" : "Readiness"}</small><b>{view === "match-tenders" ? dateLabel(tender.deadlineAt) : supplier.readiness.label}</b><small>{view === "match-tenders" ? "Status" : "Verified claims"}</small><b>{view === "match-tenders" ? standardTableText(result.match.tenderFreshness.status) : "0"}</b></div></header>
+        <DataTableToolbar label="Pair ranking table controls" query={rankingQuery} searchLabel={view === "match-tenders" ? "Filter suppliers" : "Filter tenders"} onQuery={setRankingQuery} resultLabel={`${filteredMatches.length} pair results`} pageSize={pageSize} onPageSize={setPageSize}>
+          <label><span>Sort</span><select value={rankingSort} onChange={(event) => setRankingSort(event.target.value)}><option value="score-desc">Pair score</option><option value="coverage-desc">Data coverage</option><option value="name-asc">Name A–Z</option><option value="decision-asc">Decision</option></select></label>
+        </DataTableToolbar>
+        <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-ranking-table" data-table-format="entity-readiness-grid"><thead><tr><th scope="col" className="sticky-column">{view === "match-tenders" ? "Supplier" : "Tender"}</th><th scope="col">Readiness</th><th scope="col" className="numeric">Pair score</th><th scope="col" className="numeric">Coverage</th><th scope="col" className="numeric">Confidence</th><th scope="col" className="numeric">Evidence</th><th scope="col">Decision</th><th scope="col" className="action-column">Action</th></tr></thead><tbody>{visibleMatches.map((assessment) => { const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!; const cachedDecision = caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision; return <tr className={assessment.key === result.match.key ? "selected" : ""} key={assessment.key}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={() => onOpen(assessment)}><b>{view === "match-tenders" ? rowSupplier.legalEnglishName : rowTender.title}</b><span>{view === "match-tenders" ? `${rowSupplier.profile?.countryCode ?? "?"} · ${standardTableText(supplierActivity(rowSupplier))}` : `${rowTender.reference} · ${rowTender.country}`}</span><small>{view === "match-tenders" ? standardTableText(rowSupplier.profile?.verificationStatus ?? "unknown") : standardTableText(rowTender.object)}</small></button></th><td><span className="tb3-status-text neutral">{rowSupplier.readiness.label}</span></td><td className="numeric"><b className={`tb3-score-text ${scoreBand(assessment.auditedMatch.value)}`}>{assessment.auditedMatch.value ?? 0}</b></td><td className="numeric">{assessment.auditedMatch.dataCoverage ?? 0}%</td><td className="numeric">{assessment.auditedMatch.evidenceConfidence ?? 0}%</td><td className="numeric">{assessment.auditedMatch.evidenceIds.length}</td><td><span className={`tb3-status-text ${cachedDecision === "rejected" ? "danger" : cachedDecision === "approved" ? "success" : "neutral"}`}>{decisionLabel[cachedDecision]}</span></td><td className="action-column"><button className="tb3-table-action" onClick={() => onOpen(assessment)}>Review</button></td></tr>; })}</tbody></table></div>
+        {visibleMatches.length === 0 && <p className="tb3-table-empty">No pair results match the current filter.</p>}
+        <TablePager count={filteredMatches.length} page={safePage} pageSize={pageSize} onPage={setPage} noun="pair results" />
+      </article>
       <MatchReviewPanel result={result} tender={tender} supplier={supplier} onViewChange={onView} onDecision={onDecision} />
     </section>
   </>;
@@ -777,10 +969,30 @@ function MatchWorkspaceView({ view, tender, supplier, suppliers, result, allMatc
 
 function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceError, allMatches, onView, onOpen }: { view: WorkspaceView; supplier: SupplierRecord; suppliers: SupplierRecord[]; evidenceStatus: "idle" | "loading" | "ready" | "error"; evidenceError: string; allMatches: MatchAssessment[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void }) {
   const profile = supplier.profile!;
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const filteredEvidence = useMemo(() => {
+    const search = normalizedSearch(query);
+    return supplier.evidence.filter((entry) => (!search || [entry.field, entry.value, entry.sourceTitle, entry.id].join(" ").toLocaleLowerCase().includes(search)) && (statusFilter === "all" || entry.reviewStatus === statusFilter));
+  }, [query, statusFilter, supplier.evidence]);
   return <>
     <ViewHeader eyebrow="03 · SUPPLIERS / VERIFICATION" title="Evidence Review" description="Inspect the safe non-contact evidence projection, claim class, source record, artifact availability and explicit unknowns. This batch contains zero VERIFIED claims." aside={<div className="tb3-directory-count"><b>0/{profile.evidenceClaimCount}</b><span>verified profile claims</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-evidence-layout"><aside className="tb3-picker"><header><span>SUPPLIERS</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button className={entry.id === supplier.id ? "active" : ""} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p><i>→</i></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{profile.classification} · {supplierActivity(supplier)} · {profile.profileVersion}</small></div></header><div className="tb3-evidence-legend"><span className="verified">0 verified</span><span className="stated">STATED_UNVERIFIED · saved artifact, not verified</span><span className="inferred">INFERRED · source-backed, not verified</span><span className="unknown">UNKNOWN / MISSING</span></div>{evidenceStatus === "loading" && <div className="tb3-evidence-state" role="status">Loading safe non-contact evidence…</div>}{evidenceStatus === "error" && <div className="tb3-evidence-state error" role="alert">{evidenceError}</div>}<div className="tb3-fact-table"><div className="head"><span>FACT</span><span>VALUE</span><span>STATUS</span><span>ARTIFACT</span><span>SOURCE RECORD</span></div>{supplier.evidence.map((entry) => <div className="row" key={entry.id}><b>{entry.field}</b><p>{entry.value || "Unknown / MISSING"}</p><span className={evidenceStatusClass(entry.reviewStatus)}>{entry.reviewStatus}</span><strong>{entry.notes.startsWith("Saved") ? "Linked" : "Unavailable"}</strong><small>{entry.sourceTitle}{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source reference ↗</a>}<i>{entry.retrievedAt} · {entry.id}</i></small></div>)}</div><div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>STATED_UNVERIFIED remains stated and INFERRED remains inferred. UNKNOWN remains MISSING. None becomes verified, zero, or negative evidence.</span></p></div></article><aside className="tb3-audit-aside"><span>AUDIT SUMMARY</span><h3>Profile provenance</h3><div><b>{supplier.evidence.length || "—"}</b><small>safe evidence records loaded</small></div><div><b>{profile.evidenceStatedUnverifiedCount}</b><small>stated-unverified profile claims</small></div><div><b>{profile.evidenceInferredCount}</b><small>inferred profile claims</small></div><div><b>{profile.evidenceUnknownCount}</b><small>unknown profile claims</small></div><p>Contacts, messaging fields, named people, addresses and raw source content are excluded from both the local API and the deployed sanitized snapshot.</p><section><b>CONSULTANT LIMITS</b>{supplier.verificationQuestions.slice(0, 3).map((question) => <p key={question}>? {question}</p>)}</section><button onClick={() => onView("match-tenders")}>Back to match review</button></aside></section>
+    <section className="tb3-evidence-layout"><aside className="tb3-picker tb3-compact-picker" data-density="compact"><header><span>Suppliers</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button aria-pressed={entry.id === supplier.id} className={`tb3-picker-row tb3-picker-supplier${entry.id === supplier.id ? " active" : ""}`} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{standardTableText(profile.classification)} · {standardTableText(supplierActivity(supplier))} · {profile.profileVersion}</small></div></header>
+      <section className="tb3-audit-strip" aria-label="Profile provenance and audit summary">
+        <div className="tb3-audit-strip-title"><span>Audit summary</span><b>Profile provenance</b></div>
+        <dl><div><dt>Safe evidence records</dt><dd>{supplier.evidence.length || "—"}</dd></div><div><dt>Stated-unverified claims</dt><dd>{profile.evidenceStatedUnverifiedCount}</dd></div><div><dt>Inferred claims</dt><dd>{profile.evidenceInferredCount}</dd></div><div><dt>Unknown claims</dt><dd>{profile.evidenceUnknownCount}</dd></div></dl>
+        <p>Contacts, messaging fields, named people, addresses and raw source content are excluded from both the local API and the deployed sanitized snapshot.</p>
+        <details><summary>Consultant limits · {Math.min(3, supplier.verificationQuestions.length)}</summary><div>{supplier.verificationQuestions.slice(0, 3).map((question) => <p key={question}>? {question}</p>)}</div></details>
+        <button type="button" onClick={() => onView("match-tenders")}>Back to match review</button>
+      </section>
+      <div className="tb3-evidence-legend" aria-label="Evidence state legend"><span className="tb3-status-text success">0 verified</span><span className="tb3-status-text stated">Stated, unverified</span><span className="tb3-status-text inferred">Inferred</span><span className="tb3-status-text neutral">Unknown / missing</span></div>{evidenceStatus === "loading" && <div className="tb3-evidence-state" role="status">Loading safe non-contact evidence…</div>}{evidenceStatus === "error" && <div className="tb3-evidence-state error" role="alert">{evidenceError}</div>}
+      <DataTableToolbar label="Evidence table controls" query={query} searchLabel="Fact, value, source or record ID" onQuery={setQuery} resultLabel={`${filteredEvidence.length} of ${supplier.evidence.length} evidence records`}>
+        <label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All states</option>{[...new Set(supplier.evidence.map((entry) => entry.reviewStatus))].sort().map((value) => <option value={value} key={value}>{standardTableText(value)}</option>)}</select></label>
+      </DataTableToolbar>
+      <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-evidence-table" data-table-format="entity-readiness-grid"><thead><tr><th scope="col" className="sticky-column">Fact</th><th scope="col">Value</th><th scope="col">Status</th><th scope="col">Artifact</th><th scope="col">Source record</th></tr></thead><tbody>{filteredEvidence.map((entry) => <tr key={entry.id}><th scope="row" className="sticky-column">{standardTableText(entry.field)}</th><td>{entry.value ? standardTableValue(entry.value) : "Unknown / missing"}</td><td><span className={`tb3-status-text ${evidenceStatusClass(entry.reviewStatus)}`}>{standardTableText(entry.reviewStatus)}</span></td><td>{entry.notes.startsWith("Saved") ? "Linked" : "Unavailable"}</td><td><span>{entry.sourceTitle}</span>{entry.sourceUrl && <a href={entry.sourceUrl} target="_blank" rel="noreferrer">Open source ↗</a>}<small>{entry.retrievedAt} · {entry.id}</small></td></tr>)}</tbody></table></div>
+      {filteredEvidence.length === 0 && <p className="tb3-table-empty">No evidence records match the current filters.</p>}
+      <div className="tb3-guardrail"><i>!</i><p><b>Claim protection</b><span>STATED_UNVERIFIED remains stated and INFERRED remains inferred. UNKNOWN remains MISSING. None becomes verified, zero, or negative evidence.</span></p></div></article></section>
   </>;
 }
 
@@ -797,11 +1009,10 @@ function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision }
       ["Data Coverage", match.dataCoverage ?? 0, "CALCULATED"],
       ["Evidence Confidence", match.evidenceConfidence ?? 0, "CALCULATED"],
       ["Deadline urgency", result.match.deadlineUrgency.value, result.match.deadlineUrgency.valueClass],
-    ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "MISSING" : valueClass}</small></strong></div>)}</div>
-    <section className="tb3-formula-audit"><span>WEIGHTED CRITERIA</span><div className="tb3-formula-table" role="table" aria-label="Formula v1.1 criterion audit">
-      <div className="head" role="row"><b>Criterion</b><b>Weight</b><b>Fit</b><b>Points</b><b>Class / confidence</b></div>
-      {match.components.map((component) => <div className="row" role="row" key={component.code}><p><b>{component.code.replace(/-/g, " ")}</b><small>{component.rationale}</small>{component.evidenceIds.map((id) => <code key={id}>{id}</code>)}</p><strong>{Math.round(component.weight)}%</strong><strong>{component.fitLevel ?? "—"}/5</strong><strong>{component.weightedPoints ?? "—"}</strong><span>{component.valueClass}<small>{component.evidenceConfidence ?? 0}% confidence</small></span></div>)}
-    </div></section>
+    ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "Missing" : standardTableText(String(valueClass))}</small></strong></div>)}</div>
+    <section className="tb3-formula-audit"><span>WEIGHTED CRITERIA</span><div className="tb3-data-table-scroll tb3-formula-table"><table className="tb3-data-table tb3-entity-grid" data-table-format="entity-readiness-grid" aria-label="Formula v1.1 criterion audit"><thead><tr><th scope="col">Criterion</th><th scope="col" className="numeric">Weight</th><th scope="col" className="numeric">Fit</th><th scope="col" className="numeric">Points</th><th scope="col">Class / confidence</th></tr></thead><tbody>
+      {match.components.map((component) => <tr key={component.code}><th scope="row"><span>{standardTableText(component.code)}</span><small>{component.rationale}</small>{component.evidenceIds.map((id) => <code key={id}>{id}</code>)}</th><td className="numeric">{Math.round(component.weight)}%</td><td className="numeric">{component.fitLevel ?? "—"}/5</td><td className="numeric">{component.weightedPoints ?? "—"}</td><td><span className="tb3-status-text neutral">{standardTableText(component.valueClass)}</span><small>{component.evidenceConfidence ?? 0}% confidence</small></td></tr>)}
+    </tbody></table></div></section>
     <section className="tb3-gate-audit"><span>MANDATORY GATES</span><div>{(match.gates ?? []).map((entry) => <article className={`state-${entry.state.toLowerCase()}`} key={entry.code}><b>{entry.state}</b><p><strong>{entry.label}</strong><small>{entry.rationale}</small></p></article>)}</div></section>
     <section className="gaps"><span>BLOCKERS / MISSING INPUTS</span><div>{(match.blockers ?? []).map((blocker) => <p key={blocker}>! {blocker}</p>)}{match.missingInputs.map((input) => <p key={input}>? {input}</p>)}{result.reviewSupport.findings.map((finding) => <p key={finding.code}>! {finding.code}: {finding.nextAction}</p>)}</div></section>
     <button className="tb3-evidence-link" onClick={() => onViewChange("verification")}>Open cited supplier evidence →</button>
