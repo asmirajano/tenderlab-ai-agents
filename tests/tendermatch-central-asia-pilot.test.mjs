@@ -84,8 +84,10 @@ test("uses honest country-level map placement and runtime-derived counts", async
   assert.notDeepEqual(first, second);
   const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
   assert.match(page, /COUNTRY-LEVEL PLACEMENT · VISUAL SPACING ONLY/);
-  assert.match(page, /suppliers\.length \* runtimeTenders\.length/);
-  assert.match(page, /runtime\.evaluations\.map\(assessmentFromExploratoryEvaluation\)/);
+  assert.match(page, /runtime\.evaluationSummary\.total/);
+  assert.doesNotMatch(page, /runtime\.evaluations|buildExploratoryEvaluationInventory/);
+  assert.match(page, /assessmentFromExploratoryEvaluation\(runtime\.initialEvaluation\)/);
+  assert.match(page, /queryTenderMatchPairs\(runtime/);
   assert.match(page, /deployed pinned v1\.3 supplier snapshot/);
   assert.doesNotMatch(page, /16 opportunities|10 × 16|142 source combinations|All sixteen/);
   assert.doesNotMatch(page, /demoTenders/);

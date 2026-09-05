@@ -286,12 +286,13 @@ test("migrates legacy TenderBoost Cases into the matching-only schema without ov
 });
 
 test("uses canonical and compatibility routes with a truthful matching-only surface", async () => {
-  const [main, page, styles, registry, firebase] = await Promise.all([
+  const [main, page, styles, registry, firebase, pairWorkspace] = await Promise.all([
     read("apps/tender-apps/src/main.tsx"),
     read("apps/tender-apps/src/tendermatch-app.tsx"),
     read("apps/tender-apps/src/tendermatch.css"),
     read("apps/tender-apps/src/practical-agent-registry.tsx"),
     read("firebase.json"),
+    read("apps/tender-apps/src/tendermatch-pair-workspace.tsx"),
   ]);
   assert.match(main, /import TenderMatchApp from "\.\/tendermatch-app"/);
   assert.match(main, /import "\.\/tendermatch\.css"/);
@@ -312,10 +313,14 @@ test("uses canonical and compatibility routes with a truthful matching-only surf
   assert.match(page, /NO HISTORICAL FIXTURE FALLBACK/);
   assert.match(page, /Retry supplier service/);
   assert.match(page, /PINNED V1\.3 SNAPSHOT/);
-  assert.match(page, /runtime\.evaluations\.map\(assessmentFromExploratoryEvaluation\)/);
-  assert.doesNotMatch(page, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
+  assert.doesNotMatch(page, /runtime\.evaluations|buildExploratoryEvaluationInventory/);
+  assert.match(page, /assessmentFromExploratoryEvaluation\(runtime\.initialEvaluation\)/);
+  assert.match(page, /queryTenderMatchPairs\(runtime/);
+  assert.match(pairWorkspace, /data-pair-query="bounded-matrix"/);
+  assert.match(pairWorkspace, /data-pair-query="focused-ranking"/);
+  assert.doesNotMatch(`${page}\n${pairWorkspace}`, /Campaign Studio|CampaignsView|FollowupsView|CampaignWorkspace|SIMULATION_STARTED|Send \/ activate externally|Create legacy local draft/);
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
-  assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
+  assert.doesNotMatch(`${page}\n${pairWorkspace}`, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);
   assert.doesNotMatch(page, /aria-label="TenderMatch frozen-source dataset summary"|aria-label="TenderBoost migration dataset summary"|TENDERBOOST LEGACY RECOMMENDATIONS/);
   assert.doesNotMatch(page, /Participation Boost proposal sent/);
   assert.doesNotMatch(page, /Command Center|\/products/);

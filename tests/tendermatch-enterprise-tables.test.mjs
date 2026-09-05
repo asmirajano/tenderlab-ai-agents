@@ -6,7 +6,8 @@ import test from "node:test";
 const projectRoot = path.resolve(import.meta.dirname, "..");
 
 async function source(relativePath) {
-  return readFile(path.join(projectRoot, relativePath), "utf8");
+  const contents = await readFile(path.join(projectRoot, relativePath), "utf8");
+  return relativePath.endsWith("tendermatch-app.tsx") ? contents + "\n" + await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-pair-workspace.tsx"), "utf8") : contents;
 }
 
 test("uses the Entity Readiness Grid format across pages 03A, 03B, 04 and 05", async () => {
@@ -40,23 +41,24 @@ test("provides scalable search, filtering, sorting and pagination controls", asy
   for (const label of ["Supplier table controls", "Tender table controls", "Evidence table controls", "Pair ranking table controls", "Match matrix controls"]) {
     assert.match(page, new RegExp(label));
   }
-  for (const option of ["Supplier A–Z", "Evidence count", "Deadline soonest", "Top pair score", "Data coverage"]) {
+  for (const option of ["Supplier A–Z", "Evidence count", "Deadline soonest", "Top pair score", "Data Coverage"]) {
     assert.match(page, new RegExp(option));
   }
   assert.match(page, /type="search"/);
   assert.match(page, /\[10, 25, 50, 100\]/);
   assert.match(page, /Previous[\s\S]+Page \{safePage \+ 1\} of \{pageCount\}[\s\S]+Next/);
-  assert.match(page, /safeSupplierPage[\s\S]+safeTenderPage/);
-  assert.match(page, /filteredSuppliers\.length \* filteredTenders\.length/);
+  assert.match(page, /supplierPage \* supplierLimit[\s\S]+tenderPage \* tenderLimit/);
+  assert.match(page, /supplierRows\.length[\s\S]+tenderRows\.length/);
+  assert.match(page, /data-pair-query="bounded-matrix"/);
 });
 
 test("keeps the specialist matrix compact, sticky, grid-styled and independently paginated on both axes", async () => {
   const page = await source("apps/tender-apps/src/tendermatch-app.tsx");
   const styles = await source("apps/tender-apps/src/tendermatch.css");
 
-  assert.match(page, /aria-rowcount=\{filteredSuppliers\.length \+ 1\}/);
-  assert.match(page, /aria-colcount=\{filteredTenders\.length \+ 1\}/);
-  assert.match(page, /noun="suppliers"[\s\S]+noun="tenders"/);
+  assert.match(page, /aria-rowcount=\{supplierRows\.length \+ 1\}/);
+  assert.match(page, /aria-colcount=\{tenderRows\.length \+ 1\}/);
+  assert.match(page, /Previous suppliers[\s\S]+Next suppliers[\s\S]+Previous tenders[\s\S]+Next tenders/);
   assert.match(page, /Tender filter/);
   assert.match(page, /Tender columns/);
   assert.match(styles, /\.tb3-matrix-header[^}]+position: sticky/);
@@ -74,7 +76,7 @@ test("uses standard capitalization for table headers, labels, categories and sta
   assert.match(page, /const tableAcronyms = new Set\(\[[\s\S]+?"ADB"[\s\S]+?"EBRD"[\s\S]+?"ID"/);
   assert.match(page, /export function standardTableText/);
   assert.match(page, /standardTableText\(entry\.object\)/);
-  assert.match(page, /standardTableText\(best\.tenderFreshness\.status\)/);
+  assert.match(page, /standardTableText\(freshness\.status\)/);
   assert.match(page, /standardTableText\(entry\.reviewStatus\)/);
   assert.match(page, /standardTableValue\(entry\.value\)/);
   assert.match(page, /standardTableText\(component\.valueClass\)/);

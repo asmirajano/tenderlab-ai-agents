@@ -5,8 +5,6 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { validateTenderMatchRuntimePayload } from "../apps/tender-apps/src/tendermatch-supplier-api.ts";
-
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = path.join(projectRoot, "apps/tender-apps/public/tendermatch/data");
 
@@ -32,14 +30,15 @@ function collectKeys(value, keys = []) {
   return keys;
 }
 
-test("binds the deployed supplier snapshot to manifest hashes and exact v1.3 counts", async () => {
+test("preserves the historical supplier snapshot and its original manifest hashes and exact v1.3 counts", async () => {
   const [manifestFixture, runtimeFixture, evidenceFixture] = await Promise.all([
     fixture("supplier-snapshot-v1.3.manifest.json"),
     fixture("supplier-runtime-v1.3.json"),
     fixture("supplier-evidence-v1.3.json"),
   ]);
   const manifest = manifestFixture.value;
-  const runtime = validateTenderMatchRuntimePayload(runtimeFixture.value);
+  const runtime = runtimeFixture.value;
+  assert.equal(runtime.summary.contractVersion, "tendermatch-supplier-goods-works-v1.3");
   const evidence = evidenceFixture.value;
 
   assert.equal(manifest.releaseMode, "static-pinned-snapshot");
@@ -87,7 +86,7 @@ test("makes the Firebase snapshot path explicit without restoring historical fix
     readFile(path.join(projectRoot, "docs/tendermatch-neon-supplier-matching-pilot.md"), "utf8"),
     readFile(path.join(projectRoot, "package.json"), "utf8"),
   ]);
-  assert.match(client, /\/tendermatch\/data\/supplier-runtime-v1\.3\.json/);
+  assert.match(client, /\/tendermatch\/data\/runtime-catalog-v2\.json/);
   assert.match(client, /\/tendermatch\/data\/supplier-evidence-v1\.3\.json/);
   assert.match(client, /static-pinned-snapshot/);
   assert.match(app, /PINNED V1\.3 SNAPSHOT/);

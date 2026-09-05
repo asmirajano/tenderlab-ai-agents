@@ -9,14 +9,25 @@ import {
 import type {
   SupplierEvidenceApiRecord,
   TenderMatchRuntimePayload,
+  ExploratoryMatchEvaluation,
 } from "../../../packages/tendermatch/src/index.ts";
+
+export type TenderMatchRuntimeCatalog = Omit<TenderMatchRuntimePayload, "evaluations" | "mode"> & {
+  schemaVersion: "tendermatch-runtime-catalog/2.0.0";
+  mode: TenderMatchRuntimePayload["mode"] | "local-pinned-service";
+  initialEvaluation: ExploratoryMatchEvaluation;
+  pairLeadersByTender?: Record<string, import("./tendermatch-pair-api.ts").TenderMatchCompactPair>;
+  pairLeadersBySupplier?: Record<string, import("./tendermatch-pair-api.ts").TenderMatchCompactPair>;
+  scoreDistribution?: { label: string; count: number }[];
+  processing?: { runId: string; inputIdentity: string; modelCalls: number };
+};
 
 export type TenderMatchRuntimeState =
   | { status: "loading"; progress: string }
-  | { status: "ready"; payload: TenderMatchRuntimePayload }
+  | { status: "ready"; payload: TenderMatchRuntimeCatalog }
   | { status: "offline" | "error"; message: string };
 
-export const TENDERMATCH_STATIC_RUNTIME_URL = "/tendermatch/data/supplier-runtime-v1.3.json";
+export const TENDERMATCH_STATIC_RUNTIME_URL = "/tendermatch/data/runtime-catalog-v2.json";
 export const TENDERMATCH_STATIC_EVIDENCE_URL = "/tendermatch/data/supplier-evidence-v1.3.json";
 
 type StaticEvidenceSnapshot = {
@@ -37,16 +48,19 @@ async function responseJson(response: Response) {
   return body;
 }
 
-export function validateTenderMatchRuntimePayload(value: unknown): TenderMatchRuntimePayload {
-  const payload = value as Partial<TenderMatchRuntimePayload> | null;
+export function validateTenderMatchRuntimePayload(value: unknown): TenderMatchRuntimeCatalog {
+  const payload = value as Partial<TenderMatchRuntimeCatalog> | null;
   const summary = payload?.summary;
   const expectedEvaluations = TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT * runtimeTenders.length;
   if (
     !payload
     || payload.status !== "ready"
-    || (payload.mode !== "neon-read-only" && payload.mode !== "static-pinned-snapshot")
+    || !["neon-read-only", "static-pinned-snapshot", "local-pinned-service"].includes(payload.mode ?? "")
     || !Array.isArray(payload.suppliers)
-    || !Array.isArray(payload.evaluations)
+    || payload.schemaVersion !== "tendermatch-runtime-catalog/2.0.0"
+    || "evaluations" in payload
+    || !payload.initialEvaluation
+    || !Number.isFinite(payload.initialEvaluation.value)
     || !payload.evaluationSummary
     || summary?.contractVersion !== TENDERMATCH_SUPPLIER_CONTRACT_VERSION
     || summary.profileVersion !== TENDERMATCH_SUPPLIER_PROFILE_VERSION
@@ -54,18 +68,20 @@ export function validateTenderMatchRuntimePayload(value: unknown): TenderMatchRu
     || summary.profileCount !== TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT
     || summary.evidenceCount !== TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT
     || payload.suppliers.length !== TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT
-    || payload.evaluations.length !== expectedEvaluations
     || payload.evaluationSummary.total !== expectedEvaluations
   ) {
     throw new TypeError("Supplier service returned a body outside the pinned TenderMatch v1.3 runtime contract.");
   }
-  return payload as TenderMatchRuntimePayload;
+  return payload as TenderMatchRuntimeCatalog;
 }
 
-export async function loadTenderMatchRuntime(signal?: AbortSignal): Promise<TenderMatchRuntimePayload> {
-  try {
+export async function loadTenderMatchRuntime(signal?: AbortSignal): Promise<TenderMatchRuntimeCatalog> {
+  let staticHosting = false;
     for (let attempt = 0; attempt < 80; attempt += 1) {
       const response = await fetch("/api/tendermatch/runtime", { cache: "no-store", credentials: "same-origin", signal });
+      // Static hosting returns HTML for an unknown /api route. Only this known
+      // hosting condition or HTTP 404 authorizes the explicit pinned fallback.
+      if (response.status === 404 || (response.ok && response.headers.get("content-type")?.includes("text/html"))) { staticHosting = true; break; }
       if (response.status === 202) {
         await new Promise((resolve, reject) => {
           const timer = window.setTimeout(resolve, 150);
@@ -75,14 +91,11 @@ export async function loadTenderMatchRuntime(signal?: AbortSignal): Promise<Tend
       }
       return validateTenderMatchRuntimePayload(await responseJson(response));
     }
-    throw new Error("Supplier service did not become ready within the local startup budget.");
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    const response = await fetch(TENDERMATCH_STATIC_RUNTIME_URL, { cache: "no-store", credentials: "same-origin", signal });
-    const payload = validateTenderMatchRuntimePayload(await responseJson(response));
-    if (payload.mode !== "static-pinned-snapshot") throw new TypeError("Static supplier release did not declare its pinned snapshot mode.");
-    return payload;
-  }
+  if (!staticHosting) throw new Error("Supplier service did not become ready within the local startup budget.");
+  const response = await fetch(TENDERMATCH_STATIC_RUNTIME_URL, { cache: "no-store", credentials: "same-origin", signal });
+  const payload = validateTenderMatchRuntimePayload(await responseJson(response));
+  if (payload.mode !== "static-pinned-snapshot") throw new TypeError("Static supplier release did not declare its pinned snapshot mode.");
+  return payload;
 }
 
 async function loadStaticEvidenceSnapshot(signal?: AbortSignal) {
@@ -110,15 +123,11 @@ async function loadStaticEvidenceSnapshot(signal?: AbortSignal) {
   return staticEvidencePromise;
 }
 
-export async function loadSupplierEvidence(canonicalEntityId: string, signal?: AbortSignal, mode: TenderMatchRuntimePayload["mode"] = "neon-read-only"): Promise<SupplierEvidenceApiRecord[]> {
-  if (mode === "neon-read-only") {
-    try {
+export async function loadSupplierEvidence(canonicalEntityId: string, signal?: AbortSignal, mode: TenderMatchRuntimeCatalog["mode"] = "neon-read-only"): Promise<SupplierEvidenceApiRecord[]> {
+  if (mode !== "static-pinned-snapshot") {
       const response = await fetch(`/api/tendermatch/suppliers/${encodeURIComponent(canonicalEntityId)}/evidence`, { cache: "no-store", credentials: "same-origin", signal });
       const body = await responseJson(response) as { evidence?: SupplierEvidenceApiRecord[] };
       return body.evidence ?? [];
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") throw error;
-    }
   }
   const snapshot = await loadStaticEvidenceSnapshot(signal);
   const records = snapshot.evidenceBySupplier[canonicalEntityId] ?? [];

@@ -20,9 +20,9 @@ function argument(name, fallback) {
 
 const origin = new URL(argument("--origin", "http://127.0.0.1:4177"));
 const outputDir = resolve(argument("--output-dir", "apps/tender-apps/public/tendermatch/data"));
-const runtimeFileName = "supplier-runtime-v1.3.json";
+const runtimeFileName = "runtime-catalog-v2.json";
 const evidenceFileName = "supplier-evidence-v1.3.json";
-const manifestFileName = "supplier-snapshot-v1.3.manifest.json";
+const manifestFileName = "pair-snapshot-v2.manifest.json";
 
 async function fetchJson(pathname) {
   const response = await fetch(new URL(pathname, origin), { headers: { accept: "application/json" } });
@@ -53,17 +53,34 @@ const runtime = await fetchJson("/api/tendermatch/runtime");
 const expectedEvaluations = runtimeTenders.length * TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT;
 if (
   runtime.status !== "ready"
+  || runtime.schemaVersion !== "tendermatch-runtime-catalog/2.0.0"
   || runtime.mode !== "neon-read-only"
   || runtime.summary?.contractVersion !== TENDERMATCH_SUPPLIER_CONTRACT_VERSION
   || runtime.summary?.profileVersion !== TENDERMATCH_SUPPLIER_PROFILE_VERSION
   || runtime.summary?.batchCode !== TENDERMATCH_SUPPLIER_BATCH_CODE
   || runtime.suppliers?.length !== TENDERMATCH_SUPPLIER_EXPECTED_PROFILE_COUNT
   || runtime.summary?.evidenceCount !== TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT
-  || runtime.evaluations?.length !== expectedEvaluations
+  || "evaluations" in runtime
   || runtime.evaluationSummary?.total !== expectedEvaluations
 ) {
   throw new Error("Local supplier runtime does not match the approved v1.3 static-release contract.");
 }
+if (runtime.suppliers.length > 100 || runtimeTenders.length > 100) throw new Error("Static pair projections support at most 100 entities per dimension; use the paginated service for larger inventories.");
+
+// Export bounded compact partitions, never reconstruct the former verbose universe.
+const partitions = [];
+const index = { schemaVersion: "tendermatch-pair-index/1.0.0", detailMode: "evidence-on-demand", suppliers: {}, tenders: {} };
+async function collectPartition(kind, id, position, expectedCount) {
+  const query = new URLSearchParams({ [`${kind}Id`]: id, limit: "100" });
+  const page = await fetchJson(`/api/tendermatch/pairs?${query}`);
+  if (!Array.isArray(page.items) || page.items.length !== expectedCount || page.nextCursor || page.items.some((row) => row[`${kind}Id`] !== id || "criteria" in row || !Number.isInteger(row.pairScore))) throw new Error("Focused snapshot partition failed identity/count validation.");
+  if (page.runId !== runtime.processing.runId) throw new Error("Snapshot run changed during export; retry from one immutable run.");
+  const name = `pairs-v2/${kind}-${position}.json`;
+  partitions.push([name, page]);
+  index[`${kind}s`][id] = `/tendermatch/data/${name}`;
+}
+for (const [position, profile] of runtime.suppliers.entries()) await collectPartition("supplier", `supplier:NEON:${profile.canonicalEntityId}`, position, runtimeTenders.length);
+for (const [position, tender] of runtimeTenders.entries()) await collectPartition("tender", tender.id, position, runtime.suppliers.length);
 
 const evidenceEntries = await Promise.all(runtime.suppliers.map(async (profile) => {
   const envelope = await fetchJson(`/api/tendermatch/suppliers/${encodeURIComponent(profile.canonicalEntityId)}/evidence`);
@@ -86,6 +103,7 @@ const publicSummary = Object.fromEntries(Object.entries(runtime.summary).filter(
 const staticRuntime = {
   ...runtime,
   mode: "static-pinned-snapshot",
+  sourceMode: "approved-sanitized-v1.3-export",
   summary: {
     ...publicSummary,
     sourceMode: "approved-sanitized-v1.3-export",
@@ -106,8 +124,11 @@ assertNoForbiddenFields(staticEvidence);
 
 const runtimeContents = `${JSON.stringify(staticRuntime)}\n`;
 const evidenceContents = `${JSON.stringify(staticEvidence)}\n`;
+const artifacts = [...partitions, ["pair-index-v2.json", index]].map(([name, value]) => [name, `${JSON.stringify(value)}\n`]);
+artifacts.push([runtimeFileName, runtimeContents], [evidenceFileName, evidenceContents]);
+for (const [, contents] of artifacts) assertNoForbiddenFields(JSON.parse(contents));
 const manifest = {
-  schemaVersion: "tendermatch-static-supplier-snapshot-manifest/1.0.0",
+  schemaVersion: "tendermatch-pair-snapshot/2.0.0",
   releaseMode: "static-pinned-snapshot",
   sourceMode: "approved-local-read-only-api",
   sourceAuthority: "Neon tender-entity-registry immutable v1.3 supplier projection",
@@ -119,23 +140,25 @@ const manifest = {
     tenders: runtimeTenders.length,
     suppliers: staticRuntime.suppliers.length,
     evidence: evidenceCount,
-    evaluations: staticRuntime.evaluations.length,
+    pairs: staticRuntime.evaluationSummary.total,
+    eligible: staticRuntime.processing.eligible,
+    modelCalls: 0,
     numericEvaluations: staticRuntime.evaluationSummary.numeric,
     missingEvaluations: staticRuntime.evaluationSummary.missing,
   },
-  files: {
-    runtime: { path: `/tendermatch/data/${runtimeFileName}`, sha256: sha256(runtimeContents) },
-    evidence: { path: `/tendermatch/data/${evidenceFileName}`, sha256: sha256(evidenceContents) },
-  },
+  runId: staticRuntime.processing.runId,
+  files: Object.fromEntries(artifacts.map(([name, contents]) => [name, { bytes: Buffer.byteLength(contents), sha256: sha256(contents) }])),
+  detailMode: "single-pair-deterministic-on-demand",
+  semanticEmbeddingState: "MISSING",
+  assessmentProviderState: "DISABLED",
   publicDataBoundary: "Sanitized supplier profiles, non-contact evidence projections and Formula v1.1 coverage-adjusted pair scores only. No Match/Non-match verdict, credentials, contacts or raw source content.",
   refreshCommand: "pnpm run export:tendermatch-static-snapshot -- --origin http://127.0.0.1:4177",
 };
 
-await mkdir(outputDir, { recursive: true });
+await mkdir(resolve(outputDir, "pairs-v2"), { recursive: true });
 await Promise.all([
-  writeFile(resolve(outputDir, runtimeFileName), runtimeContents, "utf8"),
-  writeFile(resolve(outputDir, evidenceFileName), evidenceContents, "utf8"),
+  ...artifacts.map(([name, contents]) => writeFile(resolve(outputDir, name), contents, "utf8")),
   writeFile(resolve(outputDir, manifestFileName), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
 ]);
 
-console.log(`TenderMatch static snapshot exported: ${staticRuntime.suppliers.length} suppliers, ${evidenceCount} evidence records, ${staticRuntime.evaluations.length} evaluations.`);
+console.log(`TenderMatch static snapshot exported: ${staticRuntime.suppliers.length} suppliers, ${evidenceCount} evidence records, ${staticRuntime.evaluationSummary.total} compact pair records. Historical verbose snapshot retained unchanged.`);

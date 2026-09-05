@@ -214,9 +214,11 @@ test("exports a typed Formula v1.1 Excel workbook with 1,020 auditable pair rows
   assert.ok(Array.isArray(JSON.parse(numericRow.getCell(18).value)));
   assert.match(numericRow.getCell(24).value, /tendermatch-match-formula\/1\.1\.0/);
 
-  const appSource = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "tendermatch-app.tsx"), "utf8");
-  assert.match(appSource, /Export Formula v1\.1 CSV/);
-  assert.match(appSource, /Export Formula v1\.1 Excel/);
-  assert.match(appSource, /useState\(10\)[\s\S]+useState\(25\)/);
-  assert.match(appSource, /supplierPageSize[\s\S]+tenderPageSize[\s\S]+visibleMatrixTenders/);
+  const appSource = await readFile(path.join(projectRoot, "apps", "tender-apps", "src", "tendermatch-pair-workspace.tsx"), "utf8");
+  assert.match(appSource, /Export this window CSV/);
+  assert.match(appSource, /Export this window Excel/);
+  assert.match(appSource, /supplierLimit[\s\S]+useState\(10\)/);
+  assert.match(appSource, /tenderLimit[\s\S]+useState\(8\)/);
+  assert.match(appSource, /supplierPage \* supplierLimit[\s\S]+tenderPage \* tenderLimit/);
+  assert.match(appSource, /Requested matrix window/);
 });

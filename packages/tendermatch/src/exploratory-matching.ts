@@ -52,6 +52,15 @@ function confidence(record: SupplierEvidenceApiRecord) {
 }
 function mean(values: number[]) { return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0; }
 function usable(record: SupplierEvidenceApiRecord) { return record.status !== "UNKNOWN" && Boolean(record.value?.trim()) && !/^(unknown|n\/a)$/i.test(record.value?.trim() ?? ""); }
+// Shared with prepared-feature scoring. These primitives preserve Formula v1.1;
+// retrieval vocabularies and embeddings must never change the scoring vocabulary.
+export const exploratoryFeatureRules = {
+  plainText, tokens, concepts, confidence, usable,
+  isTechnicalField: (field: string) => TECHNICAL_FIELDS.has(field),
+};
+export function calculateExploratoryTechnicalFit(conceptCount: number, termCount: number): 0 | 1 | 2 | 3 | 4 | 5 {
+  return conceptCount >= 2 || (conceptCount >= 1 && termCount >= 2) ? 5 : conceptCount >= 1 && termCount >= 1 ? 4 : conceptCount >= 1 ? 3 : termCount >= 2 ? 2 : termCount === 1 ? 1 : 0;
+}
 function criterion(code: AuditedComponentCode, label: string, weight: number, fitLevel: MatchCriterion["fitLevel"], records: SupplierEvidenceApiRecord[], rationale: string, reasonCodes: string[] = []): MatchCriterion {
   const artifactReasons = records.some((record) => !record.artifactAvailable) ? ["CITED_ARTIFACT_UNAVAILABLE"] : [];
   return { code, label, weight, fitLevel, valueClass: fitLevel === null ? "MISSING" : "ESTIMATED", weightedPoints: fitLevel === null ? null : weight * fitLevel, evidenceConfidence: fitLevel === null ? null : mean(records.map(confidence)), evidenceIds: records.map((record) => record.claimId).sort(), reasonCodes: [...new Set([...reasonCodes, ...artifactReasons])], rationale, applicable: true };
@@ -73,7 +82,7 @@ function technicalCriterion(tender: TenderRecord, records: SupplierEvidenceApiRe
   const matchedTerms = new Set<string>(); const matchedConcepts = new Set<string>();
   for (const record of technical) { const claimTokens = tokens(record.value ?? ""); for (const token of claimTokens) if (tenderTokens.has(token)) matchedTerms.add(token); for (const concept of concepts(claimTokens)) if (tenderConcepts.has(concept)) matchedConcepts.add(concept); }
   const c = matchedConcepts.size; const t = matchedTerms.size;
-  const fitLevel: MatchCriterion["fitLevel"] = c >= 2 || (c >= 1 && t >= 2) ? 5 : c >= 1 && t >= 1 ? 4 : c >= 1 ? 3 : t >= 2 ? 2 : t === 1 ? 1 : 0;
+  const fitLevel: MatchCriterion["fitLevel"] = calculateExploratoryTechnicalFit(c, t);
   return { criterion: criterion(code, label, weight, fitLevel, technical, fitLevel === 0 ? "The stated supplier scope has no normalized overlap with the notice-level tender requirement." : `Normalized overlap: ${[...matchedConcepts, ...matchedTerms].join(", ")}.`, [fitLevel === 0 ? "SUPPORTED_TECHNICAL_INCOMPATIBILITY" : "NORMALIZED_TECHNICAL_OVERLAP"]), matchedConcepts: [...matchedConcepts].sort(), matchedTerms: [...matchedTerms].sort() };
 }
 function capacityCriterion(tender: TenderRecord, records: SupplierEvidenceApiRecord[]) {

@@ -44,13 +44,13 @@ test("keeps the frozen fixture cardinalities and explicit MISSING matrix cells",
 });
 
 test("renders every matching view and no Campaign Studio runtime or styling", async () => {
-  const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8");
+  const page = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-app.tsx"), "utf8") + "\n" + await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch-pair-workspace.tsx"), "utf8");
   const styles = await readFile(path.join(projectRoot, "apps/tender-apps/src/tendermatch.css"), "utf8");
   for (const label of ["Overview", "Market Radar", "Suppliers", "Profiles", "Verification", "Tenders", "Match Matrix", "Full Match Matrix", "Review by Tenders", "Review by Suppliers"]) assert.match(page, new RegExp(label));
   for (const content of ["Current Tender Radar", "Supplier Market", "Full Match Matrix", "Review by Tenders", "Review by Suppliers", "Case save failed"]) assert.match(page, new RegExp(content));
   assert.match(page, /Promotion and outreach belong to a separate future Marketing Agent/);
   assert.match(page, /role="alert"/);
-  assert.match(page, /FORMULA V1\.1 · SCORING ONLY/);
+  assert.match(page, /Formula v1\.1 · scoring only/i);
   assert.match(page, /0–40 · inspect coverage/);
   assert.match(page, /STATED_UNVERIFIED remains stated and INFERRED remains inferred\. UNKNOWN remains MISSING\. None becomes verified, zero, or negative evidence/);
   assert.doesNotMatch(page, /Outreach status|NOT[_ -]?SENT|local draft|campaign status|delivery state/);

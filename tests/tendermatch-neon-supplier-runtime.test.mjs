@@ -219,7 +219,10 @@ test("serves the pinned safe v1.3 contract with keyset filters and explicit fail
   assert.deepEqual(ready.summary.profileClaims, { VERIFIED: 0, INFERRED: 17, STATED_UNVERIFIED: 226, UNKNOWN: 46 });
   assert.deepEqual(ready.summary.evidenceStatuses, { VERIFIED: 0, INFERRED: 17, STATED_UNVERIFIED: 226, UNKNOWN: 46 });
   assert.deepEqual(ready.summary.artifacts, { available: 243, unavailable: 46 });
-  assert.equal(ready.evaluations.length, 1020);
+  assert.equal(ready.schemaVersion, "tendermatch-runtime-catalog/2.0.0");
+  assert.equal("evaluations" in ready, false);
+  assert.ok(ready.initialEvaluation.key);
+  assert.equal(ready.evaluationSummary.total, 1020);
   assert.equal(validateTenderMatchRuntimePayload(ready), ready);
   assert.throws(() => validateTenderMatchRuntimePayload({}), /outside the pinned TenderMatch v1\.3 runtime contract/);
 
@@ -262,7 +265,7 @@ test("validates target, keyset inputs, filtering and browser-secret containment"
   assert.doesNotMatch(`${client}\n${app}`, /TENDERMATCH_SUPPLIER_DATABASE_URL|postgres(?:ql)?:\/\//i);
   assert.doesNotMatch(app, /demoSuppliers/);
   assert.match(app, /NO HISTORICAL FIXTURE FALLBACK/);
-  assert.match(client, /supplier-runtime-v1\.3\.json/);
+  assert.match(client, /runtime-catalog-v2\.json/);
   assert.match(client, /supplier-evidence-v1\.3\.json/);
 
   async function files(directory) {

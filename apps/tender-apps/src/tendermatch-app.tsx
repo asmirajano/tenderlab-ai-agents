@@ -3,7 +3,7 @@ import {
   assessmentFromExploratoryEvaluation,
   countryTenderRadarClusters,
   createCaseResult,
-  formulaEvaluationsToCsv,
+  deriveTenderFreshness,
   runtimeTenders,
   loadCaseResult,
   mapSupplierProfileToWorkspace,
@@ -11,18 +11,14 @@ import {
   resumeCaseResult,
   saveCaseResult,
   setConsultantDecision,
-  tenderMatchFormulaExcelFileName,
-  tenderMatchFormulaExportFileName,
   supplierActivity,
   tenderRadarCoordinate,
   worldRadarClusters,
   type ConsultantDecision,
-  type ExploratoryMatchEvaluation,
   type MatchAssessment,
   type SupplierEvidenceApiRecord,
   type SupplierProfileApiRecord,
   type SupplierRecord,
-  type TenderMatchRuntimePayload,
   type TenderMatchCaseResult,
   type TenderRecord,
 } from "../../../packages/tendermatch/src";
@@ -30,8 +26,10 @@ import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 import { TrialNotice } from "./trial-notice.tsx";
 import { TenderMatchFormulaView } from "./tendermatch-formula-view.tsx";
-import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState } from "./tendermatch-supplier-api.ts";
-import { tenderMatchFormulaToExcel } from "./tendermatch-formula-excel.ts";
+import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState, type TenderMatchRuntimeCatalog } from "./tendermatch-supplier-api.ts";
+import { loadTenderMatchPair, queryTenderMatchPairs, type PairQuery, type TenderMatchCompactPair } from "./tendermatch-pair-api.ts";
+import { PagedPairMatrix, PagedPairRanking } from "./tendermatch-pair-workspace.tsx";
+import { criterionPointsForDisplay } from "./tendermatch-pair-display.ts";
 
 type WorkspaceView =
   | "dashboard"
@@ -158,28 +156,6 @@ function scoreBand(value: number | null) {
   return "archive";
 }
 
-function downloadText(fileName: string, contents: string) {
-  const url = URL.createObjectURL(new Blob([contents], { type: "text/csv;charset=utf-8" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-}
-
-function downloadBytes(fileName: string, contents: Uint8Array) {
-  const url = URL.createObjectURL(new Blob([contents.buffer as ArrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-}
-
 function compareMatches(left: MatchAssessment, right: MatchAssessment) {
   return (right.auditedMatch.value ?? -1) - (left.auditedMatch.value ?? -1)
     || (right.auditedMatch.dataCoverage ?? 0) - (left.auditedMatch.dataCoverage ?? 0)
@@ -191,10 +167,6 @@ function evidenceStatusClass(status: string) {
   if (status === "INFERRED") return "inferred";
   if (status === "STATED_UNVERIFIED") return "stated";
   return "unknown";
-}
-
-function bestLegacyMatch(matches: MatchAssessment[]) {
-  return [...matches].sort(compareMatches)[0];
 }
 
 const supplierCountryCoordinates: Record<string, { x: number; y: number }> = {
@@ -331,10 +303,10 @@ function TenderMatchRuntimeGate({ state }: { state: Exclude<TenderMatchRuntimeSt
   </section></main>;
 }
 
-function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload }) {
+function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimeCatalog }) {
   const supplierProfiles = runtime.suppliers;
   const suppliers = useMemo(() => supplierProfiles.map((profile) => mapSupplierProfileToWorkspace(profile)), [supplierProfiles]);
-  const allMatches = useMemo(() => runtime.evaluations.map(assessmentFromExploratoryEvaluation), [runtime.evaluations]);
+  const allMatches = useMemo(() => [assessmentFromExploratoryEvaluation(runtime.initialEvaluation)], [runtime.initialEvaluation]);
   const navGroups = useMemo(() => navGroupsFor(suppliers.length), [suppliers.length]);
   const navItems = useMemo(() => navGroups.flatMap((group) => group.items), [navGroups]);
   const [sessionNow, setSessionNow] = useState(() => new Date().toISOString());
@@ -371,13 +343,13 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
   const viewSurfaceRef = useRef<HTMLDivElement>(null);
   const lastFocusedViewRef = useRef<WorkspaceView>(resolvedInitialWorkspaceView);
 
-  const matchByKey = useMemo(() => new Map(allMatches.map((entry) => [entry.key, entry])), [allMatches]);
+  const detailCache = useRef(new Map(allMatches.map((entry) => [entry.key, entry])));
+  const openingRequest = useRef(0);
+  const [openingPair, setOpeningPair] = useState(false);
   const result = caseResults[selectedKey] ?? initialResult;
   const tender = runtimeTenders.find((entry) => entry.id === result.tenderIdentity.id) ?? initialTender;
   const supplierProfile = supplierProfiles.find((entry) => `supplier:NEON:${entry.canonicalEntityId}` === result.supplierIdentity.id) ?? supplierProfiles[0]!;
   const supplier = mapSupplierProfileToWorkspace(supplierProfile, supplierEvidence[supplierProfile.canonicalEntityId] ?? []);
-  const tenderMatches = allMatches.filter((entry) => entry.tenderId === tender.id).sort(compareMatches);
-  const supplierMatches = allMatches.filter((entry) => entry.supplierId === supplier.id).sort(compareMatches);
   const evaluatedMatches = allMatches;
   const priorityMatches = [...evaluatedMatches].sort(compareMatches).slice(0, 10);
   const auditedMatches = allMatches;
@@ -391,26 +363,47 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     setView(nextView);
   };
 
-  const openPair = (nextTender: TenderRecord, nextSupplier: SupplierRecord, nextView?: WorkspaceView) => {
-    const nowIso = new Date().toISOString();
-    const key = matchKey(nextTender, nextSupplier);
-    const assessment = matchByKey.get(key);
-    if (!assessment) { setActionError(`The selected pair is not present in the ${allMatches.length.toLocaleString()}-result inventory.`); return; }
-    const existing = caseResults[key];
-    const nextResult = existing
-      ? resumeCaseResult(existing, nextTender, nextSupplier, nowIso, assessment)
-      : createCaseResult(caseIdFor(nextTender, nextSupplier), nextTender, nextSupplier, nowIso, assessment);
-    setSessionNow(nowIso);
-    setCaseResults((current) => ({ ...current, [key]: nextResult }));
-    setSelectedKey(key);
-    setActionError("");
-    if (nextView) changeView(nextView);
+  const openPair = async (nextTender: TenderRecord, nextSupplier: SupplierRecord, nextView?: WorkspaceView) => {
+    const request = ++openingRequest.current;
+    setOpeningPair(true); setActionError("");
+    try {
+      const key = matchKey(nextTender, nextSupplier);
+      let assessment = detailCache.current.get(key);
+      if (!assessment) {
+        assessment = assessmentFromExploratoryEvaluation(await loadTenderMatchPair(runtime, nextSupplier.id, nextTender.id));
+        detailCache.current.set(key, assessment);
+        while (detailCache.current.size > 12) detailCache.current.delete(detailCache.current.keys().next().value!);
+      }
+      if (request !== openingRequest.current) return;
+      const nowIso = new Date().toISOString();
+      const existing = caseResults[key];
+      const nextResult = existing
+        ? resumeCaseResult(existing, nextTender, nextSupplier, nowIso, assessment)
+        : createCaseResult(caseIdFor(nextTender, nextSupplier), nextTender, nextSupplier, nowIso, assessment);
+      setSessionNow(nowIso);
+      setCaseResults((current) => ({ ...current, [key]: nextResult }));
+      setSelectedKey(key);
+      if (nextView) changeView(nextView);
+    } catch (error) {
+      if (request === openingRequest.current) setActionError(error instanceof Error ? error.message : "Selected pair could not be loaded.");
+    } finally { if (request === openingRequest.current) setOpeningPair(false); }
   };
 
-  const openAssessment = (assessment: MatchAssessment, nextView?: WorkspaceView) => {
-    const nextTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId);
-    const nextSupplier = suppliers.find((entry) => entry.id === assessment.supplierId);
-    if (nextTender && nextSupplier) openPair(nextTender, nextSupplier, nextView);
+  const openIdentity = (supplierId: string, tenderId: string, nextView?: WorkspaceView) => {
+    const nextTender = runtimeTenders.find((entry) => entry.id === tenderId);
+    const nextSupplier = suppliers.find((entry) => entry.id === supplierId);
+    if (nextTender && nextSupplier) void openPair(nextTender, nextSupplier, nextView);
+  };
+
+  const openAssessment = (assessment: MatchAssessment, nextView?: WorkspaceView) => openIdentity(assessment.supplierId, assessment.tenderId, nextView);
+  const openFocused = async (query: Pick<PairQuery, "supplierId" | "tenderId">, nextView?: WorkspaceView) => {
+    setActionError("");
+    try {
+      const page = await queryTenderMatchPairs(runtime, { ...query, limit: 1 });
+      const best = page.items[0];
+      if (!best) { setActionError("No pair records exist for the selected identity in this evaluation run."); return; }
+      openIdentity(best?.supplierId, best.tenderId, nextView);
+    } catch (error) { setActionError(error instanceof Error ? error.message : "Focused pair query failed."); }
   };
 
   const decide = (decision: ConsultantDecision) => {
@@ -442,7 +435,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
     setActionError("");
     try {
       const nowIso = new Date().toISOString();
-      const saved = loadCaseResult(window.localStorage, result.caseIdentity.id, { tender, supplier, nowIso, assessment: matchByKey.get(result.match.key) });
+      const saved = loadCaseResult(window.localStorage, result.caseIdentity.id, { tender, supplier, nowIso, assessment: detailCache.current.get(result.match.key) ?? result.match });
       if (!saved) { setPersistenceMessage("No saved record exists for this explicit Case ID"); return; }
       setSessionNow(nowIso);
       setCaseResults((current) => ({ ...current, [saved.match.key]: saved }));
@@ -510,7 +503,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
 
     <section className="tb3-layout">
       <aside className="tb3-workspace-nav">
-        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>{navGroups.length} page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
+        <header><span>WORKFLOW</span><b>TenderMatch workspace</b><small>{navGroups.length} page families · {navItems.length} reachable views</small><em className="tb3-runtime-provenance">{runtime.mode === "static-pinned-snapshot" ? "PINNED V1.3 SNAPSHOT" : runtime.mode === "local-pinned-service" ? "PINNED LOCAL SERVICE" : "LOCAL READ-ONLY API"} · AS OF {dateLabel(runtime.summary.retrievedAt)}</em></header>
         <WorkspaceNavigation expanded={expandedNavGroups} navGroups={navGroups} onToggle={toggleNavGroup} onView={changeView} view={view} />
       </aside>
 
@@ -521,19 +514,20 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimePayload 
           </button>
           {mobileNavOpen && <div id="tb3-mobile-workflow-tree"><WorkspaceNavigation compact expanded={expandedNavGroups} navGroups={navGroups} onToggle={toggleNavGroup} onView={(nextView) => { changeView(nextView); setMobileNavOpen(false); }} view={view} /></div>}
         </section>
+        {openingPair && <p role="status" className="tb3-pair-pipeline">Loading selected-pair evidence and explanation…</p>}
         {actionError && <div className="tb3-alert" role="alert"><b>Action needs attention</b><span>{actionError}</span><button onClick={() => setActionError("")} aria-label="Dismiss action error">×</button></div>}
 
         {view !== "dashboard" && view !== "formula" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
           {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
-          {view === "radar-tenders" && <TenderRadarView allMatches={allMatches} suppliers={suppliers} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onOpen={openAssessment} onView={changeView} />}
-          {view === "radar-suppliers" && <SupplierRadarView filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} countryFilters={supplierClusters.map((entry) => entry.label).sort()} visibleSuppliers={visibleSuppliers} allMatches={allMatches} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onOpen={openAssessment} onView={changeView} />}
-          {view === "suppliers" && <SupplierDirectoryView view={view} suppliers={suppliers} profiles={supplierProfiles} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
-          {view === "tenders" && <TenderDirectoryView allMatches={allMatches} suppliers={suppliers} onOpen={openAssessment} />}
-          {view === "matrix" && <MatrixView view={view} suppliers={suppliers} profiles={supplierProfiles} evaluations={runtime.evaluations} matchByKey={matchByKey} onView={changeView} onOpen={openAssessment} />}
-          {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} allMatches={allMatches} tenderMatches={tenderMatches} supplierMatches={supplierMatches} caseResults={caseResults} onView={changeView} onOpen={openAssessment} onDecision={decide} />}
-          {view === "verification" && <VerificationView view={view} supplier={supplier} suppliers={suppliers} evidenceStatus={evidenceStatus} evidenceError={evidenceError} allMatches={allMatches} onView={changeView} onOpen={openAssessment} />}
+          {view === "radar-tenders" && <TenderRadarView pairCount={runtime.evaluationSummary.total} onFocus={openFocused} suppliers={suppliers} filter={tenderRadarFilter} zoom={tenderRadarZoom} clusters={visibleTenderClusters} visibleTenders={visibleTenders} sourceCount={sourceCount} onFilter={setTenderRadarFilter} onZoom={setTenderRadarZoom} onView={changeView} />}
+          {view === "radar-suppliers" && <SupplierRadarView pairCount={runtime.evaluationSummary.total} onFocus={openFocused} filter={supplierRadarFilter} zoom={supplierRadarZoom} clusters={visibleSupplierClusters} countryFilters={supplierClusters.map((entry) => entry.label).sort()} visibleSuppliers={visibleSuppliers} onFilter={setSupplierRadarFilter} onZoom={setSupplierRadarZoom} onView={changeView} />}
+          {view === "suppliers" && <SupplierDirectoryView view={view} suppliers={suppliers} profiles={supplierProfiles} onFocus={openFocused} onView={changeView} />}
+          {view === "tenders" && <TenderDirectoryView leaders={runtime.pairLeadersByTender ?? {}} suppliers={suppliers} onFocus={openFocused} />}
+          {view === "matrix" && <MatrixView view={view} suppliers={suppliers} runtime={runtime} onView={changeView} onOpen={(supplierId, tenderId) => openIdentity(supplierId, tenderId, "match-tenders")} />}
+          {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} runtime={runtime} caseResults={caseResults} onView={changeView} onOpen={openIdentity} onFocus={openFocused} onDecision={decide} />}
+          {view === "verification" && <VerificationView view={view} supplier={supplier} suppliers={suppliers} evidenceStatus={evidenceStatus} evidenceError={evidenceError} onFocus={openFocused} onView={changeView} />}
           {view === "formula" && <TenderMatchFormulaView />}
         </div>
       </section>
@@ -746,32 +740,32 @@ function GeographicRadarMap({ kind, zoom, clusters, markers, clusterNoun }: { ki
 }
 /* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */
 
-function TenderRadarView({ allMatches, suppliers, filter, zoom, clusters, visibleTenders, sourceCount, onFilter, onZoom, onOpen, onView }: { allMatches: MatchAssessment[]; suppliers: SupplierRecord[]; filter: string; zoom: number; clusters: typeof worldRadarClusters; visibleTenders: TenderRecord[]; sourceCount: number; onFilter: (filter: string) => void; onZoom: React.Dispatch<React.SetStateAction<number>>; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void; onView: (view: WorkspaceView) => void }) {
+function TenderRadarView({ pairCount, onFocus, suppliers, filter, zoom, clusters, visibleTenders, sourceCount, onFilter, onZoom, onView }: { pairCount: number; onFocus: (query: { supplierId?: string; tenderId?: string }, view?: WorkspaceView) => void; suppliers: SupplierRecord[]; filter: string; zoom: number; clusters: typeof worldRadarClusters; visibleTenders: TenderRecord[]; sourceCount: number; onFilter: (filter: string) => void; onZoom: React.Dispatch<React.SetStateAction<number>>; onView: (view: WorkspaceView) => void }) {
   return <>
     <ViewHeader eyebrow="02 · MARKET RADAR / CENTRAL ASIA" title="Current Tender Radar" description="Inspect the bounded read-only pilot snapshot. Markers use country-level placement with visual spacing only; they are not precise tender coordinates or a live feed." aside={<div className="tb3-view-badge"><span>CURRENT AT EXTRACTION</span><b>{runtimeTenders.length} records</b></div>} />
     <nav className="tb3-subtabs" aria-label="Market Radar views"><button className="active" aria-current="page"><b>Tenders</b><span>Global procurement demand</span></button><button onClick={() => onView("radar-suppliers")}><b>Suppliers</b><span>Global supplier market</span></button></nav>
-    <section className="tb3-radar-kpis"><Metric label="CURRENT TENDERS" value={runtimeTenders.length} note="current at pilot extraction" signal /><Metric label="COUNTRIES REPRESENTED" value={new Set(runtimeTenders.map((entry) => entry.countryCode)).size} note="of five selected countries" /><Metric label="SOURCE SYSTEMS" value={sourceCount} note="source identities" /><Metric label="PAIR INVENTORY" value={allMatches.length.toLocaleString()} note="completed evaluations" /></section>
-    <section className="tb3-radar-flow"><div className="selected"><b>{runtimeTenders.length}</b><span>Tenders</span></div><i>→</i><div><b>{allMatches.length.toLocaleString()}</b><span>Pair Evaluations</span></div><strong>↕</strong><div className="engine"><small>TENDERMATCH</small><b>Explore</b></div><strong>↕</strong><div><b>{suppliers.length}</b><span>Supplier Profiles</span></div><i>←</i><div><b>5</b><span>Selected Countries</span></div></section>
+    <section className="tb3-radar-kpis"><Metric label="CURRENT TENDERS" value={runtimeTenders.length} note="current at pilot extraction" signal /><Metric label="COUNTRIES REPRESENTED" value={new Set(runtimeTenders.map((entry) => entry.countryCode)).size} note="of five selected countries" /><Metric label="SOURCE SYSTEMS" value={sourceCount} note="source identities" /><Metric label="PAIR INVENTORY" value={pairCount.toLocaleString()} note="completed evaluations" /></section>
+    <section className="tb3-radar-flow"><div className="selected"><b>{runtimeTenders.length}</b><span>Tenders</span></div><i>→</i><div><b>{pairCount.toLocaleString()}</b><span>Pair Evaluations</span></div><strong>↕</strong><div className="engine"><small>TENDERMATCH</small><b>Explore</b></div><strong>↕</strong><div><b>{suppliers.length}</b><span>Supplier Profiles</span></div><i>←</i><div><b>5</b><span>Selected Countries</span></div></section>
     <section className="tb3-radar-layout aggregate">
       <article className="tb3-map-card"><header><div><span>CENTRAL ASIA CURRENT-TENDER SNAPSHOT</span><h2>Country-level tender distribution</h2></div><div className="tb3-zoom"><button aria-label="Zoom tender map out" onClick={() => onZoom((value) => Math.max(1, +(value - .2).toFixed(1)))}>−</button><b>{Math.round(zoom * 100)}%</b><button aria-label="Zoom tender map in" onClick={() => onZoom((value) => Math.min(1.8, +(value + .2).toFixed(1)))}>+</button></div></header>
         <div className="tb3-filter-row">{["All countries", "Kazakhstan", "Kyrgyzstan", "Tajikistan", "Turkmenistan", "Uzbekistan"].map((entry) => <button aria-pressed={filter === entry} className={filter === entry ? "active" : ""} key={entry} onClick={() => onFilter(entry)}>{entry}</button>)}</div>
-        <GeographicRadarMap kind="world" zoom={zoom} clusters={clusters} clusterNoun="current records" markers={visibleTenders.map((entry, index) => { const coordinate = tenderRadarCoordinate(entry, index); return { id: entry.id, label: `Open ${entry.reference}: ${entry.title}; country-level placement in ${entry.country}`, shortLabel: String(index + 1).padStart(2, "0"), selected: false, x: coordinate.x, y: coordinate.y, onSelect: () => { const nextBest = bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)); if (nextBest) onOpen(nextBest, "match-tenders"); } }; })} />
+        <GeographicRadarMap kind="world" zoom={zoom} clusters={clusters} clusterNoun="current records" markers={visibleTenders.map((entry, index) => { const coordinate = tenderRadarCoordinate(entry, index); return { id: entry.id, label: `Open ${entry.reference}: ${entry.title}; country-level placement in ${entry.country}`, shortLabel: String(index + 1).padStart(2, "0"), selected: false, x: coordinate.x, y: coordinate.y, onSelect: () => onFocus({ tenderId: entry.id }, "match-tenders") }; })} />
       </article>
     </section>
   </>;
 }
 
-function SupplierRadarView({ filter, zoom, clusters, countryFilters, visibleSuppliers, allMatches, onFilter, onZoom, onOpen, onView }: { filter: string; zoom: number; clusters: typeof worldRadarClusters; countryFilters: string[]; visibleSuppliers: SupplierRecord[]; allMatches: MatchAssessment[]; onFilter: (filter: string) => void; onZoom: React.Dispatch<React.SetStateAction<number>>; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void; onView: (view: WorkspaceView) => void }) {
+function SupplierRadarView({ filter, zoom, clusters, countryFilters, visibleSuppliers, pairCount, onFocus, onFilter, onZoom, onView }: { filter: string; zoom: number; clusters: typeof worldRadarClusters; countryFilters: string[]; visibleSuppliers: SupplierRecord[]; pairCount: number; onFocus: (query: { supplierId?: string; tenderId?: string }, view?: WorkspaceView) => void; onFilter: (filter: string) => void; onZoom: React.Dispatch<React.SetStateAction<number>>; onView: (view: WorkspaceView) => void }) {
   return <>
     <ViewHeader eyebrow="02 · MARKET RADAR / SUPPLIER MARKET" title="Supplier Market" description="Inspect the 17 under-review GOODS/WORKS supplier profiles through the pinned Neon v1.3 read-only contract. Placement is country-level only; no precise location is inferred." aside={<div className="tb3-view-badge"><span>NEON V1.3 · READ ONLY</span><b>{visibleSuppliers.length} suppliers</b></div>} />
     <nav className="tb3-subtabs" aria-label="Market Radar views"><button onClick={() => onView("radar-tenders")}><b>Tenders</b><span>Global procurement demand</span></button><button className="active" aria-current="page"><b>Suppliers</b><span>Global supplier market</span></button></nav>
-    <section className="tb3-radar-kpis"><Metric label="SUPPLIER PROFILES" value={visibleSuppliers.length} note="under review" signal /><Metric label="VERIFIED CLAIMS" value="0" note="no semantic inflation" /><Metric label="PAIR INVENTORY" value={allMatches.length.toLocaleString()} note="server-computed" /><Metric label="COUNTRIES" value={new Set(visibleSuppliers.map((entry) => entry.profile?.countryCode)).size} note="country-level evidence" /></section>
-    <section className="tb3-radar-flow"><div><b>{runtimeTenders.length}</b><span>Tenders</span></div><i>→</i><div><b>{allMatches.length.toLocaleString()}</b><span>Pair Evaluations</span></div><strong>↕</strong><div className="engine"><small>TENDERMATCH</small><b>Explore</b></div><strong>↕</strong><div className="selected"><b>{visibleSuppliers.length}</b><span>Supplier Profiles</span></div><i>←</i><div><b>{new Set(visibleSuppliers.map((entry) => entry.profile?.countryCode)).size}</b><span>Supported Countries</span></div></section>
-    <section className="tb3-radar-layout aggregate"><article className="tb3-map-card"><header><div><span>GEOGRAPHIC SUPPLIER DENSITY · UNDER REVIEW</span><h2>Global country-level supplier distribution</h2></div><div className="tb3-zoom"><button aria-label="Zoom supplier map out" onClick={() => onZoom((value) => Math.max(1, +(value - .2).toFixed(1)))}>−</button><b>{Math.round(zoom * 100)}%</b><button aria-label="Zoom supplier map in" onClick={() => onZoom((value) => Math.min(1.8, +(value + .2).toFixed(1)))}>+</button></div></header><div className="tb3-filter-row">{["All suppliers", ...countryFilters].map((entry) => <button aria-pressed={filter === entry} className={filter === entry ? "active" : ""} key={entry} onClick={() => onFilter(entry)}>{entry}</button>)}</div><GeographicRadarMap kind="supplier-world" zoom={zoom} clusters={clusters} clusterNoun="suppliers" markers={visibleSuppliers.map((entry, index) => { const coordinate = supplierCountryCoordinate(entry, index); return { id: entry.id, label: `Open supplier profile ${entry.legalEnglishName}; country-level placement in ${coordinate.group}`, shortLabel: String(index + 1).padStart(2, "0"), selected: false, x: coordinate.x, y: coordinate.y, onSelect: () => { const nextBest = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (nextBest) onOpen(nextBest, "verification"); } }; })} /></article></section>
+    <section className="tb3-radar-kpis"><Metric label="SUPPLIER PROFILES" value={visibleSuppliers.length} note="under review" signal /><Metric label="VERIFIED CLAIMS" value="0" note="no semantic inflation" /><Metric label="PAIR INVENTORY" value={pairCount.toLocaleString()} note="server-computed" /><Metric label="COUNTRIES" value={new Set(visibleSuppliers.map((entry) => entry.profile?.countryCode)).size} note="country-level evidence" /></section>
+    <section className="tb3-radar-flow"><div><b>{runtimeTenders.length}</b><span>Tenders</span></div><i>→</i><div><b>{pairCount.toLocaleString()}</b><span>Pair Evaluations</span></div><strong>↕</strong><div className="engine"><small>TENDERMATCH</small><b>Explore</b></div><strong>↕</strong><div className="selected"><b>{visibleSuppliers.length}</b><span>Supplier Profiles</span></div><i>←</i><div><b>{new Set(visibleSuppliers.map((entry) => entry.profile?.countryCode)).size}</b><span>Supported Countries</span></div></section>
+    <section className="tb3-radar-layout aggregate"><article className="tb3-map-card"><header><div><span>GEOGRAPHIC SUPPLIER DENSITY · UNDER REVIEW</span><h2>Global country-level supplier distribution</h2></div><div className="tb3-zoom"><button aria-label="Zoom supplier map out" onClick={() => onZoom((value) => Math.max(1, +(value - .2).toFixed(1)))}>−</button><b>{Math.round(zoom * 100)}%</b><button aria-label="Zoom supplier map in" onClick={() => onZoom((value) => Math.min(1.8, +(value + .2).toFixed(1)))}>+</button></div></header><div className="tb3-filter-row">{["All suppliers", ...countryFilters].map((entry) => <button aria-pressed={filter === entry} className={filter === entry ? "active" : ""} key={entry} onClick={() => onFilter(entry)}>{entry}</button>)}</div><GeographicRadarMap kind="supplier-world" zoom={zoom} clusters={clusters} clusterNoun="suppliers" markers={visibleSuppliers.map((entry, index) => { const coordinate = supplierCountryCoordinate(entry, index); return { id: entry.id, label: `Open supplier profile ${entry.legalEnglishName}; country-level placement in ${coordinate.group}`, shortLabel: String(index + 1).padStart(2, "0"), selected: false, x: coordinate.x, y: coordinate.y, onSelect: () => onFocus({ supplierId: entry.id }, "verification") }; })} /></article></section>
   </>;
 }
 
-function SupplierDirectoryView({ view, suppliers, profiles, allMatches, onView, onOpen }: { view: WorkspaceView; suppliers: SupplierRecord[]; profiles: SupplierProfileApiRecord[]; allMatches: MatchAssessment[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+function SupplierDirectoryView({ view, suppliers, profiles, onFocus, onView }: { view: WorkspaceView; suppliers: SupplierRecord[]; profiles: SupplierProfileApiRecord[]; onFocus: (query: { supplierId?: string; tenderId?: string }, view?: WorkspaceView) => void; onView: (view: WorkspaceView) => void }) {
   const profileById = new Map(profiles.map((profile) => [`supplier:NEON:${profile.canonicalEntityId}`, profile]));
   const [query, setQuery] = useState("");
   const [readiness, setReadiness] = useState("all");
@@ -804,7 +798,7 @@ function SupplierDirectoryView({ view, suppliers, profiles, allMatches, onView, 
       </DataTableToolbar>
       <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-supplier-table" data-table-format="entity-readiness-grid">
         <thead><tr><th scope="col" className="sticky-column">Supplier</th><th scope="col">Readiness</th><th scope="col">Markets / categories</th><th scope="col" className="numeric">Verified</th><th scope="col" className="numeric">Stated</th><th scope="col" className="numeric">Inferred</th><th scope="col" className="numeric">Missing</th><th scope="col" className="action-column">Action</th></tr></thead>
-        <tbody>{visibleSuppliers.map((entry) => { const profile = profileById.get(entry.id)!; const openEvidence = () => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best, "verification"); }; return <tr key={entry.id}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={openEvidence}><b>{entry.legalEnglishName}</b><span>{profile.countryCode ?? "?"} · {standardTableText(profile.classification)} · {standardTableText(supplierActivity(entry))}</span><small>{standardTableText(profile.verificationStatus)} · {profile.profileVersion}</small></button></th><td><span className="tb3-status-text neutral">{readinessLabel(profile.readinessStatus)}</span><small>Source state · not a score</small></td><td><span>{entry.exportMarkets.slice(0, 2).join(" · ") || supplierCountryNames[profile.countryCode ?? ""] || "Not disclosed"}</span><small>{entry.categories.slice(0, 3).map(standardTableText).join(" · ") || "Categories not disclosed"}</small></td><td className="numeric">{profile.evidenceVerifiedCount}</td><td className="numeric">{profile.evidenceStatedUnverifiedCount}</td><td className="numeric">{profile.evidenceInferredCount}</td><td className="numeric">{profile.evidenceUnknownCount}</td><td className="action-column"><button className="tb3-table-action" onClick={openEvidence}>Review</button></td></tr>; })}</tbody>
+        <tbody>{visibleSuppliers.map((entry) => { const profile = profileById.get(entry.id)!; const openEvidence = () => onFocus({ supplierId: entry.id }, "verification"); return <tr key={entry.id}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={openEvidence}><b>{entry.legalEnglishName}</b><span>{profile.countryCode ?? "?"} · {standardTableText(profile.classification)} · {standardTableText(supplierActivity(entry))}</span><small>{standardTableText(profile.verificationStatus)} · {profile.profileVersion}</small></button></th><td><span className="tb3-status-text neutral">{readinessLabel(profile.readinessStatus)}</span><small>Source state · not a score</small></td><td><span>{entry.exportMarkets.slice(0, 2).join(" · ") || supplierCountryNames[profile.countryCode ?? ""] || "Not disclosed"}</span><small>{entry.categories.slice(0, 3).map(standardTableText).join(" · ") || "Categories not disclosed"}</small></td><td className="numeric">{profile.evidenceVerifiedCount}</td><td className="numeric">{profile.evidenceStatedUnverifiedCount}</td><td className="numeric">{profile.evidenceInferredCount}</td><td className="numeric">{profile.evidenceUnknownCount}</td><td className="action-column"><button className="tb3-table-action" onClick={openEvidence}>Review</button></td></tr>; })}</tbody>
       </table></div>
       {visibleSuppliers.length === 0 && <p className="tb3-table-empty">No suppliers match the current table filters.</p>}
       <TablePager count={filteredSuppliers.length} page={safePage} pageSize={pageSize} onPage={setPage} noun="suppliers" />
@@ -812,18 +806,18 @@ function SupplierDirectoryView({ view, suppliers, profiles, allMatches, onView, 
   </>;
 }
 
-function TenderDirectoryView({ allMatches, suppliers, onOpen }: { allMatches: MatchAssessment[]; suppliers: SupplierRecord[]; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
+function TenderDirectoryView({ leaders, suppliers, onFocus }: { leaders: Record<string, TenderMatchCompactPair>; suppliers: SupplierRecord[]; onFocus: (query: { supplierId?: string; tenderId?: string }, view?: WorkspaceView) => void }) {
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("all");
   const [sort, setSort] = useState("deadline-asc");
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(0);
-  const tenderRows = useMemo(() => runtimeTenders.map((entry) => ({ entry, best: bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)) })), [allMatches]);
+  const tenderRows = useMemo(() => runtimeTenders.map((entry) => ({ entry, best: leaders[entry.id], freshness: deriveTenderFreshness(entry, new Date().toISOString()) })), [leaders]);
   const filteredTenders = useMemo(() => {
     const search = normalizedSearch(query);
     return tenderRows.filter(({ entry }) => (!search || [entry.title, entry.reference, entry.buyer, entry.country, entry.object, entry.sourceLabel].join(" ").toLocaleLowerCase().includes(search)) && (country === "all" || entry.country === country)).sort((left, right) => {
       if (sort === "title-asc") return left.entry.title.localeCompare(right.entry.title);
-      if (sort === "score-desc") return (right.best.auditedMatch.value ?? -1) - (left.best.auditedMatch.value ?? -1) || left.entry.deadlineAt.localeCompare(right.entry.deadlineAt);
+      if (sort === "score-desc") return (right.best?.pairScore ?? -1) - (left.best?.pairScore ?? -1) || left.entry.deadlineAt.localeCompare(right.entry.deadlineAt);
       if (sort === "budget-desc") {
         const budgetValue = (entry: TenderRecord) => Number(String(entry.budget?.usd ?? entry.budget?.amount ?? "-1").replace(/,/g, ""));
         return budgetValue(right.entry) - budgetValue(left.entry) || left.entry.title.localeCompare(right.entry.title);
@@ -842,7 +836,7 @@ function TenderDirectoryView({ allMatches, suppliers, onOpen }: { allMatches: Ma
       </DataTableToolbar>
       <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-tender-table" data-table-format="entity-readiness-grid">
         <thead><tr><th scope="col" className="sticky-column">Tender / buyer</th><th scope="col">Object</th><th scope="col">Country</th><th scope="col">Source</th><th scope="col" className="numeric">Budget</th><th scope="col">Deadline</th><th scope="col" className="numeric">Days</th><th scope="col" className="numeric">Top score</th><th scope="col">Best supplier</th><th scope="col" className="action-column">Action</th></tr></thead>
-        <tbody>{visibleTenders.map(({ entry, best }) => { const openPairReview = () => onOpen(best, "match-tenders"); return <tr key={entry.id}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={openPairReview}><b>{entry.title}</b><span>{entry.reference}</span><small>{entry.buyer}</small></button></th><td>{standardTableText(entry.object)}</td><td>{entry.country}</td><td>{entry.sourceLabel}</td><td className="numeric">{entry.budgetLabel}</td><td><time dateTime={entry.deadlineAt}>{dateLabel(entry.deadlineAt)}</time><small><span className={`tb3-status-text ${best.tenderFreshness.status === "closed" ? "danger" : "neutral"}`}>{standardTableText(best.tenderFreshness.status)}</span></small></td><td className="numeric">{best.tenderFreshness.daysRemaining}</td><td className="numeric"><b className={`tb3-score-text ${scoreBand(best.auditedMatch.value)}`}>{best.auditedMatch.value ?? 0}</b><small>{best.auditedMatch.dataCoverage ?? 0}% coverage</small></td><td>{suppliers.find((supplier) => supplier.id === best.supplierId)?.legalEnglishName ?? "Not evaluated"}</td><td className="action-column"><button className="tb3-table-action" onClick={openPairReview}>Open</button></td></tr>; })}</tbody>
+        <tbody>{visibleTenders.map(({ entry, best, freshness }) => { const openPairReview = () => onFocus({ tenderId: entry.id }, "match-tenders"); return <tr key={entry.id}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={openPairReview}><b>{entry.title}</b><span>{entry.reference}</span><small>{entry.buyer}</small></button></th><td>{standardTableText(entry.object)}</td><td>{entry.country}</td><td>{entry.sourceLabel}</td><td className="numeric">{entry.budgetLabel}</td><td><time dateTime={entry.deadlineAt}>{dateLabel(entry.deadlineAt)}</time><small><span className={`tb3-status-text ${freshness.status === "closed" ? "danger" : "neutral"}`}>{standardTableText(freshness.status)}</span></small></td><td className="numeric">{freshness.daysRemaining}</td><td className="numeric"><b className={`tb3-score-text ${scoreBand(best?.pairScore ?? null)}`}>{best?.pairScore ?? "—"}</b><small>{best ? `${best.dataCoverage}% coverage` : "No summary loaded"}</small></td><td>{suppliers.find((supplier) => supplier.id === best?.supplierId)?.legalEnglishName ?? "Not evaluated"}</td><td className="action-column"><button className="tb3-table-action" onClick={openPairReview}>Open</button></td></tr>; })}</tbody>
       </table></div>
       {visibleTenders.length === 0 && <p className="tb3-table-empty">No tenders match the current table filters.</p>}
       <TablePager count={filteredTenders.length} page={safePage} pageSize={pageSize} onPage={setPage} noun="tenders" />
@@ -850,124 +844,25 @@ function TenderDirectoryView({ allMatches, suppliers, onOpen }: { allMatches: Ma
   </>;
 }
 
-function MatrixView({ view, suppliers, profiles, evaluations, matchByKey, onView, onOpen }: { view: WorkspaceView; suppliers: SupplierRecord[]; profiles: SupplierProfileApiRecord[]; evaluations: ExploratoryMatchEvaluation[]; matchByKey: Map<string, MatchAssessment>; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment, view?: WorkspaceView) => void }) {
-  const [supplierQuery, setSupplierQuery] = useState("");
-  const [tenderQuery, setTenderQuery] = useState("");
-  const [supplierSort, setSupplierSort] = useState("name-asc");
-  const [supplierPageSize, setSupplierPageSize] = useState(10);
-  const [tenderPageSize, setTenderPageSize] = useState(25);
-  const [supplierPage, setSupplierPage] = useState(0);
-  const [tenderPage, setTenderPage] = useState(0);
-  const [excelExporting, setExcelExporting] = useState(false);
-  const filteredTenders = useMemo(() => {
-    const search = normalizedSearch(tenderQuery);
-    return runtimeTenders.filter((entry) => !search || [entry.reference, entry.title, entry.country, entry.object].join(" ").toLocaleLowerCase().includes(search));
-  }, [tenderQuery]);
-  const filteredSuppliers = useMemo(() => {
-    const search = normalizedSearch(supplierQuery);
-    const rows = suppliers.filter((entry) => !search || [entry.legalEnglishName, entry.profile?.countryCode, supplierActivity(entry)].join(" ").toLocaleLowerCase().includes(search));
-    return rows.sort((left, right) => {
-      if (supplierSort === "score-desc") {
-        const maximum = (supplier: SupplierRecord) => Math.max(...filteredTenders.map((tender) => matchByKey.get(matchKey(tender, supplier))?.auditedMatch.value ?? -1));
-        return maximum(right) - maximum(left) || left.legalEnglishName.localeCompare(right.legalEnglishName);
-      }
-      return supplierSort === "name-desc" ? right.legalEnglishName.localeCompare(left.legalEnglishName) : left.legalEnglishName.localeCompare(right.legalEnglishName);
-    });
-  }, [filteredTenders, matchByKey, supplierQuery, supplierSort, suppliers]);
-  const safeSupplierPage = Math.min(supplierPage, Math.max(0, Math.ceil(filteredSuppliers.length / supplierPageSize) - 1));
-  const safeTenderPage = Math.min(tenderPage, Math.max(0, Math.ceil(filteredTenders.length / tenderPageSize) - 1));
-  const visibleSuppliers = filteredSuppliers.slice(safeSupplierPage * supplierPageSize, (safeSupplierPage + 1) * supplierPageSize);
-  const visibleMatrixTenders = filteredTenders.slice(safeTenderPage * tenderPageSize, (safeTenderPage + 1) * tenderPageSize);
-  const matches = [...matchByKey.values()];
-  const numeric = matches.filter((entry) => typeof entry.auditedMatch.value === "number").length;
-  const scoreBands = [
-    { label: "Score 0", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) === 0).length },
-    { label: "Score 1–20", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 1 && (entry.auditedMatch.value ?? 0) <= 20).length },
-    { label: "Score 21–40", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 21 && (entry.auditedMatch.value ?? 0) <= 40).length },
-    { label: "Score 41–60", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 41 && (entry.auditedMatch.value ?? 0) <= 60).length },
-    { label: "Score 61–80", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 61 && (entry.auditedMatch.value ?? 0) <= 80).length },
-    { label: "Score 81–100", count: matches.filter((entry) => (entry.auditedMatch.value ?? 0) >= 81).length },
-  ];
-  async function exportExcel() {
-    setExcelExporting(true);
-    try {
-      const bytes = await tenderMatchFormulaToExcel(evaluations, runtimeTenders, profiles);
-      downloadBytes(tenderMatchFormulaExcelFileName(evaluations[0]?.evaluatedAt ?? "undated"), bytes);
-    } finally {
-      setExcelExporting(false);
-    }
-  }
+function MatrixView({ view, suppliers, runtime, onView, onOpen }: { view: WorkspaceView; suppliers: SupplierRecord[]; runtime: TenderMatchRuntimeCatalog; onView: (view: WorkspaceView) => void; onOpen: (supplierId: string, tenderId: string) => void }) {
   return <>
-    <ViewHeader eyebrow="05 · MATCH MATRIX / SCORING" title="Full Match Matrix" description={`Every Company × Tender pair has a coverage-adjusted Formula v1.1 score from 0 to 100. All ${numeric} cells are numeric; coverage and evidence confidence remain separate, and no Match threshold is defined.`} aside={<div className="tb3-matrix-actions"><div className="tb3-directory-count"><b>{suppliers.length * runtimeTenders.length}</b><span>numeric pair scores</span></div><button type="button" onClick={() => downloadText(tenderMatchFormulaExportFileName(evaluations[0]?.evaluatedAt ?? "undated"), formulaEvaluationsToCsv(evaluations, runtimeTenders, profiles))}>Export Formula v1.1 CSV</button><button type="button" disabled={excelExporting} onClick={exportExcel}>{excelExporting ? "Preparing Excel…" : "Export Formula v1.1 Excel"}</button></div>} />
+    <ViewHeader eyebrow="05 · MATCH MATRIX / SCORING" title="Full Match Matrix" description="Formula v1.1 uses a fixed 100-point denominator. Pair Score, scope, Data Coverage, Evidence Confidence and retrieval relevance remain separate; no Match threshold is defined." aside={<div className="tb3-directory-count"><b>{runtime.evaluationSummary.total.toLocaleString()}</b><span>pair records · paginated access</span></div>} />
     <MatchModeTabs view={view} onChange={onView} supplierCount={suppliers.length} />
-    <section className="tb3-status-summary" aria-label="Formula v1.1 numeric score distribution">
-      {scoreBands.map((band) => <div key={band.label}><b>{band.count}</b><span>{band.label}</span></div>)}
-    </section>
-    <section className="tb3-matrix-panel tb3-entity-grid-panel" data-table-format="entity-readiness-grid"><header><div><span>FORMULA V1.1 · SCORING ONLY</span><h2>Evidence-aware pair scores</h2><p>Select a cell to inspect score, coverage, confidence, evidence and human disposition. Both axes are filtered and paginated for large inventories.</p></div><div className="tb3-matrix-legend"><span className="priority">61–100</span><span className="review">41–60</span><span className="missing">0–40 · inspect coverage</span></div></header>
-      <DataTableToolbar label="Match matrix controls" query={supplierQuery} searchLabel="Filter suppliers" onQuery={setSupplierQuery} resultLabel={`${filteredSuppliers.length.toLocaleString()} suppliers × ${filteredTenders.length.toLocaleString()} tenders · ${(filteredSuppliers.length * filteredTenders.length).toLocaleString()} visible-filter pairs`} pageSize={supplierPageSize} onPageSize={setSupplierPageSize}>
-        <label><span>Tender filter</span><input type="search" value={tenderQuery} placeholder="Reference, country or object" onChange={(event) => setTenderQuery(event.target.value)} /></label>
-        <label><span>Supplier sort</span><select value={supplierSort} onChange={(event) => setSupplierSort(event.target.value)}><option value="name-asc">Supplier A–Z</option><option value="name-desc">Supplier Z–A</option><option value="score-desc">Highest score</option></select></label>
-        <label><span>Tender columns</span><select value={tenderPageSize} onChange={(event) => setTenderPageSize(Number(event.target.value))}>{[10, 25, 50].map((value) => <option value={value} key={value}>{value}</option>)}</select></label>
-      </DataTableToolbar>
-      <div className="tb3-matrix-pagers"><TablePager count={filteredSuppliers.length} page={safeSupplierPage} pageSize={supplierPageSize} onPage={setSupplierPage} noun="suppliers" /><TablePager count={filteredTenders.length} page={safeTenderPage} pageSize={tenderPageSize} onPage={setTenderPage} noun="tenders" /></div>
-      <div className="tb3-matrix-scroll" role="region" aria-label="Full supplier by tender score matrix"><div className="tb3-matrix-table tb3-entity-matrix" role="grid" aria-rowcount={filteredSuppliers.length + 1} aria-colcount={filteredTenders.length + 1} style={{ minWidth: `${240 + visibleMatrixTenders.length * 88}px` }}><div className="tb3-matrix-header" role="row" style={{ gridTemplateColumns: `240px repeat(${visibleMatrixTenders.length}, 88px)` }}><div role="columnheader"><b>Supplier</b><span>Readiness</span></div>{visibleMatrixTenders.map((entry) => <div role="columnheader" key={entry.id} title={`${entry.reference} · ${entry.country} · ${standardTableText(entry.object)}`}><b>{entry.reference}</b><small>{entry.country}</small><em>{standardTableText(entry.object)}</em></div>)}</div>{visibleSuppliers.map((company) => <div className="tb3-matrix-row" role="row" style={{ gridTemplateColumns: `240px repeat(${visibleMatrixTenders.length}, 88px)` }} key={company.id}><div className="tb3-matrix-company" role="rowheader"><span>{company.profile?.countryCode ?? "?"}</span><p><b>{company.legalEnglishName}</b><small>{standardTableText(supplierActivity(company))}</small><em>{company.readiness.label}</em></p></div>{visibleMatrixTenders.map((opportunity) => { const assessment = matchByKey.get(matchKey(opportunity, company))!; const score = assessment.auditedMatch.value ?? 0; const coverage = assessment.auditedMatch.dataCoverage ?? 0; return <button role="gridcell" className={`tb3-matrix-cell ${scoreBand(score)}`} key={opportunity.id} onClick={() => onOpen(assessment, "match-tenders")} aria-label={`Open ${company.legalEnglishName} and ${opportunity.reference}; pair score ${score} of 100, ${coverage} percent coverage`}><b>{score}</b><span>{coverage}%</span></button>; })}</div>)}</div></div>
-      {(visibleSuppliers.length === 0 || visibleMatrixTenders.length === 0) && <p className="tb3-table-empty">No matrix pairs match the current filters.</p>}
-    </section>
+    <PagedPairMatrix runtime={runtime} suppliers={suppliers} onOpen={onOpen} />
   </>;
 }
 
-function MatchWorkspaceView({ view, tender, supplier, suppliers, result, allMatches, tenderMatches, supplierMatches, caseResults, onView, onOpen, onDecision }: { view: "match-tenders" | "match-suppliers"; tender: TenderRecord; supplier: SupplierRecord; suppliers: SupplierRecord[]; result: TenderMatchCaseResult; allMatches: MatchAssessment[]; tenderMatches: MatchAssessment[]; supplierMatches: MatchAssessment[]; caseResults: Record<string, TenderMatchCaseResult>; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void; onDecision: (decision: ConsultantDecision) => void }) {
-  const [selectorQuery, setSelectorQuery] = useState("");
-  const [rankingQuery, setRankingQuery] = useState("");
-  const [rankingSort, setRankingSort] = useState("score-desc");
-  const [pageSize, setPageSize] = useState(25);
-  const [page, setPage] = useState(0);
-  const selectorSearch = normalizedSearch(selectorQuery);
-  const selectorRecords = view === "match-tenders"
-    ? runtimeTenders.filter((entry) => !selectorSearch || [entry.reference, entry.title, entry.country, entry.sourceLabel].join(" ").toLocaleLowerCase().includes(selectorSearch))
-    : suppliers.filter((entry) => !selectorSearch || [entry.legalEnglishName, entry.profile?.countryCode, supplierActivity(entry)].join(" ").toLocaleLowerCase().includes(selectorSearch));
-  const baseMatches = view === "match-tenders" ? tenderMatches : supplierMatches;
-  const filteredMatches = useMemo(() => {
-    const search = normalizedSearch(rankingQuery);
-    return baseMatches.filter((assessment) => {
-      const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!;
-      const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!;
-      return !search || [rowSupplier.legalEnglishName, rowTender.reference, rowTender.title, rowTender.country, supplierActivity(rowSupplier)].join(" ").toLocaleLowerCase().includes(search);
-    }).sort((left, right) => {
-      if (rankingSort === "coverage-desc") return (right.auditedMatch.dataCoverage ?? -1) - (left.auditedMatch.dataCoverage ?? -1) || compareMatches(left, right);
-      if (rankingSort === "name-asc") {
-        const name = (assessment: MatchAssessment) => view === "match-tenders" ? suppliers.find((entry) => entry.id === assessment.supplierId)?.legalEnglishName ?? "" : runtimeTenders.find((entry) => entry.id === assessment.tenderId)?.title ?? "";
-        return name(left).localeCompare(name(right));
-      }
-      if (rankingSort === "decision-asc") {
-        const decision = (assessment: MatchAssessment) => caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision;
-        return decision(left).localeCompare(decision(right)) || compareMatches(left, right);
-      }
-      return compareMatches(left, right);
-    });
-  }, [baseMatches, caseResults, rankingQuery, rankingSort, suppliers, view]);
-  const safePage = Math.min(page, Math.max(0, Math.ceil(filteredMatches.length / pageSize) - 1));
-  const visibleMatches = filteredMatches.slice(safePage * pageSize, (safePage + 1) * pageSize);
+function MatchWorkspaceView({ view, tender, supplier, suppliers, result, runtime, caseResults, onView, onOpen, onFocus, onDecision }: { view: "match-tenders" | "match-suppliers"; tender: TenderRecord; supplier: SupplierRecord; suppliers: SupplierRecord[]; result: TenderMatchCaseResult; runtime: TenderMatchRuntimeCatalog; caseResults: Record<string, TenderMatchCaseResult>; onView: (view: WorkspaceView) => void; onOpen: (supplierId: string, tenderId: string) => void; onFocus: (query: { supplierId?: string; tenderId?: string }, view?: WorkspaceView) => void; onDecision: (decision: ConsultantDecision) => void }) {
   return <>
-    <ViewHeader eyebrow={`05 · MATCH MATRIX / ${view === "match-tenders" ? "TENDER-FIRST" : "SUPPLIER-FIRST"}`} title={view === "match-tenders" ? "Review by Tenders" : "Review by Suppliers"} description="Inspect deterministic Formula v1.1 scores. Pair Score, assessed-only fit, Data Coverage, Evidence Confidence, supplier readiness, freshness and consultant disposition remain separate." aside={<div className="tb3-replay" role="status"><span>✓</span><p><b>Formula v1.1 ready</b><small>{allMatches.length} / {allMatches.length} numeric pair scores completed</small></p></div>} />
+    <ViewHeader eyebrow={`05 · MATCH MATRIX / ${view === "match-tenders" ? "TENDER-FIRST" : "SUPPLIER-FIRST"}`} title={view === "match-tenders" ? "Review by Tenders" : "Review by Suppliers"} description="Review a ranked, paginated set of compact pair records. Detailed evidence loads only for the selected pair; full TORS/AI is a separate request." />
     <MatchModeTabs view={view} onChange={onView} supplierCount={suppliers.length} />
-    <div className="tb3-progress" role="progressbar" aria-label="Server-computed pair inventory progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}><i style={{ width: "100%" }} /><span>100%</span></div>
-    <section className="tb3-match-workspace">
-      <aside className="tb3-picker tb3-compact-picker" data-density="compact"><header><span>{view === "match-tenders" ? "Tenders" : "Suppliers"}</span><b>{selectorRecords.length} of {view === "match-tenders" ? runtimeTenders.length : suppliers.length}</b><input aria-label={`Filter ${view === "match-tenders" ? "tenders" : "suppliers"}`} type="search" value={selectorQuery} placeholder={`Filter ${view === "match-tenders" ? "tenders" : "suppliers"}`} onChange={(event) => setSelectorQuery(event.target.value)} /></header>{view === "match-tenders" ? (selectorRecords as TenderRecord[]).map((entry) => <button aria-label={`${entry.reference}: ${entry.title}, ${entry.country}, deadline ${dateLabel(entry.deadlineAt)}`} aria-pressed={entry.id === tender.id} className={`tb3-picker-row tb3-picker-tender${entry.id === tender.id ? " active" : ""}`} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.tenderId === entry.id)); if (best) onOpen(best); }}><b>{entry.reference}</b><p title={entry.title}>{entry.title}</p><small>{entry.country} · {dateLabel(entry.deadlineAt)}</small></button>) : (selectorRecords as SupplierRecord[]).map((entry) => <button aria-pressed={entry.id === supplier.id} className={`tb3-picker-row tb3-picker-supplier${entry.id === supplier.id ? " active" : ""}`} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{standardTableText(supplierActivity(entry))} · {entry.readiness.label}</small></p></button>)}</aside>
-      <article className="tb3-ranking"><header><div><span>{view === "match-tenders" ? tender.sourceLabel : "Selected supplier"}</span><h2>{view === "match-tenders" ? tender.title : supplier.legalEnglishName}</h2><p>{view === "match-tenders" ? `${tender.buyer} · ${tender.country}` : `${standardTableText(supplierActivity(supplier))} · ${standardTableText(supplier.profile?.verificationStatus ?? "unknown")}`}</p></div><div><small>{view === "match-tenders" ? "Deadline" : "Readiness"}</small><b>{view === "match-tenders" ? dateLabel(tender.deadlineAt) : supplier.readiness.label}</b><small>{view === "match-tenders" ? "Status" : "Verified claims"}</small><b>{view === "match-tenders" ? standardTableText(result.match.tenderFreshness.status) : "0"}</b></div></header>
-        <DataTableToolbar label="Pair ranking table controls" query={rankingQuery} searchLabel={view === "match-tenders" ? "Filter suppliers" : "Filter tenders"} onQuery={setRankingQuery} resultLabel={`${filteredMatches.length} pair results`} pageSize={pageSize} onPageSize={setPageSize}>
-          <label><span>Sort</span><select value={rankingSort} onChange={(event) => setRankingSort(event.target.value)}><option value="score-desc">Pair score</option><option value="coverage-desc">Data coverage</option><option value="name-asc">Name A–Z</option><option value="decision-asc">Decision</option></select></label>
-        </DataTableToolbar>
-        <div className="tb3-data-table-scroll"><table className="tb3-data-table tb3-entity-grid tb3-ranking-table" data-table-format="entity-readiness-grid"><thead><tr><th scope="col" className="sticky-column">{view === "match-tenders" ? "Supplier" : "Tender"}</th><th scope="col">Readiness</th><th scope="col" className="numeric">Pair score</th><th scope="col" className="numeric">Coverage</th><th scope="col" className="numeric">Confidence</th><th scope="col" className="numeric">Evidence</th><th scope="col">Decision</th><th scope="col" className="action-column">Action</th></tr></thead><tbody>{visibleMatches.map((assessment) => { const rowSupplier = suppliers.find((entry) => entry.id === assessment.supplierId)!; const rowTender = runtimeTenders.find((entry) => entry.id === assessment.tenderId)!; const cachedDecision = caseResults[assessment.key]?.match.consultantDecision ?? assessment.consultantDecision; return <tr className={assessment.key === result.match.key ? "selected" : ""} key={assessment.key}><th scope="row" className="sticky-column"><button className="tb3-table-primary" onClick={() => onOpen(assessment)}><b>{view === "match-tenders" ? rowSupplier.legalEnglishName : rowTender.title}</b><span>{view === "match-tenders" ? `${rowSupplier.profile?.countryCode ?? "?"} · ${standardTableText(supplierActivity(rowSupplier))}` : `${rowTender.reference} · ${rowTender.country}`}</span><small>{view === "match-tenders" ? standardTableText(rowSupplier.profile?.verificationStatus ?? "unknown") : standardTableText(rowTender.object)}</small></button></th><td><span className="tb3-status-text neutral">{rowSupplier.readiness.label}</span></td><td className="numeric"><b className={`tb3-score-text ${scoreBand(assessment.auditedMatch.value)}`}>{assessment.auditedMatch.value ?? 0}</b></td><td className="numeric">{assessment.auditedMatch.dataCoverage ?? 0}%</td><td className="numeric">{assessment.auditedMatch.evidenceConfidence ?? 0}%</td><td className="numeric">{assessment.auditedMatch.evidenceIds.length}</td><td><span className={`tb3-status-text ${cachedDecision === "rejected" ? "danger" : cachedDecision === "approved" ? "success" : "neutral"}`}>{decisionLabel[cachedDecision]}</span></td><td className="action-column"><button className="tb3-table-action" onClick={() => onOpen(assessment)}>Review</button></td></tr>; })}</tbody></table></div>
-        {visibleMatches.length === 0 && <p className="tb3-table-empty">No pair results match the current filter.</p>}
-        <TablePager count={filteredMatches.length} page={safePage} pageSize={pageSize} onPage={setPage} noun="pair results" />
-      </article>
+    <PagedPairRanking key={`${view}:${view === "match-tenders" ? tender.id : supplier.id}`} runtime={runtime} view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} caseResults={caseResults} onOpen={onOpen} onFocus={onFocus}>
       <MatchReviewPanel result={result} tender={tender} supplier={supplier} onViewChange={onView} onDecision={onDecision} />
-    </section>
+    </PagedPairRanking>
   </>;
 }
 
-function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceError, allMatches, onView, onOpen }: { view: WorkspaceView; supplier: SupplierRecord; suppliers: SupplierRecord[]; evidenceStatus: "idle" | "loading" | "ready" | "error"; evidenceError: string; allMatches: MatchAssessment[]; onView: (view: WorkspaceView) => void; onOpen: (assessment: MatchAssessment) => void }) {
+function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceError, onFocus, onView }: { view: WorkspaceView; supplier: SupplierRecord; suppliers: SupplierRecord[]; evidenceStatus: "idle" | "loading" | "ready" | "error"; evidenceError: string; onFocus: (query: { supplierId?: string; tenderId?: string }, view?: WorkspaceView) => void; onView: (view: WorkspaceView) => void }) {
   const profile = supplier.profile!;
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -978,7 +873,7 @@ function VerificationView({ view, supplier, suppliers, evidenceStatus, evidenceE
   return <>
     <ViewHeader eyebrow="03 · SUPPLIERS / VERIFICATION" title="Evidence Review" description="Inspect the safe non-contact evidence projection, claim class, source record, artifact availability and explicit unknowns. This batch contains zero VERIFIED claims." aside={<div className="tb3-directory-count"><b>0/{profile.evidenceClaimCount}</b><span>verified profile claims</span></div>} />
     <SupplierTabs view={view} onChange={onView} />
-    <section className="tb3-evidence-layout"><aside className="tb3-picker tb3-compact-picker" data-density="compact"><header><span>Suppliers</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button aria-pressed={entry.id === supplier.id} className={`tb3-picker-row tb3-picker-supplier${entry.id === supplier.id ? " active" : ""}`} key={entry.id} onClick={() => { const best = bestLegacyMatch(allMatches.filter((match) => match.supplierId === entry.id)); if (best) onOpen(best); }}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{standardTableText(profile.classification)} · {standardTableText(supplierActivity(supplier))} · {profile.profileVersion}</small></div></header>
+    <section className="tb3-evidence-layout"><aside className="tb3-picker tb3-compact-picker" data-density="compact"><header><span>Suppliers</span><b>{suppliers.length} profiles</b></header>{suppliers.map((entry) => <button aria-pressed={entry.id === supplier.id} className={`tb3-picker-row tb3-picker-supplier${entry.id === supplier.id ? " active" : ""}`} key={entry.id} onClick={() => onFocus({ supplierId: entry.id })}><span>{entry.profile?.countryCode ?? "?"}</span><p><b>{entry.legalEnglishName}</b><small>{entry.readiness.label}</small></p></button>)}</aside><article className="tb3-evidence-card"><header><span>{profile.countryCode ?? "?"}</span><div><p>NEON PROFILE V1.3 · UNDER REVIEW</p><h2>{supplier.legalEnglishName}</h2><small>{standardTableText(profile.classification)} · {standardTableText(supplierActivity(supplier))} · {profile.profileVersion}</small></div></header>
       <section className="tb3-audit-strip" aria-label="Profile provenance and audit summary">
         <div className="tb3-audit-strip-title"><span>Audit summary</span><b>Profile provenance</b></div>
         <dl><div><dt>Safe evidence records</dt><dd>{supplier.evidence.length || "—"}</dd></div><div><dt>Stated-unverified claims</dt><dd>{profile.evidenceStatedUnverifiedCount}</dd></div><div><dt>Inferred claims</dt><dd>{profile.evidenceInferredCount}</dd></div><div><dt>Unknown claims</dt><dd>{profile.evidenceUnknownCount}</dd></div></dl>
@@ -1011,7 +906,7 @@ function MatchReviewPanel({ result, tender, supplier, onViewChange, onDecision }
       ["Deadline urgency", result.match.deadlineUrgency.value, result.match.deadlineUrgency.valueClass],
     ].map(([label, value, valueClass]) => <div key={String(label)}><span>{label}</span><i><b style={{ width: `${value ?? 0}%` }} /></i><strong>{value ?? "—"}<small>{value === null ? "Missing" : standardTableText(String(valueClass))}</small></strong></div>)}</div>
     <section className="tb3-formula-audit"><span>WEIGHTED CRITERIA</span><div className="tb3-data-table-scroll tb3-formula-table"><table className="tb3-data-table tb3-entity-grid" data-table-format="entity-readiness-grid" aria-label="Formula v1.1 criterion audit"><thead><tr><th scope="col">Criterion</th><th scope="col" className="numeric">Weight</th><th scope="col" className="numeric">Fit</th><th scope="col" className="numeric">Points</th><th scope="col">Class / confidence</th></tr></thead><tbody>
-      {match.components.map((component) => <tr key={component.code}><th scope="row"><span>{standardTableText(component.code)}</span><small>{component.rationale}</small>{component.evidenceIds.map((id) => <code key={id}>{id}</code>)}</th><td className="numeric">{Math.round(component.weight)}%</td><td className="numeric">{component.fitLevel ?? "—"}/5</td><td className="numeric">{component.weightedPoints ?? "—"}</td><td><span className="tb3-status-text neutral">{standardTableText(component.valueClass)}</span><small>{component.evidenceConfidence ?? 0}% confidence</small></td></tr>)}
+      {match.components.map((component) => <tr key={component.code}><th scope="row"><span>{standardTableText(component.code)}</span><small>{component.rationale}</small>{component.evidenceIds.map((id) => <code key={id}>{id}</code>)}</th><td className="numeric">{Math.round(component.weight)}%</td><td className="numeric">{component.fitLevel ?? "—"}/5</td><td className="numeric">{criterionPointsForDisplay(component.weightedPoints, match.engineVersion) ?? "—"}</td><td><span className="tb3-status-text neutral">{standardTableText(component.valueClass)}</span><small>{component.evidenceConfidence ?? 0}% confidence</small></td></tr>)}
     </tbody></table></div></section>
     <section className="tb3-gate-audit"><span>MANDATORY GATES</span><div>{(match.gates ?? []).map((entry) => <article className={`state-${entry.state.toLowerCase()}`} key={entry.code}><b>{entry.state}</b><p><strong>{entry.label}</strong><small>{entry.rationale}</small></p></article>)}</div></section>
     <section className="gaps"><span>BLOCKERS / MISSING INPUTS</span><div>{(match.blockers ?? []).map((blocker) => <p key={blocker}>! {blocker}</p>)}{match.missingInputs.map((input) => <p key={input}>? {input}</p>)}{result.reviewSupport.findings.map((finding) => <p key={finding.code}>! {finding.code}: {finding.nextAction}</p>)}</div></section>

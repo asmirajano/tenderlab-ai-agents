@@ -1,10 +1,10 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
-import { buildExploratoryEvaluationInventory, summarizeExploratoryEvaluations } from "../packages/tendermatch/src/exploratory-matching.ts";
+import { createPairService, parsePairQuery } from "./lib/tendermatch-pair-service.mjs";
 import { runtimeTenders } from "../packages/tendermatch/src/pilot-data.ts";
 import {
   TENDERMATCH_SUPPLIER_BATCH_CODE,
@@ -73,6 +73,7 @@ function summary(profiles, evidence, retrievedAt) {
 
 export async function createTenderMatchLocalServer({ store, distDir = resolve("apps/tender-apps/dist"), clock = () => new Date().toISOString() }) {
   let state = { status: "loading", startedAt: clock(), error: null, runtime: null, runtimeGzip: null };
+  let pairs;
   const ready = (async () => {
     try {
       const { profiles, evidence } = await store.loadAll();
@@ -80,16 +81,16 @@ export async function createTenderMatchLocalServer({ store, distDir = resolve("a
       if (evidence.length !== TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT) throw new Error(`Supplier contract expected ${TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT} evidence rows; received ${evidence.length}.`);
       if (profiles.some((profile) => profile.profileVersion !== TENDERMATCH_SUPPLIER_PROFILE_VERSION || profile.batchCode !== TENDERMATCH_SUPPLIER_BATCH_CODE)) throw new Error("Supplier contract refused a profile outside the approved v1.3 batch.");
       const evaluatedAt = clock();
-      const evaluations = buildExploratoryEvaluationInventory(runtimeTenders, profiles, evidence, evaluatedAt);
-      if (evaluations.length !== runtimeTenders.length * profiles.length || new Set(evaluations.map((entry) => entry.key)).size !== evaluations.length) throw new Error("The Supplier × Tender evaluation inventory is incomplete or duplicated.");
-      const datasetSummary = summary(profiles, evidence, evaluatedAt);
+      pairs = createPairService({ tenders: runtimeTenders, profiles, evidence, evaluatedAt });
+      if (pairs.totals.total !== runtimeTenders.length * profiles.length) throw new Error("The Supplier × Tender evaluation inventory is incomplete or duplicated.");
+      const datasetSummary = summary(profiles, evidence, store.snapshotAsOf ?? evaluatedAt);
       if (JSON.stringify(datasetSummary.classification) !== JSON.stringify({ GOODS: 14, WORKS: 3 })) throw new Error("Supplier classification totals do not match the approved v1.3 contract.");
       if (JSON.stringify(datasetSummary.readiness) !== JSON.stringify({ ready_for_exploratory_matching: 0, usable_with_limitations: 17, requires_enrichment: 0, exclude_from_current_matching_run: 0 })) throw new Error("Supplier contract readiness totals do not match the approved batch.");
       if (JSON.stringify(datasetSummary.profileClaims) !== JSON.stringify({ VERIFIED: 0, INFERRED: 17, STATED_UNVERIFIED: 226, UNKNOWN: 46 })) throw new Error("Supplier profile claim totals do not match the approved batch.");
       if (JSON.stringify(datasetSummary.evidenceStatuses) !== JSON.stringify({ VERIFIED: 0, INFERRED: 17, STATED_UNVERIFIED: 226, UNKNOWN: 46 })) throw new Error("Supplier evidence totals do not match the approved safe projection.");
       if (JSON.stringify(datasetSummary.artifacts) !== JSON.stringify({ available: TENDERMATCH_SUPPLIER_EXPECTED_ARTIFACT_COUNT, unavailable: TENDERMATCH_SUPPLIER_EXPECTED_EVIDENCE_COUNT - TENDERMATCH_SUPPLIER_EXPECTED_ARTIFACT_COUNT })) throw new Error("Supplier artifact-link totals do not match the approved safe projection.");
-      const evaluationSummary = summarizeExploratoryEvaluations(evaluations);
-      const runtime = { status: "ready", mode: "neon-read-only", summary: datasetSummary, suppliers: profiles, evaluations, evaluationSummary };
+      const initialEvaluation = pairs.initialEvaluation();
+      const runtime = { schemaVersion: "tendermatch-runtime-catalog/2.0.0", status: "ready", mode: store.sourceMode === "explicit-pinned-local-snapshot" ? "local-pinned-service" : "neon-read-only", sourceMode: store.sourceMode ?? "neon-read-only", summary: datasetSummary, suppliers: profiles, initialEvaluation, evaluationSummary: pairs.totals, pairLeadersByTender: pairs.leaders(), pairLeadersBySupplier: pairs.supplierLeaders(), scoreDistribution: pairs.scoreDistribution(), processing: pairs.stats, assessmentProvider: { state: "disabled", reason: "No server-side full-assessment provider configured." } };
       state = { status: "ready", startedAt: state.startedAt, error: null, runtime, runtimeGzip: gzipSync(JSON.stringify(runtime), { level: 6 }) };
       return state.runtime;
     } catch (error) {
@@ -109,7 +110,7 @@ export async function createTenderMatchLocalServer({ store, distDir = resolve("a
       if (url.pathname === "/api/tendermatch/health") {
         return json(response, state.status === "error" ? 503 : 200, {
           status: state.status,
-          mode: "neon-read-only",
+          mode: state.runtime?.mode ?? (store.sourceMode === "explicit-pinned-local-snapshot" ? "local-pinned-service" : "neon-read-only"),
           contractVersion: TENDERMATCH_SUPPLIER_CONTRACT_VERSION,
           profileVersion: TENDERMATCH_SUPPLIER_PROFILE_VERSION,
           batchCode: TENDERMATCH_SUPPLIER_BATCH_CODE,
@@ -132,6 +133,21 @@ export async function createTenderMatchLocalServer({ store, distDir = resolve("a
         response.writeHead(200, { "Cache-Control": "no-store", "Content-Encoding": "gzip", "Content-Type": "application/json; charset=utf-8", "Vary": "Accept-Encoding", "X-Content-Type-Options": "nosniff" });
         response.end(state.runtimeGzip);
         return;
+      }
+      if (["/api/tendermatch/pairs", "/api/tendermatch/pair", "/api/tendermatch/assessments"].includes(url.pathname)) {
+        if (state.status !== "ready") return json(response, state.status === "loading" ? 202 : 503, { status: state.status, error: state.error });
+        if (url.pathname === "/api/tendermatch/pairs" && request.method === "GET") return json(response, 200, pairs.query(parsePairQuery(url.searchParams)));
+        if (url.pathname === "/api/tendermatch/pair" && request.method === "GET") return json(response, 200, pairs.detail(url.searchParams.get("supplierId"), url.searchParams.get("tenderId"), clock()));
+        if (url.pathname === "/api/tendermatch/assessments" && request.method === "POST") {
+          if (!request.headers["content-type"]?.startsWith("application/json") || (request.headers.origin && request.headers.origin !== `http://${request.headers.host}`)) return json(response, 403, { error: "Same-origin JSON assessment request required." });
+          let body = "";
+          for await (const chunk of request) { body += chunk; if (Buffer.byteLength(body) > 8192) return json(response, 413, { error: "Assessment request exceeds the limit." }); }
+          let input;
+          try { input = JSON.parse(body); } catch { return json(response, 400, { error: "Invalid JSON request." }); }
+          if (input.reason !== "user-opened" || typeof input.requestId !== "string" || input.requestId.length > 256) return json(response, 400, { error: "An explicit selected-pair review request and idempotency identity are required." });
+          return json(response, 200, { assessment: pairs.requestAssessment(input.supplierId, input.tenderId, "local-consultant-review", clock()), modelCalls: 0 });
+        }
+        return json(response, 405, { error: "Method not allowed." });
       }
       if (url.pathname === "/api/tendermatch/suppliers") {
         const result = await store.listSuppliers(parseSupplierListParameters(url.searchParams));
@@ -174,8 +190,8 @@ async function main() {
   const envFile = argument("--env-file");
   const port = Number(argument("--port", "4177"));
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("--port must be a valid non-privileged port.");
-  const connectionString = await readSupplierConnectionString(envFile);
-  const store = createSupplierStore(connectionString);
+  const snapshot = process.argv.includes("--snapshot");
+  const store = snapshot ? await createPinnedSnapshotStore() : createSupplierStore(await readSupplierConnectionString(envFile));
   const { server, ready } = await createTenderMatchLocalServer({ store });
   server.listen(port, "127.0.0.1", () => console.log(`TenderMatch local supplier runtime: http://127.0.0.1:${port}/tendermatch`));
   try {
@@ -187,6 +203,26 @@ async function main() {
   const close = async () => { server.close(); await store.close(); };
   process.on("SIGINT", close);
   process.on("SIGTERM", close);
+}
+
+/** Explicit local demonstration source; it never falls back from a failed Neon read. */
+export async function createPinnedSnapshotStore(directory = resolve("apps/tender-apps/public/tendermatch/data")) {
+  const runtime = JSON.parse(await readFile(join(directory, "supplier-runtime-v1.3.json"), "utf8"));
+  const snapshot = JSON.parse(await readFile(join(directory, "supplier-evidence-v1.3.json"), "utf8"));
+  const profiles = runtime.suppliers;
+  return {
+    sourceMode: "explicit-pinned-local-snapshot",
+    snapshotAsOf: runtime.summary.retrievedAt,
+    loadAll: async () => ({ profiles, evidence: Object.values(snapshot.evidenceBySupplier).flat() }),
+    supplierDetail: async (id) => profiles.find((row) => row.canonicalEntityId === id) ?? null,
+    supplierEvidence: async (id) => snapshot.evidenceBySupplier[id] ?? [],
+    listSuppliers: async (filters) => {
+      const rows = profiles.filter((row) => (!filters.country || row.countryCode === filters.country) && (!filters.classification || row.classification === filters.classification) && (!filters.readiness.length || filters.readiness.includes(row.readinessStatus))).sort((a, b) => a.displayName.toLowerCase().localeCompare(b.displayName.toLowerCase()) || a.canonicalEntityId.localeCompare(b.canonicalEntityId)).filter((row) => !filters.afterName || row.displayName.toLowerCase() > filters.afterName || (row.displayName.toLowerCase() === filters.afterName && row.canonicalEntityId > filters.afterId));
+      const selected = rows.slice(0, filters.limit), last = selected.at(-1);
+      return { profiles: selected, nextCursor: rows.length > filters.limit ? { afterName: last.displayName.toLowerCase(), afterId: last.canonicalEntityId } : null };
+    },
+    close: async () => {},
+  };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
