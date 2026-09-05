@@ -68,3 +68,20 @@ test("Formula page exposes scoring scope, diagnostic gates and human-authority b
   assert.deepEqual(formula.separateSignals, ["Evidence Confidence", "Supplier readiness", "Deadline urgency", "Consultant disposition"]);
   assert.equal(formula.diagnosticGates.length, 8);
 });
+
+test("Formula page uses a proportional readable typography scale at desktop and mobile widths", async () => {
+  const styles = await read("apps/tender-apps/src/tendermatch.css");
+  const formulaStyles = styles.slice(styles.indexOf("/* Formula v1.1"), styles.indexOf(".tb3-status-summary"));
+
+  assert.match(formulaStyles, /--tb3-formula-kicker: clamp\(12px,[^)]+14px\)/);
+  assert.match(formulaStyles, /--tb3-formula-note: clamp\(12px,[^)]+14px\)/);
+  assert.match(formulaStyles, /--tb3-formula-label: clamp\(14px,[^)]+16px\)/);
+  assert.match(formulaStyles, /--tb3-formula-body: clamp\(16px,[^)]+19px\)/);
+  assert.match(formulaStyles, /--tb3-formula-section-title: clamp\(22px,[^)]+28px\)/);
+  assert.match(formulaStyles, /\.tb3-formula-flow > article b \{[^}]*font-size: var\(--tb3-formula-label\)/);
+  assert.match(formulaStyles, /\.tb3-formula-model section p b \{[^}]*font-size: var\(--tb3-formula-label\)/);
+  assert.match(formulaStyles, /\.tb3-fit-scale article span \{[^}]*font-size: var\(--tb3-formula-note\)/);
+  assert.match(formulaStyles, /\.tb3-formula-details p, \.tb3-formula-details li \{[^}]*font-size: var\(--tb3-formula-note\)/);
+  assert.match(formulaStyles, /@media \(max-width: 640px\)[\s\S]*\.tb3-formula-hero p \{ font-size: 15px; \}/);
+  assert.doesNotMatch(formulaStyles, /\.tb3-formula-page \{[^}]*font-size:/);
+});
