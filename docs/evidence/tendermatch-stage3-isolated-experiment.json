@@ -1,0 +1,515 @@
+{
+  "stage": 3,
+  "base": "5a7f0a9124ada9053f5b1b466d79148cae6ccc16",
+  "mode": "inspect",
+  "startedAt": "2026-09-06T15:53:43.161Z",
+  "runId": "7b3fbc39a401a72a6452c1d9bb050c18bc92d32a0f69acb4829f0a42236e102d",
+  "identity": {
+    "manifestId": "e928df5e6a432fa23c8ea95dbfbf1aee4f1c883646d5ed72fd2856d994102ac2",
+    "normalizationId": "782f8b38737b21f6940b5c3f4fe4ec6eb890be4e2d168f19ba29b4952530e5f9",
+    "normalizationOutcome": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+    "readinessRun": "ce4d742d71cccc329a3129bb549273c41f4efe3fafcdd3b862dbe4ef6058d844",
+    "readinessOutcome": "ecb47df168f0df87a802d40a2bef623c1695a4c12ffdb6d3e7fe21f8f6aa5396",
+    "readinessSchema": "tendermatch-supplier-readiness/1.0.0",
+    "readinessPolicy": "tendermatch-supplier-alignment/1.0.0",
+    "readinessCodeHash": "0436e05a9b82add71744dc9ea9d5042bd546a52d4f537c56ffad302a3088800e",
+    "schema": "tendermatch-eligibility-scope/1.0.0",
+    "policy": "tendermatch-development-goods-works-scope/1.0.0",
+    "codeHash": "1c12380aa59c6c1a44e05b146a64e06072bdc9487bafb95865ec76228c84c921",
+    "policyHash": "e0e8d4887aecee90476a70a03e22751a9a5eb5fc63343c209a6817ab4a8b2ab4",
+    "suppliers": 117,
+    "tenders": 17333,
+    "inputHash": "5f9131a54e15ffb549f43926a1a25f086b3da4195e200f878085c781f13ad524",
+    "scoring": "NOT_SCORED",
+    "maturity": "DEVELOPMENT_EXPERIMENT"
+  },
+  "code": {
+    "files": {
+      "packages/tendermatch/src/eligibility-scope.ts": "2d9e619da3da810437b5790f1f9c2761af763b76dbecf6dd9052f5f49dd70e1b",
+      "scripts/lib/tendermatch-eligibility-inputs.mjs": "0f327699c3c90ea1f8eaad7639ee41070ef9d6ccf450cb77f89ade852611d972",
+      "scripts/lib/tendermatch-eligibility.mjs": "dab66323fbe61f6bf8e02da706324c975b641e924db7d35a7268ffe99f5709a2",
+      "scripts/tendermatch-evaluate-eligibility.mjs": "c43c20c410d23fdb5986647458cfcab4bfea4b2f46c20354838652ebba51dedd"
+    },
+    "hash": "1c12380aa59c6c1a44e05b146a64e06072bdc9487bafb95865ec76228c84c921"
+  },
+  "sourceDrift": {
+    "supplier": {
+      "pinned": {
+        "count": 117,
+        "idsSha256": "f0bcd0b9f9c897b80ea85ed4ce91088944cb20fac3cc4bb9ace878fe81610283",
+        "contentSha256": "0680eda075657ac383a5acb191434198b5467adcc4bc0450f87d7b7ff5534a09"
+      },
+      "observed": {
+        "count": 117,
+        "idsSha256": "f0bcd0b9f9c897b80ea85ed4ce91088944cb20fac3cc4bb9ace878fe81610283",
+        "contentSha256": "0680eda075657ac383a5acb191434198b5467adcc4bc0450f87d7b7ff5534a09"
+      },
+      "added": 0,
+      "removed": 0,
+      "changed": 0,
+      "observation": {
+        "database": "tender_entity_registry",
+        "role": "tendermatch_all_supplier_consumer_dev",
+        "started_at": "2026-09-06T15:52:23.287Z",
+        "snapshot": "53249:53249:",
+        "read_only": "on",
+        "isolation": "repeatable read",
+        "timezone": "GMT",
+        "finished_at": "2026-09-06T15:52:26.667Z",
+        "metrics": {
+          "profilePages": 2,
+          "profilePageSize": 100,
+          "evidencePages": 4,
+          "evidencePageSize": 500,
+          "queries": 15,
+          "elapsedMs": 3472
+        },
+        "limitations": {
+          "classification": {
+            "GOODS": 14,
+            "MISSING": 100,
+            "WORKS": 3
+          },
+          "profileState": {
+            "PINNED": 117
+          },
+          "readiness": {
+            "ready_for_exploratory_matching": 2,
+            "requires_enrichment": 4,
+            "usable_with_limitations": 111
+          },
+          "evidenceStatus": {
+            "INFERRED": 820,
+            "STATED_UNVERIFIED": 126,
+            "UNKNOWN": 607
+          },
+          "evidenceValueClass": {
+            "MISSING": 607,
+            "SOURCE": 946
+          },
+          "unavailableArtifacts": 167
+        }
+      },
+      "metrics": {
+        "kind": "source",
+        "queries": 19,
+        "responseBytes": 1621578,
+        "requestBytes": 413,
+        "maxResponseBytes": 488269
+      }
+    },
+    "tender": {
+      "pinned": {
+        "count": 17333,
+        "idsSha256": "d4c2352fa492c1c319b298f4f7e08b6d992595561b99ab179d75343ac8c50577",
+        "contentSha256": "90a6100bb0b7bf01106a0999ac704f0f8f8ea4420ee7bf7993d120bcd31db0a9"
+      },
+      "observed": {
+        "count": 17333,
+        "idsSha256": "d4c2352fa492c1c319b298f4f7e08b6d992595561b99ab179d75343ac8c50577",
+        "contentSha256": "90a6100bb0b7bf01106a0999ac704f0f8f8ea4420ee7bf7993d120bcd31db0a9"
+      },
+      "added": 0,
+      "removed": 0,
+      "changed": 0,
+      "observation": {
+        "database": "neondb",
+        "role": "th_qa_readonly",
+        "started_at": "2026-09-06T15:52:28.628Z",
+        "snapshot": "2093288:2093288:",
+        "read_only": "on",
+        "isolation": "repeatable read",
+        "timezone": "GMT",
+        "finished_at": "2026-09-06T15:52:37.678Z",
+        "metrics": {
+          "pages": 35,
+          "pageSize": 500,
+          "orphanSourceFeedCountry": 0,
+          "queries": 43,
+          "elapsedMs": 9229
+        },
+        "limitations": {
+          "procurementType": {
+            "CONSULTING": 832,
+            "EOI": 8,
+            "GOODS": 6597,
+            "OTHER": 332,
+            "PREQUAL": 1,
+            "SERVICES": 6568,
+            "WORKS": 2995
+          },
+          "openPastDeadline": 1989,
+          "openMissingDeadline": 0,
+          "timestampMeaning": "Source timestamp-without-time-zone preserved verbatim; past-deadline diagnostic uses reported database TimeZone. No deadline exclusion."
+        }
+      },
+      "metrics": {
+        "kind": "tender",
+        "queries": 44,
+        "responseBytes": 9092674,
+        "requestBytes": 1524,
+        "maxResponseBytes": 262490
+      }
+    }
+  },
+  "inputs": {
+    "supplier": 117,
+    "tender": 17333,
+    "pairs": 2027961,
+    "payloadBytes": 12448434,
+    "pages": 36
+  },
+  "protectedBefore": {
+    "embedding_model": 0,
+    "feature_embedding": 0,
+    "evaluation_run": 0,
+    "run_feature": 0,
+    "pair_score": 0,
+    "run_pair": 0,
+    "retrieval_request": 0,
+    "retrieval_result": 0,
+    "scoring_batch": 0,
+    "assessment_job": 0,
+    "assessment_artifact": 0,
+    "human_disposition": 0,
+    "universe_snapshot": 0,
+    "universe_pair": 0,
+    "criterion_audit": 0
+  },
+  "experiment": {
+    "total": 2027961,
+    "reused": 0,
+    "evaluated": 2027961,
+    "inserted": 0,
+    "batches": 585,
+    "retries": 0,
+    "peakHeap": 186211904,
+    "maxBatchBytes": 339969,
+    "elapsedMs": 5280,
+    "outcomeHash": "9afc0bf6971a5c0ece68ea1aea01a7f14731cee03ec77e8179e0a6d618d8434a",
+    "counts": {
+      "state": {
+        "OUTSIDE_FORMULA_V1_1_SCOPE": 905697,
+        "SCOPE_NOT_DEMONSTRATED": 414604,
+        "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 707660
+      },
+      "reasons": {
+        "UNSUPPORTED_TENDER_CATEGORY": 905697,
+        "INDEPENDENT_VERIFICATION_REQUIRED": 2027961,
+        "COMPLIANCE_NOT_ASSESSED": 2027961,
+        "TENDER_REQUIREMENTS_MISSING": 2027961,
+        "DEADLINE_TIMEZONE_UNRESOLVED": 2027961,
+        "MIXED_SCOPE_REVIEW_REQUIRED": 207996,
+        "NO_EVIDENCED_COMMON_SCOPE": 414604,
+        "PROVISIONAL_SCOPE_REQUIRES_REVIEW": 612914,
+        "SOURCE_SCOPE_WITH_LIMITATIONS": 94746
+      },
+      "hardGate": {
+        "NOT_ASSESSED": 2027961
+      },
+      "scopeRelation": {
+        "OUTSIDE_FORMULA": 905697,
+        "NOT_DEMONSTRATED": 414604,
+        "COMMON_EVIDENCED_SCOPE": 707660
+      },
+      "servicePotential": {
+        "POTENTIALLY_RELEVANT_OUTSIDE_FORMULA": 140600,
+        "NOT_EVALUATED": 1887361
+      },
+      "byTenderCategory": {
+        "SERVICES": 768456,
+        "WORKS": 350415,
+        "GOODS": 771849,
+        "CONSULTING": 97344,
+        "OTHER": 38844,
+        "EOI": 936,
+        "PREQUAL": 117
+      },
+      "bySupplierSource": {
+        "MISSING": 1733300,
+        "GOODS": 242662,
+        "WORKS": 51999
+      },
+      "bySupplierCandidate": {
+        "MIXED": 207996,
+        "GOODS": 1611969,
+        "SERVICES": 155997,
+        "WORKS": 51999
+      },
+      "bySourceCandidateCategoryState": {
+        "MISSING|MIXED|SERVICES|OUTSIDE_FORMULA_V1_1_SCOPE": 72248,
+        "MISSING|MIXED|WORKS|SCOPE_NOT_DEMONSTRATED": 29950,
+        "MISSING|MIXED|GOODS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 72567,
+        "MISSING|MIXED|CONSULTING|OUTSIDE_FORMULA_V1_1_SCOPE": 9152,
+        "MISSING|MIXED|OTHER|OUTSIDE_FORMULA_V1_1_SCOPE": 3652,
+        "MISSING|MIXED|EOI|OUTSIDE_FORMULA_V1_1_SCOPE": 88,
+        "MISSING|MIXED|PREQUAL|OUTSIDE_FORMULA_V1_1_SCOPE": 11,
+        "MISSING|GOODS|SERVICES|OUTSIDE_FORMULA_V1_1_SCOPE": 525440,
+        "MISSING|GOODS|WORKS|SCOPE_NOT_DEMONSTRATED": 239600,
+        "MISSING|GOODS|GOODS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 527760,
+        "MISSING|GOODS|CONSULTING|OUTSIDE_FORMULA_V1_1_SCOPE": 66560,
+        "MISSING|GOODS|OTHER|OUTSIDE_FORMULA_V1_1_SCOPE": 26560,
+        "MISSING|GOODS|EOI|OUTSIDE_FORMULA_V1_1_SCOPE": 640,
+        "MISSING|GOODS|PREQUAL|OUTSIDE_FORMULA_V1_1_SCOPE": 80,
+        "GOODS|GOODS|SERVICES|OUTSIDE_FORMULA_V1_1_SCOPE": 85384,
+        "GOODS|GOODS|WORKS|SCOPE_NOT_DEMONSTRATED": 38935,
+        "GOODS|GOODS|GOODS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 85761,
+        "GOODS|GOODS|CONSULTING|OUTSIDE_FORMULA_V1_1_SCOPE": 10816,
+        "GOODS|GOODS|OTHER|OUTSIDE_FORMULA_V1_1_SCOPE": 4316,
+        "GOODS|GOODS|EOI|OUTSIDE_FORMULA_V1_1_SCOPE": 104,
+        "GOODS|GOODS|PREQUAL|OUTSIDE_FORMULA_V1_1_SCOPE": 13,
+        "MISSING|SERVICES|SERVICES|OUTSIDE_FORMULA_V1_1_SCOPE": 59112,
+        "MISSING|SERVICES|WORKS|SCOPE_NOT_DEMONSTRATED": 26955,
+        "MISSING|SERVICES|GOODS|SCOPE_NOT_DEMONSTRATED": 59373,
+        "MISSING|SERVICES|CONSULTING|OUTSIDE_FORMULA_V1_1_SCOPE": 7488,
+        "MISSING|SERVICES|OTHER|OUTSIDE_FORMULA_V1_1_SCOPE": 2988,
+        "MISSING|SERVICES|EOI|OUTSIDE_FORMULA_V1_1_SCOPE": 72,
+        "MISSING|SERVICES|PREQUAL|OUTSIDE_FORMULA_V1_1_SCOPE": 9,
+        "WORKS|WORKS|SERVICES|OUTSIDE_FORMULA_V1_1_SCOPE": 19704,
+        "WORKS|WORKS|WORKS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 8985,
+        "WORKS|WORKS|GOODS|SCOPE_NOT_DEMONSTRATED": 19791,
+        "WORKS|WORKS|CONSULTING|OUTSIDE_FORMULA_V1_1_SCOPE": 2496,
+        "WORKS|WORKS|OTHER|OUTSIDE_FORMULA_V1_1_SCOPE": 996,
+        "WORKS|WORKS|EOI|OUTSIDE_FORMULA_V1_1_SCOPE": 24,
+        "WORKS|WORKS|PREQUAL|OUTSIDE_FORMULA_V1_1_SCOPE": 3,
+        "GOODS|MIXED|SERVICES|OUTSIDE_FORMULA_V1_1_SCOPE": 6568,
+        "GOODS|MIXED|WORKS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 2995,
+        "GOODS|MIXED|GOODS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 6597,
+        "GOODS|MIXED|CONSULTING|OUTSIDE_FORMULA_V1_1_SCOPE": 832,
+        "GOODS|MIXED|OTHER|OUTSIDE_FORMULA_V1_1_SCOPE": 332,
+        "GOODS|MIXED|EOI|OUTSIDE_FORMULA_V1_1_SCOPE": 8,
+        "GOODS|MIXED|PREQUAL|OUTSIDE_FORMULA_V1_1_SCOPE": 1,
+        "MISSING|MIXED|WORKS|CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 2995
+      }
+    },
+    "samples": [
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "000a20a5-a768-4939-9d30-d15203bb293f",
+        "category": "SERVICES",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "OUTSIDE_FORMULA_V1_1_SCOPE",
+        "reasonMask": 10113,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "OUTSIDE_FORMULA",
+        "servicePotential": "POTENTIALLY_RELEVANT_OUTSIDE_FORMULA",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "UNSUPPORTED_TENDER_CATEGORY",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "000fa43d-e278-467a-9b7f-9759e4cb0b94",
+        "category": "WORKS",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "SCOPE_NOT_DEMONSTRATED",
+        "reasonMask": 10128,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "NOT_DEMONSTRATED",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "NO_EVIDENCED_COMMON_SCOPE",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+        "category": "GOODS",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS",
+        "reasonMask": 10144,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "COMMON_EVIDENCED_SCOPE",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "PROVISIONAL_SCOPE_REQUIRES_REVIEW",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "003fa1c3-86bd-490f-b49f-b0f99f8056d8",
+        "category": "CONSULTING",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "OUTSIDE_FORMULA_V1_1_SCOPE",
+        "reasonMask": 10113,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "OUTSIDE_FORMULA",
+        "servicePotential": "POTENTIALLY_RELEVANT_OUTSIDE_FORMULA",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "UNSUPPORTED_TENDER_CATEGORY",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "01e85396-dd16-411f-89ba-2dda1211ae08",
+        "category": "OTHER",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "OUTSIDE_FORMULA_V1_1_SCOPE",
+        "reasonMask": 10113,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "OUTSIDE_FORMULA",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "UNSUPPORTED_TENDER_CATEGORY",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "140a4e77-546c-450d-91e6-ae34fd68509e",
+        "category": "EOI",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "OUTSIDE_FORMULA_V1_1_SCOPE",
+        "reasonMask": 10113,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "OUTSIDE_FORMULA",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "UNSUPPORTED_TENDER_CATEGORY",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "595d3deb-a936-446a-b6c3-42dcb5f7e278",
+        "category": "PREQUAL",
+        "sourceScope": null,
+        "candidateScope": "MIXED",
+        "state": "OUTSIDE_FORMULA_V1_1_SCOPE",
+        "reasonMask": 10113,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "OUTSIDE_FORMULA",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "UNSUPPORTED_TENDER_CATEGORY",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED",
+          "MIXED_SCOPE_REVIEW_REQUIRED"
+        ]
+      },
+      {
+        "supplierId": "2037bfbe-038a-5525-820c-1b8b63cb2970",
+        "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+        "category": "GOODS",
+        "sourceScope": null,
+        "candidateScope": "SERVICES",
+        "state": "SCOPE_NOT_DEMONSTRATED",
+        "reasonMask": 1936,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "NOT_DEMONSTRATED",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "NO_EVIDENCED_COMMON_SCOPE",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED"
+        ]
+      },
+      {
+        "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+        "tenderId": "000fa43d-e278-467a-9b7f-9759e4cb0b94",
+        "category": "WORKS",
+        "sourceScope": "WORKS",
+        "candidateScope": "WORKS",
+        "state": "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS",
+        "reasonMask": 1984,
+        "hardGate": "NOT_ASSESSED",
+        "scopeRelation": "COMMON_EVIDENCED_SCOPE",
+        "servicePotential": "NOT_EVALUATED",
+        "scoringState": "NOT_SCORED",
+        "reasons": [
+          "SOURCE_SCOPE_WITH_LIMITATIONS",
+          "INDEPENDENT_VERIFICATION_REQUIRED",
+          "COMPLIANCE_NOT_ASSESSED",
+          "TENDER_REQUIREMENTS_MISSING",
+          "DEADLINE_TIMEZONE_UNRESOLVED"
+        ]
+      }
+    ]
+  },
+  "protectedAfter": {
+    "embedding_model": 0,
+    "feature_embedding": 0,
+    "evaluation_run": 0,
+    "run_feature": 0,
+    "pair_score": 0,
+    "run_pair": 0,
+    "retrieval_request": 0,
+    "retrieval_result": 0,
+    "scoring_batch": 0,
+    "assessment_job": 0,
+    "assessment_artifact": 0,
+    "human_disposition": 0,
+    "universe_snapshot": 0,
+    "universe_pair": 0,
+    "criterion_audit": 0
+  },
+  "metrics": {
+    "elapsedMs": 101997,
+    "connection": {
+      "kind": "results",
+      "queries": 109,
+      "responseBytes": 90105571,
+      "requestBytes": 10993,
+      "maxResponseBytes": 2304553
+    },
+    "memory": {
+      "rss": 345231360,
+      "heapTotal": 206770176,
+      "heapUsed": 37951776,
+      "external": 9704092,
+      "arrayBuffers": 275572
+    }
+  },
+  "finishedAt": "2026-09-06T15:53:49.841Z",
+  "noScores": true,
+  "noFrontend": true,
+  "noSourceWrites": true,
+  "noDeployment": true,
+  "migrationHash": "0a9cd1e41ea4fa8625565abfc54607cff07e1563bd987d2de535b66066d64d66"
+}

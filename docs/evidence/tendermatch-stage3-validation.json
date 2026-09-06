@@ -1,0 +1,125 @@
+{
+  "checkedAt": "2026-09-06T16:26:24.801Z",
+  "stage": 3,
+  "base": "5a7f0a9124ada9053f5b1b466d79148cae6ccc16",
+  "branch": "codex/tendermatch-neon-all-to-all",
+  "checkpoint": "ENCLOSING_COMMIT",
+  "status": "AWAITING_STAGE3_REVIEW",
+  "runId": "7b3fbc39a401a72a6452c1d9bb050c18bc92d32a0f69acb4829f0a42236e102d",
+  "identity": {
+    "manifestId": "e928df5e6a432fa23c8ea95dbfbf1aee4f1c883646d5ed72fd2856d994102ac2",
+    "normalizationId": "782f8b38737b21f6940b5c3f4fe4ec6eb890be4e2d168f19ba29b4952530e5f9",
+    "normalizationOutcome": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+    "readinessRun": "ce4d742d71cccc329a3129bb549273c41f4efe3fafcdd3b862dbe4ef6058d844",
+    "readinessOutcome": "ecb47df168f0df87a802d40a2bef623c1695a4c12ffdb6d3e7fe21f8f6aa5396",
+    "readinessSchema": "tendermatch-supplier-readiness/1.0.0",
+    "readinessPolicy": "tendermatch-supplier-alignment/1.0.0",
+    "readinessCodeHash": "0436e05a9b82add71744dc9ea9d5042bd546a52d4f537c56ffad302a3088800e",
+    "schema": "tendermatch-eligibility-scope/1.0.0",
+    "policy": "tendermatch-development-goods-works-scope/1.0.0",
+    "codeHash": "1c12380aa59c6c1a44e05b146a64e06072bdc9487bafb95865ec76228c84c921",
+    "policyHash": "e0e8d4887aecee90476a70a03e22751a9a5eb5fc63343c209a6817ab4a8b2ab4",
+    "suppliers": 117,
+    "tenders": 17333,
+    "inputHash": "5f9131a54e15ffb549f43926a1a25f086b3da4195e200f878085c781f13ad524",
+    "scoring": "NOT_SCORED",
+    "maturity": "DEVELOPMENT_EXPERIMENT"
+  },
+  "artifactsRawSha256": {
+    "docs/evidence/tendermatch-stage3-isolated-experiment.json": "c9ae57acf3ef362d31f06b82b2efd2f46ab7e605528c9151539686f788b69e60",
+    "docs/evidence/tendermatch-stage3-execute.json": "f39f1c2a627be34d77e8d1b8c1e44cfbbfe90c605a2f28eed5802cfe1d836e35"
+  },
+  "stateCounts": {
+    "OUTSIDE_FORMULA_V1_1_SCOPE": 905697,
+    "SCOPE_NOT_DEMONSTRATED": 414604,
+    "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 707660
+  },
+  "servicePotential": {
+    "POTENTIALLY_RELEVANT_OUTSIDE_FORMULA": 140600,
+    "NOT_EVALUATED": 1887361
+  },
+  "rows": {
+    "eligibility_input": 17450,
+    "eligibility_run": 1,
+    "eligibility_member": 17450,
+    "eligibility_pair": 2027961,
+    "eligibility_completion": 1
+  },
+  "storageTotalBytes": 842334208,
+  "outcomeHash": "9afc0bf6971a5c0ece68ea1aea01a7f14731cee03ec77e8179e0a6d618d8434a",
+  "fullReadback": true,
+  "cache": {
+    "reused": 2027961,
+    "evaluated": 0,
+    "inserted": 0
+  },
+  "negativeChecks": {
+    "updateDeleteTruncateDdl": "denied",
+    "crossTenantRead": "zero",
+    "crossTenantWrite": "denied",
+    "sealedMembership": "denied",
+    "committedProbeRows": 0,
+    "tenantBoundary": "TRUSTED_SERVICE_GUC_NOT_USER_AUTHENTICATION"
+  },
+  "protectedTables": {
+    "embedding_model": 0,
+    "feature_embedding": 0,
+    "evaluation_run": 0,
+    "run_feature": 0,
+    "pair_score": 0,
+    "run_pair": 0,
+    "retrieval_request": 0,
+    "retrieval_result": 0,
+    "scoring_batch": 0,
+    "assessment_job": 0,
+    "assessment_artifact": 0,
+    "human_disposition": 0,
+    "universe_snapshot": 0,
+    "universe_pair": 0,
+    "criterion_audit": 0
+  },
+  "validation": {
+    "focused": {
+      "passed": 159,
+      "failed": 0,
+      "skipped": 0
+    },
+    "fullRepository": {
+      "passed": 527,
+      "failed": 0,
+      "skipped": 0
+    },
+    "productionBuilds": 3,
+    "agentSpecifications": 64,
+    "lint": "PASS",
+    "strictEligibilityTypecheck": "PASS",
+    "pglite": "ENABLED",
+    "originalStandalone": {
+      "priorStage3StaticTests": 3,
+      "head": "04b0b2a723223d11617837ee0e7562fa48168cd9",
+      "clean": true
+    },
+    "existingTrackedFilesChanged": 0,
+    "secretPatternScan": {
+      "files": 13,
+      "findings": 0,
+      "scope": "ADDITIVE_STAGE3_TEXT_FILES",
+      "limitation": "Pattern scan, not a guarantee against every secret format"
+    },
+    "newDatabaseWorkDuringCompletionCorrection": false,
+    "newLiveDeploymentAuditDuringCompletionCorrection": false
+  },
+  "prohibitions": {
+    "scores": 0,
+    "retrieval": 0,
+    "embeddings": 0,
+    "assessments": 0,
+    "humanDecisions": 0,
+    "frontendChanges": 0,
+    "sourceWrites": 0,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "stage4Started": false
+  }
+}
