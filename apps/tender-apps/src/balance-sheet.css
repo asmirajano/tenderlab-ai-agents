@@ -864,3 +864,116 @@ button, input, select { font: inherit; }
   .tb-product-brand small { display: none; }
   .tb-product-context b { display: none; }
 }
+
+/*
+ * Shared TenderBalance table presentation.
+ * Based on the approved Excel Dark reference: charcoal headers, restrained
+ * grid lines, compact Aptos/Calibri typography and alternating neutral rows.
+ */
+.bs-page .excel-dark-table {
+  border: 1px solid #595959;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-size: 13px;
+  width: 100%;
+}
+
+.bs-page .excel-dark-table thead th {
+  background: #595959;
+  border: 1px solid #404040;
+  color: #fff;
+  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .035em;
+  padding: 8px 12px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.bs-page .excel-dark-table thead th small {
+  color: #f2f2f2;
+  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.bs-page .excel-dark-table tbody td,
+.bs-page .excel-dark-table tbody th {
+  border: 1px solid #d9d9d9;
+  color: #000;
+  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 7px 12px;
+}
+
+.bs-page .excel-dark-table tbody tr:nth-child(odd) > :is(th, td) { background: #fff; }
+.bs-page .excel-dark-table tbody tr:nth-child(even) > :is(th, td) { background: #f2f2f2; }
+
+.bs-page .excel-dark-table td > b,
+.bs-page .excel-dark-table td > strong,
+.bs-page .excel-dark-table td.num-col,
+.bs-page .excel-dark-table td.is-numeric,
+.bs-page .excel-dark-table th.num-col,
+.bs-page .excel-dark-table th.is-numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.bs-page .bs-client-result-table td:nth-child(n+3),
+.bs-page .bs-client-result-table th:nth-child(n+3),
+.bs-page .fin-generated-form .excel-dark-table td:not(:first-child),
+.bs-page .fin-generated-form .excel-dark-table th:not(:first-child) {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.bs-page .bs-client-result-table td:nth-child(n+3) b,
+.bs-page .fin-generated-form .excel-dark-table td:not(:first-child) > b,
+.bs-page .fin-mapping-table td:nth-child(3) > b,
+.bs-page .fin2-mapping-table td:nth-child(n+3):nth-child(-n+6) > b {
+  font-weight: 500;
+}
+
+.bs-page .bs-client-result-table td:first-child span {
+  background: transparent;
+  border-radius: 0;
+  color: #404040;
+  max-width: none;
+  padding: 0;
+}
+
+.bs-page .excel-dark-table tbody tr.is-total > :is(th, td) {
+  background: #e6e6e6;
+  border-color: #bfbfbf;
+  color: #000;
+  font-weight: 700;
+}
+
+.bs-page .bs-client-result-table tr.is-total td:first-child span {
+  background: transparent;
+  color: #000;
+}
+
+.bs-page .bs-line-table tbody tr:hover > :is(th, td),
+.bs-page .excel-dark-table tbody tr.is-selected > :is(th, td) { background: #e8f3ed; }
+
+.bs-page .excel-dark-table tbody td.is-corrected { background: #e9f5ee; }
+.bs-page .fin-mapping-table tbody tr.is-missing > :is(th, td) { background: #fff8ed; }
+.bs-page .fin-mapping-table tbody tr.is-source-inconsistency > :is(th, td) { background: #fff4d6; }
+.bs-page .fin-mapping-table tbody tr:is(.is-extraction-problem, .is-mapping-problem, .is-mapping-review-required, .is-fx-rate-missing) > :is(th, td) { background: #fff0ee; }
+.bs-page .fin-generated-form .excel-dark-table td.is-missing { background: #fff4ed; color: #a43c34; }
+.bs-page .fin-generated-form .excel-dark-table td.is-finding { background: #fff4d8; color: #7b5500; }
+
+.bs-page .excel-dark-table caption {
+  background: #f2f2f2;
+  border: 1px solid #d9d9d9;
+  border-bottom: 0;
+  color: #404040;
+  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-size: 12px;
+  padding: 8px 12px;
+  text-align: left;
+}

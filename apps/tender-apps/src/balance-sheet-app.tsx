@@ -992,7 +992,7 @@ function BalanceSheetWorkspace() {
         >
           {review.lineItems.length ? (
             <div className="bs-table-scroll">
-              <table className="bs-client-result-table">
+              <table className="bs-client-result-table excel-dark-table" data-table-format="excel-dark">
                 <thead><tr><th>Section</th><th>Balance item</th>{review.statement.periods.map((period) => <th key={period}>{period}<small>reported</small></th>)}</tr></thead>
                 <tbody>
                   {review.lineItems.map((item) => (
@@ -1069,7 +1069,7 @@ function BalanceSheetWorkspace() {
 
             <section className="bs-line-section">
               <div className="bs-section-title"><div><span>EXTRACTION DETAIL</span><h3>Original and normalized rows</h3></div></div>
-              <div className="bs-table-scroll"><table className="bs-line-table"><thead><tr><th>English item / source label</th><th>Normalized concept</th><th>Text confidence / trace</th><th>Professional status</th></tr></thead><tbody>{review.lineItems.map((item) => <tr className={`${item.id === selectedLine?.id ? "is-selected" : ""} ${item.isTotal ? "is-total" : ""}`} key={item.id} onClick={() => { setSelectedLineId(item.id); setActivePeriod(item.values[0]?.period ?? ""); }}><td><button type="button">{englishItemLabel(item)}</button><small>{item.originalLabel} · {item.classification.replaceAll("_", " ")}</small></td><td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td><td><b>{Math.round(item.confidence * 100)}%</b><small>p.{item.values[0]?.source.page ?? "—"}</small></td><td><StatusBadge status={item.reviewStatus} /></td></tr>)}</tbody></table></div>
+              <div className="bs-table-scroll"><table className="bs-line-table excel-dark-table" data-table-format="excel-dark"><thead><tr><th>English item / source label</th><th>Normalized concept</th><th>Text confidence / trace</th><th>Professional status</th></tr></thead><tbody>{review.lineItems.map((item) => <tr className={`${item.id === selectedLine?.id ? "is-selected" : ""} ${item.isTotal ? "is-total" : ""}`} key={item.id} onClick={() => { setSelectedLineId(item.id); setActivePeriod(item.values[0]?.period ?? ""); }}><td><button type="button">{englishItemLabel(item)}</button><small>{item.originalLabel} · {item.classification.replaceAll("_", " ")}</small></td><td><b>{conceptLabels[item.normalizedConcept]}</b><code>{item.normalizedConcept}</code></td><td><b>{Math.round(item.confidence * 100)}%</b><small>p.{item.values[0]?.source.page ?? "—"}</small></td><td><StatusBadge status={item.reviewStatus} /></td></tr>)}</tbody></table></div>
             </section>
 
             <section className="bs-review-grid">
@@ -1234,7 +1234,7 @@ function BalanceSheetWorkspace() {
               </div>
             </div>
             <div className="bs-table-scroll">
-              <table className="bs-line-table">
+              <table className="bs-line-table excel-dark-table" data-table-format="excel-dark">
                 <thead>
                   <tr>
                     <th>English item / original source label</th>
