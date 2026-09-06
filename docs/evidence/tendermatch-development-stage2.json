@@ -1,0 +1,637 @@
+{
+  "version": "tendermatch-manifest-normalization/1.0.0",
+  "action": "execute",
+  "startedAt": "2026-09-06T11:58:07.162Z",
+  "priorManifestId": "e928df5e6a432fa23c8ea95dbfbf1aee4f1c883646d5ed72fd2856d994102ac2",
+  "manifestId": "e928df5e6a432fa23c8ea95dbfbf1aee4f1c883646d5ed72fd2856d994102ac2",
+  "sourceUnchanged": true,
+  "sourceObservations": {
+    "supplier": {
+      "database": "tender_entity_registry",
+      "role": "tendermatch_all_supplier_consumer_dev",
+      "started_at": "2026-09-06T11:58:17.807Z",
+      "snapshot": "47124:47124:",
+      "read_only": "on",
+      "isolation": "repeatable read",
+      "timezone": "GMT",
+      "finished_at": "2026-09-06T11:58:20.986Z",
+      "metrics": {
+        "profilePages": 2,
+        "profilePageSize": 100,
+        "evidencePages": 4,
+        "evidencePageSize": 500,
+        "queries": 15,
+        "elapsedMs": 3271
+      },
+      "limitations": {
+        "classification": {
+          "GOODS": 14,
+          "MISSING": 100,
+          "WORKS": 3
+        },
+        "profileState": {
+          "PINNED": 117
+        },
+        "readiness": {
+          "ready_for_exploratory_matching": 2,
+          "requires_enrichment": 4,
+          "usable_with_limitations": 111
+        },
+        "evidenceStatus": {
+          "INFERRED": 820,
+          "STATED_UNVERIFIED": 126,
+          "UNKNOWN": 607
+        },
+        "evidenceValueClass": {
+          "MISSING": 607,
+          "SOURCE": 946
+        },
+        "unavailableArtifacts": 167
+      }
+    },
+    "tender": {
+      "database": "neondb",
+      "role": "th_qa_readonly",
+      "started_at": "2026-09-06T11:58:22.515Z",
+      "snapshot": "2087768:2087768:",
+      "read_only": "on",
+      "isolation": "repeatable read",
+      "timezone": "GMT",
+      "finished_at": "2026-09-06T11:58:53.580Z",
+      "metrics": {
+        "pages": 35,
+        "pageSize": 500,
+        "orphanSourceFeedCountry": 0,
+        "queries": 43,
+        "elapsedMs": 31244
+      },
+      "limitations": {
+        "procurementType": {
+          "CONSULTING": 832,
+          "EOI": 8,
+          "GOODS": 6597,
+          "OTHER": 332,
+          "PREQUAL": 1,
+          "SERVICES": 6568,
+          "WORKS": 2995
+        },
+        "openPastDeadline": 1979,
+        "openMissingDeadline": 0,
+        "timestampMeaning": "Source timestamp-without-time-zone preserved verbatim; past-deadline diagnostic uses reported database TimeZone. No deadline exclusion."
+      }
+    },
+    "inventory": {
+      "supplier": {
+        "contract_version": "tendermatch-all-company-read/1.0.0",
+        "expected_company_count": 117,
+        "source_company_count": 117,
+        "profile_count": 117,
+        "evidence_count": 1553,
+        "pinned_id_checksum": "c4339c6056ca50d92b188a2d7407a0fb",
+        "source_id_checksum": "c4339c6056ca50d92b188a2d7407a0fb"
+      },
+      "tender": {
+        "all_rows": 29751,
+        "count": 17333,
+        "ids_md5": "e14cf09f8d48bf2dbd3d02afe55859f3",
+        "open_past_deadline": 1979,
+        "open_missing_deadline": 0
+      }
+    },
+    "globalAtomicSnapshot": false
+  },
+  "sourceMetrics": {
+    "supplier": {
+      "profilePages": 2,
+      "profilePageSize": 100,
+      "evidencePages": 4,
+      "evidencePageSize": 500,
+      "queries": 15,
+      "elapsedMs": 3271,
+      "payloadBytes": 1621296,
+      "maxPageBytes": 488269,
+      "peakHeapBytes": 36356352
+    },
+    "tender": {
+      "pages": 35,
+      "pageSize": 500,
+      "orphanSourceFeedCountry": 0,
+      "queries": 43,
+      "elapsedMs": 31244,
+      "payloadBytes": 53867731,
+      "maxPageBytes": 1691880,
+      "peakHeapBytes": 141816264
+    }
+  },
+  "sourceWrites": 0,
+  "scoring": "NOT RUN",
+  "eligibility": "NOT RUN",
+  "retrieval": "NOT RUN",
+  "embeddings": "NOT RUN",
+  "ai": "NOT RUN",
+  "frontendChanged": false,
+  "businessBefore": {
+    "embedding_model": 0,
+    "feature_embedding": 0,
+    "evaluation_run": 0,
+    "run_feature": 0,
+    "pair_score": 0,
+    "run_pair": 0,
+    "retrieval_request": 0,
+    "retrieval_result": 0,
+    "scoring_batch": 0,
+    "assessment_job": 0,
+    "assessment_artifact": 0,
+    "human_disposition": 0,
+    "universe_snapshot": 0,
+    "universe_pair": 0,
+    "criterion_audit": 0
+  },
+  "code": {
+    "files": {
+      "packages/tendermatch/src/input-normalization.ts": "f715ece2f7328c4af8aa615f166ce682d1955bfcd654542ec7ef7e15989bad4f",
+      "packages/tendermatch/src/retrieval-features.ts": "bfb605253a039ff3520891413836e4b9323d480fdf1711e929c754cd6220d7f0",
+      "packages/tendermatch/src/exploratory-matching.ts": "58b0381195272229801c077a0621e7ac0d0cb3b454b26176f1cbd10b03d93beb",
+      "packages/tendermatch/src/supplier-contract.ts": "1928a078f4b78bb24b181c42dc22ba5654f58e4ce716975334c778d2162ccd31",
+      "packages/tendermatch/src/types.ts": "d65fda55390bdeb59a7f510b44e018d871ea001e835fcb388dfb54af563ea0ae",
+      "scripts/lib/tendermatch-normalization.mjs": "e1ecadecd61d1321385db32761875685cc30c8e10be9c80a25b0347f4f63ab64",
+      "scripts/lib/tendermatch-input-manifest.mjs": "147058debafa20211d7bed63e4ad477a6858554aaff86fa1ea69d5620b50d7e7",
+      "scripts/lib/tendermatch-dev-contract.mjs": "b084fec4ba80525ac131bd29366b5dd08f16978e14b4408650776d409162847e",
+      "db/tendermatch-dev/target.json": "a9e36b7e3124eb50723ed8538e727091ece6153b64622dfd393b764aaa8c9235"
+    },
+    "hash": "08c85b9b2ef32e9ca93a132b5fc1dc1913b052cd521f001589a6982663913fa7"
+  },
+  "baseCommit": "074d17fc1e4f062d98420fc6205b906a2d96bf93",
+  "preparation": {
+    "reused": 0,
+    "normalized": 17450,
+    "cacheQueries": 35,
+    "elapsedMs": 15710,
+    "peakHeapBytes": 253668864
+  },
+  "normalizationId": "782f8b38737b21f6940b5c3f4fe4ec6eb890be4e2d168f19ba29b4952530e5f9",
+  "identity": {
+    "version": "tendermatch-manifest-normalization/1.0.0",
+    "manifestId": "e928df5e6a432fa23c8ea95dbfbf1aee4f1c883646d5ed72fd2856d994102ac2",
+    "codeHash": "08c85b9b2ef32e9ca93a132b5fc1dc1913b052cd521f001589a6982663913fa7",
+    "featureVersion": "tendermatch-source-features/2.0.0",
+    "adapterVersion": "tendermatch-source-feature-adapter/1.0.0",
+    "schemaVersion": "tendermatch-source-feature-schema/1.0.0",
+    "outcomeHash": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+    "supplierCount": 117,
+    "tenderCount": 17333
+  },
+  "coverage": {
+    "total": 17450,
+    "byKind": {
+      "supplier": 117,
+      "tender": 17333
+    },
+    "byState": {
+      "LIMITED": 17450
+    },
+    "supplierClassification": {
+      "MISSING": 100,
+      "GOODS": 14,
+      "WORKS": 3
+    },
+    "tenderScope": {
+      "SERVICES": 6568,
+      "WORKS": 2995,
+      "GOODS": 6597,
+      "CONSULTING": 832,
+      "OTHER": 332,
+      "EOI": 8,
+      "PREQUAL": 1
+    },
+    "reasons": {
+      "SOURCE_CLAIMS_NOT_INDEPENDENTLY_VERIFIED": 117,
+      "SUPPLIER_CLAIMS_MISSING": 117,
+      "SUPPLIER_CLASSIFICATION_MISSING": 100,
+      "TYPED_QUANTITIES_MISSING": 100,
+      "SOURCE_ARTIFACT_UNAVAILABLE": 27,
+      "SOURCE_NOTICE_NOT_INDEPENDENTLY_VERIFIED": 17333,
+      "SOURCE_TIMEZONE_MISSING": 17333,
+      "STRUCTURED_REQUIREMENTS_NOT_AVAILABLE": 17333,
+      "GENERAL_VOCABULARY_BOUNDED": 2693,
+      "COUNTRY_MISSING": 420,
+      "NO_TRANSLATION_ENGLISH_CONCEPT_DICTIONARY": 946,
+      "DESCRIPTION_PREFIX_ONLY": 413
+    }
+  },
+  "claims": {
+    "total": 1553,
+    "byField": {
+      "certifications": 117,
+      "compliance_risks": 100,
+      "export_markets": 100,
+      "identity_company_type": 100,
+      "installation_after_sales": 100,
+      "local_presence": 100,
+      "main_activity": 100,
+      "manufacturing_capabilities_capacity": 100,
+      "materials_specs": 100,
+      "moq_lead_time_incoterms": 100,
+      "product_categories": 100,
+      "products_portfolio": 100,
+      "project_references": 100,
+      "turnover_scale": 100,
+      "capacity": 17,
+      "classification": 17,
+      "financial": 17,
+      "geographic_markets": 17,
+      "industries_served": 17,
+      "materials": 17,
+      "product_families": 17,
+      "works_specializations": 17
+    },
+    "status": {
+      "INFERRED": 820,
+      "UNKNOWN": 607,
+      "STATED_UNVERIFIED": 126
+    },
+    "valueClass": {
+      "SOURCE": 946,
+      "MISSING": 607
+    },
+    "missing": 607,
+    "unavailableArtifacts": 167
+  },
+  "quantities": {
+    "total": 234,
+    "typed": 40,
+    "missing": 194,
+    "reasons": {
+      "QUANTITY_STRUCTURE_UNSUPPORTED": 101,
+      "QUANTITY_MISSING": 89,
+      "REPORTING_PERIOD_MISSING": 17,
+      "QUANTITY_UNIT_OR_CURRENCY_MISSING": 1,
+      "FINANCIAL_CURRENCY_MISSING": 3
+    }
+  },
+  "artifact": {
+    "featureBytes": 73459825,
+    "maxFeatureBytes": 15934,
+    "rawBodiesArchived": 0,
+    "contactsProjected": 0
+  },
+  "persistence": {
+    "insertedSnapshots": 1,
+    "insertedFeatures": 17450,
+    "insertedOutcomes": 17450,
+    "readback": {
+      "rows": 17450,
+      "queries": 37,
+      "outcomeHash": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+      "allFeatureBodiesEqual": true
+    },
+    "queries": 147,
+    "elapsedMs": 81248
+  },
+  "reuse": {
+    "reused": 17450,
+    "normalized": 0,
+    "cacheQueries": 35,
+    "elapsedMs": 52744,
+    "peakHeapBytes": 442350896
+  },
+  "idempotency": {
+    "insertedSnapshots": 0,
+    "insertedFeatures": 0,
+    "insertedOutcomes": 0,
+    "readback": {
+      "rows": 17450,
+      "queries": 37,
+      "outcomeHash": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+      "allFeatureBodiesEqual": true
+    },
+    "queries": 112,
+    "elapsedMs": 69271
+  },
+  "independentReadback": {
+    "rows": 17450,
+    "queries": 37,
+    "outcomeHash": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+    "allFeatureBodiesEqual": true
+  },
+  "negativeChecks": {
+    "roles": "restricted/no ownership",
+    "writer": "SELECT/INSERT only",
+    "updateDeleteTruncateDdl": "denied",
+    "crossTenantRead": "zero",
+    "crossTenantWrite": "denied",
+    "lateAssociationInsert": "denied",
+    "probeRowsCommitted": 0,
+    "boundary": "trusted-service tenant GUC, not authentication"
+  },
+  "storage": [
+    {
+      "table_name": "normalization_member",
+      "total_bytes": "11288576",
+      "heap_bytes": "8568832"
+    },
+    {
+      "table_name": "normalization_snapshot",
+      "total_bytes": "49152",
+      "heap_bytes": "8192"
+    },
+    {
+      "table_name": "normalized_feature",
+      "total_bytes": "122773504",
+      "heap_bytes": "24870912"
+    }
+  ],
+  "businessAfter": {
+    "embedding_model": 0,
+    "feature_embedding": 0,
+    "evaluation_run": 0,
+    "run_feature": 0,
+    "pair_score": 0,
+    "run_pair": 0,
+    "retrieval_request": 0,
+    "retrieval_result": 0,
+    "scoring_batch": 0,
+    "assessment_job": 0,
+    "assessment_artifact": 0,
+    "human_disposition": 0,
+    "universe_snapshot": 0,
+    "universe_pair": 0,
+    "criterion_audit": 0
+  },
+  "durationMs": 298094,
+  "memory": {
+    "rss": 838000640,
+    "heapTotal": 558882816,
+    "heapUsed": 402583224,
+    "external": 10107530,
+    "arrayBuffers": 679010
+  },
+  "connectionMetrics": [
+    {
+      "database": "tendermatch_results_dev",
+      "role": "tendermatch_result_writer_dev",
+      "queries": 489,
+      "responseJsonBytes": 328620061,
+      "maxResponseJsonBytes": 3147297
+    },
+    {
+      "database": "tender_entity_registry",
+      "role": "tendermatch_all_supplier_consumer_dev",
+      "queries": 19,
+      "responseJsonBytes": 1621578,
+      "maxResponseJsonBytes": 488269
+    },
+    {
+      "database": "neondb",
+      "role": "th_qa_readonly",
+      "queries": 44,
+      "responseJsonBytes": 53867772,
+      "maxResponseJsonBytes": 1691880
+    }
+  ],
+  "executedFiles": {
+    "scripts/tendermatch-normalize-inputs.mjs": "b9871a0000de4623ee313ff4465b92f568d845019b0c27a38576ad572ebfab7b",
+    "db/tendermatch-dev/050-normalization-up.sql": "fd981dd39777cb551a35b255d07a788c7d0732de30ca35e2a9af3943c109e470"
+  },
+  "finishedAt": "2026-09-06T12:03:05.257Z",
+  "status": "PERSISTED_READBACK_VERIFIED",
+  "ownerPostflight": {
+    "at": "2026-09-06T12:05:14.745Z",
+    "writes": 0,
+    "globalCounts": {
+      "normalized_feature": 17450,
+      "embedding_model": 0,
+      "feature_embedding": 0,
+      "evaluation_run": 0,
+      "run_feature": 0,
+      "pair_score": 0,
+      "run_pair": 0,
+      "retrieval_request": 0,
+      "retrieval_result": 0,
+      "scoring_batch": 0,
+      "assessment_job": 0,
+      "assessment_artifact": 0,
+      "human_disposition": 0,
+      "schema_migration": 4,
+      "universe_snapshot": 0,
+      "universe_pair": 0,
+      "criterion_audit": 0,
+      "input_manifest": 2,
+      "input_member": 34890,
+      "input_capture": 2,
+      "normalization_snapshot": 1,
+      "normalization_member": 17450
+    },
+    "membershipDelta": [
+      {
+        "kind": "supplier",
+        "added": 0,
+        "removed": 0,
+        "changed": 0,
+        "unchanged": 117
+      },
+      {
+        "kind": "tender",
+        "added": 10,
+        "removed": 0,
+        "changed": 0,
+        "unchanged": 17323
+      }
+    ],
+    "migrations": [
+      "20260905-retrieval-v1",
+      "20260906-all-to-all-dev-v1",
+      "20260906-input-manifest-v1",
+      "20260906-normalization-v1"
+    ],
+    "newTableGrants": [
+      {
+        "table_name": "normalization_member",
+        "grantee": "tendermatch_result_writer",
+        "privilege_type": "INSERT"
+      },
+      {
+        "table_name": "normalization_member",
+        "grantee": "tendermatch_result_writer",
+        "privilege_type": "SELECT"
+      },
+      {
+        "table_name": "normalization_snapshot",
+        "grantee": "tendermatch_result_writer",
+        "privilege_type": "INSERT"
+      },
+      {
+        "table_name": "normalization_snapshot",
+        "grantee": "tendermatch_result_writer",
+        "privilege_type": "SELECT"
+      }
+    ],
+    "sourceCounts": {
+      "canonical_companies": 117,
+      "profiles": 117,
+      "evidence": 1553,
+      "legacy_profiles": 17,
+      "legacy_evidence": 289
+    }
+  },
+  "fieldCoverage": {
+    "tenders": 17333,
+    "reported_budget": 7331,
+    "missing_budget": 10002,
+    "reported_zero_budget": 229,
+    "budget_currency_missing": 0,
+    "missing_country": 420,
+    "with_linked_tags": 15776,
+    "missing_deadline": 0,
+    "max_description_prefix": 12000
+  },
+  "representativeFeatures": [
+    {
+      "kind": "supplier",
+      "entity_id": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+      "feature_key": "457160f6fd7aa4d00c90ad3d8098bcbb6f1ac7d2df0ab9e9f96aa6b2f02bc43f",
+      "content_hash": "5aa22ef6adc2fca5d2d7c4ba9f57e8a9202732ca5a14497e64430059e6617140",
+      "procurement_type": "MISSING",
+      "normalization": {
+        "status": "LIMITED",
+        "reasons": [
+          "SOURCE_CLAIMS_NOT_INDEPENDENTLY_VERIFIED",
+          "SUPPLIER_CLAIMS_MISSING",
+          "SUPPLIER_CLASSIFICATION_MISSING",
+          "TYPED_QUANTITIES_MISSING"
+        ],
+        "valueClass": "CALCULATED"
+      }
+    },
+    {
+      "kind": "supplier",
+      "entity_id": "700df25e-8bdc-506d-adc9-6c1cc76925f9",
+      "feature_key": "387bf6521cd9e53a30bd9bc1675e9a44e065b720c7a562fb1ec0d7f0323b18e9",
+      "content_hash": "6878685035d94cee0ea32e6ab404f94ea81d3d7a9f31e4f3d9a220abbbf6cfe8",
+      "procurement_type": "GOODS",
+      "normalization": {
+        "status": "LIMITED",
+        "reasons": [
+          "SOURCE_ARTIFACT_UNAVAILABLE",
+          "SOURCE_CLAIMS_NOT_INDEPENDENTLY_VERIFIED",
+          "SUPPLIER_CLAIMS_MISSING"
+        ],
+        "valueClass": "CALCULATED"
+      }
+    },
+    {
+      "kind": "supplier",
+      "entity_id": "feff2695-eac8-5949-9585-58229dc7ef37",
+      "feature_key": "8013e94d6a1638d181599be8e8439707111210441282cd84713532be12d3c733",
+      "content_hash": "85bec21f9b299b620387f55447e64563c95888024098ab782da25b2c5cd2d94a",
+      "procurement_type": "MISSING",
+      "normalization": {
+        "status": "LIMITED",
+        "reasons": [
+          "SOURCE_CLAIMS_NOT_INDEPENDENTLY_VERIFIED",
+          "SUPPLIER_CLAIMS_MISSING",
+          "SUPPLIER_CLASSIFICATION_MISSING",
+          "TYPED_QUANTITIES_MISSING"
+        ],
+        "valueClass": "CALCULATED"
+      }
+    },
+    {
+      "kind": "tender",
+      "entity_id": "000a20a5-a768-4939-9d30-d15203bb293f",
+      "feature_key": "acc8e4ab6099444fb54017474c7511f26197c98b08f2181b0e82ca30fc537d1d",
+      "content_hash": "a560b168de27b6c50f198b86c464d479c8fd63c4b501d8d8cb10ec94d74ee42f",
+      "procurement_type": "SERVICES",
+      "normalization": {
+        "status": "LIMITED",
+        "reasons": [
+          "SOURCE_NOTICE_NOT_INDEPENDENTLY_VERIFIED",
+          "SOURCE_TIMEZONE_MISSING",
+          "STRUCTURED_REQUIREMENTS_NOT_AVAILABLE"
+        ],
+        "valueClass": "CALCULATED"
+      }
+    },
+    {
+      "kind": "tender",
+      "entity_id": "7ff11a2b-c788-4bb5-96a7-8592da7c1885",
+      "feature_key": "d23f8eb89ed7b43b85499abcf94a66564d27a37a58949da688ac4d2fc4fcdb1c",
+      "content_hash": "fa2ad848ed3243c4032b965378a980771dbb94ad9b1f192df82ed378eec020fc",
+      "procurement_type": "GOODS",
+      "normalization": {
+        "status": "LIMITED",
+        "reasons": [
+          "SOURCE_NOTICE_NOT_INDEPENDENTLY_VERIFIED",
+          "SOURCE_TIMEZONE_MISSING",
+          "STRUCTURED_REQUIREMENTS_NOT_AVAILABLE"
+        ],
+        "valueClass": "CALCULATED"
+      }
+    },
+    {
+      "kind": "tender",
+      "entity_id": "fffe56e6-cbeb-468b-9e84-0c683f02c956",
+      "feature_key": "6e549add421f60ad61632592d71e83149318e9fcf2c60f87ea22a52367c78898",
+      "content_hash": "0d3dc37dd1461fd91db9f77b7f0b2d32d253144a31e57f9ee83c5cba314670a1",
+      "procurement_type": "CONSULTING",
+      "normalization": {
+        "status": "LIMITED",
+        "reasons": [
+          "GENERAL_VOCABULARY_BOUNDED",
+          "SOURCE_NOTICE_NOT_INDEPENDENTLY_VERIFIED",
+          "SOURCE_TIMEZONE_MISSING",
+          "STRUCTURED_REQUIREMENTS_NOT_AVAILABLE"
+        ],
+        "valueClass": "CALCULATED"
+      }
+    }
+  ],
+  "validation": {
+    "focused": {
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0
+    },
+    "stage2": {
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    "fullRepository": {
+      "passed": 457,
+      "failed": 0,
+      "skipped": 0
+    },
+    "lint": "PASS (full repository)",
+    "strictTypecheck": "PASS packages/tendermatch/src/input-normalization.ts and imported dependencies",
+    "builds": [
+      "Command Center PASS",
+      "Atlas PASS",
+      "TenderApps PASS",
+      "64 generated Agent specifications"
+    ],
+    "originalStandalone": {
+      "commit": "04b0b2a723223d11617837ee0e7562fa48168cd9",
+      "clean": true,
+      "staticChecksPassed": 3
+    },
+    "frontendBrowserQA": "not applicable: no frontend changes",
+    "knownBuildWarnings": [
+      "existing large chunks",
+      "existing emitted CSS filename conflict",
+      "existing static route classification warnings"
+    ]
+  },
+  "boundaries": {
+    "sourceWrites": 0,
+    "credentialRotations": 0,
+    "roleChanges": 0,
+    "frontendChanges": 0,
+    "pushes": 0,
+    "merges": 0,
+    "deployments": 0,
+    "paidActions": 0,
+    "stage3Started": false,
+    "ownerCredential": "temporary memory reference cleared; console password hidden; not stored or copied"
+  }
+}
