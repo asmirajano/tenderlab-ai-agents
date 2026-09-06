@@ -257,7 +257,7 @@ with coverage 65 / 60. No weights or denominator are renormalized to hide this.
 
 No thresholds, Match/Non-match labels, retrieval, embeddings, rankings, AI/TORS,
 shortlist, frontend, source write, human disposition, credential/billing change,
-push, merge, deployment or publication occurred. The original TenderBoost
+push, merge, deployment or publication occurred. The original standalone source
 worktree and canonical Agent registry remain unchanged.
 
 Stop at the completed local checkpoint for orchestrator Stage 4 review.

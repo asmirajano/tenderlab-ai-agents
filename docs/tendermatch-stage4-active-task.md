@@ -45,7 +45,7 @@ typecheck and all production builds. Keep prior stage artifacts unchanged.
 No thresholds or Match/Non-match labels. No retrieval, embeddings, shortlist,
 AI/TORS, human decisions, frontend, source writes, credential/billing changes,
 push, merge, publish or deployment. Do not change Formula or canonical registry.
-Original TenderBoost worktree/app remains untouched. No destructive Git actions.
+The original standalone source worktree/app remains untouched. No destructive Git actions.
 
 Create Markdown/JSON evidence and a clean local Stage 4 checkpoint. Report to
 orchestrator `01a04ea3-451d-77d2-8140-ca35d2a28e37`, then stop for review.
