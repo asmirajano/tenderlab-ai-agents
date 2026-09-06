@@ -1,0 +1,444 @@
+{
+  "schemaVersion": "tendermatch-development-stage1-evidence/1.0.0",
+  "status": "REGISTERED_AND_VALIDATED_DEVELOPMENT_ONLY",
+  "date": "2026-09-06",
+  "code": {
+    "worktree": "C:/CodexWork/tendermatch-neon-all-to-all",
+    "branch": "codex/tendermatch-neon-all-to-all",
+    "base": "9f3bcb4ac785f42accd289502932a1f1e6cb7514",
+    "remoteMain": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+    "checkpoint": "enclosing Git commit",
+    "upstream": null,
+    "executedFileHashEncoding": "SHA-256 of canonical JSON string containing UTF-8 source text",
+    "executedFiles": {
+      "scripts/lib/tendermatch-input-manifest.mjs": "3a912a4c69c0b9fbe26526d01f6820c843708f9b9040b5a5c85ca62363e83395",
+      "scripts/tendermatch-input-manifest.mjs": "042f5a643adfa390a7c7658b0e9c8de8a0af750271dd2cd39bba3dcfd6713682",
+      "db/tendermatch-dev/040-input-manifest-up.sql": "71205206ac22f426712a5f8fb969a5d92cbdacd377a98bc4110f2bbebe166e6c"
+    }
+  },
+  "authority": {
+    "basis": "Explicit Stage 1 delegation; retained authenticated Neon Console project/branch/compute reconciliation; exact guarded credential and connected role/database; historical user-selected tender branch.",
+    "tenderHistoricalLinkage": "docs/tendermatch-central-asia-current-pilot.md:8-9",
+    "tenderControlPlane": "https://console.neon.tech/app/projects/solitary-darkness-82235346/branches/br-morning-water-atqp6w7c/computes",
+    "resultControlPlane": "https://console.neon.tech/app/projects/dry-union-87553313/branches/br-polished-boat-b1qddx0m",
+    "branchQualification": "Selected authoritative tender branch for this capture, not a claim that its backup name is the newest or production branch.",
+    "postgresCannotProveNeonBranch": true
+  },
+  "resultTarget": {
+    "project": "tender-entity-registry",
+    "projectId": "dry-union-87553313",
+    "branch": "development",
+    "branchId": "br-polished-boat-b1qddx0m",
+    "host": "ep-dark-dew-b15ctyr1.c-5.eu-central-1.aws.neon.tech",
+    "database": "tendermatch_results_dev",
+    "schema": "tendermatch_retrieval",
+    "tenant": "tendermatch-development-stage1",
+    "migration": "20260906-input-manifest-v1",
+    "postgres": "18.6",
+    "tls": "verify-full",
+    "channelBinding": "require"
+  },
+  "manifestId": "1dde6c1b91bf02ff499493e99e236355016ff838cc39d11d1187bffada40a729",
+  "captureId": "dd3d7b86bfe7305f5b7b00228a8e15a55cdccb46ba384ec5ba851d147c8ccc05",
+  "identity": {
+    "tender": {
+      "count": 17323,
+      "idsSha256": "34950ee8e93bc4e9c9f2f94ac1b5239edd60ad73fb847c5864792730375864e4",
+      "contentSha256": "e07fa8c3f82a69cf8704d58c96b6f6ebe116d47415b999dfe16055f18b840e7d"
+    },
+    "adapter": "tendermatch-input-capture/1.0.0",
+    "sources": {
+      "tender": {
+        "host": "ep-aged-feather-atm85iwd-pooler.c-9.us-east-1.aws.neon.tech",
+        "role": "th_qa_readonly",
+        "table": "public.tenders",
+        "branch": "backup/pre-mvp-rc1-20260726",
+        "project": "TenderLab",
+        "branchId": "br-morning-water-atqp6w7c",
+        "contract": "tendermatch-open-tender-input/1.0.0",
+        "database": "neondb",
+        "predicate": "status = 'OPEN' AND \"deletedAt\" IS NULL",
+        "projectId": "solitary-darkness-82235346",
+        "documentRole": "AUTHORITATIVE_SOURCE"
+      },
+      "supplier": {
+        "host": "ep-dark-dew-b15ctyr1.c-5.eu-central-1.aws.neon.tech",
+        "role": "tendermatch_all_supplier_consumer_dev",
+        "schema": "tendermatch_all_supplier_api",
+        "branchId": "br-polished-boat-b1qddx0m",
+        "contract": "tendermatch-all-company-read/1.0.0",
+        "database": "tender_entity_registry",
+        "predicate": "registry.entities.entity_type_code = 'company'",
+        "projectId": "dry-union-87553313",
+        "profilePins": [
+          {
+            "batch": "accio-neutral-suppliers-2026-09-01-v2.1-policy-corrected",
+            "version": "v2.1-policy-corrected-2026-09-01"
+          },
+          {
+            "batch": "accio-goods-works-suppliers-2026-09-01-v1.3-critical-evidence-corrected-db-staged",
+            "version": "v1.3-critical-evidence-corrected-2026-09-01"
+          }
+        ],
+        "documentRole": "AUTHORITATIVE_SOURCE"
+      }
+    },
+    "version": "tendermatch-input-manifest/1.0.0",
+    "supplier": {
+      "count": 117,
+      "idsSha256": "f0bcd0b9f9c897b80ea85ed4ce91088944cb20fac3cc4bb9ace878fe81610283",
+      "contentSha256": "0680eda075657ac383a5acb191434198b5467adcc4bc0450f87d7b7ff5534a09"
+    },
+    "hashContract": {
+      "tender": "PostgreSQL jsonb text SHA-256; explicit fields",
+      "excluded": "raw,metadata,embedding,searchVector,derived categories/sectors/tags; not a scoring-cache identity",
+      "supplier": "canonical-json safe profile + all safe evidence rows; claims sorted by ID",
+      "tenderFields": [
+        "id",
+        "feedId",
+        "sourceId",
+        "externalRef",
+        "sourceRef",
+        "sourceNoticeUrl",
+        "contentHash",
+        "dataVersion",
+        "title",
+        "sourceTitle",
+        "description",
+        "procurementType",
+        "status",
+        "buyer",
+        "financierName",
+        "originatingOrganization",
+        "primaryCountryId",
+        "budgetAmount",
+        "budgetCurrency",
+        "budgetUsd",
+        "publishedAt",
+        "deadlineAt",
+        "deadlineSourceText",
+        "sourceTimezone",
+        "sourceUpdatedAt",
+        "publishedAtPrecision",
+        "firstImportedAt",
+        "lastSyncedAt",
+        "createdAt",
+        "updatedAt",
+        "deletedAt"
+      ]
+    },
+    "policyReferences": {
+      "feature": "tendermatch-normalized-features/1.0.0",
+      "formula": "tendermatch-match-formula/1.1.0",
+      "executed": false,
+      "retrieval": "tendermatch-hybrid-rrf/1.0.0",
+      "scoringPolicy": "tendermatch-coverage-adjusted-goods-works/1.1.0"
+    }
+  },
+  "observations": {
+    "tender": {
+      "role": "th_qa_readonly",
+      "metrics": {
+        "pages": 35,
+        "queries": 43,
+        "pageSize": 500,
+        "elapsedMs": 10330,
+        "orphanSourceFeedCountry": 0
+      },
+      "database": "neondb",
+      "snapshot": "2085231:2085231:",
+      "timezone": "GMT",
+      "isolation": "repeatable read",
+      "read_only": "on",
+      "started_at": "2026-09-06T10:15:24.128Z",
+      "finished_at": "2026-09-06T10:15:34.270Z",
+      "limitations": {
+        "procurementType": {
+          "EOI": 8,
+          "GOODS": 6594,
+          "OTHER": 332,
+          "WORKS": 2994,
+          "PREQUAL": 1,
+          "SERVICES": 6567,
+          "CONSULTING": 827
+        },
+        "openPastDeadline": 1979,
+        "timestampMeaning": "Source timestamp-without-time-zone preserved verbatim; past-deadline diagnostic uses reported database TimeZone. No deadline exclusion.",
+        "openMissingDeadline": 0
+      }
+    },
+    "supplier": {
+      "role": "tendermatch_all_supplier_consumer_dev",
+      "metrics": {
+        "queries": 15,
+        "elapsedMs": 2071,
+        "profilePages": 2,
+        "evidencePages": 4,
+        "profilePageSize": 100,
+        "evidencePageSize": 500
+      },
+      "database": "tender_entity_registry",
+      "snapshot": "41992:41992:",
+      "timezone": "GMT",
+      "isolation": "repeatable read",
+      "read_only": "on",
+      "started_at": "2026-09-06T10:15:20.461Z",
+      "finished_at": "2026-09-06T10:15:22.439Z",
+      "limitations": {
+        "readiness": {
+          "requires_enrichment": 4,
+          "usable_with_limitations": 111,
+          "ready_for_exploratory_matching": 2
+        },
+        "profileState": {
+          "PINNED": 117
+        },
+        "classification": {
+          "GOODS": 14,
+          "WORKS": 3,
+          "MISSING": 100
+        },
+        "evidenceStatus": {
+          "UNKNOWN": 607,
+          "INFERRED": 820,
+          "STATED_UNVERIFIED": 126
+        },
+        "evidenceValueClass": {
+          "SOURCE": 946,
+          "MISSING": 607
+        },
+        "unavailableArtifacts": 167
+      }
+    },
+    "inventory": {
+      "tender": {
+        "count": 17323,
+        "ids_md5": "e192a9a76efd871dcb6d7c7f8ed41d43",
+        "all_rows": 29741,
+        "open_past_deadline": 1979,
+        "open_missing_deadline": 0
+      },
+      "supplier": {
+        "profile_count": 117,
+        "evidence_count": 1553,
+        "contract_version": "tendermatch-all-company-read/1.0.0",
+        "pinned_id_checksum": "c4339c6056ca50d92b188a2d7407a0fb",
+        "source_id_checksum": "c4339c6056ca50d92b188a2d7407a0fb",
+        "source_company_count": 117,
+        "expected_company_count": 117
+      }
+    },
+    "globalAtomicSnapshot": false
+  },
+  "createdAt": "2026-09-06T10:15:38.433Z",
+  "registeredAt": "2026-09-06T10:15:38.433Z",
+  "independentReadback": {
+    "at": "2026-09-06T10:18:56.205Z",
+    "proof": {
+      "supplier": {
+        "count": 117,
+        "pages": 1,
+        "idsSha256": "f0bcd0b9f9c897b80ea85ed4ce91088944cb20fac3cc4bb9ace878fe81610283",
+        "contentSha256": "0680eda075657ac383a5acb191434198b5467adcc4bc0450f87d7b7ff5534a09"
+      },
+      "tender": {
+        "count": 17323,
+        "pages": 35,
+        "idsSha256": "34950ee8e93bc4e9c9f2f94ac1b5239edd60ad73fb847c5864792730375864e4",
+        "contentSha256": "e07fa8c3f82a69cf8704d58c96b6f6ebe116d47415b999dfe16055f18b840e7d"
+      }
+    }
+  },
+  "potentialPairs": 2026791,
+  "captureValidation": {
+    "supplierCanonicalPinnedConsumerIdSetsEqual": true,
+    "supplierCounts": {
+      "canonical": 117,
+      "pinned": 117,
+      "consumer": 117
+    },
+    "evidence": 1553,
+    "duplicates": 0,
+    "evidenceOrphans": 0,
+    "profileVersionMismatch": 0,
+    "sourceAliasDifference": 0,
+    "tenderOrphanSourceFeedCountry": 0,
+    "sourceCountsAndIdMd5BeforeAfterEqual": true,
+    "sourceWrites": 0,
+    "independentCaptureSkewMs": 3667,
+    "globalAtomic": false,
+    "maximumSourceDurationMs": 120000,
+    "maximumCrossSourceSkewMs": 900000,
+    "maximumRegistrationAgeMs": 1800000,
+    "preliminaryReadOnlyCapture": {
+      "supplierStartedAt": "2026-09-06T10:11:54.068Z",
+      "tenderStartedAt": "2026-09-06T10:11:58.266Z",
+      "sameManifestId": true,
+      "sameIdsAndContentHashes": true,
+      "registered": false
+    }
+  },
+  "registration": {
+    "insertedManifest": 1,
+    "insertedMembers": 17440,
+    "insertedCapture": 1,
+    "queriesIncludingReadback": 79,
+    "elapsedMs": 13306
+  },
+  "idempotentReplay": {
+    "sameManifestId": true,
+    "sameCaptureId": true,
+    "insertedManifest": 0,
+    "insertedMembers": 0,
+    "insertedCapture": 0,
+    "queriesIncludingReadback": 44,
+    "elapsedMs": 8397
+  },
+  "persistedRows": {
+    "input_manifest": 1,
+    "input_member": 17440,
+    "input_capture": 1
+  },
+  "storage": {
+    "totalBytesIncludingIndexesAndToast": 14737408,
+    "tables": [
+      {
+        "table": "input_capture",
+        "totalBytes": 49152,
+        "heapBytes": 8192
+      },
+      {
+        "table": "input_manifest",
+        "totalBytes": 49152,
+        "heapBytes": 8192
+      },
+      {
+        "table": "input_member",
+        "totalBytes": 14639104,
+        "heapBytes": 11927552
+      }
+    ]
+  },
+  "permissions": {
+    "newTablesOwner": "neondb_owner",
+    "newTablesRls": 3,
+    "newWriterGrants": [
+      "SELECT",
+      "INSERT"
+    ],
+    "newDirectLoginGrants": 0,
+    "newPublicGrants": 0,
+    "writerRole": "tendermatch_result_writer",
+    "writerLogin": "tendermatch_result_writer_dev",
+    "writerRoleAttributes": "restricted, sole application membership, no ownership",
+    "denials": [
+      "UPDATE",
+      "DELETE",
+      "TRUNCATE",
+      "CREATE TABLE",
+      "cross-tenant INSERT",
+      "late member INSERT"
+    ],
+    "crossTenantRead": 0,
+    "probeRowsCommitted": 0,
+    "tenantBoundary": "Trusted service-set GUC, not authentication; credential must remain server-side."
+  },
+  "postRegistrationGlobalAudit": {
+    "at": "2026-09-06T10:17:17.034Z",
+    "businessAndModelTables": 16,
+    "nonemptyBusinessOrModelTables": 0,
+    "evaluationRuns": 0,
+    "pairScores": 0,
+    "embeddings": 0,
+    "assessmentJobs": 0,
+    "humanDispositions": 0,
+    "models": 0
+  },
+  "preservation": {
+    "canonicalCompanies": 117,
+    "allCompanyProfiles": 117,
+    "allCompanyEvidence": 1553,
+    "legacyProfiles": 17,
+    "legacyEvidence": 289,
+    "allSupplierReaderSelectViews": 5,
+    "sourceMutations": 0,
+    "sourcePermissionChanges": 0,
+    "originalStandaloneCommit": "04b0b2a723223d11617837ee0e7562fa48168cd9",
+    "originalStandaloneClean": true,
+    "frontendChanges": false,
+    "canonicalRegistryChanges": false
+  },
+  "secrets": {
+    "existingFilesReused": true,
+    "files": [
+      ".env.tendermatch-all-suppliers-dev",
+      ".env.tendermatch-results-dev"
+    ],
+    "gitIgnored": true,
+    "inheritanceDisabled": true,
+    "currentUserOnly": true,
+    "created": 0,
+    "rotated": 0,
+    "ownerSaved": false,
+    "ownerReferencesCleared": true,
+    "consolePasswordHidden": true,
+    "clipboardCleared": true,
+    "logStatement": "none"
+  },
+  "validation": {
+    "manifestTests": {
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    "focusedTests": {
+      "passed": 59,
+      "failed": 0,
+      "skipped": 0
+    },
+    "fullRepositoryTests": {
+      "passed": 427,
+      "failed": 0,
+      "skipped": 0,
+      "command": "npm run test",
+      "includesAllProductionBuilds": true
+    },
+    "originalStaticTests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "targetedLint": "passed",
+    "fullLint": "passed: npm run lint",
+    "strictDomainTypecheck": "passed: all-to-all-contract.ts and imported graph",
+    "newRunnerSyntax": "passed",
+    "productionBuildWarnings": [
+      "large shared chunks",
+      "vinext emitted CSS filename conflict",
+      "vinext route classification limitations; no build failure"
+    ]
+  },
+  "scope": {
+    "scoring": "NOT RUN",
+    "eligibility": "NOT RUN",
+    "shortlisting": "NOT RUN",
+    "ai": "NOT RUN",
+    "normalization": "NOT RUN",
+    "embedding": "NOT RUN",
+    "tors": "NOT RUN",
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "publish": false,
+    "billingChanges": false,
+    "productionMutation": false
+  },
+  "limitations": [
+    "100 supplier classifications are MISSING; 607 UNKNOWN/MISSING claims; zero VERIFIED claims; 167 unavailable artifacts.",
+    "1979 source-listed OPEN tenders were past deadline; retained by exact authorized predicate, not declared eligible.",
+    "Independent per-source snapshots, not a cross-database atomic snapshot.",
+    "Compact membership/hash boundary, not archived source bodies; future work must re-read exact IDs and reject changed/missing hashes.",
+    "Tender hash explicitly excludes derived tag/category/sector relations and raw/metadata/embeddings; future consumers must version and hash any extra inputs before use.",
+    "No front-end population switch, authenticated tenancy, scoring outcome, retrieval result or AI-runtime claim.",
+    "Stage 0 ID SHA used newline-joined IDs; Stage 1 uses canonical JSON arrays. MD5 comma-joined IDs agrees; different SHA encoding is not source drift."
+  ]
+}

@@ -1,5 +1,12 @@
 # TenderMatch development database runbook
 
+**Stage 1 update, 6 September 2026:** The compact input-manifest layer is now applied
+and validated in the same development result store. It captures all 117 canonical
+suppliers and 17,323 source-listed OPEN nondeleted tenders without scoring. See
+[Stage 1 evidence](evidence/tendermatch-development-stage1.md). Do not rerun Stage 0
+provisioning or the applied Stage 1 migration. Source contracts/credentials and the
+public application remain unchanged; stop for Stage 1 review.
+
 **Execution update, 6 September 2026:** Stage 0 was explicitly authorized and the unchanged prepared SQL/runner were applied to the exact development target below. Both restricted credentials and the empty result store passed live validation. See [Stage 0 evidence](evidence/tendermatch-development-stage0.md) and [machine-readable results](evidence/tendermatch-development-stage0.json). Do not rerun creation/provisioning against these existing objects. The preparation narrative and disconnected `plan` state below describe the frozen preparation artifact, not the now-applied environment. Scoring and production activation remain unauthorized by this runbook.
 
 Prepared from `cda9ab646fe768600af455a340f5cd4538c05ca8` on `codex/tendermatch-neon-all-to-all`. The enclosing commit is a preparation checkpoint, not permission to execute. No Neon connection, source mutation, role/credential/database creation, scoring run or deployment was performed. Canonical owner remains TL-A031. The public 17×60 app is unchanged.
