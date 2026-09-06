@@ -510,12 +510,16 @@ test("the guided client flow combines manual and genuinely parsed document input
   assert.match(css, /\.recommended-scope/);
   assert.match(css, /\.cost-preparation-summary/);
   assert.match(css, /\.cost-state-badge/);
+  assert.match(css, /\.client-field-grid label span b \{ color: var\(--costing-red\)/);
+  assert.match(css, /\.cost-state-badge\.unknown \{[^}]*border-color: var\(--costing-red\)[^}]*color: #84251f/);
+  assert.match(css, /\.cost-preparation-row\.state-unknown \{[^}]*box-shadow: inset 4px 0 0 var\(--costing-red\)/);
   assert.match(css, /\.document-processing-progress/);
   assert.match(css, /\.continue-requirement/);
   assert.match(extractor, /getDocument/);
   assert.match(extractor, /sheet_to_json/);
   assert.match(extractor, /IMAGE_BASED_PDF/);
   assert.match(extractor, /UNTRUSTED_DOCUMENT_INSTRUCTION/);
+  assert.match(extractor, /unitPrice:/);
 });
 
 test("semantic quotation extraction preserves priced accessories but excludes subordinate sublines from the working baseline", async () => {
@@ -533,11 +537,107 @@ $14,614` }]);
   assert.equal(extraction.profile.workingCommercialLineCount, 3);
   assert.equal(extraction.profile.pricedSublineCount, 2);
   assert.equal(extraction.profile.calculatedLineItemTotal, 13_836);
-  assert.equal(extraction.row.contract_value, 13_836);
+  assert.equal(extraction.row.contract_value, 14_614);
   assert.equal(extraction.profile.printedCommercialTotal, 14_614);
   assert.equal(extraction.profile.commercialTotalDiscrepancy, 778);
   assert.ok(extraction.warnings.some((warning) => warning.code === "SUBORDINATE_PRICED_LINES_EXCLUDED"));
   assert.ok(extraction.warnings.some((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY"));
+});
+
+test("split-row quotation totals, currencyless price rows and wrapped Incoterm places reconcile without header or bank false positives", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const extraction = extractSemanticBusinessFacts([{ label: "municipal-offer.pdf · page 1", pageNumber: 1, text: `EXAMPLE MUNICIPAL TECHNOLOGIES CO., LTD.
+QUOTATION
+To: Example Buyer Invoice no.:EX-2025-01
+No. Product Model Picture Qty Unit price USD Total price USD
+EXM100 electric sweeper
+Hopper capacity 800L
+1 10 unit 37,980.00 379,800.00
+Battery: 35.3kwh
+Rear-wheel drive
+EXM500 Multifunctional
+2 10 unit 75000.00 750000.00
+Urban Sweeper
+USD 1,129,800.00 FOB Qingdao
+Total
+port, China
+1. PAYMENT TERMS
+50% advance payment, pay the balance before shipment.
+RECEIVING BANK: EXAMPLE BANK
+BENEFICIARY'S A/C NO:1606021019201962470` }]);
+  assert.equal(extraction.row.contract_value, 1_129_800);
+  assert.equal(extraction.row.currency, "USD");
+  assert.equal(extraction.profile.calculatedLineItemTotal, 1_129_800);
+  assert.equal(extraction.profile.printedCommercialTotal, 1_129_800);
+  assert.equal(extraction.profile.commercialTotalReconciled, true);
+  assert.match(extraction.fieldEvidence.contract_value.sourceRef, /labelled commercial total.*reconciled/i);
+  assert.deepEqual(extraction.row.commercial_items.map((item) => ({ quantity: item.quantity, unitPrice: item.unitPrice, lineTotal: item.lineTotal })), [
+    { quantity: 10, unitPrice: 37_980, lineTotal: 379_800 },
+    { quantity: 10, unitPrice: 75_000, lineTotal: 750_000 },
+  ]);
+  assert.match(String(extraction.row.cargo_description), /municipal cleaning equipment/i);
+  assert.equal(extraction.row.quantity_package_count, "20 item units across 2 priced cargo rows");
+  assert.equal(extraction.row.current_incoterm, "FOB");
+  assert.equal(extraction.row.source_named_place, "Qingdao port, China");
+  assert.doesNotMatch(String(extraction.row.supplier_origin), /port, China|bank|account/i);
+  assert.equal(extraction.warnings.some((warning) => warning.code === "COMMERCIAL_TOTAL_DISCREPANCY"), false);
+});
+
+test("commercial total falls back to quantity times unit price and normalizes European decimal punctuation", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const extraction = extractSemanticBusinessFacts([{ label: "unit-price-only.pdf · page 1", pageNumber: 1, text: `Quotation
+Item Product Qty UnitpriceUSD
+1 Industrial pump 3 units 125,50
+Payment terms: 40% advance` }]);
+  assert.equal(extraction.row.currency, "USD");
+  assert.equal(extraction.row.contract_value, 376.5);
+  assert.equal(extraction.profile.printedCommercialTotal, undefined);
+  assert.equal(extraction.profile.calculatedLineItemTotal, 376.5);
+  assert.equal(extraction.row.commercial_items[0].unitPrice, 125.5);
+  assert.equal(extraction.row.commercial_items[0].lineTotal, 376.5);
+  assert.match(extraction.fieldEvidence.contract_value.basis, /No reliable printed total.*independently calculated/i);
+});
+
+test("payment, bank, subtotal, freight and tax figures cannot become a contract total", async () => {
+  const { extractSemanticBusinessFacts } = await load("apps/tender-apps/src/document-semantic-extraction.ts");
+  const extraction = extractSemanticBusinessFacts([{ label: "terms-only.pdf · page 1", pageNumber: 1, text: `QUOTATION
+Payment terms: 50% advance payment and 50% balance before shipment
+Freight USD 900
+VAT USD 100
+Subtotal USD 1,000
+RECEIVING BANK: EXAMPLE BANK
+BENEFICIARY ACCOUNT: 1606021019201962470` }]);
+  assert.equal(extraction.row.contract_value, undefined);
+  assert.equal(extraction.profile.printedCommercialTotal, undefined);
+  assert.equal(extraction.profile.calculatedLineItemTotal, undefined);
+});
+
+test("municipal vehicle quotations remain blocked until their packed cargo basis is known", async () => {
+  const { buildProductionLogisticsEstimate } = await load("packages/logistics-costing/src/index.ts");
+  const estimate = buildProductionLogisticsEstimate({
+    sourceValue: 1_129_800,
+    currency: "USD",
+    cargoDescription: "Municipal cleaning equipment — 2 line-item quotation",
+    sourceLineCount: 2,
+    commercialItems: [
+      { id: "vehicle-a", description: "Electric sweeper", quantity: 10, unitPrice: 37_980, lineTotal: 379_800, currency: "USD", sourceRef: "municipal-offer.pdf · page 1", workingBaselineIncluded: true },
+      { id: "vehicle-b", description: "Multifunctional urban sweeper", quantity: 10, unitPrice: 75_000, lineTotal: 750_000, currency: "USD", sourceRef: "municipal-offer.pdf · page 1", workingBaselineIncluded: true },
+    ],
+    origin: "Qingdao port, China",
+    destination: "Tashkent, Uzbekistan",
+    transportMode: "road",
+  });
+  assert.equal(estimate.readiness.status, "blocked");
+  assert.equal(estimate.cargo.packedVolumeStatus, "missing");
+  assert.equal(estimate.cargo.grossWeightStatus, "missing");
+  assert.ok(estimate.readiness.blockers.some((blocker) => blocker.code === "UNRESOLVED_COMMERCIAL_QUANTITY_BASIS"));
+  assert.ok(estimate.readiness.blockers.some((blocker) => blocker.code === "MISSING_PACKED_DIMENSIONS"));
+  assert.ok(estimate.readiness.blockers.some((blocker) => blocker.code === "MISSING_PACKED_GROSS_WEIGHT"));
+  assert.equal(estimate.costLines.some((line) => line.component === "main_freight"), false);
+
+  const manual = buildProductionLogisticsEstimate({ sourceValue: 1, currency: "USD", cargoDescription: "street sweeper", origin: "China", destination: "Tashkent, Uzbekistan", transportMode: "road" });
+  assert.equal(manual.readiness.status, "blocked");
+  assert.equal(manual.transport.selectionStatus, "blocked");
 });
 
 test("industrial quotation regressions preserve commercial and typed physical facts without filename special-casing", async () => {

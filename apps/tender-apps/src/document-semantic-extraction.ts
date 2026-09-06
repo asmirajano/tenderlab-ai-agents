@@ -47,6 +47,7 @@ const componentTextAliases: Partial<Record<CostComponentCode, string[]>> = {
 };
 
 const categoryRules: Array<{ label: string; pattern: RegExp }> = [
+  { label: "municipal cleaning", pattern: /\b(?:sweepers?|street\s+clean(?:er|ing)|sanitation\s+vehicles?|municipal\s+vehicles?)\b/gi },
   { label: "medical", pattern: /\b(?:medical|clinical|diagnostic|ultrasound|oximeter|hematology|patient)\b/gi },
   { label: "veterinary", pattern: /\b(?:veterinary|veterinarian|animal|vet)\b/gi },
   { label: "laboratory", pattern: /\b(?:laboratory|microscope|analy[sz]er|centrifuge|balance|spectro\w*|refractometer|incubator|distiller|laminar|autoclave|shaker)\b/gi },
@@ -68,11 +69,27 @@ function sectionLines(section: SemanticTextSection) {
 }
 
 function parseBusinessNumber(value: string) {
-  let normalized = value.replace(/[\s']/g, "").replace(/[^0-9,.-]/g, "");
-  if (normalized.includes(",") && normalized.includes(".")) normalized = normalized.replace(/,/g, "");
-  else if ((normalized.match(/,/g) ?? []).length > 1 || /,\d{3}$/.test(normalized)) normalized = normalized.replace(/,/g, "");
-  else if (/^\d+,\d{1,2}$/.test(normalized)) normalized = normalized.replace(",", ".");
-  else normalized = normalized.replace(/,/g, "");
+  let normalized = value.replace(/[\s'’]/g, "").replace(/[^0-9,.-]/g, "");
+  const commaIndex = normalized.lastIndexOf(",");
+  const dotIndex = normalized.lastIndexOf(".");
+  if (commaIndex >= 0 && dotIndex >= 0) {
+    const decimalSeparator = commaIndex > dotIndex ? "," : ".";
+    const groupingSeparator = decimalSeparator === "," ? "." : ",";
+    const decimalLength = normalized.length - Math.max(commaIndex, dotIndex) - 1;
+    normalized = normalized.replaceAll(groupingSeparator, "");
+    normalized = decimalLength <= 2 ? normalized.replace(decimalSeparator, ".") : normalized.replaceAll(decimalSeparator, "");
+  } else if (commaIndex >= 0) {
+    const commaCount = (normalized.match(/,/g) ?? []).length;
+    const decimalLength = normalized.length - commaIndex - 1;
+    normalized = commaCount === 1 && (decimalLength <= 2 || normalized.startsWith("0,"))
+      ? normalized.replace(",", ".")
+      : normalized.replaceAll(",", "");
+  } else if (dotIndex >= 0 && (normalized.match(/\./g) ?? []).length > 1) {
+    const decimalLength = normalized.length - dotIndex - 1;
+    normalized = decimalLength <= 2
+      ? `${normalized.slice(0, dotIndex).replaceAll(".", "")}.${normalized.slice(dotIndex + 1)}`
+      : normalized.replaceAll(".", "");
+  }
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
@@ -127,7 +144,7 @@ function detectDocumentType(sections: SemanticTextSection[]) {
 }
 
 function moneyTokens(line: string) {
-  return [...line.matchAll(new RegExp(`(?:(?:\\b(?:${currencyCodes})\\b|[$€£¥])\\s*([\\d][\\d,.'’]*(?:\\.\\d{1,2})?)|([\\d][\\d,.'’]*(?:\\.\\d{1,2})?)\\s*(?:${currencyCodes})\\b)`, "gi"))]
+  return [...line.matchAll(new RegExp(`(?:(?:(?:\\b(?:${currencyCodes})(?=\\b|\\d))|[$€£¥])\\s*([\\d][\\d,.'’]*(?:\\.\\d{1,2})?)|([\\d][\\d,.'’]*(?:\\.\\d{1,2})?)\\s*(?:${currencyCodes})\\b)`, "gi"))]
     .map((match) => parseBusinessNumber(match[1] ?? match[2]))
     .filter((value): value is number => value !== undefined);
 }
@@ -136,6 +153,66 @@ function numericTokens(line: string) {
   return [...line.matchAll(/(?<![A-Za-z])\d[\d,.'’]*(?:\.\d+)?(?![A-Za-z])/g)]
     .map((match) => parseBusinessNumber(match[0]))
     .filter((value): value is number => value !== undefined);
+}
+
+const commercialTotalLabelPattern = /^(?:grand\s+total|quotation\s+total|contract\s+value|goods\s+value|total\s+(?:amount|value|price)|total)\b/i;
+
+function compactCommercialHeader(line: string) {
+  return line.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function commercialTableHeader(line: string) {
+  const compact = compactCommercialHeader(line);
+  const hasUnitPrice = compact.includes("unitprice") || compact.includes("priceperunit");
+  const hasLineTotal = compact.includes("totalprice") || compact.includes("totalamount") || compact.includes("lineamount");
+  const hasQuantity = compact.includes("qty") || compact.includes("quantity");
+  return { matches: hasQuantity && (hasUnitPrice || hasLineTotal), hasUnitPrice, hasLineTotal };
+}
+
+function excludedCommercialTotalContext(line: string) {
+  return /\b(?:payment|advance|deposit|balance\s+(?:payment|due)|installment|bank|swift|iban|account|beneficiary|unit\s*price|subtotal|freight|shipping|insurance|duty|tax|vat)\b/i.test(line);
+}
+
+function totalLabelScore(line: string) {
+  if (!commercialTotalLabelPattern.test(line) || commercialTableHeader(line).matches || /\b(?:qty|quantity|product|description|item)\b/i.test(line)) return 0;
+  if (/^(?:grand\s+total|quotation\s+total|contract\s+value|goods\s+value)\b/i.test(line)) return 100;
+  if (/^total\s+(?:amount|value)\b/i.test(line)) return 90;
+  if (/^total\s+price\b/i.test(line)) return 80;
+  return 70;
+}
+
+function labelledCommercialTotals(sections: SemanticTextSection[]) {
+  return sections.flatMap((section, sectionIndex) => {
+    const lines = sectionLines(section);
+    return lines.flatMap((labelLine, lineIndex) => {
+      const labelScore = totalLabelScore(labelLine);
+      if (!labelScore || excludedCommercialTotalContext(labelLine)) return [];
+      const sameLineNumbers = numericTokens(labelLine.slice(labelLine.match(commercialTotalLabelPattern)?.[0].length ?? 0));
+      const sameLineMoney = moneyTokens(labelLine);
+      const uniqueSameLineMoney = [...new Map(sameLineMoney.map((value) => [value.toFixed(2), value])).values()];
+      const nearby = [
+        { line: labelLine, distance: 0, amounts: uniqueSameLineMoney.length === 1 ? uniqueSameLineMoney : sameLineMoney.length ? [] : sameLineNumbers.slice(-1) },
+        ...[-1, 1, -2, 2].flatMap((offset) => {
+          const line = lines[lineIndex + offset];
+          if (!line || commercialTotalLabelPattern.test(line) || excludedCommercialTotalContext(line)) return [];
+          return [{ line, distance: Math.abs(offset), amounts: moneyTokens(line) }];
+        }),
+      ];
+      const amountLine = nearby.find((candidate) => candidate.amounts.length === 1);
+      const value = amountLine?.amounts[0];
+      if (value === undefined || value <= 0) return [];
+      return [{
+        value,
+        sourceRef: section.label,
+        section,
+        sectionIndex,
+        lineIndex,
+        labelLine,
+        amountLine: amountLine.line,
+        score: labelScore + (amountLine.distance === 0 ? 10 : 5 - amountLine.distance),
+      }];
+    });
+  }).sort((left, right) => right.score - left.score || right.sectionIndex - left.sectionIndex || right.lineIndex - left.lineIndex);
 }
 
 function commercialQuantity(line: string) {
@@ -153,15 +230,20 @@ function commercialQuantity(line: string) {
 
 function commercialDescription(lines: string[], lineIndex: number, line: string) {
   const preceding = lines.slice(Math.max(0, lineIndex - 7), lineIndex);
-  const lastItemMarker = preceding.map((value, index) => /^\d+$/.test(value) ? index : -1).filter((index) => index >= 0).at(-1);
-  const block = (lastItemMarker === undefined ? preceding.slice(-5) : preceding.slice(lastItemMarker + 1))
+  const lastItemMarker = preceding.map((value, index) => /^\d+$/.test(value) || /^\d+[.)]?\s+/.test(value) && Boolean(commercialQuantity(value)) && numericTokens(value).length >= 3 ? index : -1).filter((index) => index >= 0).at(-1);
+  const boundedPreceding = lastItemMarker === undefined ? preceding.slice(-5) : preceding.slice(lastItemMarker + 1);
+  const lastProductIdentity = boundedPreceding.map((value, index) => /\b[A-Z]{2,}[ -]?\d+[A-Z0-9-]*\b/.test(value) || /\b(?:machine|equipment|sweeper|vehicle|pump|generator|compressor|analy[sz]er|microscope)\b/i.test(value) ? index : -1).filter((index) => index >= 0).at(-1);
+  const block = (lastProductIdentity === undefined ? boundedPreceding : boundedPreceding.slice(lastProductIdentity))
     .filter((value) => /[A-Za-z]/.test(value))
     .filter((value) => !/^(?:quotation|machine|model|unit price|qty|quantity|amount|description|item no\.?|marks?\s*&|number description)$/i.test(value))
     .filter((value) => !/\bdescription\b.*\b(?:qty|quantity)\b.*\b(?:price|amount)\b/i.test(value))
+    .filter((value) => !/^(?:to\s*:|invoice\s+no\.?|date\s*:|no\..*\b(?:qty|quantity)\b)/i.test(value))
+    .filter((value) => !(Boolean(commercialQuantity(value)) && numericTokens(value).length >= 3))
     .filter((value) => !/\b(?:mobile|email|phone|fax|skype|wechat|address|add)\s*[:：]/i.test(value));
-  const following = lines.slice(lineIndex + 1, lineIndex + 4)
+  const following = lines.slice(lineIndex + 1, lineIndex + 3)
     .filter((value) => /[A-Za-z]/.test(value))
-    .filter((value) => !/^(?:total|remarks?|payment(?:\s+terms?)?)\b/i.test(value));
+    .filter((value) => !/^(?:total|remarks?|payment(?:\s+terms?)?)\b/i.test(value))
+    .filter((value) => !(moneyTokens(value).length && new RegExp(`\\b(?:${incotermPattern})\\b`, "i").test(value)));
   const current = line
     .replace(new RegExp(`(?:\\b(?:${currencyCodes})\\b|[$€£¥])\\s*[\\d][\\d,.'\\s]*(?:\\.\\d{1,2})?`, "gi"), " ")
     .replace(new RegExp(`[\\d][\\d,.'\\s]*(?:\\.\\d{1,2})?\\s*(?:${currencyCodes})\\b`, "gi"), " ")
@@ -180,21 +262,37 @@ function priceRows(sections: SemanticTextSection[]) {
   return sections.flatMap((section) => {
     const lines = sectionLines(section);
     let inQuotationTable = false;
+    let hasUnitPriceColumn = false;
+    let hasLineTotalColumn = false;
     return lines.flatMap((line, lineIndex) => {
-      if (/^(?:commercial\s+)?q\s*uot(?:ation)?$/i.test(line)
-        || /(?:item\s*(?:no\.?|number).*product|\bmodel\b.*\bunit\s+price\b).*(?:qty|quantity|price)/i.test(line)
-        || /\bunit\s+price\b.*\b(?:qty|quantity)\b/i.test(line)
-        || /\b(?:qty|quantity)\b.*\b(?:amount|total|unit\s+price)\b/i.test(line)) inQuotationTable = true;
+      const header = commercialTableHeader(line);
+      if (/^(?:commercial\s+)?q\s*uot(?:ation)?$/i.test(line)) inQuotationTable = true;
+      if (inQuotationTable && /^(?:unit\s*price|price\s*per\s*unit)$/i.test(line)) hasUnitPriceColumn = true;
+      if (inQuotationTable && /^(?:total\s*(?:price|amount)?|amount)$/i.test(line)) hasLineTotalColumn = true;
+      if (header.matches
+        || /(?:item\s*(?:no\.?|number).*product|\bmodel\b.*\bunit\s*price\b).*(?:qty|quantity|price)/i.test(line)
+        || /\bunit\s*price\b.*\b(?:qty|quantity)\b/i.test(line)
+        || /\b(?:qty|quantity)\b.*\b(?:amount|total|unit\s*price)\b/i.test(line)) {
+        inQuotationTable = true;
+        hasUnitPriceColumn = header.hasUnitPrice || /\bunit\s*price\b/i.test(line);
+        hasLineTotalColumn = header.hasLineTotal || /\b(?:total\s*(?:price|amount)?|amount)\b/i.test(line);
+      }
       const explicitAmounts = moneyTokens(line);
-      const endsQuotationTable = (/^(?:total(?:\s+amount)?|grand total)\b/i.test(line) && explicitAmounts.length > 0) || /^(?:remarks?|payment(?:\s+terms?|\s+items?)?)\b/i.test(line);
+      const endsQuotationTable = commercialTotalLabelPattern.test(line) || /^(?:remarks?|payment(?:\s+terms?|\s+items?)?)\b/i.test(line);
       const tableNumbers = numericTokens(line);
-      const currencylessNumberedRow = inQuotationTable && /^\d+[.)]?\s+/.test(line) && !/[A-Za-z]/.test(line) && explicitAmounts.length === 0 && tableNumbers.length >= 4;
-      const amounts = currencylessNumberedRow ? tableNumbers.slice(-2) : explicitAmounts;
-      const quantity = commercialQuantity(line) ?? (currencylessNumberedRow ? tableNumbers.at(-3) : undefined);
-      const tableCandidate = inQuotationTable && !endsQuotationTable && amounts.length >= 1 && Boolean(quantity);
+      const physicalSpecificationWithoutCommercialMoney = explicitAmounts.length === 0 && (Boolean(parseDimensionsCm(line)) || Boolean(parseWeightKg(line)) || /\b(?:product\s+size|dimensions?|gross\s+weight|net\s+weight|capacity)\b/i.test(line));
+      const minimumNumericColumns = hasUnitPriceColumn && hasLineTotalColumn ? 4 : 3;
+      const numberedTableRow = inQuotationTable && !physicalSpecificationWithoutCommercialMoney && /^\d+[.)]?\s+/.test(line) && tableNumbers.length >= minimumNumericColumns;
+      const inferredQuantity = numberedTableRow ? hasUnitPriceColumn && !hasLineTotalColumn ? tableNumbers.at(-2) : tableNumbers.at(-3) : undefined;
+      const quantity = commercialQuantity(line) ?? inferredQuantity;
+      const currencylessNumberedRow = numberedTableRow && explicitAmounts.length === 0 && Boolean(quantity);
+      const amounts = currencylessNumberedRow ? tableNumbers.slice(-(hasUnitPriceColumn && hasLineTotalColumn ? 2 : 1)) : explicitAmounts;
+      const unitPrice = amounts.length >= 2 ? amounts.at(-2) : hasUnitPriceColumn && !hasLineTotalColumn ? amounts[0] : undefined;
+      const lineTotal = hasUnitPriceColumn && !hasLineTotalColumn && unitPrice !== undefined && quantity !== undefined ? unitPrice * quantity : amounts.at(-1);
+      const tableCandidate = inQuotationTable && !endsQuotationTable && !physicalSpecificationWithoutCommercialMoney && lineTotal !== undefined && lineTotal > 0 && Boolean(quantity);
       const legacyCandidate = amounts.length >= 2 && /\d/.test(line.slice(0, Math.max(1, line.search(/(?:USD|EUR|GBP|CNY|RMB|UZS|[$€£¥])/i))));
       if (endsQuotationTable) inQuotationTable = false;
-      return tableCandidate || legacyCandidate ? [{ section, line, lineIndex, amounts, quantity, description: commercialDescription(lines, lineIndex, line), tableCandidate }] : [];
+      return tableCandidate || legacyCandidate ? [{ section, line, lineIndex, amounts, quantity, unitPrice, lineTotal, description: commercialDescription(lines, lineIndex, line), tableCandidate }] : [];
     });
   });
 }
@@ -301,8 +399,13 @@ function extractPhysicalEvidence(sections: SemanticTextSection[]): DocumentPhysi
 
 function findIncotermNamedPlace(sections: SemanticTextSection[]) {
   for (const section of sections) {
-    for (const line of sectionLines(section)) {
-      const match = line.match(new RegExp(`\\b(${incotermPattern})\\b(?:\\s*\\(\\s*([^)]{2,100})\\s*\\)|\\s+([^\\n]{2,160}))`, "i"));
+    const lines = sectionLines(section);
+    for (const [lineIndex, line] of lines.entries()) {
+      const wrappedContinuation = lines.slice(lineIndex + 1, lineIndex + 3)
+        .filter((candidate) => !commercialTotalLabelPattern.test(candidate))
+        .find((candidate) => /^(?:port|airport|terminal)\b|^[A-Za-z][A-Za-z .'-]{1,40},\s*[A-Za-z][A-Za-z .'-]{1,40}$/i.test(candidate));
+      const termLine = wrappedContinuation ? `${line} ${wrappedContinuation}` : line;
+      const match = termLine.match(new RegExp(`\\b(${incotermPattern})\\b(?:\\s*\\(\\s*([^)]{2,100})\\s*\\)|\\s+([^\\n]{2,160}))`, "i"));
       if (!match) continue;
       const rawPlace = cleanedValue(match[2] ?? match[3] ?? "")
         .replace(/\s+\((?:sets?|pcs?|pieces?|units?)\).*$/i, "")
@@ -310,7 +413,7 @@ function findIncotermNamedPlace(sections: SemanticTextSection[]) {
         .replace(/[.,;:]+$/, "");
       const place = /^(?:amount|price|unit\s+price|total|terms?|qty|quantity|pcs|usd|eur|rmb|cny)$/i.test(rawPlace) ? undefined : rawPlace;
       const normalizedPlace = place && place === place.toUpperCase() ? place.toLowerCase().replace(/\b[a-z]/g, (character) => character.toUpperCase()) : place;
-      return { term: match[1].toUpperCase(), place: normalizedPlace, sourceRef: section.label, line };
+      return { term: match[1].toUpperCase(), place: normalizedPlace, sourceRef: section.label, line: termLine };
     }
   }
   return undefined;
@@ -333,14 +436,16 @@ export function extractSemanticBusinessFacts(sections: SemanticTextSection[]): S
   const commercialRows = workingCommercialRows(sections, pricedRows);
   const ancillaryCommercialRows = commercialRows.filter((candidate) => /\b(?:packing|packaging|crate|crating|wooden\s+case)\b/i.test(candidate.description));
   const cargoRows = commercialRows.filter((candidate) => !ancillaryCommercialRows.includes(candidate));
-  const lineItemTotal = commercialRows.reduce((sum, candidate) => sum + (candidate.amounts.at(-1) ?? 0), 0);
+  const lineItemTotal = commercialRows.reduce((sum, candidate) => sum + (candidate.lineTotal ?? 0), 0);
 
   const explicitSupplier = findMatch(sections.slice(0, 2), [/^(?:supplier|seller|vendor|from)\s*[:–—-]\s*([^\n]{3,180})/im]);
   const headerCompany = firstLines.find((line) => /\b(?:CO\.?\s*,?\s*LTD\.?|LTD\.?|LLC|INC\.?|GMBH|S\.A\.?|PLC)\b/i.test(line) && !/^(?:to|customer|buyer|client)\b/i.test(line));
   const company = explicitSupplier?.value ?? headerCompany;
   if (company && firstSection) {
     const explicitOrigin = findMatch(sections.slice(0, 2), [/^(?:ship from|origin|place of dispatch|delivery place)\s*[:–—-]\s*([^\n]{2,100})/im]);
-    const headerLocation = firstLines.slice(0, 16).filter((line) => !/\b(?:CO\.?\s*,?\s*LTD\.?|LTD\.?|LLC|INC\.?|GMBH|S\.A\.?|PLC)\b/i.test(line) && !/\b(?:FOB|CIF|CFR|price|payment|terms?)\b/i.test(line)).map(trailingCityCountry).find(Boolean);
+    const tableHeaderIndex = firstLines.findIndex((line) => commercialTableHeader(line).matches);
+    const headerLocationBoundary = tableHeaderIndex > 0 ? tableHeaderIndex : Math.min(firstLines.length, 16);
+    const headerLocation = firstLines.slice(0, headerLocationBoundary).filter((line) => !/\b(?:CO\.?\s*,?\s*LTD\.?|LTD\.?|LLC|INC\.?|GMBH|S\.A\.?|PLC)\b/i.test(line) && !/\b(?:FOB|CIF|CFR|price|payment|terms?)\b/i.test(line)).map(trailingCityCountry).find(Boolean);
     let location = explicitOrigin?.value;
     if (location && headerLocation && !location.toLowerCase().includes(headerLocation.split(",").at(-1)?.trim().toLowerCase() ?? "")) location = `${location}, ${headerLocation.split(",").at(-1)?.trim()}`;
     if (!location) location = headerLocation;
@@ -361,41 +466,41 @@ export function extractSemanticBusinessFacts(sections: SemanticTextSection[]): S
 
   const explicitCurrency = findMatch(sections, [/^(?:currency|quotation currency|contract currency)\s*[:–—-]\s*([A-Z]{3})\b/im]);
   const tableCurrency = findMatch(sections.slice(0, 3), [
-    new RegExp(`(?:unit price|total|amount)\\s*\\(\\s*(${currencyCodes})\\s*\\)`, "i"),
+    new RegExp(`(?:unit\\s*price|total\\s*(?:price|amount)?|amount)\\s*(?:\\(\\s*)?(${currencyCodes})(?:\\s*\\))?`, "i"),
     new RegExp(`\\(\\s*(${currencyCodes})\\s*\\)`, "i"),
   ]);
   const dollarSection = sections.find((section) => /\$\s*[\d]/.test(section.text));
+  const prefixCurrencySection = sections.find((section) => new RegExp(`(?:^|\\n)\\s*(${currencyCodes})\\s*[\\d]`, "im").test(section.text));
+  const prefixCurrency = prefixCurrencySection?.text.match(new RegExp(`(?:^|\\n)\\s*(${currencyCodes})\\s*[\\d]`, "im"));
   const suffixCurrencySection = sections.find((section) => new RegExp(`[\\d]\\s*(${currencyCodes})\\b`, "i").test(section.text));
   const suffixCurrency = suffixCurrencySection?.text.match(new RegExp(`[\\d]\\s*(${currencyCodes})\\b`, "i"));
-  const currency = explicitCurrency ?? tableCurrency ?? (dollarSection ? { value: "USD", sourceRef: dollarSection.label } : suffixCurrencySection && suffixCurrency ? { value: suffixCurrency[1], sourceRef: suffixCurrencySection.label } : undefined);
-  if (currency) write("currency", currency.value.toUpperCase(), { sourceRef: `${currency.sourceRef} · ${explicitCurrency ? "currency field" : tableCurrency ? "price-table heading" : dollarSection ? "currency symbol" : "currency suffix"}`, confidence: explicitCurrency || tableCurrency || suffixCurrency ? "high" : "medium", scope: "document", basis: explicitCurrency || tableCurrency || suffixCurrency ? "Currency explicitly labels the commercial amounts." : "USD inferred from repeated dollar-denominated commercial prices; client confirmation recommended." });
+  const currency = explicitCurrency ?? tableCurrency ?? (dollarSection ? { value: "USD", sourceRef: dollarSection.label } : prefixCurrencySection && prefixCurrency ? { value: prefixCurrency[1], sourceRef: prefixCurrencySection.label } : suffixCurrencySection && suffixCurrency ? { value: suffixCurrency[1], sourceRef: suffixCurrencySection.label } : undefined);
+  if (currency) write("currency", currency.value.toUpperCase(), { sourceRef: `${currency.sourceRef} · ${explicitCurrency ? "currency field" : tableCurrency ? "price-table heading" : dollarSection ? "currency symbol" : prefixCurrency ? "currency prefix" : "currency suffix"}`, confidence: explicitCurrency || tableCurrency || prefixCurrency || suffixCurrency ? "high" : "medium", scope: "document", basis: explicitCurrency || tableCurrency || prefixCurrency || suffixCurrency ? "Currency explicitly labels the commercial amounts." : "USD inferred from repeated dollar-denominated commercial prices; client confirmation recommended." });
 
-  const explicitTotal = findMatch(sections, [
-    new RegExp(`^(?:grand total|quotation total|contract value|goods value|total amount|total value|total)\\s*[:–—-]?\\s*(?:(?:\\(\\s*(?:${currencyCodes})\\s*\\)|(?:${currencyCodes})|[$€£¥])\\s*)?([\\d][\\d,.'\\s]*(?:\\.\\d{1,2})?)`, "im"),
-  ]);
+  const explicitTotal = labelledCommercialTotals(sections)[0];
   const finalStandaloneTotals = sections.slice(Math.max(0, sections.length - 3)).flatMap((section) => sectionLines(section)
     .map((line) => ({ section, line, amounts: moneyTokens(line) }))
     .filter((candidate) => candidate.amounts.length === 1 && new RegExp(`^(?:${currencyCodes}|[$€£¥])?\\s*[\\d,.' ]+(?:\\.\\d{1,2})?$`, "i").test(candidate.line)));
   const standaloneTotal = finalStandaloneTotals.at(-1);
-  const printedTotalValue = explicitTotal ? parseBusinessNumber(explicitTotal.value) : standaloneTotal?.amounts[0];
+  const printedTotalValue = explicitTotal?.value ?? standaloneTotal?.amounts[0];
   const calculatedLineItemTotal = commercialRows.length >= 1 && lineItemTotal > 0 ? lineItemTotal : undefined;
   const unconfirmedMultiRowBaseline = calculatedLineItemTotal !== undefined && printedTotalValue === undefined && commercialRows.length > 1;
-  const totalValue = calculatedLineItemTotal ?? printedTotalValue;
+  const totalValue = printedTotalValue ?? calculatedLineItemTotal;
   if (totalValue !== undefined) {
     const totalSource = explicitTotal?.sourceRef ?? standaloneTotal?.section.label ?? sections.at(-1)?.label ?? "document";
     const reconciled = printedTotalValue !== undefined && calculatedLineItemTotal !== undefined && Math.abs(calculatedLineItemTotal - printedTotalValue) <= 0.01;
     write("contract_value", totalValue, {
-      sourceRef: calculatedLineItemTotal !== undefined ? `${pageRangeLabel} · calculated from ${commercialRows.length} primary commercial lines${reconciled ? " · reconciled to printed total" : ""}` : `${totalSource} · ${explicitTotal ? "labelled commercial total" : "final quotation total"}`,
+      sourceRef: printedTotalValue !== undefined ? `${totalSource} · ${explicitTotal ? "labelled commercial total" : "final quotation total"}${reconciled ? ` · reconciled to ${commercialRows.length} calculated commercial lines` : ""}` : `${pageRangeLabel} · calculated from ${commercialRows.length} primary commercial lines`,
       confidence: unconfirmedMultiRowBaseline ? "medium" : "high",
       scope: "document",
-      basis: calculatedLineItemTotal !== undefined ? `Working commercial baseline is the independently calculated sum of ${commercialRows.length} primary commercial lines.${pricedRows.length > commercialRows.length ? ` ${pricedRows.length - commercialRows.length} subordinate priced subline(s) remain preserved as evidence but are excluded from the baseline to avoid double counting parent-item accessories.` : ""}${printedTotalValue !== undefined && !reconciled ? ` Supplier printed total differs by ${Math.abs(printedTotalValue - calculatedLineItemTotal).toFixed(2)}.` : ""}` : "Final document-level commercial total; item reconciliation was not available.",
+      basis: printedTotalValue !== undefined ? `Supplier-labelled document total is the working commercial baseline.${calculatedLineItemTotal !== undefined ? reconciled ? ` It reconciles to the independently calculated sum of ${commercialRows.length} primary commercial lines.` : ` The independently calculated line-item sum differs by ${Math.abs(printedTotalValue - calculatedLineItemTotal).toFixed(2)} and remains flagged for review.` : " Item reconciliation was not available."}` : `No reliable printed total was found. The working baseline is the independently calculated sum of ${commercialRows.length} primary commercial lines.${pricedRows.length > commercialRows.length ? ` ${pricedRows.length - commercialRows.length} subordinate priced subline(s) remain preserved as evidence but are excluded from the baseline to avoid double counting parent-item accessories.` : ""}`,
     });
   }
 
   if (calculatedLineItemTotal !== undefined && printedTotalValue !== undefined && Math.abs(calculatedLineItemTotal - printedTotalValue) > 0.01) warnings.push({
     code: "COMMERCIAL_TOTAL_DISCREPANCY",
     severity: "warning",
-    message: `Calculated line-item value ${calculatedLineItemTotal.toFixed(2)} differs from the supplier's printed total ${printedTotalValue.toFixed(2)} by ${Math.abs(printedTotalValue - calculatedLineItemTotal).toFixed(2)}. The line-item total is used as the working baseline unless the client overrides it.`,
+    message: `Calculated line-item value ${calculatedLineItemTotal.toFixed(2)} differs from the supplier's printed total ${printedTotalValue.toFixed(2)} by ${Math.abs(printedTotalValue - calculatedLineItemTotal).toFixed(2)}. The reliable supplier-labelled document total remains the working baseline and the discrepancy requires client review.`,
   });
   if (unconfirmedMultiRowBaseline) warnings.push({
     code: "UNCONFIRMED_MULTI_ROW_BASELINE",
@@ -408,7 +513,9 @@ export function extractSemanticBusinessFacts(sections: SemanticTextSection[]): S
     sourceRef: candidate.section.label,
     rawLine: candidate.description,
     quantity: candidate.quantity,
-    lineTotal: candidate.amounts.at(-1),
+    unitPrice: candidate.unitPrice,
+    lineTotal: candidate.lineTotal,
+    ...(currency ? { currency: currency.value.toUpperCase() } : {}),
     workingBaselineIncluded: commercialRows.includes(candidate),
   }));
 

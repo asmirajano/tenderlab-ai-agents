@@ -135,7 +135,7 @@ const cargoProxies: CargoProxy[] = [
   },
   {
     id: "mixed-machinery",
-    patterns: [/machinery|equipment|machine|industrial/i],
+    patterns: [/machinery|equipment|machine|industrial/i, /sweepers?|street\s+clean(?:er|ing)|sanitation\s+vehicles?|municipal\s+vehicles?|forklifts?|tractors?/i],
     volumePerLineM3: 0.62,
     weightPerLineKg: 115,
     loadabilityFactor: 0.8,

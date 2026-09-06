@@ -75,7 +75,9 @@ async function parsePdf(file: File): Promise<DocumentIntakeRecord> {
         id: String((candidate as { id?: unknown }).id ?? `document-line-${index + 1}`),
         description: String((candidate as { rawLine?: unknown }).rawLine ?? "Commercial line"),
         quantity: Number((candidate as { quantity?: unknown }).quantity) || undefined,
+        unitPrice: Number((candidate as { unitPrice?: unknown }).unitPrice) || undefined,
         lineTotal: Number((candidate as { lineTotal?: unknown }).lineTotal) || undefined,
+        currency: String((candidate as { currency?: unknown }).currency ?? "") || undefined,
         sourceRef: String((candidate as { sourceRef?: unknown }).sourceRef ?? file.name),
         workingBaselineIncluded: Boolean((candidate as { workingBaselineIncluded?: unknown }).workingBaselineIncluded),
       }]

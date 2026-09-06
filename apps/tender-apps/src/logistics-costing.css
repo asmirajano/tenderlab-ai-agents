@@ -567,7 +567,7 @@
 .input-evidence.client-adjusted { color: var(--costing-blue); }
 .input-evidence.calculated-default { color: var(--costing-green); }
 .input-evidence.calculated-default em { color: #64776d; }
-.input-evidence.not-found { color: #9a3f31; }
+.input-evidence.not-found { color: var(--costing-red); font-weight: 760; }
 .packing-empty-guidance { color: #765f2b; display: block; font-size: var(--type-micro); line-height: 1.4; margin-top: 6px; }
 .planning-default-button { align-self: flex-start; background: transparent; border: 0; color: var(--costing-green); cursor: pointer; font-size: var(--type-micro); font-weight: 780; margin-top: 6px; padding: 0; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
 .format-support-grid { display: grid; gap: 9px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 13px; }
@@ -617,7 +617,7 @@
 .client-field-grid { display: grid; gap: 17px; grid-template-columns: repeat(3, 1fr); padding: 28px 30px; }
 .client-field-grid label, .known-term-card label, .guided-cost-list label, .insurance-guidance label, .scenario-name-field { display: flex; flex-direction: column; min-width: 0; }
 .client-field-grid label > span, .known-term-card label > span, .guided-cost-list label > span, .insurance-guidance label > span, .scenario-name-field > span { color: #5e6d65; font-size: var(--type-label); font-weight: 740; margin-bottom: 7px; }
-.client-field-grid label span b { color: var(--costing-green); font-size: var(--type-micro); margin-left: 5px; text-transform: uppercase; }
+.client-field-grid label span b { color: var(--costing-red); font-size: var(--type-micro); margin-left: 5px; text-transform: uppercase; }
 .client-field-grid label span i, .guided-cost-list label span i, .scenario-name-field span i { color: #89958e; font-size: var(--type-micro); font-style: normal; margin-left: 5px; text-transform: uppercase; }
 .client-field-grid input, .client-field-grid select, .known-term-card input, .known-term-card select, .guided-cost-list input, .guided-cost-list select, .insurance-guidance input, .scenario-name-field input { background: #fbfcfb; border: 1px solid #c8d5cd; border-radius: 9px; color: var(--costing-ink); font-size: var(--type-control); min-height: 49px; padding: 10px 11px; width: 100%; }
 .client-field-grid input:focus, .client-field-grid select:focus, .known-term-card input:focus, .known-term-card select:focus, .guided-cost-list input:focus, .guided-cost-list select:focus, .insurance-guidance input:focus, .scenario-name-field input:focus { border-color: var(--costing-green); box-shadow: 0 0 0 3px rgba(20,116,84,.12); outline: 0; }
@@ -693,7 +693,7 @@
 .cost-preparation-summary dd { font-size: 26px; font-weight: 850; margin: 4px 0 0; }
 .prepared-cost-group > header { align-items: end; border-bottom: 1px solid var(--costing-line); display: flex; gap: 24px; justify-content: space-between; padding: 21px 30px 13px; }
 .prepared-cost-group > header span { color: var(--costing-green); font-family: var(--font-geist-mono), monospace; font-size: var(--type-micro); font-weight: 850; }
-.prepared-cost-group.needs-input > header span { color: var(--costing-amber); }
+.prepared-cost-group.needs-input > header span { color: var(--costing-red); }
 .prepared-cost-group > header h3 { font-size: 23px; letter-spacing: -.025em; margin: 4px 0 0; }
 .prepared-cost-group > header p { color: #728078; font-size: var(--type-small); margin: 0; max-width: 590px; text-align: right; }
 .guided-cost-list { display: grid; }
@@ -705,9 +705,9 @@
 .cost-state-badge { align-self: center; border: 1px solid #c8d6ce; border-radius: 999px; color: #64736b; font-size: var(--type-micro); font-weight: 800; justify-self: start; padding: 7px 10px; }
 .cost-state-badge.extracted, .cost-state-badge.provided { background: #e8f5ec; border-color: #bfdcc9; color: var(--costing-green); }
 .cost-state-badge.needs-confirmation { background: #fff6e5; border-color: #e7cf9f; color: #815b14; }
-.cost-state-badge.unknown { background: #fff0ed; border-color: #ecc6bf; color: #9a3f31; }
+.cost-state-badge.unknown { background: #fde5e2; border-color: var(--costing-red); color: #84251f; }
 .cost-state-badge.not-applicable { background: #f0f2f1; color: #77847d; }
-.cost-preparation-row.state-unknown { background: #fffdf8; }
+.cost-preparation-row.state-unknown { background: #fff7f6; box-shadow: inset 4px 0 0 var(--costing-red); }
 .cost-preparation-row.state-extracted { background: #fbfefc; }
 .excluded-cost-group > summary { color: #64736b; cursor: pointer; font-size: var(--type-label); font-weight: 780; padding: 16px 30px; }
 .provisional-continuation-note { background: #fff7e7; border-top: 1px solid #ead4aa; padding: 17px 30px; }
@@ -752,7 +752,8 @@
 .ddp-guidance > div > p { color: #775e2d; font-size: var(--type-micro); line-height: 1.45; margin: 5px 0 0; }
 .ddp-guidance label { display: flex; flex-direction: column; }
 .ddp-guidance label > span { color: #6f5a30; font-size: var(--type-label); font-weight: 740; margin-bottom: 7px; }
-.ddp-guidance label span b, .ddp-guidance label span i { color: var(--costing-amber); font-size: var(--type-micro); font-style: normal; margin-left: 4px; text-transform: uppercase; }
+.ddp-guidance label span b { color: var(--costing-red); font-size: var(--type-micro); margin-left: 4px; text-transform: uppercase; }
+.ddp-guidance label span i { color: var(--costing-amber); font-size: var(--type-micro); font-style: normal; margin-left: 4px; text-transform: uppercase; }
 .ddp-guidance input { background: white; border: 1px solid #d5bd88; border-radius: 9px; min-height: 49px; padding: 10px 11px; width: 100%; }
 .advanced-cost-entry summary { color: var(--costing-green); cursor: pointer; font-size: var(--type-label); font-weight: 800; padding: 18px 30px; }
 .review-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
