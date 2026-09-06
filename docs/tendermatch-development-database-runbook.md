@@ -1,4 +1,6 @@
-# TenderMatch development database preparation — not applied
+# TenderMatch development database runbook
+
+**Execution update, 6 September 2026:** Stage 0 was explicitly authorized and the unchanged prepared SQL/runner were applied to the exact development target below. Both restricted credentials and the empty result store passed live validation. See [Stage 0 evidence](evidence/tendermatch-development-stage0.md) and [machine-readable results](evidence/tendermatch-development-stage0.json). Do not rerun creation/provisioning against these existing objects. The preparation narrative and disconnected `plan` state below describe the frozen preparation artifact, not the now-applied environment. Scoring and production activation remain unauthorized by this runbook.
 
 Prepared from `cda9ab646fe768600af455a340f5cd4538c05ca8` on `codex/tendermatch-neon-all-to-all`. The enclosing commit is a preparation checkpoint, not permission to execute. No Neon connection, source mutation, role/credential/database creation, scoring run or deployment was performed. Canonical owner remains TL-A031. The public 17×60 app is unchanged.
 
@@ -100,7 +102,7 @@ Retrieval relevance, Formula points, evidence confidence, TORS artifacts and hum
 
 All: NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/NOBYPASSRLS. Writer cannot DELETE, edit scores, run DDL, register models or write migration records. PUBLIC revokes affect only new objects/new result database. No existing source/other-DB ACL is changed. Role/schema collisions fail closed. RLS relies on a trusted service-set tenant; this is **not authentication** and the writer must never be given to a browser/end user.
 
-## Exact future execution order — requires separate approval
+## Guarded execution order — Stage 0 applied; later execution needs its own authority
 
 1. In Neon Console select TenderLab → `tender-entity-registry` → `development` (`br-polished-boat-b1qddx0m`) → `tender_entity_registry` → `neondb_owner`. Confirm direct host, 117 company rows, 17 existing consumer profiles, expected schema, unused new role/schema/DB names. Verify effective PUBLIC access before provisioning; stop if unrelated users would need ACL changes.
 2. Work in `C:/CodexWork/tendermatch-neon-all-to-all`. The safe disconnected command is `node scripts/tendermatch-dev-setup.mjs plan`.

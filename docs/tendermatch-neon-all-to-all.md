@@ -1,8 +1,8 @@
 # TenderMatch genuine all-to-all execution stage
 
-Status: **source census completed; full execution blocked at the access/target gate**. This is not a completed all-to-all run, not a replacement snapshot, and not a deployment.
+Status: **Stage 0 development setup completed; no business all-to-all execution**. This is not a completed all-to-all run, not a replacement snapshot, and not a deployment.
 
-Follow-on preparation (not applied): [development database runbook](tendermatch-development-database-runbook.md) defines the additive full-117-company read contract and separate development result store. The prior census below remains historical evidence; no real all-to-all scoring has run.
+Follow-on Stage 0 (applied 6 September 2026): the [development database runbook](tendermatch-development-database-runbook.md) was executed for the additive full-117-company read contract and separate development result store. [Live evidence](evidence/tendermatch-development-stage0.md) verifies 117 pinned companies, 1,553 evidence records, both restricted credentials and an empty result store. The fresh read-only tender census is 17,323 OPEN records. The prior census and access blockers below remain historical evidence: the full-company contract and result-store prerequisites are now satisfied, while tender-source authority and a separate scoring-stage authorization remain outstanding. No real all-to-all scoring has run.
 
 Base: `origin/main` at `d230590cf5ee99a679f162b2e3a19b65752c0f16`, freshly fetched after deployment. Isolated worktree: `C:/CodexWork/tendermatch-neon-all-to-all`, branch `codex/tendermatch-neon-all-to-all`. Other worktrees and previews are preserved. Owner stays `agent:TL-A031`; consultant decisions remain explicit.
 

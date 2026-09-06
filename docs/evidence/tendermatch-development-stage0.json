@@ -1,0 +1,348 @@
+{
+  "schemaVersion": "tendermatch-development-stage0-evidence/1.0.0",
+  "status": "APPLIED_AND_VALIDATED_DEVELOPMENT_ONLY",
+  "date": "2026-09-06",
+  "code": {
+    "preparedCommit": "67483e663ced51f4be263b670b38966794adc83c",
+    "remoteMain": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+    "branch": "codex/tendermatch-neon-all-to-all",
+    "worktree": "C:/CodexWork/tendermatch-neon-all-to-all",
+    "setupCodeChanged": false,
+    "evidenceCommit": "enclosing Git commit"
+  },
+  "target": {
+    "organization": "TenderLab",
+    "project": "tender-entity-registry",
+    "projectId": "dry-union-87553313",
+    "branch": "development",
+    "branchId": "br-polished-boat-b1qddx0m",
+    "host": "ep-dark-dew-b15ctyr1.c-5.eu-central-1.aws.neon.tech",
+    "sourceDatabase": "tender_entity_registry",
+    "sourceSchema": "tendermatch_all_supplier_api",
+    "resultDatabase": "tendermatch_results_dev",
+    "resultSchema": "tendermatch_retrieval",
+    "owner": "neondb_owner",
+    "tls": "verify-full",
+    "channelBinding": "require",
+    "postgres": "18.6 (c5250a2)",
+    "pgvector": "0.8.6"
+  },
+  "authorityEvidence": "Explicit Stage 0 delegation; authenticated Console development branch/direct endpoint, guarded SQL identity and exact result-DB origin marker. No production owner connection.",
+  "steps": [
+    {
+      "step": "source-up",
+      "completedAt": "2026-09-06T08:52:36.975Z",
+      "passed": true
+    },
+    {
+      "step": "result-create",
+      "completedAt": "2026-09-06T08:52:45.969Z",
+      "passed": true
+    },
+    {
+      "step": "result-up",
+      "completedAt": "2026-09-06T08:53:27.540Z",
+      "passed": true
+    },
+    {
+      "step": "provision-source",
+      "completedAt": "2026-09-06T08:53:52.043Z",
+      "passed": true
+    },
+    {
+      "step": "provision-results",
+      "completedAt": "2026-09-06T08:54:08.619Z",
+      "passed": true
+    }
+  ],
+  "credentialReplay": [
+    {
+      "step": "validate-source",
+      "at": "2026-09-06T08:54:25.643Z",
+      "result": {
+        "contractVersion": "tendermatch-all-company-read/1.0.0",
+        "companies": 117,
+        "companyIdsSha256": "84bbd14d678a0ca6e1a15ce08de7616b9553f82010e44964a77fdfbbba3ba9b0",
+        "evidence": 1553,
+        "unavailableArtifacts": 167,
+        "profilesMissing": 0,
+        "profilesAmbiguous": 0,
+        "classificationMissing": 100,
+        "kind": "source",
+        "role": "tendermatch_all_supplier_consumer_dev",
+        "negativePrivileges": "passed",
+        "database": "tender_entity_registry"
+      }
+    },
+    {
+      "step": "validate-results",
+      "at": "2026-09-06T08:54:41.475Z",
+      "result": {
+        "resultTables": 17,
+        "scoringExecuted": false,
+        "tenantBoundary": "trusted-service-setting-not-authentication",
+        "kind": "results",
+        "role": "tendermatch_result_writer_dev",
+        "negativePrivileges": "passed",
+        "database": "tendermatch_results_dev"
+      }
+    }
+  ],
+  "source": {
+    "queriedBeforeAt": "2026-09-06T08:51:15.522Z",
+    "queriedAfterAt": "2026-09-06T08:55:47.909Z",
+    "canonicalCompanies": 117,
+    "underReview": 117,
+    "consumerCompanies": 117,
+    "profilePages": [
+      50,
+      50,
+      17
+    ],
+    "duplicateIds": 0,
+    "companyIdsSha256": "84bbd14d678a0ca6e1a15ce08de7616b9553f82010e44964a77fdfbbba3ba9b0",
+    "manifestIdMd5": "c4339c6056ca50d92b188a2d7407a0fb",
+    "sourceAndPinnedIdsMatch": true,
+    "contractVersion": "tendermatch-all-company-read/1.0.0",
+    "profileStates": {
+      "PINNED": 117,
+      "MISSING": 0,
+      "AMBIGUOUS": 0
+    },
+    "pins": {
+      "v2_1": 100,
+      "v1_3": 17
+    },
+    "classification": {
+      "GOODS": 14,
+      "WORKS": 3,
+      "MISSING": 100
+    },
+    "readiness": {
+      "ready_for_exploratory_matching": 2,
+      "usable_with_limitations": 111,
+      "requires_enrichment": 4
+    },
+    "evidence": 1553,
+    "evidenceStatus": {
+      "VERIFIED": 0,
+      "STATED_UNVERIFIED": 126,
+      "INFERRED": 820,
+      "UNKNOWN": 607
+    },
+    "valueClass": {
+      "SOURCE": 946,
+      "MISSING": 607
+    },
+    "availableArtifacts": 1386,
+    "unavailableArtifacts": 167,
+    "sourceRoleSemantics": "SOURCE is a reported claim, never an independent verification verdict.",
+    "privacy": {
+      "allowlistedFields": 23,
+      "excludedContactsRawBodiesNotesUrls": true,
+      "flaggedAllowedBusinessFields": 0,
+      "screening": "Bounded email/messaging/credential/phone-pattern screening over pinned allowed claim text; not a general DLP guarantee; server-side development access only."
+    }
+  },
+  "preservation": {
+    "oldApi": {
+      "profiles": 17,
+      "evidence": 289,
+      "definitionsMd5": "eb5451de81e296b61dc5965eacc9a321",
+      "profilesMd5": "08e824c7cb934bab53224fd834ea0f0f",
+      "evidenceMd5": "bf68ad1ddca739e0a0c1cd0ffe8f8829",
+      "beforeEqualsAfter": true,
+      "oldCredentialSelectPassed": true
+    },
+    "registryRowMd5": {
+      "entities": "a63a1f7cc782666327be7565fb009da3",
+      "profiles": "02baba48c264b3a7d9d19953e8627610",
+      "claims": "2ec638878e1ed91176cbc4d0c7399e0e",
+      "artifacts": "04e59176f8b1cfd45d9c4faa9d12e6ac"
+    },
+    "registryRowsBeforeEqualAfter": true,
+    "existingSchemaAclMd5": "bb8697cebf127b8fdc8ef02d48361360",
+    "existingSchemaAclsBeforeEqualAfter": true,
+    "sourcePublicConnectAndTemporaryPreserved": true,
+    "originalStandalone": {
+      "commit": "04b0b2a723223d11617837ee0e7562fa48168cd9",
+      "clean": true,
+      "staticChecksPassed": 3
+    }
+  },
+  "permissions": {
+    "readerLogin": "tendermatch_all_supplier_consumer_dev",
+    "readerGrantRole": "tendermatch_all_supplier_reader",
+    "writerLogin": "tendermatch_result_writer_dev",
+    "writerGrantRole": "tendermatch_result_writer",
+    "loginConnectionLimit": 3,
+    "grantRolesNoLogin": true,
+    "soleApplicationMembershipEach": true,
+    "membershipAdminOption": false,
+    "superuser": false,
+    "createdb": false,
+    "createrole": false,
+    "replication": false,
+    "bypassRls": false,
+    "ownedObjects": 0,
+    "readerSelectViews": 5,
+    "directLoginTableGrants": 0,
+    "writerSelectTables": 17,
+    "writerInsertTables": 15,
+    "writerUpdateTables": [
+      "scoring_batch",
+      "assessment_job"
+    ],
+    "writerColumnUpdate": "evaluation_run.status",
+    "sourceDenials": [
+      "CREATE ROLE",
+      "CREATE DATABASE",
+      "registry.entities",
+      "registry.source_records.raw_payload",
+      "registry.supplier_profile_versions.public_business_contacts",
+      "approved_company_ids_v1",
+      "pinned_profiles_v1",
+      "UPDATE current_supplier_profiles"
+    ],
+    "writerDenials": [
+      "CREATE ROLE",
+      "CREATE DATABASE",
+      "CREATE TABLE",
+      "DELETE pair_score",
+      "UPDATE pair_score",
+      "INSERT embedding_model"
+    ],
+    "rls": {
+      "sameTenantInsertAndStatusUpdate": "passed; rolled back",
+      "crossTenantRead": "empty",
+      "crossTenantWrite": "42501",
+      "boundary": "trusted-service tenant setting; not authentication"
+    },
+    "probeRoleDatabaseAndTableSurvivors": 0,
+    "newApiPublicGrants": 0,
+    "newResultSchemaAndDatabasePublicGrants": 0
+  },
+  "results": {
+    "checkedAt": "2026-09-06T08:56:18.221Z",
+    "tables": 17,
+    "migrationRecords": [
+      "20260905-retrieval-v1",
+      "20260906-all-to-all-dev-v1"
+    ],
+    "businessAndModelTables": 16,
+    "nonemptyBusinessOrModelTables": 0,
+    "evaluationRuns": 0,
+    "pairScores": 0,
+    "universePairs": 0,
+    "assessmentJobs": 0,
+    "embeddings": 0,
+    "registeredModels": 0,
+    "indexes": 32,
+    "lexicalTaxonomyGeographyGin": true,
+    "rankAndLeaseBtree": true,
+    "hnsw": {
+      "partitionedParentPresent": true,
+      "dimensions": 384,
+      "operatorClass": "vector_cosine_ops",
+      "m": 16,
+      "efConstruction": 64,
+      "modelPartitions": 0,
+      "limitation": "No model/provider or partition activated; no ANN recall/performance claim."
+    },
+    "tenantRlsTables": 15,
+    "globalMetadataTablesWithoutRls": [
+      "schema_migration",
+      "embedding_model"
+    ]
+  },
+  "tenderCensus": {
+    "queriedAt": "2026-09-06T08:54:51.190Z",
+    "hostFingerprint": "ep-aged-feather-atm85iwd",
+    "database": "neondb",
+    "role": "th_qa_readonly",
+    "documentedBranch": "br-morning-water-atqp6w7c",
+    "branchAuthority": "Existing approved read-only census target; control-plane/source authority for a future scoring run not newly established.",
+    "transactionReadOnly": true,
+    "predicate": "status = 'OPEN' AND \"deletedAt\" IS NULL",
+    "allRows": 29741,
+    "open": 17323,
+    "openPastDeadline": 1979,
+    "openMissingDeadline": 0,
+    "scopes": {
+      "CONSULTING": 827,
+      "EOI": 8,
+      "GOODS": 6594,
+      "OTHER": 332,
+      "PREQUAL": 1,
+      "SERVICES": 6567,
+      "WORKS": 2994
+    },
+    "pages": 18,
+    "pageLimit": 1000,
+    "traversedIds": 17323,
+    "duplicateIds": 0,
+    "identityVersionScopeSha256": "1eb3a6a39bca812c1e3970a1f03b1bd1b87559f4ddf815eb29c8006bb1b05be9",
+    "writes": 0,
+    "scoringExecuted": false
+  },
+  "secrets": {
+    "files": [
+      {
+        "path": "C:/CodexWork/tendermatch-neon-all-to-all/.env.tendermatch-all-suppliers-dev",
+        "variable": "TENDERMATCH_ALL_SUPPLIER_DATABASE_URL"
+      },
+      {
+        "path": "C:/CodexWork/tendermatch-neon-all-to-all/.env.tendermatch-results-dev",
+        "variable": "TENDERMATCH_RESULT_DATABASE_URL"
+      }
+    ],
+    "exactlyOneAssignmentEach": true,
+    "gitIgnored": true,
+    "windowsInheritanceDisabled": true,
+    "acl": "Current Windows user FullControl only; no inherited rules",
+    "passwords": "256-bit randomly generated in memory; never disclosed",
+    "ownerSaved": false,
+    "ownerRotated": false,
+    "temporaryOwnerReferencesCleared": true,
+    "clipboardCleared": true,
+    "logStatementAtProvisioning": "none",
+    "limitation": "No guarantee of JavaScript memory zeroization or third-party platform logging."
+  },
+  "validation": {
+    "fullRepositoryTests": {
+      "passed": 408,
+      "failed": 0,
+      "skipped": 0,
+      "command": "node --experimental-strip-types --test tests/*.test.mjs",
+      "databaseFixtures": "Disposable local PGlite/pgvector; not the new Neon result store"
+    },
+    "targetedLint": "passed",
+    "strictDomainTypecheck": "passed: all-to-all-contract.ts and imported graph",
+    "setupRunnerSyntax": "passed",
+    "evidenceArithmeticAndSecretPatternCheck": "passed",
+    "focusedTests": {
+      "passed": 50,
+      "failed": 0,
+      "skipped": 0
+    },
+    "originalStatic": {
+      "passed": 3,
+      "failed": 0
+    },
+    "liveSetupSteps": 7,
+    "liveConsumerAndWriterReplay": "passed",
+    "appBuild": "No app/source code changed; prior 67483e6 production-build evidence retained, not rerun as a Stage 0 deployment claim."
+  },
+  "scope": {
+    "businessScoring": false,
+    "embeddings": false,
+    "tors": false,
+    "frontendChanges": false,
+    "canonicalRegistryChanges": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "billingChanges": false,
+    "productionMutation": false
+  }
+}
