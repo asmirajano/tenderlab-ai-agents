@@ -1,0 +1,660 @@
+{
+  "stage": 6,
+  "mode": "execute",
+  "base": "263389a58674484cbdae4539e8edeb95c9f2f215",
+  "code": {
+    "files": {
+      "packages/tendermatch/src/shortlist-stage6.ts": "23e090844caa07aeafaf13061be218a7698c2180b74ed854d808feef70883ceb",
+      "scripts/lib/tendermatch-stage6.mjs": "6441b8e0d5c81a03481018b41b989abfa82479a3c2abe093f8c616513eb6e8b3",
+      "scripts/tendermatch-stage6.mjs": "d0942679c0c3d9f768da8ee2e3ddc96f6e4822b0226f9683f81a2ebd6f3e1ffa",
+      "db/tendermatch-dev/090-shortlist-up.sql": "9db47010e4cd2e049fd21c56e9543f570d875554194a2f72a5f99d1ec0eefa71"
+    },
+    "hash": "952456e7ff4cf976bca3e987b22011445130eeac4297eadceeb8f939a6358711"
+  },
+  "runId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+  "identity": {
+    "schema": "tendermatch-development-shortlist/1.0.0",
+    "policy": {
+      "name": "balanced-100-3",
+      "supplierReview": 100,
+      "tenderReview": 3,
+      "supplierAudit": 2,
+      "tenderAudit": 1,
+      "version": "tendermatch-directional-shortlist/1.0.0",
+      "combination": "UNION_OF_DIRECTIONAL_NOMINATIONS",
+      "reviewOrder": [
+        "retrieval_units DESC",
+        "formula_score DESC",
+        "data_coverage DESC",
+        "evidence_confidence DESC",
+        "opposite_uuid ASC"
+      ],
+      "auditOrder": "SHA256_VERSION_PAIR_ID_ASC",
+      "aiAuthorization": false,
+      "codeHash": "952456e7ff4cf976bca3e987b22011445130eeac4297eadceeb8f939a6358711"
+    },
+    "policyHash": "6304ba18b66bd0f76ab3c4a3665d409b3933346137621872621472391d23f32d",
+    "rankingRunId": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+    "rankingOutcomeHash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+    "projectionHash": "11ea3cd562cd587440e598b695fd2c22725403a051a9c1c2b46549e05b42ee90",
+    "contextHash": "be4157746cb5557851ab950fd245357c02ff72516bd3e43808c2b5fa7680a9c2",
+    "candidates": 707660,
+    "contexts": 17450,
+    "selected": 28034,
+    "reviewCandidates": 18531,
+    "auditOnly": 9503,
+    "outcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "actualAiTorsReady": 0
+  },
+  "availability": {
+    "shortlist_run": "tendermatch_retrieval.shortlist_run",
+    "database": "tendermatch_results_dev",
+    "role": "tendermatch_result_writer_dev"
+  },
+  "startedAt": "2026-09-06T19:42:10.844Z",
+  "protectedBefore": {
+    "legacy": {
+      "embedding_model": 0,
+      "feature_embedding": 0,
+      "evaluation_run": 0,
+      "run_feature": 0,
+      "pair_score": 0,
+      "run_pair": 0,
+      "retrieval_request": 0,
+      "retrieval_result": 0,
+      "scoring_batch": 0,
+      "assessment_job": 0,
+      "assessment_artifact": 0,
+      "human_disposition": 0,
+      "universe_snapshot": 0,
+      "universe_pair": 0,
+      "criterion_audit": 0
+    },
+    "formula": [
+      {
+        "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+        "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+        "scored_count": "707660",
+        "unscored_count": "1320301"
+      }
+    ],
+    "ranking": [
+      {
+        "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+        "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+        "pair_count": "707660",
+        "zero_count": "683653"
+      }
+    ],
+    "priorRows": {
+      "formula": 707660,
+      "ranking": 707660,
+      "profiles": 17450
+    }
+  },
+  "inputMetrics": {
+    "elapsedMs": 82205,
+    "pages": 222
+  },
+  "extraction": {
+    "extracted": 17450,
+    "reused": 0
+  },
+  "preparation": {
+    "insertedContexts": 17450,
+    "insertedMembers": 17450,
+    "insertedRun": 1
+  },
+  "execution": {
+    "count": 28034,
+    "reused": 0,
+    "inserted": 28034,
+    "outcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "elapsedMs": 23614,
+    "maxBatchBytes": 445720
+  },
+  "readback": {
+    "count": 28034,
+    "reused": 28034,
+    "inserted": 0,
+    "outcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "elapsedMs": 12988,
+    "maxBatchBytes": 2
+  },
+  "completion": {
+    "outcome_hash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "pair_count": 28034,
+    "review_count": 18531,
+    "audit_count": 9503
+  },
+  "rerun": {
+    "count": 28034,
+    "reused": 28034,
+    "inserted": 0,
+    "outcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "elapsedMs": 10147,
+    "maxBatchBytes": 2
+  },
+  "security": {
+    "grants": "SELECT INSERT only",
+    "mutationsAndDdl": "denied",
+    "sealedMembership": "denied",
+    "crossTenantRead": "zero",
+    "crossTenantWrite": "denied",
+    "committedProbeRows": 0,
+    "tenantBoundary": "TRUSTED_SERVICE_GUC_NOT_USER_AUTHENTICATION"
+  },
+  "queries": {
+    "supplier": {
+      "focusId": "6ea1abc6-affc-571f-a43b-821220b15ed7",
+      "defaultRows": 25,
+      "bytes": 22679,
+      "elapsedMs": 413,
+      "fullTraversal": 2361
+    },
+    "supplierPlan": [
+      {
+        "Plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 0.83,
+          "Total Cost": 68.47,
+          "Plan Rows": 26,
+          "Plan Width": 492,
+          "Actual Startup Time": 0.05,
+          "Actual Total Time": 0.234,
+          "Actual Rows": 26,
+          "Actual Loops": 1,
+          "Disabled": false,
+          "Shared Hit Blocks": 116,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Result",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 0.83,
+              "Total Cost": 6101,
+              "Plan Rows": 2345,
+              "Plan Width": 492,
+              "Actual Startup Time": 0.049,
+              "Actual Total Time": 0.231,
+              "Actual Rows": 26,
+              "Actual Loops": 1,
+              "Disabled": false,
+              "One-Time Filter": "(current_setting('tendermatch.tenant_id'::text, true) = 'tendermatch-development-stage1'::text)",
+              "Shared Hit Blocks": 116,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Inner",
+                  "Startup Cost": 0.83,
+                  "Total Cost": 6030.65,
+                  "Plan Rows": 2345,
+                  "Plan Width": 452,
+                  "Actual Startup Time": 0.043,
+                  "Actual Total Time": 0.208,
+                  "Actual Rows": 26,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Inner Unique": true,
+                  "Shared Hit Blocks": 116,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "shortlist_pair_supplier",
+                      "Relation Name": "shortlist_pair",
+                      "Alias": "p",
+                      "Startup Cost": 0.41,
+                      "Total Cost": 3054.1,
+                      "Plan Rows": 2361,
+                      "Plan Width": 483,
+                      "Actual Startup Time": 0.027,
+                      "Actual Total Time": 0.047,
+                      "Actual Rows": 26,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Index Cond": "((tenant_id = 'tendermatch-development-stage1'::text) AND (policy_hash = '\\x6304ba18b66bd0f76ab3c4a3665d409b3933346137621872621472391d23f32d'::bytea) AND (supplier_context = '\\xbd06df246be44cd190e1c97a369d7179c4946f1e31f89d11cc405d2e83ddc195'::bytea))",
+                      "Rows Removed by Index Recheck": 0,
+                      "Index Searches": 1,
+                      "Shared Hit Blocks": 11,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    },
+                    {
+                      "Node Type": "Index Only Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "shortlist_member_tenant_id_run_id_kind_context_key_key",
+                      "Relation Name": "shortlist_member",
+                      "Alias": "m",
+                      "Startup Cost": 0.41,
+                      "Total Cost": 1.25,
+                      "Plan Rows": 1,
+                      "Plan Width": 64,
+                      "Actual Startup Time": 0.006,
+                      "Actual Total Time": 0.006,
+                      "Actual Rows": 1,
+                      "Actual Loops": 26,
+                      "Disabled": false,
+                      "Index Cond": "((tenant_id = 'tendermatch-development-stage1'::text) AND (run_id = '239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884'::text) AND (kind = 'tender'::text) AND (context_key = p.tender_context))",
+                      "Rows Removed by Index Recheck": 0,
+                      "Heap Fetches": 0,
+                      "Index Searches": 26,
+                      "Shared Hit Blocks": 105,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.285,
+        "Triggers": [],
+        "Execution Time": 0.279
+      }
+    ],
+    "tender": {
+      "focusId": "0f23fd59-2eb9-4c97-80c0-74698bcc4189",
+      "defaultRows": 25,
+      "bytes": 22838,
+      "elapsedMs": 407,
+      "fullTraversal": 49
+    },
+    "tenderPlan": [
+      {
+        "Plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 119.88,
+          "Total Cost": 119.89,
+          "Plan Rows": 1,
+          "Plan Width": 492,
+          "Actual Startup Time": 0.242,
+          "Actual Total Time": 0.246,
+          "Actual Rows": 26,
+          "Actual Loops": 1,
+          "Disabled": false,
+          "Shared Hit Blocks": 62,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 119.88,
+              "Total Cost": 119.89,
+              "Plan Rows": 1,
+              "Plan Width": 492,
+              "Actual Startup Time": 0.241,
+              "Actual Total Time": 0.243,
+              "Actual Rows": 26,
+              "Actual Loops": 1,
+              "Disabled": false,
+              "Sort Key": [
+                "p.tier",
+                "p.supplier_id"
+              ],
+              "Sort Method": "quicksort",
+              "Sort Space Used": 74,
+              "Sort Space Type": "Memory",
+              "Shared Hit Blocks": 62,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Result",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 20.93,
+                  "Total Cost": 119.87,
+                  "Plan Rows": 1,
+                  "Plan Width": 492,
+                  "Actual Startup Time": 0.1,
+                  "Actual Total Time": 0.213,
+                  "Actual Rows": 49,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "One-Time Filter": "(current_setting('tendermatch.tenant_id'::text, true) = 'tendermatch-development-stage1'::text)",
+                  "Shared Hit Blocks": 62,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Hash Join",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Join Type": "Inner",
+                      "Startup Cost": 20.93,
+                      "Total Cost": 119.84,
+                      "Plan Rows": 1,
+                      "Plan Width": 452,
+                      "Actual Startup Time": 0.092,
+                      "Actual Total Time": 0.177,
+                      "Actual Rows": 49,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Inner Unique": true,
+                      "Hash Cond": "(p.supplier_context = m.context_key)",
+                      "Shared Hit Blocks": 62,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0,
+                      "Plans": [
+                        {
+                          "Node Type": "Index Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Scan Direction": "Forward",
+                          "Index Name": "shortlist_pair_tender",
+                          "Relation Name": "shortlist_pair",
+                          "Alias": "p",
+                          "Startup Cost": 0.41,
+                          "Total Cost": 99.2,
+                          "Plan Rows": 49,
+                          "Plan Width": 483,
+                          "Actual Startup Time": 0.026,
+                          "Actual Total Time": 0.095,
+                          "Actual Rows": 49,
+                          "Actual Loops": 1,
+                          "Disabled": false,
+                          "Index Cond": "((tenant_id = 'tendermatch-development-stage1'::text) AND (policy_hash = '\\x6304ba18b66bd0f76ab3c4a3665d409b3933346137621872621472391d23f32d'::bytea) AND (tender_context = '\\xbbb2fea43053b690d272623e40f4277452a98ea91f6bfd8768fc1d9ddc617188'::bytea))",
+                          "Rows Removed by Index Recheck": 0,
+                          "Index Searches": 1,
+                          "Shared Hit Blocks": 54,
+                          "Shared Read Blocks": 0,
+                          "Shared Dirtied Blocks": 0,
+                          "Shared Written Blocks": 0,
+                          "Local Hit Blocks": 0,
+                          "Local Read Blocks": 0,
+                          "Local Dirtied Blocks": 0,
+                          "Local Written Blocks": 0,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 0
+                        },
+                        {
+                          "Node Type": "Hash",
+                          "Parent Relationship": "Inner",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Startup Cost": 19.05,
+                          "Total Cost": 19.05,
+                          "Plan Rows": 117,
+                          "Plan Width": 64,
+                          "Actual Startup Time": 0.061,
+                          "Actual Total Time": 0.061,
+                          "Actual Rows": 117,
+                          "Actual Loops": 1,
+                          "Disabled": false,
+                          "Hash Buckets": 1024,
+                          "Original Hash Buckets": 1024,
+                          "Hash Batches": 1,
+                          "Original Hash Batches": 1,
+                          "Peak Memory Usage": 19,
+                          "Shared Hit Blocks": 8,
+                          "Shared Read Blocks": 0,
+                          "Shared Dirtied Blocks": 0,
+                          "Shared Written Blocks": 0,
+                          "Local Hit Blocks": 0,
+                          "Local Read Blocks": 0,
+                          "Local Dirtied Blocks": 0,
+                          "Local Written Blocks": 0,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 0,
+                          "Plans": [
+                            {
+                              "Node Type": "Index Only Scan",
+                              "Parent Relationship": "Outer",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Scan Direction": "Forward",
+                              "Index Name": "shortlist_member_tenant_id_run_id_kind_context_key_key",
+                              "Relation Name": "shortlist_member",
+                              "Alias": "m",
+                              "Startup Cost": 0.41,
+                              "Total Cost": 19.05,
+                              "Plan Rows": 117,
+                              "Plan Width": 64,
+                              "Actual Startup Time": 0.015,
+                              "Actual Total Time": 0.041,
+                              "Actual Rows": 117,
+                              "Actual Loops": 1,
+                              "Disabled": false,
+                              "Index Cond": "((tenant_id = 'tendermatch-development-stage1'::text) AND (run_id = '239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884'::text) AND (kind = 'supplier'::text))",
+                              "Rows Removed by Index Recheck": 0,
+                              "Heap Fetches": 0,
+                              "Index Searches": 1,
+                              "Shared Hit Blocks": 8,
+                              "Shared Read Blocks": 0,
+                              "Shared Dirtied Blocks": 0,
+                              "Shared Written Blocks": 0,
+                              "Local Hit Blocks": 0,
+                              "Local Read Blocks": 0,
+                              "Local Dirtied Blocks": 0,
+                              "Local Written Blocks": 0,
+                              "Temp Read Blocks": 0,
+                              "Temp Written Blocks": 0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.273,
+        "Triggers": [],
+        "Execution Time": 0.302
+      }
+    ]
+  },
+  "rows": {
+    "shortlist_context": 17450,
+    "shortlist_run": 1,
+    "shortlist_member": 17450,
+    "shortlist_pair": 28034,
+    "shortlist_completion": 1
+  },
+  "storage": [
+    {
+      "table_name": "shortlist_completion",
+      "total_bytes": "32768",
+      "heap_bytes": "8192"
+    },
+    {
+      "table_name": "shortlist_context",
+      "total_bytes": "31039488",
+      "heap_bytes": "25772032"
+    },
+    {
+      "table_name": "shortlist_member",
+      "total_bytes": "9830400",
+      "heap_bytes": "3178496"
+    },
+    {
+      "table_name": "shortlist_pair",
+      "total_bytes": "41050112",
+      "heap_bytes": "15310848"
+    },
+    {
+      "table_name": "shortlist_run",
+      "total_bytes": "32768",
+      "heap_bytes": "8192"
+    }
+  ],
+  "protectedAfter": {
+    "legacy": {
+      "embedding_model": 0,
+      "feature_embedding": 0,
+      "evaluation_run": 0,
+      "run_feature": 0,
+      "pair_score": 0,
+      "run_pair": 0,
+      "retrieval_request": 0,
+      "retrieval_result": 0,
+      "scoring_batch": 0,
+      "assessment_job": 0,
+      "assessment_artifact": 0,
+      "human_disposition": 0,
+      "universe_snapshot": 0,
+      "universe_pair": 0,
+      "criterion_audit": 0
+    },
+    "formula": [
+      {
+        "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+        "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+        "scored_count": "707660",
+        "unscored_count": "1320301"
+      }
+    ],
+    "ranking": [
+      {
+        "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+        "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+        "pair_count": "707660",
+        "zero_count": "683653"
+      }
+    ],
+    "priorRows": {
+      "formula": 707660,
+      "ranking": 707660,
+      "profiles": 17450
+    }
+  },
+  "metrics": {
+    "elapsedMs": 640726,
+    "connection": {
+      "kind": "results",
+      "queries": 1039,
+      "responseBytes": 183631289,
+      "requestBytes": 76478022,
+      "maxResponseBytes": 3874135
+    },
+    "memory": {
+      "rss": 487886848,
+      "heapTotal": 355450880,
+      "heapUsed": 234633296,
+      "external": 11488137,
+      "arrayBuffers": 2059657
+    }
+  },
+  "finishedAt": "2026-09-06T19:50:52.561Z",
+  "sourceConnections": 0,
+  "modelCalls": 0,
+  "noFrontend": true,
+  "noDeployment": true
+}

@@ -1,0 +1,1033 @@
+{
+  "stage": 6,
+  "mode": "compare",
+  "base": "263389a58674484cbdae4539e8edeb95c9f2f215",
+  "code": {
+    "files": {
+      "packages/tendermatch/src/shortlist-stage6.ts": "23e090844caa07aeafaf13061be218a7698c2180b74ed854d808feef70883ceb",
+      "scripts/lib/tendermatch-stage6.mjs": "6441b8e0d5c81a03481018b41b989abfa82479a3c2abe093f8c616513eb6e8b3",
+      "scripts/tendermatch-stage6.mjs": "d0942679c0c3d9f768da8ee2e3ddc96f6e4822b0226f9683f81a2ebd6f3e1ffa",
+      "db/tendermatch-dev/090-shortlist-up.sql": "9db47010e4cd2e049fd21c56e9543f570d875554194a2f72a5f99d1ec0eefa71"
+    },
+    "hash": "952456e7ff4cf976bca3e987b22011445130eeac4297eadceeb8f939a6358711"
+  },
+  "runId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+  "identity": {
+    "schema": "tendermatch-development-shortlist/1.0.0",
+    "policy": {
+      "name": "balanced-100-3",
+      "supplierReview": 100,
+      "tenderReview": 3,
+      "supplierAudit": 2,
+      "tenderAudit": 1,
+      "version": "tendermatch-directional-shortlist/1.0.0",
+      "combination": "UNION_OF_DIRECTIONAL_NOMINATIONS",
+      "reviewOrder": [
+        "retrieval_units DESC",
+        "formula_score DESC",
+        "data_coverage DESC",
+        "evidence_confidence DESC",
+        "opposite_uuid ASC"
+      ],
+      "auditOrder": "SHA256_VERSION_PAIR_ID_ASC",
+      "aiAuthorization": false,
+      "codeHash": "952456e7ff4cf976bca3e987b22011445130eeac4297eadceeb8f939a6358711"
+    },
+    "policyHash": "6304ba18b66bd0f76ab3c4a3665d409b3933346137621872621472391d23f32d",
+    "rankingRunId": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+    "rankingOutcomeHash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+    "projectionHash": "11ea3cd562cd587440e598b695fd2c22725403a051a9c1c2b46549e05b42ee90",
+    "contextHash": "be4157746cb5557851ab950fd245357c02ff72516bd3e43808c2b5fa7680a9c2",
+    "candidates": 707660,
+    "contexts": 17450,
+    "selected": 28034,
+    "reviewCandidates": 18531,
+    "auditOnly": 9503,
+    "outcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "actualAiTorsReady": 0
+  },
+  "availability": {
+    "shortlist_run": null,
+    "database": "tendermatch_results_dev",
+    "role": "tendermatch_result_writer_dev"
+  },
+  "startedAt": "2026-09-06T19:27:11.408Z",
+  "protectedBefore": {
+    "legacy": {
+      "embedding_model": 0,
+      "feature_embedding": 0,
+      "evaluation_run": 0,
+      "run_feature": 0,
+      "pair_score": 0,
+      "run_pair": 0,
+      "retrieval_request": 0,
+      "retrieval_result": 0,
+      "scoring_batch": 0,
+      "assessment_job": 0,
+      "assessment_artifact": 0,
+      "human_disposition": 0,
+      "universe_snapshot": 0,
+      "universe_pair": 0,
+      "criterion_audit": 0
+    },
+    "formula": [
+      {
+        "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+        "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+        "scored_count": "707660",
+        "unscored_count": "1320301"
+      }
+    ],
+    "ranking": [
+      {
+        "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+        "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+        "pair_count": "707660",
+        "zero_count": "683653"
+      }
+    ],
+    "priorRows": {
+      "formula": 707660,
+      "ranking": 707660,
+      "profiles": 17450
+    }
+  },
+  "inputMetrics": {
+    "elapsedMs": 80285,
+    "pages": 222
+  },
+  "extraction": {
+    "extracted": 17450,
+    "reused": 0
+  },
+  "evidenceClass": "READ_ONLY_REAL_DATA_POLICY_COMPARISON",
+  "results": [
+    {
+      "policy": {
+        "name": "positive-only",
+        "supplierReview": 1000000,
+        "tenderReview": 0,
+        "supplierAudit": 0,
+        "tenderAudit": 0
+      },
+      "candidates": 707660,
+      "positivePopulation": 24007,
+      "selected": 24007,
+      "selectedPercent": 3.392448350902976,
+      "reviewCandidates": 24007,
+      "auditOnly": 0,
+      "actualAiTorsReady": 0,
+      "reviewSupplier": {
+        "covered": 99,
+        "min": 1,
+        "max": 2005
+      },
+      "reviewTender": {
+        "covered": 5645,
+        "min": 1,
+        "max": 51
+      },
+      "auditSupplier": {
+        "covered": 0,
+        "min": 0,
+        "max": 0
+      },
+      "auditTender": {
+        "covered": 0,
+        "min": 0,
+        "max": 0
+      },
+      "allSupplier": {
+        "covered": 99,
+        "min": 1,
+        "max": 2005
+      },
+      "allTender": {
+        "covered": 5645,
+        "min": 1,
+        "max": 51
+      },
+      "ambiguousSelected": 22526,
+      "formulaZeroReview": 0,
+      "coverageZeroReview": 0,
+      "confidenceRange": [
+        30,
+        50
+      ],
+      "outcomeHash": "ba75dc11d7ad6e29f83c6d63b1a7cce0f9f9eb52685c3c3e3556d8c6bfbbb600",
+      "elapsedMs": 9119,
+      "replayIdentical": true,
+      "samples": [
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+            "units": 24242,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 73,
+              "tieSize": 11,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+            "units": 25000,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 52,
+              "tieSize": 21,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "0242abbe-dfb2-4170-bb15-423dd57dc4fb",
+            "units": 20512,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "0242abbe-dfb2-4170-bb15-423dd57dc4fb",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 123,
+              "tieSize": 10,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "policy": {
+        "name": "focused-50-2",
+        "supplierReview": 50,
+        "tenderReview": 2,
+        "supplierAudit": 2,
+        "tenderAudit": 1
+      },
+      "candidates": 707660,
+      "positivePopulation": 24007,
+      "selected": 22720,
+      "selectedPercent": 3.2105813526269675,
+      "reviewCandidates": 13217,
+      "auditOnly": 9503,
+      "actualAiTorsReady": 0,
+      "reviewSupplier": {
+        "covered": 99,
+        "min": 1,
+        "max": 1636
+      },
+      "reviewTender": {
+        "covered": 5645,
+        "min": 1,
+        "max": 46
+      },
+      "auditSupplier": {
+        "covered": 108,
+        "min": 48,
+        "max": 1887
+      },
+      "auditTender": {
+        "covered": 9502,
+        "min": 1,
+        "max": 2
+      },
+      "allSupplier": {
+        "covered": 108,
+        "min": 52,
+        "max": 2205
+      },
+      "allTender": {
+        "covered": 9592,
+        "min": 1,
+        "max": 47
+      },
+      "ambiguousSelected": 4159,
+      "formulaZeroReview": 0,
+      "coverageZeroReview": 0,
+      "confidenceRange": [
+        30,
+        50
+      ],
+      "outcomeHash": "ca16bc66fe9a5bfa634ff383af90f2348628f2466ad554c0270ec9f753dd7e54",
+      "elapsedMs": 9777,
+      "replayIdentical": true,
+      "samples": [
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+            "units": 0,
+            "mask": 2,
+            "score": 0,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+              "tier": "AUDIT_ONLY",
+              "rank": 1,
+              "tieSize": 105,
+              "reason": "TENDER_ZERO_RETRIEVAL_AUDIT"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+            "units": 24242,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 1,
+              "tieSize": 1,
+              "reason": "TENDER_POSITIVE_BUDGET"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "044ad4cf-799e-473e-8ed2-85e309157836",
+            "units": 61538,
+            "mask": 0,
+            "score": 14,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "044ad4cf-799e-473e-8ed2-85e309157836",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 1,
+              "tieSize": 3,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            },
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "044ad4cf-799e-473e-8ed2-85e309157836",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 2,
+              "tieSize": 1,
+              "reason": "TENDER_POSITIVE_BUDGET"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "policy": {
+        "name": "balanced-100-3",
+        "supplierReview": 100,
+        "tenderReview": 3,
+        "supplierAudit": 2,
+        "tenderAudit": 1
+      },
+      "candidates": 707660,
+      "positivePopulation": 24007,
+      "selected": 28034,
+      "selectedPercent": 3.9615069383602295,
+      "reviewCandidates": 18531,
+      "auditOnly": 9503,
+      "actualAiTorsReady": 0,
+      "reviewSupplier": {
+        "covered": 99,
+        "min": 1,
+        "max": 1771
+      },
+      "reviewTender": {
+        "covered": 5645,
+        "min": 1,
+        "max": 48
+      },
+      "auditSupplier": {
+        "covered": 108,
+        "min": 48,
+        "max": 1887
+      },
+      "auditTender": {
+        "covered": 9502,
+        "min": 1,
+        "max": 2
+      },
+      "allSupplier": {
+        "covered": 108,
+        "min": 52,
+        "max": 2361
+      },
+      "allTender": {
+        "covered": 9592,
+        "min": 1,
+        "max": 49
+      },
+      "ambiguousSelected": 7382,
+      "formulaZeroReview": 0,
+      "coverageZeroReview": 0,
+      "confidenceRange": [
+        30,
+        50
+      ],
+      "outcomeHash": "673624471a229cd5ffb320bf47ec555f25907992500d72b75da82ffc114b1bb6",
+      "elapsedMs": 12568,
+      "replayIdentical": true,
+      "samples": [
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+            "units": 0,
+            "mask": 2,
+            "score": 0,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+              "tier": "AUDIT_ONLY",
+              "rank": 1,
+              "tieSize": 105,
+              "reason": "TENDER_ZERO_RETRIEVAL_AUDIT"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+            "units": 24242,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 73,
+              "tieSize": 11,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            },
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 1,
+              "tieSize": 1,
+              "reason": "TENDER_POSITIVE_BUDGET"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+            "units": 25000,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 52,
+              "tieSize": 21,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "policy": {
+        "name": "broad-250-5",
+        "supplierReview": 250,
+        "tenderReview": 5,
+        "supplierAudit": 2,
+        "tenderAudit": 1
+      },
+      "candidates": 707660,
+      "positivePopulation": 24007,
+      "selected": 32907,
+      "selectedPercent": 4.650114461747167,
+      "reviewCandidates": 23404,
+      "auditOnly": 9503,
+      "actualAiTorsReady": 0,
+      "reviewSupplier": {
+        "covered": 99,
+        "min": 1,
+        "max": 1949
+      },
+      "reviewTender": {
+        "covered": 5645,
+        "min": 1,
+        "max": 49
+      },
+      "auditSupplier": {
+        "covered": 108,
+        "min": 48,
+        "max": 1887
+      },
+      "auditTender": {
+        "covered": 9502,
+        "min": 1,
+        "max": 2
+      },
+      "allSupplier": {
+        "covered": 108,
+        "min": 52,
+        "max": 2448
+      },
+      "allTender": {
+        "covered": 9592,
+        "min": 1,
+        "max": 50
+      },
+      "ambiguousSelected": 12439,
+      "formulaZeroReview": 0,
+      "coverageZeroReview": 0,
+      "confidenceRange": [
+        30,
+        50
+      ],
+      "outcomeHash": "e6b233bf963e75d3e064c057f1265c4a978681d3ba5756e6789f21088a095f6d",
+      "elapsedMs": 12474,
+      "replayIdentical": true,
+      "samples": [
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+            "units": 0,
+            "mask": 2,
+            "score": 0,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+              "tier": "AUDIT_ONLY",
+              "rank": 1,
+              "tieSize": 105,
+              "reason": "TENDER_ZERO_RETRIEVAL_AUDIT"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+            "units": 24242,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 73,
+              "tieSize": 11,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            },
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 1,
+              "tieSize": 1,
+              "reason": "TENDER_POSITIVE_BUDGET"
+            }
+          ]
+        },
+        {
+          "input": {
+            "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+            "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+            "units": 25000,
+            "mask": 0,
+            "score": 7,
+            "coverage": 35,
+            "confidence": 30,
+            "limitation": 0
+          },
+          "nominations": [
+            {
+              "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+              "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+              "tier": "REVIEW_CANDIDATE",
+              "rank": 52,
+              "tieSize": 21,
+              "reason": "SUPPLIER_POSITIVE_BUDGET"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "reuse": {
+    "extracted": 0,
+    "reused": 17450
+  },
+  "incremental": [
+    {
+      "evidenceClass": "IN_MEMORY_IDENTITY_CHANGE_NOT_SOURCE_MUTATION",
+      "kind": "supplier",
+      "focusId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+      "extracted": 6598,
+      "reused": 10852,
+      "unchangedPairIdentities": 8669,
+      "changedPairIdentities": 19365,
+      "selectionCountsUnchanged": true,
+      "scope": "FOCUS_AND_INCIDENT_OPPOSITE_CONTEXTS_NO_CASCADE"
+    },
+    {
+      "evidenceClass": "IN_MEMORY_IDENTITY_CHANGE_NOT_SOURCE_MUTATION",
+      "kind": "tender",
+      "focusId": "000fa43d-e278-467a-9b7f-9759e4cb0b94",
+      "extracted": 6,
+      "reused": 17444,
+      "unchangedPairIdentities": 18883,
+      "changedPairIdentities": 9151,
+      "selectionCountsUnchanged": true,
+      "scope": "FOCUS_AND_INCIDENT_OPPOSITE_CONTEXTS_NO_CASCADE"
+    }
+  ],
+  "payload": {
+    "contextsBytes": 17619690,
+    "pairsBytes": 24951952,
+    "maxContextBytes": 20032,
+    "estimateClass": "SERIALIZED_PAYLOAD_NOT_DATABASE_SIZE"
+  },
+  "committedWrites": 0,
+  "selectedSamples": [
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "016aebec-0936-46db-8812-b2c5e552635c",
+        "units": 0,
+        "mask": 2,
+        "score": 0,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 8,
+        "supplierNominationRank": null,
+        "tenderNominationRank": 1,
+        "supplierTieSize": null,
+        "tenderTieSize": 105
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+        "units": 24242,
+        "mask": 0,
+        "score": 7,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "REVIEW_CANDIDATE",
+        "reasonMask": 3,
+        "supplierNominationRank": 73,
+        "tenderNominationRank": 1,
+        "supplierTieSize": 11,
+        "tenderTieSize": 1
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "0211ec94-b7be-48cc-92b7-5ead3f724f4b",
+        "units": 25000,
+        "mask": 0,
+        "score": 7,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "REVIEW_CANDIDATE",
+        "reasonMask": 1,
+        "supplierNominationRank": 52,
+        "tenderNominationRank": null,
+        "supplierTieSize": 21,
+        "tenderTieSize": null
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "48345f02-56f7-49ea-b7d1-e35224af1f3c",
+        "units": 53333,
+        "mask": 0,
+        "score": 14,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "REVIEW_CANDIDATE",
+        "reasonMask": 3,
+        "supplierNominationRank": 4,
+        "tenderNominationRank": 1,
+        "supplierTieSize": 1,
+        "tenderTieSize": 1
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "58bfe3a8-9011-4e3c-98bf-2a878098faf2",
+        "units": 39024,
+        "mask": 0,
+        "score": 14,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "REVIEW_CANDIDATE",
+        "reasonMask": 1,
+        "supplierNominationRank": 8,
+        "tenderNominationRank": null,
+        "supplierTieSize": 1,
+        "tenderTieSize": null
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "5e0f1e73-9388-4deb-9f0f-422234e1cec4",
+        "units": 18181,
+        "mask": 0,
+        "score": 7,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "REVIEW_CANDIDATE",
+        "reasonMask": 2,
+        "supplierNominationRank": null,
+        "tenderNominationRank": 1,
+        "supplierTieSize": null,
+        "tenderTieSize": 1
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "69c68757-29d1-4f94-bc06-ae9fbc495df0",
+        "units": 0,
+        "mask": 2,
+        "score": 0,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 12,
+        "supplierNominationRank": 2,
+        "tenderNominationRank": 1,
+        "supplierTieSize": 6439,
+        "tenderTieSize": 102
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+        "tenderId": "027d425c-5776-494c-81c5-53e4f45c68c9",
+        "units": 0,
+        "mask": 2,
+        "score": 4,
+        "coverage": 45,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 8,
+        "supplierNominationRank": null,
+        "tenderNominationRank": 1,
+        "supplierTieSize": null,
+        "tenderTieSize": 101
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+        "tenderId": "e793c304-4ae0-4088-b849-5aebadbd61cc",
+        "units": 0,
+        "mask": 2,
+        "score": 4,
+        "coverage": 45,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 12,
+        "supplierNominationRank": 2,
+        "tenderNominationRank": 1,
+        "supplierTieSize": 6512,
+        "tenderTieSize": 105
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "0808ef8b-b291-5758-9800-8d660e8e90c9",
+        "tenderId": "02c7b7dc-0f4e-4161-804f-0e11d59185ad",
+        "units": 0,
+        "mask": 3,
+        "score": 0,
+        "coverage": 0,
+        "confidence": 0,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 8,
+        "supplierNominationRank": null,
+        "tenderNominationRank": 1,
+        "supplierTieSize": null,
+        "tenderTieSize": 103
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "0808ef8b-b291-5758-9800-8d660e8e90c9",
+        "tenderId": "15705c4c-933a-49cc-bbee-ef6878402ea7",
+        "units": 0,
+        "mask": 3,
+        "score": 0,
+        "coverage": 0,
+        "confidence": 0,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 12,
+        "supplierNominationRank": 2,
+        "tenderNominationRank": 1,
+        "supplierTieSize": 6597,
+        "tenderTieSize": 105
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "0f73dbcd-63c7-5e0b-9987-af20987930cc",
+        "tenderId": "1dfaf9b0-7c9b-4df0-a5fe-e4b9ff7d1e13",
+        "units": 25000,
+        "mask": 0,
+        "score": 11,
+        "coverage": 45,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "REVIEW_CANDIDATE",
+        "reasonMask": 2,
+        "supplierNominationRank": null,
+        "tenderNominationRank": 3,
+        "supplierTieSize": null,
+        "tenderTieSize": 2
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "16770cb0-7ca6-5629-8be2-8acefbde5818",
+        "tenderId": "1f91ddc3-ca5c-4cf0-9eec-5b11b74e5d4e",
+        "units": 0,
+        "mask": 2,
+        "score": 0,
+        "coverage": 35,
+        "confidence": 30,
+        "limitation": 0
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 4,
+        "supplierNominationRank": 1,
+        "tenderNominationRank": null,
+        "supplierTieSize": 6582,
+        "tenderTieSize": null
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    },
+    {
+      "input": {
+        "supplierId": "6ea1abc6-affc-571f-a43b-821220b15ed7",
+        "tenderId": "0034d46b-d03d-4ff6-bf8f-aeb85a627dd3",
+        "units": 0,
+        "mask": 2,
+        "score": 24,
+        "coverage": 60,
+        "confidence": 50,
+        "limitation": 1
+      },
+      "shortlist": {
+        "tier": "AUDIT_ONLY",
+        "reasonMask": 8,
+        "supplierNominationRank": null,
+        "tenderNominationRank": 1,
+        "supplierTieSize": null,
+        "tenderTieSize": 1
+      },
+      "aiAuthorized": false,
+      "onDemandEscalationEligible": true
+    }
+  ],
+  "protectedAfter": {
+    "legacy": {
+      "embedding_model": 0,
+      "feature_embedding": 0,
+      "evaluation_run": 0,
+      "run_feature": 0,
+      "pair_score": 0,
+      "run_pair": 0,
+      "retrieval_request": 0,
+      "retrieval_result": 0,
+      "scoring_batch": 0,
+      "assessment_job": 0,
+      "assessment_artifact": 0,
+      "human_disposition": 0,
+      "universe_snapshot": 0,
+      "universe_pair": 0,
+      "criterion_audit": 0
+    },
+    "formula": [
+      {
+        "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+        "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+        "scored_count": "707660",
+        "unscored_count": "1320301"
+      }
+    ],
+    "ranking": [
+      {
+        "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+        "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+        "pair_count": "707660",
+        "zero_count": "683653"
+      }
+    ],
+    "priorRows": {
+      "formula": 707660,
+      "ranking": 707660,
+      "profiles": 17450
+    }
+  },
+  "metrics": {
+    "elapsedMs": 191387,
+    "connection": {
+      "kind": "results",
+      "queries": 268,
+      "responseBytes": 130069452,
+      "requestBytes": 72139,
+      "maxResponseBytes": 3874135
+    },
+    "memory": {
+      "rss": 1692278784,
+      "heapTotal": 1285443584,
+      "heapUsed": 1152112552,
+      "external": 9704989,
+      "arrayBuffers": 276509
+    }
+  },
+  "finishedAt": "2026-09-06T19:28:37.920Z",
+  "sourceConnections": 0,
+  "modelCalls": 0,
+  "noFrontend": true,
+  "noDeployment": true
+}
