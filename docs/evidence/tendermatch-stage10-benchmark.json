@@ -1,0 +1,683 @@
+{
+  "schemaVersion": "tendermatch-stage10-local-benchmark/1.0.0",
+  "baseCommit": "ddf2ab2f854b84d1c75fc2cb5a1f39a6871fbf0a",
+  "mode": "MEASURED_SYNTHETIC_LOCAL_SQLITE_NOT_NEON",
+  "sourceBinding": {
+    "scripts/lib/tendermatch-stage10-source.mjs": "b25144b404cc2c5c193fdea5e1b2f1f271379282282f6ee53c621b8d3a175173",
+    "scripts/lib/tendermatch-stage10-plan.mjs": "0420928ad5b90727734034a2a6dc356b6b6fb928417c4253836618f1f4bdde8d",
+    "scripts/lib/tendermatch-stage10-store.mjs": "afb18c0ce46573ed3bd85308cbc8ade707b7a69d54e5f156a0ee4bf4e491fe98",
+    "scripts/lib/tendermatch-stage10.mjs": "34c43350f8155c9a2ace1c0983f29144ea1fda65d8d6aeb3fd17254b577c54a4",
+    "scripts/tendermatch-stage10.mjs": "2d41e6458bf49f3f010b5591e4af1cf73ee20f74b1c4e642f63ad202c9741bd5",
+    "scripts/benchmark-tendermatch-stage10.mjs": "f8160667d24107ff27ebdbfc9bce7519732a9885ec8b6c96f5576acdb67b11e4",
+    "tests/fixtures/tendermatch-stage10.mjs": "890f74a71450ecd1f9bea47ae87d50ea5a467868ba981f68d1704ce1d68c1ec5",
+    "tests/tendermatch-stage10.test.mjs": "493bdb7c1d3c7058aa4e46e31456ff5ecfb7a9209d5b790bf6f927ab87a2dd21"
+  },
+  "versions": {
+    "normalization": "e7288c7ebafe68e4b565a056fdbe4189bba465f87a6b5cbf637500f0dbbb6637",
+    "readiness": "b101852dba93253cb6caf91baf8beac3280fdbb3cf7b2be3d159d8bff09c30fc",
+    "eligibility": "1f4ca9339451f536bffc9e101a8016f985048318b36681f482067e2702d05f4c",
+    "formula": "29ac1e373d5faf248b312c91aee2b71095e36278ba6a5a3c80dc258f04b9a7a9",
+    "retrieval": "b1ef5e6c21c35bf6d254a2063ede71915f8cb5dca2d3e3a820872ee42499fdf0",
+    "shortlist": "2a021238d818b65794b3d826879b4f8cd74000ee5242b8cffc194210dc595d4e",
+    "escalation": "68aa00063debb92f432ad8baa6f41256aa52e2b2d254ec0835cc9e22170c581c",
+    "coordinator": "534829b4b25cc0afac653f7cb7f4eac250f5c8fb8e7142c3dbb170798ad8567f",
+    "prompt": "b9d558a97ff4509114ed0e20942328d408eb654ee3b9d410080a50e6c3748a44",
+    "provider": "1211af9d1267dd30c4e9bf6ac4f7f7af06fc0e7e606c555eda7bfc0de41d3c41",
+    "torsSchema": "92f3ba29c1bb31289668f6f9946059efb16a94a62a1d2153fa4bda122591c2ed"
+  },
+  "runtime": {
+    "node": "v24.19.0",
+    "sqlite": "3.53.3",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "temporaryDirectory": "C:\\Users\\COWORK~1\\AppData\\Local\\Temp\\tendermatch-stage10-benchmark-FbQIdb",
+  "scenarios": [
+    {
+      "name": "full-30x400",
+      "discoveryMs": 14.976099999999974,
+      "planningMs": 0.9882000000000062,
+      "executionMs": 74813.4987,
+      "independentReadbackMs": 15996.692200000005,
+      "bodyReads": 430,
+      "affectedPairs": 12000,
+      "state": "SEALED",
+      "runId": "3224d3dbc06d39fd9766502098e79ba8470f2cb900eeca4cbeaff6b8567e8480",
+      "proof": {
+        "universe": 12000,
+        "candidates": 7200,
+        "unscored": 4800,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2400,
+          "SCOPE_NOT_DEMONSTRATED": 2400,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7200
+        },
+        "ranked": 7200,
+        "shortlist": 3229,
+        "review": 2980,
+        "audit": 249,
+        "pairHash": "3a817d9028d04e7107a3994c69df9429d542a1c9319b2a9efc421b372d69432a",
+        "shortlistHash": "32551440a869648e60c529e32b1f3667e5b4f0733edf4736b72b654f1ac40912",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {
+          "normalization": 430,
+          "readiness": 30,
+          "scope": 430,
+          "adapted": 430,
+          "profile": 430,
+          "eligibility": 12000,
+          "formula": 7200,
+          "retrieval": 7200,
+          "context": 430,
+          "shortlist": 3229,
+          "decision": 3229
+        },
+        "reused": {},
+        "batches": 584,
+        "pairVisits": 12000,
+        "contextVisits": 430,
+        "requestsCreated": 0,
+        "modelCalls": 0,
+        "batchSize": 128,
+        "allocationComputed": 1,
+        "allocationInputHash": "fc5479faa47d8a9d12217c3b3129720463601ba6edf0adeb879f14990b9b261b",
+        "escalationPlanned": 300
+      },
+      "databaseBytes": 38604800,
+      "persistedPairDeltas": 12000
+    },
+    {
+      "name": "exact-reuse",
+      "discoveryMs": 19.399399999994785,
+      "planningMs": 6.7103000000061,
+      "executionMs": 53.11830000000191,
+      "independentReadbackMs": 16405.5876,
+      "bodyReads": 0,
+      "affectedPairs": 0,
+      "state": "SEALED_REUSED",
+      "runId": "3224d3dbc06d39fd9766502098e79ba8470f2cb900eeca4cbeaff6b8567e8480",
+      "proof": {
+        "universe": 12000,
+        "candidates": 7200,
+        "unscored": 4800,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2400,
+          "SCOPE_NOT_DEMONSTRATED": 2400,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7200
+        },
+        "ranked": 7200,
+        "shortlist": 3229,
+        "review": 2980,
+        "audit": 249,
+        "pairHash": "3a817d9028d04e7107a3994c69df9429d542a1c9319b2a9efc421b372d69432a",
+        "shortlistHash": "32551440a869648e60c529e32b1f3667e5b4f0733edf4736b72b654f1ac40912",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {},
+        "reused": {
+          "run": 1
+        },
+        "pairVisits": 0,
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "databaseBytes": 38604800,
+      "persistedPairDeltas": 12000
+    },
+    {
+      "name": "new-supplier",
+      "discoveryMs": 21.776799999992363,
+      "planningMs": 6.42609999999695,
+      "executionMs": 53902.7175,
+      "independentReadbackMs": 17076.571200000006,
+      "bodyReads": 1,
+      "affectedPairs": 400,
+      "state": "SEALED",
+      "runId": "f4723440f4cccd82c81eac2d9636b4a09f49ce292c0ed17149eae8a3930195de",
+      "proof": {
+        "universe": 12400,
+        "candidates": 7440,
+        "unscored": 4960,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2480,
+          "SCOPE_NOT_DEMONSTRATED": 2480,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7440
+        },
+        "ranked": 7440,
+        "shortlist": 3331,
+        "review": 3080,
+        "audit": 251,
+        "pairHash": "6cbd9a3a4e5fe8d823b1a12a59c010fc90626ab9d6e21bd616b66a09f3da1d3c",
+        "shortlistHash": "5e63157cfb162dc51d631790615c0150d3a927031b424f0299d52866eb855011",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {
+          "normalization": 1,
+          "readiness": 1,
+          "scope": 1,
+          "adapted": 1,
+          "profile": 1,
+          "eligibility": 400,
+          "formula": 240,
+          "retrieval": 240,
+          "context": 241,
+          "shortlist": 3331,
+          "decision": 3331
+        },
+        "reused": {
+          "entityRefs": 430,
+          "context": 190
+        },
+        "batches": 470,
+        "pairVisits": 400,
+        "contextVisits": 401,
+        "requestsCreated": 0,
+        "modelCalls": 0,
+        "batchSize": 128,
+        "allocationComputed": 1,
+        "allocationInputHash": "5d6fefa0e31951c112e7ae4f2177bf71a87e193312753c972c8290c25f7d0a79",
+        "escalationPlanned": 300
+      },
+      "databaseBytes": 49668096,
+      "persistedPairDeltas": 12400
+    },
+    {
+      "name": "new-open-tender",
+      "discoveryMs": 21.86679999998887,
+      "planningMs": 6.649700000009034,
+      "executionMs": 51828.053799999994,
+      "independentReadbackMs": 17254.838900000002,
+      "bodyReads": 1,
+      "affectedPairs": 31,
+      "state": "SEALED",
+      "runId": "2142f7bdfb72b683851d37effd80243063de27e2247a658b4e4ab9c675193b4c",
+      "proof": {
+        "universe": 12431,
+        "candidates": 7471,
+        "unscored": 4960,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2480,
+          "SCOPE_NOT_DEMONSTRATED": 2480,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7471
+        },
+        "ranked": 7471,
+        "shortlist": 3335,
+        "review": 3083,
+        "audit": 252,
+        "pairHash": "44c0a9df4ca3689e3da09683dc833a31f6cb96f773fcffe338958d4fcfcc1326",
+        "shortlistHash": "9df8b36f2840d727ff5672c04564b38b3f537532b48b82ad26d05d694367fb26",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {
+          "normalization": 1,
+          "scope": 1,
+          "adapted": 1,
+          "profile": 1,
+          "eligibility": 31,
+          "formula": 31,
+          "retrieval": 31,
+          "context": 32,
+          "shortlist": 3335,
+          "decision": 3335
+        },
+        "reused": {
+          "entityRefs": 431,
+          "context": 400
+        },
+        "batches": 498,
+        "pairVisits": 31,
+        "contextVisits": 32,
+        "requestsCreated": 0,
+        "modelCalls": 0,
+        "batchSize": 128,
+        "allocationComputed": 1,
+        "allocationInputHash": "2de017d639b385fcdc02f976abe4d3a03d79a700ac7b7db2836751a7b94060d6",
+        "escalationPlanned": 300
+      },
+      "databaseBytes": 61366272,
+      "persistedPairDeltas": 12431
+    },
+    {
+      "name": "supplier-evidence-change",
+      "discoveryMs": 21.873200000001816,
+      "planningMs": 6.3567000000039116,
+      "executionMs": 63647.48210000002,
+      "independentReadbackMs": 17509.165399999998,
+      "bodyReads": 1,
+      "affectedPairs": 401,
+      "state": "SEALED",
+      "runId": "dd2cf9dc8e56b1b3de4eca8d7e4def8ba5f3942cb2f326120a8777fe127a7d45",
+      "proof": {
+        "universe": 12431,
+        "candidates": 7471,
+        "unscored": 4960,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2480,
+          "SCOPE_NOT_DEMONSTRATED": 2480,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7471
+        },
+        "ranked": 7471,
+        "shortlist": 3336,
+        "review": 3084,
+        "audit": 252,
+        "pairHash": "6da9d667081a6c7b52e4753339aa25858b900dd2b6b2d94ff675e6e7b91493c5",
+        "shortlistHash": "4e0880714d8f5d774390a1089d8367501a0b5b930a00a10134378a5ef8eaed41",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {
+          "normalization": 1,
+          "readiness": 1,
+          "scope": 1,
+          "adapted": 1,
+          "profile": 1,
+          "eligibility": 401,
+          "formula": 241,
+          "retrieval": 241,
+          "context": 242,
+          "shortlist": 3336,
+          "decision": 3336
+        },
+        "reused": {
+          "entityRefs": 431,
+          "context": 190
+        },
+        "batches": 471,
+        "pairVisits": 401,
+        "contextVisits": 402,
+        "requestsCreated": 0,
+        "modelCalls": 0,
+        "batchSize": 128,
+        "allocationComputed": 1,
+        "allocationInputHash": "53cf68b8f692042357cb7f2f055c0bb944c2e75f1a150d6c7581f0283a47842a",
+        "escalationPlanned": 291
+      },
+      "databaseBytes": 72441856,
+      "persistedPairDeltas": 12832
+    },
+    {
+      "name": "open-to-closed",
+      "discoveryMs": 21.96789999998873,
+      "planningMs": 8.65639999997802,
+      "executionMs": 47215.44539999997,
+      "independentReadbackMs": 17425.219599999953,
+      "bodyReads": 0,
+      "affectedPairs": 0,
+      "state": "SEALED",
+      "runId": "1e5e45f9ab36f2ccf7d76f270a7313c4dd51d53f534298f745dfde27d70dc3d3",
+      "proof": {
+        "universe": 12400,
+        "candidates": 7471,
+        "unscored": 4929,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2449,
+          "SCOPE_NOT_DEMONSTRATED": 2480,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7471
+        },
+        "ranked": 7471,
+        "shortlist": 3336,
+        "review": 3084,
+        "audit": 252,
+        "pairHash": "dcf3c70e438f4e3a741531711ca485b133deb9ec072ce49b8100eab93133ca7e",
+        "shortlistHash": "4e0880714d8f5d774390a1089d8367501a0b5b930a00a10134378a5ef8eaed41",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {},
+        "reused": {
+          "entityRefs": 431,
+          "context": 431,
+          "shortlist": 3336,
+          "decision": 3336
+        },
+        "batches": 466,
+        "pairVisits": 0,
+        "contextVisits": 31,
+        "requestsCreated": 0,
+        "modelCalls": 0,
+        "batchSize": 128,
+        "allocationReused": 1,
+        "allocationInputHash": "53cf68b8f692042357cb7f2f055c0bb944c2e75f1a150d6c7581f0283a47842a",
+        "escalationPlanned": 291
+      },
+      "databaseBytes": 75821056,
+      "persistedPairDeltas": 12832
+    },
+    {
+      "name": "final-exact-reuse",
+      "discoveryMs": 21.62359999999171,
+      "planningMs": 6.341699999989942,
+      "executionMs": 61.084900000016205,
+      "independentReadbackMs": 17162.324300000037,
+      "bodyReads": 0,
+      "affectedPairs": 0,
+      "state": "SEALED_REUSED",
+      "runId": "1e5e45f9ab36f2ccf7d76f270a7313c4dd51d53f534298f745dfde27d70dc3d3",
+      "proof": {
+        "universe": 12400,
+        "candidates": 7471,
+        "unscored": 4929,
+        "states": {
+          "OUTSIDE_FORMULA_V1_1_SCOPE": 2449,
+          "SCOPE_NOT_DEMONSTRATED": 2480,
+          "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS": 7471
+        },
+        "ranked": 7471,
+        "shortlist": 3336,
+        "review": 3084,
+        "audit": 252,
+        "pairHash": "dcf3c70e438f4e3a741531711ca485b133deb9ec072ce49b8100eab93133ca7e",
+        "shortlistHash": "4e0880714d8f5d774390a1089d8367501a0b5b930a00a10134378a5ef8eaed41",
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "stats": {
+        "computed": {},
+        "reused": {
+          "run": 1
+        },
+        "pairVisits": 0,
+        "requestsCreated": 0,
+        "modelCalls": 0
+      },
+      "databaseBytes": 75821056,
+      "persistedPairDeltas": 12832
+    }
+  ],
+  "queries": [
+    {
+      "direction": "supplier",
+      "focusId": "00000000-0000-0000-0000-000000000002",
+      "returned": 25,
+      "responseBytes": 54606,
+      "p50Ms": 205.6135999999824,
+      "maxMs": 220.38409999996657,
+      "hasNextCursor": true,
+      "explain": [
+        {
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "CO-ROUTINE ranked"
+        },
+        {
+          "id": 5,
+          "parent": 2,
+          "notused": 0,
+          "detail": "CO-ROUTINE (subquery-5)"
+        },
+        {
+          "id": 7,
+          "parent": 5,
+          "notused": 0,
+          "detail": "CO-ROUTINE lineage"
+        },
+        {
+          "id": 10,
+          "parent": 7,
+          "notused": 0,
+          "detail": "SETUP"
+        },
+        {
+          "id": 11,
+          "parent": 10,
+          "notused": 0,
+          "detail": "SCAN CONSTANT ROW"
+        },
+        {
+          "id": 24,
+          "parent": 7,
+          "notused": 0,
+          "detail": "RECURSIVE STEP"
+        },
+        {
+          "id": 27,
+          "parent": 24,
+          "notused": 216,
+          "detail": "SCAN l"
+        },
+        {
+          "id": 30,
+          "parent": 24,
+          "notused": 46,
+          "detail": "SEARCH r USING INDEX sqlite_autoindex_run_1 (id=?)"
+        },
+        {
+          "id": 49,
+          "parent": 5,
+          "notused": 62,
+          "detail": "SEARCH p USING INDEX pair_supplier (supplier_id=?)"
+        },
+        {
+          "id": 58,
+          "parent": 5,
+          "notused": 0,
+          "detail": "BLOOM FILTER ON l (id=?)"
+        },
+        {
+          "id": 70,
+          "parent": 5,
+          "notused": 53,
+          "detail": "SEARCH l USING AUTOMATIC COVERING INDEX (id=?)"
+        },
+        {
+          "id": 96,
+          "parent": 5,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR LAST 2 TERMS OF ORDER BY"
+        },
+        {
+          "id": 123,
+          "parent": 2,
+          "notused": 92,
+          "detail": "SCAN (subquery-5)"
+        },
+        {
+          "id": 185,
+          "parent": 0,
+          "notused": 55,
+          "detail": "SEARCH s USING COVERING INDEX sqlite_autoindex_entity_member_1 (run_id=? AND kind=?)"
+        },
+        {
+          "id": 192,
+          "parent": 0,
+          "notused": 55,
+          "detail": "SEARCH t USING COVERING INDEX sqlite_autoindex_entity_member_1 (run_id=? AND kind=?)"
+        },
+        {
+          "id": 200,
+          "parent": 0,
+          "notused": 0,
+          "detail": "BLOOM FILTER ON p (priority=? AND tender_id=? AND supplier_id=?)"
+        },
+        {
+          "id": 222,
+          "parent": 0,
+          "notused": 48,
+          "detail": "SEARCH p USING AUTOMATIC PARTIAL COVERING INDEX (priority=? AND tender_id=? AND supplier_id=?)"
+        },
+        {
+          "id": 249,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    {
+      "direction": "tender",
+      "focusId": "00000000-0000-0000-0000-000000001004",
+      "returned": 25,
+      "responseBytes": 49092,
+      "p50Ms": 230.21349999995437,
+      "maxMs": 245.35680000000866,
+      "hasNextCursor": true,
+      "explain": [
+        {
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "CO-ROUTINE ranked"
+        },
+        {
+          "id": 5,
+          "parent": 2,
+          "notused": 0,
+          "detail": "CO-ROUTINE (subquery-5)"
+        },
+        {
+          "id": 7,
+          "parent": 5,
+          "notused": 0,
+          "detail": "CO-ROUTINE lineage"
+        },
+        {
+          "id": 10,
+          "parent": 7,
+          "notused": 0,
+          "detail": "SETUP"
+        },
+        {
+          "id": 11,
+          "parent": 10,
+          "notused": 0,
+          "detail": "SCAN CONSTANT ROW"
+        },
+        {
+          "id": 24,
+          "parent": 7,
+          "notused": 0,
+          "detail": "RECURSIVE STEP"
+        },
+        {
+          "id": 27,
+          "parent": 24,
+          "notused": 216,
+          "detail": "SCAN l"
+        },
+        {
+          "id": 30,
+          "parent": 24,
+          "notused": 46,
+          "detail": "SEARCH r USING INDEX sqlite_autoindex_run_1 (id=?)"
+        },
+        {
+          "id": 49,
+          "parent": 5,
+          "notused": 62,
+          "detail": "SEARCH p USING INDEX pair_tender (tender_id=?)"
+        },
+        {
+          "id": 58,
+          "parent": 5,
+          "notused": 0,
+          "detail": "BLOOM FILTER ON l (id=?)"
+        },
+        {
+          "id": 70,
+          "parent": 5,
+          "notused": 53,
+          "detail": "SEARCH l USING AUTOMATIC COVERING INDEX (id=?)"
+        },
+        {
+          "id": 89,
+          "parent": 5,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 112,
+          "parent": 2,
+          "notused": 92,
+          "detail": "SCAN (subquery-5)"
+        },
+        {
+          "id": 174,
+          "parent": 0,
+          "notused": 55,
+          "detail": "SEARCH s USING COVERING INDEX sqlite_autoindex_entity_member_1 (run_id=? AND kind=?)"
+        },
+        {
+          "id": 181,
+          "parent": 0,
+          "notused": 55,
+          "detail": "SEARCH t USING COVERING INDEX sqlite_autoindex_entity_member_1 (run_id=? AND kind=?)"
+        },
+        {
+          "id": 189,
+          "parent": 0,
+          "notused": 0,
+          "detail": "BLOOM FILTER ON p (priority=? AND tender_id=? AND supplier_id=?)"
+        },
+        {
+          "id": 211,
+          "parent": 0,
+          "notused": 48,
+          "detail": "SEARCH p USING AUTOMATIC PARTIAL COVERING INDEX (priority=? AND tender_id=? AND supplier_id=?)"
+        },
+        {
+          "id": 238,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    }
+  ],
+  "metadataPlanning": {
+    "mode": "SYNTHETIC_METADATA_ONLY_NO_PAIR_EXECUTION",
+    "metadataDiscoveryMs": 161.6189000000013,
+    "scenarios": [
+      {
+        "name": "full",
+        "elapsedMs": 30.37380000000121,
+        "universe": 2027961,
+        "affectedPairs": 2027961,
+        "planBytes": 6796642,
+        "pairMatrixMaterialized": false
+      },
+      {
+        "name": "reuse",
+        "elapsedMs": 104.81479999999283,
+        "universe": 2027961,
+        "affectedPairs": 0,
+        "planBytes": 6111515,
+        "pairMatrixMaterialized": false
+      },
+      {
+        "name": "new-supplier",
+        "elapsedMs": 287.0727000000188,
+        "universe": 2045294,
+        "affectedPairs": 17333,
+        "planBytes": 6111950,
+        "pairMatrixMaterialized": false
+      }
+    ]
+  },
+  "resources": {
+    "sampledPeakHeapBytes": 142143848,
+    "sampledPeakRssBytes": 365363200,
+    "maxRssBytes": 380014592,
+    "databaseBytes": 75821056,
+    "entities": 2156,
+    "pairDeltas": 12832,
+    "cachedArtifacts": 57427
+  },
+  "sourceConnections": 0,
+  "neonConnections": 0,
+  "modelCalls": 0,
+  "tokens": 0,
+  "cost": 0,
+  "requestsCreated": 0
+}
