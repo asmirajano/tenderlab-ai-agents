@@ -1,0 +1,273 @@
+{
+  "schemaVersion": "tendermatch-stage9-browser-evidence/1.0.0",
+  "generatedAt": "2026-09-06T21:37:52.618Z",
+  "mode": "SYNTHETIC_LOCAL_POSTGRESQL_NOT_NEON",
+  "base": "ae466ae3f15b5e7eddf1a8dfab96b2d847321c4f",
+  "uiLineage": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+  "browser": "152.0.4191.66",
+  "sources": {
+    "apps/tender-apps/src/main.tsx": "16927aef2f402c5de3a3075d33c9ca803759646127187af276f930275ad52033",
+    "apps/tender-apps/src/tendermatch-app.tsx": "5add24bba619445439a5b802404f760391d2fb3f83363648fb5d1e74cfa57360",
+    "apps/tender-apps/src/tendermatch-all-to-all-api.ts": "06a2455a253c6cd98bb71142bd7c94e2800d71f42470ff79f90d47d319909529",
+    "apps/tender-apps/src/tendermatch-all-to-all.tsx": "52a25c45d63093f98bfa89269073271044210cb5d7ade90f7e194da98b26db65",
+    "apps/tender-apps/src/tendermatch-all-to-all.css": "4963477fa051d9540f0687c2ac8c2160691de47367179ab071942a61c6df4946",
+    "scripts/serve-tendermatch-stage9-fixture.mjs": "886e21614738055d874b8ae75129714eeeb55be4357e4b6a0ff22e87f2b94424",
+    "scripts/audit-tendermatch-stage9-browser.mjs": "45f0022038430329fcf6088d98fdbb53d25af8f0ef1276c6cb91aa2325db6eb1",
+    "tests/fixtures/tendermatch-stage9.mjs": "8a5b1c1c77bcdbefe03bde7492884e74b8edc50e2a9dcc3b737371349a3f71ec",
+    "tests/tendermatch-stage9-frontend.test.mjs": "2a681323e6a4c04f671725668923c9a9d5322023da00f41cb95adf63dedd4b3d"
+  },
+  "assets": [
+    {
+      "file": "index-CugebHFU.css",
+      "bytes": 301329,
+      "sha256": "13c15e609c9b32b06eb128c1eac7f7f949085b1a555b700e44608ff9a30293f3"
+    },
+    {
+      "file": "index-UNJz5PGm.js",
+      "bytes": 1341279,
+      "sha256": "fb4c15747471dfeeffb1cb36cd6b9206fee2c4889469efd07952037d504f940d"
+    },
+    {
+      "file": "tendermatch-all-to-all-DSjGgA1z.js",
+      "bytes": 31584,
+      "sha256": "061d4e6310489d2718483258fe94e822ad334d9838d3a6e5a6423309ba5795f9"
+    },
+    {
+      "file": "tendermatch-all-to-all-xqTXndj7.css",
+      "bytes": 7913,
+      "sha256": "9417a36df4b6bb284c48df96f2ec34ba3127f6225afe12eba66442479ed95808"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Production-built development route; synthetic label; 25-row page; no session credentials stored",
+      "firstReadyMs": 613.7367999999997,
+      "existingPreferenceKeys": [
+        "tenderapps:layout-mode"
+      ]
+    },
+    {
+      "name": "Cursor next/first and browser Back/Forward; tender-focused bounded direction"
+    },
+    {
+      "name": "Selected detail keeps all five independent metrics and receives keyboard focus"
+    },
+    {
+      "name": "Lost successful POST response freezes content; exact retry reuses existing intent"
+    },
+    {
+      "name": "Explicit attributed review intent and read-only status; no authority/jobs/model results"
+    },
+    {
+      "name": "Explicit report intent uses the same bounded non-executing contract"
+    },
+    {
+      "name": "Exact numeric zero and missing criterion fit/confidence remain distinct"
+    },
+    {
+      "name": "Outside-scope original detail remains unscored and not requestable"
+    },
+    {
+      "name": "Audit-only detail permits only explicitly labelled audit intent"
+    },
+    {
+      "name": "Responsive/label/keyboard/touch/header-clearance bounds 1920px",
+      "overflow": 0
+    },
+    {
+      "name": "Responsive/label/keyboard/touch/header-clearance bounds 1280px",
+      "overflow": 0
+    },
+    {
+      "name": "Responsive/label/keyboard/touch/header-clearance bounds 1024px",
+      "overflow": 0
+    },
+    {
+      "name": "Responsive/label/keyboard/touch/header-clearance bounds 390px",
+      "overflow": 0
+    },
+    {
+      "name": "Empty eligible focus is explicit and does not imply Non-match"
+    },
+    {
+      "name": "Stale cursor fails closed and recovers explicitly to first page"
+    },
+    {
+      "name": "Obsolete supplier request aborted; late response cannot replace tender view"
+    },
+    {
+      "name": "API 503 has useful unavailable message and no fallback",
+      "newServerRequests": 0
+    },
+    {
+      "name": "Browser eight-second API deadline fails closed",
+      "timeoutMs": 8725.8943
+    },
+    {
+      "name": "Missing authenticated bootstrap makes zero API requests and no fallback"
+    },
+    {
+      "name": "Actually absent Stage 7 marker/tables fail closed in real local PostgreSQL"
+    },
+    {
+      "name": "d230590 dashboard DOM text and element geometry identical"
+    },
+    {
+      "name": "d230590 formula DOM text and element geometry identical"
+    },
+    {
+      "name": "No full-universe/legacy fetch in development mode; bounded JSON; zero authority/jobs/artifacts"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "docs/evidence/stage9-ui/desktop-ranked.png",
+      "sha256": "ba931304b706d17f275b080590e28ec7d738121fb7aa2abf2ac485b0d20d7640",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/desktop-selected.png",
+      "sha256": "7b3f5f766bbc7d6c68b4469d563e1ef587876324c53e0819d191f4eac8d39a5d",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/ranked-1920.png",
+      "sha256": "fd61fc8be3fd2795cf5b8be0dac92f6d0731917b50f252ceaf6b9751828fa73e",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/ranked-1280.png",
+      "sha256": "5ebf53e64303ad490b24ce2421b130be94aaa8c004b76a0d916e4d4ad8a655b1",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/ranked-1024.png",
+      "sha256": "80225e82b89f166ad3ff5fd6c36dcddd3e22a9ec33850d85a1952cefa193de80",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/ranked-390.png",
+      "sha256": "476cc0933ec246742e1a4a5c47ec0430daff10767134d9dbaca9a03a58550c95",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/mobile-selected.png",
+      "sha256": "462fe369cf0d999f63c8157a92aa934277791710731afbaf8cee961c50ea31ac",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/api-unavailable.png",
+      "sha256": "bf1bb7501e04ac4c8fadd3703b129109bf4e740d59ed95a79f37ba11cf262e4f",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/preserved-dashboard.png",
+      "sha256": "5927bd3469487fb9003b42da3fb668750cbe570cea83122b453668ac0e863383",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "path": "docs/evidence/stage9-ui/preserved-formula.png",
+      "sha256": "8ab167e07894adb1f12f7913d649e08eeeaab7f031053893fc86513defdf9177",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    }
+  ],
+  "protectedViews": [
+    {
+      "view": "dashboard",
+      "sha256": "95b594e271ee45f7e2cc75aabd285fd7b56d30a27f4cebc1c408028c4bc2e489",
+      "elements": 4
+    },
+    {
+      "view": "formula",
+      "sha256": "ea6972c1f4e97670749b03a23329a4844a4dfe2be6bc704ccce223fa77bee3cb",
+      "elements": 50
+    }
+  ],
+  "fixture": {
+    "universe": 240,
+    "candidates": 182,
+    "unscored": 58,
+    "shortlist": 112
+  },
+  "metrics": {
+    "apiRequests": 47,
+    "pageRequests": 21,
+    "maxApiBytes": 43348,
+    "pageLatencyMs": {
+      "min": 62.4,
+      "p50": 77.45,
+      "p95": 81.3,
+      "max": 82.97
+    },
+    "firstReadyMs": 613.7367999999997,
+    "pageMemory": {
+      "usedJSHeapBytes": 6424759,
+      "totalJSHeapBytes": 9337239,
+      "domElements": 472,
+      "renderedRows": 25
+    },
+    "selectedMemory": {
+      "usedJSHeapBytes": 8844515,
+      "totalJSHeapBytes": 13383299,
+      "domElements": 579,
+      "renderedRows": 25
+    },
+    "databaseQueries": 752,
+    "maxDatabaseResponseBytes": 81929,
+    "referencePageHeap": {
+      "usedJSHeapBytes": 32476005,
+      "totalJSHeapBytes": 38093033
+    },
+    "combinedThreeFixtureProcessMemory": {
+      "rss": 1188601856,
+      "heapTotal": 116576256,
+      "heapUsed": 87719512,
+      "external": 1023091896,
+      "arrayBuffers": 261399373
+    }
+  },
+  "errors": [],
+  "zeroExecution": {
+    "escalation_authorization": 0,
+    "escalation_job": 0,
+    "escalation_artifact": 0
+  },
+  "modelCalls": 0,
+  "neonConnections": 0,
+  "sourceConnections": 0,
+  "limitations": [
+    "Synthetic local PostgreSQL and local Edge timings, not live Neon",
+    "Browser payloads bounded; production identity/session/runtime remains gated",
+    "Existing Overview and Formula reference pages remain separate and unchanged"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "tendermatch-stage9-validation/1.0.0",
+  "status": "LOCAL_VALIDATED_NOT_DEPLOYED",
+  "baseCommit": "ae466ae3f15b5e7eddf1a8dfab96b2d847321c4f",
+  "branch": "codex/tendermatch-neon-all-to-all",
+  "worktree": "C:/CodexWork/tendermatch-neon-all-to-all",
+  "originMain": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+  "commitIdentity": "The local Git commit containing this final validation record",
+  "sourceAndScreenshotBinding": "docs/evidence/tendermatch-stage9-browser.json",
+  "fullSuite": {
+    "command": "npm test -- --runInBand",
+    "passed": 612,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "nodeTestDurationMs": 52150.3615,
+    "evidenceFlags": [
+      "TENDERMATCH_STAGE4_EVIDENCE",
+      "TENDERMATCH_STAGE5_EVIDENCE",
+      "TENDERMATCH_STAGE5_EXECUTION_EVIDENCE",
+      "TENDERMATCH_STAGE6_EVIDENCE",
+      "TENDERMATCH_STAGE6_EXECUTION_EVIDENCE",
+      "TENDERMATCH_STAGE7_EVIDENCE",
+      "TENDERMATCH_STAGE8_EVIDENCE",
+      "TENDERMATCH_STAGE9_EVIDENCE"
+    ],
+    "isolatedPGliteEnabled": true,
+    "stage7ExecutionEvidenceClaimed": false
+  },
+  "builds": {
+    "tenderlab": "PASS",
+    "ecosystemAtlas": "PASS",
+    "tenderApps": "PASS",
+    "generatedAgentSpecifications": 64,
+    "existingWarnings": ["Large chunks", "vinext CSS filename conflict", "Unknown route classification", "Plugin timings"]
+  },
+  "fullLint": "PASS",
+  "strictFrontendTypeScript": "PASS",
+  "browser": {
+    "checksPassed": 23,
+    "screenshots": 10,
+    "javascriptExceptions": 0,
+    "mode": "SYNTHETIC_LOCAL_POSTGRESQL_NOT_NEON",
+    "fixtureUniverse": 240,
+    "fixtureCandidates": 182,
+    "fixtureUnscored": 58,
+    "fixtureShortlist": 112,
+    "maximumResponseBytes": 43348,
+    "protectedOverviewAndFormulaDOM": "EXACT_D230590_TEXT_GEOMETRY_AND_STATUS_PARITY"
+  },
+  "sqlFilesChanged": 0,
+  "schemaChanges": 0,
+  "stage7OwnerInstallOrPersistenceClaimed": false,
+  "actualModelCalls": 0,
+  "actualModelTokens": 0,
+  "actualModelCost": 0,
+  "neonConnections": 0,
+  "sourceConnections": 0,
+  "sourceWrites": 0,
+  "pushMergeDeployPublish": false,
+  "nextGate": "Orchestrator review, Stage 7 owner installation and exact plan completion, then separately approved authenticated development runtime verification"
+}

@@ -1,0 +1,123 @@
+/** Repeatable production-build browser audit. All API data is synthetic local PostgreSQL. */
+import assert from 'node:assert/strict';
+import {mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {pathToFileURL,fileURLToPath} from 'node:url';
+import path from 'node:path';
+import {createStage9FixtureServer} from './serve-tendermatch-stage9-fixture.mjs';
+const root=fileURLToPath(new URL('../',import.meta.url)),out=path.join(root,'docs/evidence/stage9-ui');
+const sha=v=>createHash('sha256').update(v).digest('hex');
+const runtime=process.env.TENDERMATCH_PLAYWRIGHT_ROOT;
+if(!runtime)throw new Error('Explicit installed Playwright runtime required');
+const {chromium}=await import(pathToFileURL(path.join(runtime,'playwright/index.mjs')).href);
+await mkdir(out,{recursive:true});
+const checks=[],screenshots=[],errors=[],servers=[];let browser;
+const check=(name,detail={})=>{checks.push({name,...detail});console.log('PASS '+name);};
+try {
+  const server=await createStage9FixtureServer({localFixture:true});servers.push(server);
+  browser=await chromium.launch({channel:'msedge',headless:true});
+  const context=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'reduce'}),page=await context.newPage();
+  page.on('pageerror',e=>errors.push(e.message));
+  const net=[];page.on('request',r=>{const u=new URL(r.url());net.push({path:u.pathname,query:[...u.searchParams.keys()],method:r.method()});});
+  const url=(params={})=>server.origin+'/tendermatch?'+new URLSearchParams({mode:'all-to-all-dev',...params});
+  const rows=()=>page.locator('.tm9-table tbody tr');
+  const waitRows=async n=>{await page.waitForFunction(n=>document.querySelectorAll('.tm9-table tbody tr').length===n,n);};
+  const shot=async name=>{await page.screenshot({path:path.join(out,name+'.png'),fullPage:false,animations:'disabled'});screenshots.push({path:'docs/evidence/stage9-ui/'+name+'.png',sha256:sha(await readFile(path.join(out,name+'.png'))),viewport:page.viewportSize()});};
+  const started=performance.now();await page.goto(url());await waitRows(25);const firstReadyMs=performance.now()-started;
+  const heap=()=>page.evaluate(()=>({usedJSHeapBytes:performance.memory?.usedJSHeapSize??null,totalJSHeapBytes:performance.memory?.totalJSHeapSize??null,domElements:document.querySelectorAll('*').length,renderedRows:document.querySelectorAll('.tm9-table tbody tr').length}));
+  const pageMemory=await heap();
+  assert.match(await page.locator('.tm9-environment').innerText(),/Synthetic local PostgreSQL.*Not Neon/);
+  assert.match(await page.locator('.client-surface-status').innerText(),/All-to-all development/);
+  assert.equal(await page.locator('#tendermatch-all-to-all-session').count(),0);
+  const storage=await page.evaluate(()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),content:JSON.stringify({...localStorage,...sessionStorage})}));
+  assert.ok(!storage.content.includes(server.bootstrap.token)&&!storage.content.includes(server.bootstrap.csrfToken));assert.ok([...storage.local,...storage.session].every(k=>!k.includes('all-to-all')));
+  await shot('desktop-ranked');check('Production-built development route; synthetic label; 25-row page; no session credentials stored',{firstReadyMs,existingPreferenceKeys:storage.local});
+  await page.getByRole('button',{name:'Next page',exact:true}).click();await waitRows(11);assert.ok(new URL(page.url()).searchParams.get('cursor'));
+  await page.goBack();await waitRows(25);await page.goForward();await waitRows(11);
+  await page.getByRole('button',{name:'First page',exact:true}).click();await waitRows(25);
+  await page.getByRole('button',{name:'Tender-focused results',exact:true}).click();await waitRows(5);
+  await page.getByRole('button',{name:'Supplier-focused results',exact:true}).click();await waitRows(25);
+  check('Cursor next/first and browser Back/Forward; tender-focused bounded direction');
+  await page.locator('.tm9-table button').first().click();await page.locator('.tm9-detail').waitFor();
+  assert.equal(await page.locator('.tm9-signal').count(),5);assert.equal(await page.locator('.tm9-detail:focus').count(),1);
+  assert.ok(await page.evaluate(()=>document.querySelector('#tm9-detail-title').getBoundingClientRect().top>document.querySelector('.client-product-bar').getBoundingClientRect().bottom));
+  const selectedMemory=await heap();await shot('desktop-selected');check('Selected detail keeps all five independent metrics and receives keyboard focus');
+  const review=server.fixture.reviewPair;
+  await page.goto(url({pairSupplier:review.supplierId,pairTender:review.tenderId}));await page.locator('.tm9-detail').waitFor();
+  await page.getByLabel('Why this explicit pair needs review').fill('Explicit synthetic browser review for boundary verification');
+  await page.route('**/all-to-all/v1/intents?*',async r=>{const recorded=await r.fetch();assert.ok(recorded.status()<300);await r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'API_UNAVAILABLE'}})});},{times:1});
+  await page.getByRole('button',{name:'Record review/report intent',exact:true}).click();await page.getByRole('button',{name:'Retry the same attributed intent'}).waitFor();assert.ok(await page.getByLabel('Why this explicit pair needs review').isDisabled());
+  await page.getByRole('button',{name:'Retry the same attributed intent'}).click();await page.locator('.tm9-receipt').waitFor();assert.match(await page.locator('.tm9-receipt').innerText(),/Existing request reused/);check('Lost successful POST response freezes content; exact retry reuses existing intent');
+  assert.match(await page.locator('.tm9-receipt').innerText(),/0 jobs queued.*0 model calls/);
+  await page.getByRole('button',{name:'Read existing request/job status'}).click();await page.locator('.tm9-job-status').waitFor();
+  assert.match(await page.locator('.tm9-job-status').innerText(),/No existing jobs/);check('Explicit attributed review intent and read-only status; no authority/jobs/model results');
+  await page.goto(url({pairSupplier:review.supplierId,pairTender:review.tenderId}));await page.locator('.tm9-detail').waitFor();await page.getByLabel('Intent kind').selectOption('REPORT_REQUEST');
+  await page.getByLabel('Why this explicit pair needs review').fill('Explicit synthetic report request, not execution authorization');
+  await page.getByRole('button',{name:'Record review/report intent',exact:true}).click();await page.locator('.tm9-receipt').waitFor();check('Explicit report intent uses the same bounded non-executing contract');
+  await page.goto(url({pairSupplier:server.fixture.zeroSupplierId,pairTender:server.fixture.initialTenderId}));await page.locator('.tm9-detail').waitFor();
+  assert.equal(await page.locator('.tm9-signal dd').first().innerText(),'0');
+  await page.locator('.tm9-criteria summary').click();assert.match(await page.locator('.tm9-criteria').innerText(),/Missing · Fit unknown/);assert.match(await page.locator('.tm9-criteria').innerText(),/Evidence Confidence Missing/);
+  check('Exact numeric zero and missing criterion fit/confidence remain distinct');
+  await page.goto(url({pairSupplier:review.supplierId,pairTender:server.fixture.outsideTenderId}));await page.locator('.tm9-detail').waitFor();
+  assert.equal(await page.locator('.tm9-signal dd').first().innerText(),'Not scored');assert.match(await page.locator('.tm9-states').innerText(),/Outside formula v1.1 scope/i);
+  assert.ok(await page.getByRole('button',{name:'Record review/report intent',exact:true}).isDisabled());check('Outside-scope original detail remains unscored and not requestable');
+  const audit=server.fixture.auditPair;await page.goto(url({pairSupplier:audit.supplierId,pairTender:audit.tenderId}));await page.locator('.tm9-detail').waitFor();
+  assert.deepEqual(await page.getByLabel('Intent kind').locator('option').allTextContents(),['Audit request']);assert.match(await page.locator('.tm9-intent').innerText(),/not promoted as promising/);
+  await page.getByLabel('Why this explicit pair needs review').fill('Explicit synthetic blind-spot audit, not promising review');await page.getByRole('button',{name:'Record audit intent',exact:true}).click();await page.locator('.tm9-receipt').waitFor();check('Audit-only detail permits only explicitly labelled audit intent');
+  for(const viewport of [{width:1920,height:1080},{width:1280,height:720},{width:1024,height:768},{width:390,height:844}]) {
+    await page.setViewportSize(viewport);await page.goto(url());await waitRows(25);
+    const layout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth-window.innerWidth,buttons:[...document.querySelectorAll('.tm9-page button:not(:disabled),.tm9-reference-nav a')].map(e=>({height:e.getBoundingClientRect().height,name:e.getAttribute('aria-label')||e.textContent?.trim()})),inputs:[...document.querySelectorAll('.tm9-page input,.tm9-page select,.tm9-page textarea')].every(e=>e.labels?.length)}));
+    assert.equal(layout.overflow,0);assert.ok(layout.buttons.every(b=>b.height>=44&&b.name));assert.ok(layout.inputs);assert.ok(await rows().count()<=25);
+    await page.getByLabel('Canonical supplier ID').focus();await page.keyboard.press('Tab');assert.equal(await page.getByRole('button',{name:'Load ranked candidates'}).evaluate(e=>e===document.activeElement),true);
+    await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
+    const clear=await page.evaluate(()=>{const top=document.querySelector('.tm9-header').getBoundingClientRect().top,bottom=Math.max(...[...document.querySelectorAll('.client-product-bar,.client-header-controls')].map(e=>e.getBoundingClientRect().bottom));return top>=bottom;});assert.ok(clear,'Header must not obscure new content');
+    await shot('ranked-'+viewport.width);check('Responsive/label/keyboard/touch/header-clearance bounds '+viewport.width+'px',{overflow:layout.overflow});
+  }
+  await page.goto(url({pairSupplier:review.supplierId,pairTender:review.tenderId}));await page.locator('.tm9-detail').waitFor();await shot('mobile-selected');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth),0);
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(url({direction:'tender',focus:server.fixture.outsideTenderId}));await page.locator('.tm9-empty').waitFor();assert.equal(await rows().count(),0);check('Empty eligible focus is explicit and does not imply Non-match');
+  await page.goto(url({cursor:'invalid'}));await page.locator('.tm9-failure').waitFor();await page.getByRole('button',{name:'Start from the first page'}).click();await waitRows(25);check('Stale cursor fails closed and recovers explicitly to first page');
+  // A late response must never replace the currently selected focus.
+  let release;const held=new Promise(resolve=>{release=resolve;});let intercepted;
+  const hit=new Promise(resolve=>{intercepted=resolve;});
+  await page.route('**/suppliers/*/results?*',async r=>{intercepted();await held;try{await r.continue();}catch{/* Aborted obsolete route. */}});
+  await page.goto(url());await hit;await page.getByRole('button',{name:'Tender-focused results'}).click();await waitRows(5);release();await page.unroute('**/suppliers/*/results?*');
+  assert.equal(await page.locator('#tm9-results-title').innerText(),'Suppliers for this tender');assert.equal(await rows().count(),5);check('Obsolete supplier request aborted; late response cannot replace tender view');
+  const healthy=server.metrics.apiRequests.length;
+  await page.route('**/all-to-all/v1/health?*',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'PINNED_SCHEMA_UNAVAILABLE'}})}));
+  await page.goto(url());await page.locator('.tm9-failure').waitFor();assert.equal(await rows().count(),0);assert.match(await page.locator('.tm9-failure').innerText(),/No static snapshot or full matrix/);await shot('api-unavailable');await page.unroute('**/all-to-all/v1/health?*');check('API 503 has useful unavailable message and no fallback',{newServerRequests:server.metrics.apiRequests.length-healthy});
+  let releaseTimeout;const timeoutHold=new Promise(resolve=>{releaseTimeout=resolve;});
+  await page.route('**/all-to-all/v1/health?*',async r=>{await timeoutHold;try{await r.abort();}catch{/* Timed-out request. */}});
+  const timeoutStart=performance.now();await page.goto(url());await page.getByText('API_TIMEOUT',{exact:true}).waitFor({timeout:12000});const timeoutMs=performance.now()-timeoutStart;releaseTimeout();await page.unroute('**/all-to-all/v1/health?*');assert.equal(await rows().count(),0);check('Browser eight-second API deadline fails closed',{timeoutMs});
+  const beforeUnprovisioned=server.metrics.apiRequests.length;
+  await page.route('**/tendermatch?mode=all-to-all-dev',async r=>{const response=await r.fetch();await r.fulfill({response,body:(await response.text()).replace(/<script type="application\/json" id="tendermatch-all-to-all-session">[^<]*<\/script>/,'')});},{times:1});
+  await page.goto(url());await page.getByText('DEVELOPMENT_SESSION_UNAVAILABLE',{exact:true}).waitFor();assert.equal(server.metrics.apiRequests.length,beforeUnprovisioned);check('Missing authenticated bootstrap makes zero API requests and no fallback');
+  const missing=await createStage9FixtureServer({localFixture:true,missingStage7:true});servers.push(missing);
+  await page.goto(missing.origin+'/tendermatch?mode=all-to-all-dev');await page.getByText('PINNED_SCHEMA_UNAVAILABLE',{exact:true}).waitFor();assert.equal(await rows().count(),0);assert.ok(missing.metrics.apiRequests.every(r=>r.path.endsWith('/health')));check('Actually absent Stage 7 marker/tables fail closed in real local PostgreSQL');
+  // The unchanged legacy reference pages are an explicit separate route, never API error fallback.
+  const baselineDist=process.env.TENDERMATCH_STAGE9_BASELINE_DIST;if(!baselineDist)throw new Error('Verified d230590 release dist required for protected DOM comparison');
+  const baseline=await createStage9FixtureServer({localFixture:true,missingStage7:true,dist:baselineDist});servers.push(baseline);
+  const protectedViews=[];
+  for(const [view,selector] of [['dashboard','.tb3-overview-manifesto'],['formula','.tb3-formula-page']]) {
+    const capture=async origin=>{await page.goto(origin+'/tendermatch?view='+view);await page.locator(selector).waitFor();await page.waitForLoadState('networkidle');return page.locator(selector).evaluate(e=>({text:e.textContent,shellStatus:document.querySelector('.client-surface-status').textContent,geometry:[...e.querySelectorAll('h1,h2,h3,section,article')].map(n=>{const b=n.getBoundingClientRect();return {tag:n.tagName,text:n.textContent?.slice(0,80),x:b.x,y:b.y,width:b.width,height:b.height};})}));};
+    const before=await capture(baseline.origin),after=await capture(server.origin);assert.deepEqual(after,before,view+' protected DOM and geometry');
+    protectedViews.push({view,sha256:sha(JSON.stringify(after)),elements:after.geometry.length});await shot('preserved-'+view);check('d230590 '+view+' DOM text and element geometry identical');
+  }
+  const stage9Requests=net.filter(r=>r.path.startsWith('/api/tendermatch/all-to-all/'));
+  assert.ok(stage9Requests.every(r=>!r.path.includes('/matrix')));
+  // Before the explicit reference comparisons no all-to-all browser fetch may touch legacy data.
+  const firstLegacy=net.findIndex(r=>r.path==='/tendermatch'&&r.query.includes('view'));
+  assert.ok(net.slice(0,firstLegacy).every(r=>!r.path.startsWith('/data/')&&!r.path.includes('pair-index')));
+  assert.ok(!JSON.stringify({checks,screenshots,net}).includes(server.bootstrap.token));
+  const metrics=server.metrics.apiRequests,completed=metrics.filter(r=>r.elapsedMs!==null),pageMetrics=completed.filter(r=>r.path.endsWith('/results'));
+  assert.ok(completed.every(r=>r.bytes<=524288));assert.equal(errors.length,0);
+  const zero={};for(const table of ['escalation_authorization','escalation_job','escalation_artifact'])zero[table]=(await server.c.query('SELECT count(*)::int n FROM tendermatch_retrieval.'+table)).rows[0].n;assert.deepEqual(Object.values(zero),[0,0,0]);
+  check('No full-universe/legacy fetch in development mode; bounded JSON; zero authority/jobs/artifacts');
+  const sourceFiles=['apps/tender-apps/src/main.tsx','apps/tender-apps/src/tendermatch-app.tsx','apps/tender-apps/src/tendermatch-all-to-all-api.ts','apps/tender-apps/src/tendermatch-all-to-all.tsx','apps/tender-apps/src/tendermatch-all-to-all.css','scripts/serve-tendermatch-stage9-fixture.mjs','scripts/audit-tendermatch-stage9-browser.mjs','tests/fixtures/tendermatch-stage9.mjs','tests/tendermatch-stage9-frontend.test.mjs'];
+  const sources={};for(const f of sourceFiles)sources[f]=sha((await readFile(path.join(root,f),'utf8')).replaceAll('\r\n','\n'));
+  const assets=[];for(const f of await readdir(path.join(root,'apps/tender-apps/dist/assets')))if(f.startsWith('index-')||f.startsWith('tendermatch-all-to-all-')){const bytes=await readFile(path.join(root,'apps/tender-apps/dist/assets',f));assets.push({file:f,bytes:bytes.length,sha256:sha(bytes)});}
+  const sorted=pageMetrics.map(r=>r.elapsedMs).sort((a,b)=>a-b),memory=await page.evaluate(()=>performance.memory?{usedJSHeapBytes:performance.memory.usedJSHeapSize,totalJSHeapBytes:performance.memory.totalJSHeapSize}:null);
+  const report={schemaVersion:'tendermatch-stage9-browser-evidence/1.0.0',generatedAt:new Date().toISOString(),mode:'SYNTHETIC_LOCAL_POSTGRESQL_NOT_NEON',base:'ae466ae3f15b5e7eddf1a8dfab96b2d847321c4f',uiLineage:'d230590cf5ee99a679f162b2e3a19b65752c0f16',browser:browser.version(),sources,assets,checks,screenshots,protectedViews,fixture:{universe:240,candidates:182,unscored:58,shortlist:server.fixture.rows.length},metrics:{apiRequests:metrics.length,pageRequests:pageMetrics.length,maxApiBytes:Math.max(...completed.map(r=>r.bytes)),pageLatencyMs:{min:sorted[0],p50:sorted[Math.floor(sorted.length*.5)],p95:sorted[Math.floor(sorted.length*.95)],max:sorted.at(-1)},firstReadyMs,pageMemory,selectedMemory,databaseQueries:server.metrics.databaseQueries,maxDatabaseResponseBytes:server.metrics.maxDatabaseResponseBytes,referencePageHeap:memory,combinedThreeFixtureProcessMemory:process.memoryUsage()},errors,zeroExecution:zero,modelCalls:0,neonConnections:0,sourceConnections:0,limitations:['Synthetic local PostgreSQL and local Edge timings, not live Neon','Browser payloads bounded; production identity/session/runtime remains gated','Existing Overview and Formula reference pages remain separate and unchanged']};
+  const output=path.join(root,'docs/evidence/tendermatch-stage9-browser.json');await writeFile(output,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({evidence:output,checks:checks.length,screenshots:screenshots.length,maxApiBytes:report.metrics.maxApiBytes,pageLatencyMs:report.metrics.pageLatencyMs,modelCalls:0,neonConnections:0}));
+} finally {await browser?.close();for(const server of servers.reverse())await server.close();}
