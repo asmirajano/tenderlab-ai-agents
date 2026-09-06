@@ -1,0 +1,932 @@
+{
+  "stage": 7,
+  "mode": "compare",
+  "evidenceClass": "READ_ONLY_REAL_SHORTLIST_POLICY_COMPARISON",
+  "base": "cc8c121795d6d95e71ab219b316b983a7bed583d",
+  "code": {
+    "files": {
+      "packages/tendermatch/src/escalation-stage7.ts": "00b90f0b0044e4f281c17dfffe7339c8067df625d45be55be68dbffd4407ef51",
+      "scripts/lib/tendermatch-stage7.mjs": "897182fcf963a325806562bcd54cd69dbcb0151018659b2892bca675a115a4dc",
+      "scripts/lib/tendermatch-stage7-queue.mjs": "30d6b61ceaf0e3785911b02537995c10b9c144f34bceb8fef729c9be9632a59e",
+      "scripts/tendermatch-stage7.mjs": "a59ef8a1a3fc6fc5bf7d10231ac8e8ffcae72a0563191a807f515f473af33377",
+      "db/tendermatch-dev/100-escalation-up.sql": "0a5bd329f7a562e98a35d2df7d632e45bd8544fcd32087b651a01db2a01a3757"
+    },
+    "hash": "8a4fbc65338aa4a11e66962583ad870485e38a7b20249d89d10b72c093cab9c7"
+  },
+  "provider": {
+    "state": "UNCONFIGURED",
+    "registeredExecutableAdapters": 0,
+    "providerVersion": null,
+    "modelVersion": null,
+    "promptVersion": null,
+    "credentialLoaded": false,
+    "modelCalls": 0,
+    "source": "ACTIVE_PATHS_EXPLICITLY_DISABLED_INTERFACE_AND_SYNTHETIC_TEST_PROVIDERS_ONLY",
+    "sourceBindings": {
+      "packages/tendermatch/src/selective-assessment.ts": "43617708376a3b02f5a6c6f53806d3ff7c193d79a2ad98268e2b94ffeaec124e",
+      "scripts/lib/tendermatch-pair-service.mjs": "b0381043eb8237f68b9d0cc8ee7ec9b87654d4b6108b61d2e43a701d8d721d28",
+      "scripts/serve-tendermatch-local.mjs": "9360bdff15124616c25a44da0bbc5f6c1c1e3789fa5134c2938e750e810e5cdb",
+      "scripts/build-tendermatch-pair-snapshot.mjs": "74b56563d5a7fd713a856b35f5815d5ffa4c4b3667fc9f7865b1c85df1b32084"
+    }
+  },
+  "inputHash": "1d0afa9f2a66363fdfb7ea3eaa87a378c59f56e04582dc24f3d6a8af65ce9575",
+  "shortlistRunId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+  "inputMetrics": {
+    "pages": 29,
+    "elapsedMs": 37143
+  },
+  "protectedBefore": {
+    "prior": {
+      "legacy": {
+        "embedding_model": 0,
+        "feature_embedding": 0,
+        "evaluation_run": 0,
+        "run_feature": 0,
+        "pair_score": 0,
+        "run_pair": 0,
+        "retrieval_request": 0,
+        "retrieval_result": 0,
+        "scoring_batch": 0,
+        "assessment_job": 0,
+        "assessment_artifact": 0,
+        "human_disposition": 0,
+        "universe_snapshot": 0,
+        "universe_pair": 0,
+        "criterion_audit": 0
+      },
+      "formula": [
+        {
+          "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+          "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+          "scored_count": "707660",
+          "unscored_count": "1320301"
+        }
+      ],
+      "ranking": [
+        {
+          "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+          "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+          "pair_count": "707660",
+          "zero_count": "683653"
+        }
+      ],
+      "priorRows": {
+        "formula": 707660,
+        "ranking": 707660,
+        "profiles": 17450
+      }
+    },
+    "shortlist": [
+      {
+        "run_id": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+        "outcome_hash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+        "pair_count": 28034,
+        "review_count": 18531,
+        "audit_count": 9503
+      }
+    ],
+    "shortlistRows": {
+      "pairs": 28034,
+      "contexts": 17450,
+      "members": 17450
+    }
+  },
+  "results": [
+    {
+      "population": 28034,
+      "selected": 250,
+      "byState": {
+        "AUDIT_EXPLICIT_ONLY": 9503,
+        "DEFERRED_BUDGET": 18281,
+        "PLANNED_REVIEW": 250
+      },
+      "byReason": {
+        "FORMULA_CRITERION_EVIDENCE_MISSING": 18531,
+        "TIED_NOMINATION_DIMENSIONS": 7382,
+        "TOP_DIRECTIONAL_NOMINATION": 5969
+      },
+      "selectedReasons": {
+        "TOP_DIRECTIONAL_NOMINATION": 211,
+        "FORMULA_CRITERION_EVIDENCE_MISSING": 250,
+        "TIED_NOMINATION_DIMENSIONS": 152
+      },
+      "suppliers": 98,
+      "tenders": 250,
+      "maxSupplier": 3,
+      "maxTender": 1,
+      "outcomeHash": "7cb291435ba56da1bc7d3990210e9ef9dca50a7cd2588a2c68c3f18e8daefdff",
+      "executionAuthorized": 0,
+      "modelCalls": 0,
+      "budget": {
+        "name": "focused-250",
+        "total": 250,
+        "supplier": 5,
+        "tender": 1
+      },
+      "elapsedMs": 2421,
+      "replayIdentical": true
+    },
+    {
+      "population": 28034,
+      "selected": 500,
+      "byState": {
+        "AUDIT_EXPLICIT_ONLY": 9503,
+        "DEFERRED_BUDGET": 18031,
+        "PLANNED_REVIEW": 500
+      },
+      "byReason": {
+        "FORMULA_CRITERION_EVIDENCE_MISSING": 18531,
+        "TIED_NOMINATION_DIMENSIONS": 7382,
+        "TOP_DIRECTIONAL_NOMINATION": 5969
+      },
+      "selectedReasons": {
+        "TIED_NOMINATION_DIMENSIONS": 335,
+        "FORMULA_CRITERION_EVIDENCE_MISSING": 500,
+        "TOP_DIRECTIONAL_NOMINATION": 410
+      },
+      "suppliers": 99,
+      "tenders": 377,
+      "maxSupplier": 6,
+      "maxTender": 2,
+      "outcomeHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+      "executionAuthorized": 0,
+      "modelCalls": 0,
+      "budget": {
+        "name": "balanced-500",
+        "total": 500,
+        "supplier": 10,
+        "tender": 2
+      },
+      "elapsedMs": 2198,
+      "replayIdentical": true
+    },
+    {
+      "population": 28034,
+      "selected": 1000,
+      "byState": {
+        "AUDIT_EXPLICIT_ONLY": 9503,
+        "DEFERRED_BUDGET": 17531,
+        "PLANNED_REVIEW": 1000
+      },
+      "byReason": {
+        "FORMULA_CRITERION_EVIDENCE_MISSING": 18531,
+        "TIED_NOMINATION_DIMENSIONS": 7382,
+        "TOP_DIRECTIONAL_NOMINATION": 5969
+      },
+      "selectedReasons": {
+        "TIED_NOMINATION_DIMENSIONS": 712,
+        "FORMULA_CRITERION_EVIDENCE_MISSING": 1000,
+        "TOP_DIRECTIONAL_NOMINATION": 716
+      },
+      "suppliers": 99,
+      "tenders": 676,
+      "maxSupplier": 11,
+      "maxTender": 3,
+      "outcomeHash": "2e5c89ee8672634931eeca0fa94794e706301b477f4f480bddf3e576eb204195",
+      "executionAuthorized": 0,
+      "modelCalls": 0,
+      "budget": {
+        "name": "broad-1000",
+        "total": 1000,
+        "supplier": 20,
+        "tender": 3
+      },
+      "elapsedMs": 2253,
+      "replayIdentical": true
+    }
+  ],
+  "limits": {
+    "automaticRequests": 500,
+    "onDemandRequests": 100,
+    "requestsPerPlan": 600,
+    "perSupplier": 10,
+    "perTender": 2,
+    "attemptsPerJob": 3,
+    "concurrentLeases": 2,
+    "inputBytes": 131072,
+    "outputBytes": 131072,
+    "outputTokens": 4096,
+    "leaseMs": 60000
+  },
+  "expectedPersistence": {
+    "planId": "dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f",
+    "identity": {
+      "policyVersion": "tendermatch-selective-escalation/1.0.0",
+      "codeHash": "8a4fbc65338aa4a11e66962583ad870485e38a7b20249d89d10b72c093cab9c7",
+      "shortlistRunId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+      "inputHash": "1d0afa9f2a66363fdfb7ea3eaa87a378c59f56e04582dc24f3d6a8af65ce9575",
+      "population": 28034,
+      "selected": 500,
+      "allocationHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+      "budget": {
+        "name": "balanced-500",
+        "total": 500,
+        "supplier": 10,
+        "tender": 2
+      },
+      "limits": {
+        "automaticRequests": 500,
+        "onDemandRequests": 100,
+        "requestsPerPlan": 600,
+        "perSupplier": 10,
+        "perTender": 2,
+        "attemptsPerJob": 3,
+        "concurrentLeases": 2,
+        "inputBytes": 131072,
+        "outputBytes": 131072,
+        "outputTokens": 4096,
+        "leaseMs": 60000
+      },
+      "schemaVersion": "tendermatch-full-tors-evidence/2.0.0",
+      "promptVersion": "tendermatch-frozen-evidence-tors/1.0.0"
+    },
+    "plans": 1,
+    "decisions": 28034,
+    "requests": 500,
+    "requestHash": "793cfc45cd08bb795b7e4eaef3d2694dfc1007853bdc299530ec4caee6d0b878",
+    "authorizations": 0,
+    "jobs": 0,
+    "artifacts": 0,
+    "events": 0
+  },
+  "chosen": {
+    "population": 28034,
+    "selected": 500,
+    "byState": {
+      "AUDIT_EXPLICIT_ONLY": 9503,
+      "DEFERRED_BUDGET": 18031,
+      "PLANNED_REVIEW": 500
+    },
+    "byReason": {
+      "FORMULA_CRITERION_EVIDENCE_MISSING": 18531,
+      "TIED_NOMINATION_DIMENSIONS": 7382,
+      "TOP_DIRECTIONAL_NOMINATION": 5969
+    },
+    "selectedReasons": {
+      "TIED_NOMINATION_DIMENSIONS": 335,
+      "FORMULA_CRITERION_EVIDENCE_MISSING": 500,
+      "TOP_DIRECTIONAL_NOMINATION": 410
+    },
+    "suppliers": 99,
+    "tenders": 377,
+    "maxSupplier": 6,
+    "maxTender": 2,
+    "outcomeHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+    "executionAuthorized": 0,
+    "modelCalls": 0
+  },
+  "population": {
+    "formulaCandidates": 707660,
+    "shortlist": 28034,
+    "reviewTier": 18531,
+    "auditTier": 9503,
+    "selectedRequests": 500,
+    "onDemandFormulaCandidatePopulation": 707660,
+    "automaticExecutionAuthorized": 0,
+    "providerExecutable": 0,
+    "actualCalls": 0,
+    "actualInputTokens": 0,
+    "actualOutputTokens": 0,
+    "actualCost": 0
+  },
+  "workload": {
+    "distinctSupplierProfiles": 99,
+    "distinctTenderProfiles": 377,
+    "inputBytes": 5033461,
+    "maxInputBytes": 13254,
+    "potentialInitialCalls": 500,
+    "potentialCallsAtThreeAttempts": 1500,
+    "maxOutputTokenReservation": 2048000,
+    "inputTokenEstimate": null,
+    "costEstimate": null,
+    "limitation": "NO_PROVIDER_TOKENIZER_OR_PRICING_CONFIGURED_BYTE_COUNTS_ARE_NOT_TOKEN_COUNTS"
+  },
+  "samples": [
+    {
+      "decision": {
+        "pairKey": "31d242524f3b28f240b494a3dd4ce65fb5f8919c1d7799784a62bd5e1610008c",
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "044ad4cf-799e-473e-8ed2-85e309157836",
+        "tier": 1,
+        "inputHash": "9eb98b242513e591a62f8444398f5dbd815cf1606cb460912a0c9b2f871ab696",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "TIED_NOMINATION_DIMENSIONS",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 1
+      },
+      "input": {
+        "pairKey": "31d242524f3b28f240b494a3dd4ce65fb5f8919c1d7799784a62bd5e1610008c",
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "tenderId": "044ad4cf-799e-473e-8ed2-85e309157836",
+        "tier": 1,
+        "supplierProfile": "7bb9ddbcc1611be16a674871181fdfff5bc6b9bd95cb952a7177d5ca5b6e7067",
+        "tenderProfile": "eb9d69ead9841104263bd04fa79509711881eb2cc6306232762d8eb7c86c1464",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 61538,
+        "score": 14,
+        "coverage": 35,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "selection": {
+          "reasonMask": 3,
+          "tenderTieSize": 1,
+          "supplierTieSize": 3,
+          "tenderNominationRank": 2,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "9b76dfc02b525299e39585dec023cd1bb55caadd06361447fee0b2c2b5da26e6",
+        "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+        "tenderId": "3ae1f2b5-a596-4018-9983-d89a0888f19c",
+        "tier": 1,
+        "inputHash": "c87457054a0a17e7eca181133fb221551fa7348162f016e901231c979c1ee88a",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 2
+      },
+      "input": {
+        "pairKey": "9b76dfc02b525299e39585dec023cd1bb55caadd06361447fee0b2c2b5da26e6",
+        "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+        "tenderId": "3ae1f2b5-a596-4018-9983-d89a0888f19c",
+        "tier": 1,
+        "supplierProfile": "5f31ba8838ebdbab4f02df82bbcd2017b4046095fd5640b88b61e255ad729043",
+        "tenderProfile": "d6cc17d3938764a242cbdcbdc931b524af84a8b97e925596df5fb1dc4ada9ccf",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 253333,
+        "score": 32,
+        "coverage": 45,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 3,
+          "tenderTieSize": 1,
+          "supplierTieSize": 1,
+          "tenderNominationRank": 2,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "34fe86a568911a3a1fdb82089aacdf7a0577e95884c57ab44dc195358e0c2eb5",
+        "supplierId": "01e0bb8e-a4a4-5c86-b95c-3598c2baabc9",
+        "tenderId": "ea6a122a-5d19-4156-a84c-5b782f6a5918",
+        "tier": 1,
+        "inputHash": "6edd5491a241a89fc4e8981e46efdc1403d2b834e7f7a908f3be24f6f0d7f7ac",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 3
+      },
+      "input": {
+        "pairKey": "34fe86a568911a3a1fdb82089aacdf7a0577e95884c57ab44dc195358e0c2eb5",
+        "supplierId": "01e0bb8e-a4a4-5c86-b95c-3598c2baabc9",
+        "tenderId": "ea6a122a-5d19-4156-a84c-5b782f6a5918",
+        "tier": 1,
+        "supplierProfile": "80d85973a042f4d5af296e631b6bb5c4ce3ddf2976a2c09b5801763092fb9f4d",
+        "tenderProfile": "7249358ae34b73b1030665c9415f0930c9c7d397de1081f57637087186649f98",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 234782,
+        "score": 44,
+        "coverage": 65,
+        "confidence": 30,
+        "states": [
+          1,
+          1,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 1,
+          "tenderTieSize": null,
+          "supplierTieSize": 1,
+          "tenderNominationRank": null,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "7c6ad075bad5975f537a7cda179b6642fda65d9ad5f2f292c262b313b0e99bfd",
+        "supplierId": "038e2b43-647d-5d12-b369-a54255de43ba",
+        "tenderId": "185af6e9-2fd4-4347-8666-282d044188bb",
+        "tier": 1,
+        "inputHash": "bec94555e6b2588c3a90dd12a876c56316c6f92e98116c8863b2395fa6a2f027",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "TIED_NOMINATION_DIMENSIONS",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 4
+      },
+      "input": {
+        "pairKey": "7c6ad075bad5975f537a7cda179b6642fda65d9ad5f2f292c262b313b0e99bfd",
+        "supplierId": "038e2b43-647d-5d12-b369-a54255de43ba",
+        "tenderId": "185af6e9-2fd4-4347-8666-282d044188bb",
+        "tier": 1,
+        "supplierProfile": "98a28eeab3c3084c805b096fbd80121fbeae87eec39146a4382f7359bf5cf758",
+        "tenderProfile": "60d4afbe045124ae7eb79775b9be842e280824b94721165cad6dddefbc06e317",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 236363,
+        "score": 32,
+        "coverage": 45,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 1,
+          "tenderTieSize": null,
+          "supplierTieSize": 2,
+          "tenderNominationRank": null,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "4124964a8698739647ed4b8d5a2006b7031463127d934c4b80ceff3f3f79d744",
+        "supplierId": "039cbaf9-17de-52dc-8e53-5ec9581f7885",
+        "tenderId": "0aa99d27-63b3-4f9f-883b-26b8f88dd191",
+        "tier": 1,
+        "inputHash": "f5744f776f30657c7af83831f57f2dd3dd6bafeec0766e1acc38404ba17f640b",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 5
+      },
+      "input": {
+        "pairKey": "4124964a8698739647ed4b8d5a2006b7031463127d934c4b80ceff3f3f79d744",
+        "supplierId": "039cbaf9-17de-52dc-8e53-5ec9581f7885",
+        "tenderId": "0aa99d27-63b3-4f9f-883b-26b8f88dd191",
+        "tier": 1,
+        "supplierProfile": "f369ad37cd45087114852f4ab193caa9b86f7b3728b66c8959799cdb31f7344a",
+        "tenderProfile": "aa9a2d0333904f0a6df9a0ba66a56aa18724e75613a7c396757b9d2f4819d83e",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 84210,
+        "score": 14,
+        "coverage": 35,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "selection": {
+          "reasonMask": 1,
+          "tenderTieSize": null,
+          "supplierTieSize": 1,
+          "tenderNominationRank": null,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "a900c43778ba8e8f09811f4ca1018e84c3d4fb29ea3b39d0743c0f9d0d05150a",
+        "supplierId": "04319dc8-f7ac-5063-8f74-9adf4e7d8c7f",
+        "tenderId": "185af6e9-2fd4-4347-8666-282d044188bb",
+        "tier": 1,
+        "inputHash": "98f2dce1031631accb39fd6d94df978922f2594e7d20ee288d0142fcebeba0bf",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "TIED_NOMINATION_DIMENSIONS",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 6
+      },
+      "input": {
+        "pairKey": "a900c43778ba8e8f09811f4ca1018e84c3d4fb29ea3b39d0743c0f9d0d05150a",
+        "supplierId": "04319dc8-f7ac-5063-8f74-9adf4e7d8c7f",
+        "tenderId": "185af6e9-2fd4-4347-8666-282d044188bb",
+        "tier": 1,
+        "supplierProfile": "0dc4c05186032758cf3a291ce35d8c4484f0c31a5f04f2d8da10cd4c86180ec8",
+        "tenderProfile": "60d4afbe045124ae7eb79775b9be842e280824b94721165cad6dddefbc06e317",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 247058,
+        "score": 28,
+        "coverage": 35,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "selection": {
+          "reasonMask": 1,
+          "tenderTieSize": null,
+          "supplierTieSize": 2,
+          "tenderNominationRank": null,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "ce458ba6fa93633ab222f73e356724c6a0001bdc3c9caf2ee110853408d2414b",
+        "supplierId": "0763dfb7-984d-5058-9c53-2e854f7d44d4",
+        "tenderId": "1c1e49da-ab43-42cd-b018-685a2892ae65",
+        "tier": 1,
+        "inputHash": "6f6e6ece54a84b9d25ea85bd63c38ffe011e5bac7adc4cce0e05f59df1d07b70",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 7
+      },
+      "input": {
+        "pairKey": "ce458ba6fa93633ab222f73e356724c6a0001bdc3c9caf2ee110853408d2414b",
+        "supplierId": "0763dfb7-984d-5058-9c53-2e854f7d44d4",
+        "tenderId": "1c1e49da-ab43-42cd-b018-685a2892ae65",
+        "tier": 1,
+        "supplierProfile": "8e58260a910b8461c1330da82e2a3f633b32c662f7798171b7b7354f5bca3919",
+        "tenderProfile": "cd2106d7101ff8360f820f2cad709941096d9cf6c5bf3cc2ba8a120802c45463",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 104347,
+        "score": 14,
+        "coverage": 35,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "selection": {
+          "reasonMask": 3,
+          "tenderTieSize": 1,
+          "supplierTieSize": 1,
+          "tenderNominationRank": 1,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "f9b1c692dc5526904ee2cf4c4883f43b79f6f6081a1e05b4ab90ff06ae5e41c5",
+        "supplierId": "0dbecc2b-1cb5-5e36-bd90-1ddf65f55e3e",
+        "tenderId": "2465122c-1785-4ffb-bb29-d2db8fd18578",
+        "tier": 1,
+        "inputHash": "8261d0d83e748304e765e7b2857381a3dcb334ceb4986feb98cf5fdf36f31e67",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 8
+      },
+      "input": {
+        "pairKey": "f9b1c692dc5526904ee2cf4c4883f43b79f6f6081a1e05b4ab90ff06ae5e41c5",
+        "supplierId": "0dbecc2b-1cb5-5e36-bd90-1ddf65f55e3e",
+        "tenderId": "2465122c-1785-4ffb-bb29-d2db8fd18578",
+        "tier": 1,
+        "supplierProfile": "e7870fb8c05ac8e9bb558f9c856986cb6d8809af8ca4de234dfc3d1e30ccc953",
+        "tenderProfile": "8ab65253f985cd42eb17f84a8e25874db01ac32b441cb018f3f20037bb64d222",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 276190,
+        "score": 39,
+        "coverage": 45,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 3,
+          "tenderTieSize": 1,
+          "supplierTieSize": 1,
+          "tenderNominationRank": 2,
+          "supplierNominationRank": 2
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "d53caa0e6fc64751f18f38d773c4767e56b49b9ad7c274682acc2acf934322c4",
+        "supplierId": "0f73dbcd-63c7-5e0b-9987-af20987930cc",
+        "tenderId": "2d9419e1-6c13-4698-8196-721c43c25536",
+        "tier": 1,
+        "inputHash": "49b828e020064229fcb9369b9c1bfe9e9963b70037768f4afadeea6632a0ca6a",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 9
+      },
+      "input": {
+        "pairKey": "d53caa0e6fc64751f18f38d773c4767e56b49b9ad7c274682acc2acf934322c4",
+        "supplierId": "0f73dbcd-63c7-5e0b-9987-af20987930cc",
+        "tenderId": "2d9419e1-6c13-4698-8196-721c43c25536",
+        "tier": 1,
+        "supplierProfile": "79bb6a777f183275da290d5954fb846df79978be1a47a518f6e8f2c5afe1a81a",
+        "tenderProfile": "f20b64827bb85fd776cb9182c2d00ef28be443909410e74906b998ed4310977a",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 72727,
+        "score": 18,
+        "coverage": 45,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 3,
+          "tenderTieSize": 1,
+          "supplierTieSize": 1,
+          "tenderNominationRank": 1,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "c4b175cd95c1db2bf6c46cdd6cc40322759f386bfcfb82a2ed712d5a0e760424",
+        "supplierId": "0f91f96f-c168-52b5-ae2b-d669cb1095ac",
+        "tenderId": "ea6a122a-5d19-4156-a84c-5b782f6a5918",
+        "tier": 1,
+        "inputHash": "7aeff96ce62af9012ddb463f6b797010b74cfc267321cdfa5a00b988b00f8205",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 10
+      },
+      "input": {
+        "pairKey": "c4b175cd95c1db2bf6c46cdd6cc40322759f386bfcfb82a2ed712d5a0e760424",
+        "supplierId": "0f91f96f-c168-52b5-ae2b-d669cb1095ac",
+        "tenderId": "ea6a122a-5d19-4156-a84c-5b782f6a5918",
+        "tier": 1,
+        "supplierProfile": "1016d104c5d92e5ca7cbb7b49b06dd3f1d8896f5e1f3ba8b5b0aed57f88f1578",
+        "tenderProfile": "7249358ae34b73b1030665c9415f0930c9c7d397de1081f57637087186649f98",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 225000,
+        "score": 28,
+        "coverage": 35,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "selection": {
+          "reasonMask": 1,
+          "tenderTieSize": null,
+          "supplierTieSize": 1,
+          "tenderNominationRank": null,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "398fd1a2d1f285adfcb0d1e4fb8225444a109ad5fb958dfadeae308832123da3",
+        "supplierId": "146175b8-66a0-5e86-bd39-60370b1bd080",
+        "tenderId": "e2234d8c-2dea-4e92-91bb-6173c555768b",
+        "tier": 1,
+        "inputHash": "e6063aba32439a288c4724349fae00d0700d3e662e72ca796505e09f8f000fc4",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 11
+      },
+      "input": {
+        "pairKey": "398fd1a2d1f285adfcb0d1e4fb8225444a109ad5fb958dfadeae308832123da3",
+        "supplierId": "146175b8-66a0-5e86-bd39-60370b1bd080",
+        "tenderId": "e2234d8c-2dea-4e92-91bb-6173c555768b",
+        "tier": 1,
+        "supplierProfile": "d681bba6af8726eebf45c3945ecb364c4dadd0925c440d328c49398609910eab",
+        "tenderProfile": "544b2cb1d062772b3bb2f42ad27b9832f7cc9048f2a4dbe9f7b1aad672751166",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 30769,
+        "score": 11,
+        "coverage": 45,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 1,
+          "tenderTieSize": null,
+          "supplierTieSize": 1,
+          "tenderNominationRank": null,
+          "supplierNominationRank": 1
+        }
+      }
+    },
+    {
+      "decision": {
+        "pairKey": "d7ebf4290488f95a92fd2475c0c14a2abb12590f29ac28d0f998356965297300",
+        "supplierId": "15c03d48-74db-5840-b7bb-03db05892cc4",
+        "tenderId": "0aa99d27-63b3-4f9f-883b-26b8f88dd191",
+        "tier": 1,
+        "inputHash": "3f485762fbf4a593879549f81cff29035fda32a405773ffab5d68643f6789e14",
+        "reasons": [
+          "TOP_DIRECTIONAL_NOMINATION",
+          "FORMULA_CRITERION_EVIDENCE_MISSING"
+        ],
+        "state": "PLANNED_REVIEW",
+        "omissions": [],
+        "position": 12
+      },
+      "input": {
+        "pairKey": "d7ebf4290488f95a92fd2475c0c14a2abb12590f29ac28d0f998356965297300",
+        "supplierId": "15c03d48-74db-5840-b7bb-03db05892cc4",
+        "tenderId": "0aa99d27-63b3-4f9f-883b-26b8f88dd191",
+        "tier": 1,
+        "supplierProfile": "d4c5f6bc354fb399aff7ddffd421d878c80133fea2425019e993c7c6f0d247ad",
+        "tenderProfile": "aa9a2d0333904f0a6df9a0ba66a56aa18724e75613a7c396757b9d2f4819d83e",
+        "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+        "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+        "units": 88888,
+        "score": 18,
+        "coverage": 45,
+        "confidence": 30,
+        "states": [
+          1,
+          0,
+          0,
+          1,
+          0
+        ],
+        "selection": {
+          "reasonMask": 3,
+          "tenderTieSize": 1,
+          "supplierTieSize": 1,
+          "tenderNominationRank": 3,
+          "supplierNominationRank": 1
+        }
+      }
+    }
+  ],
+  "incremental": [
+    {
+      "kind": "supplier",
+      "focusId": "28d507a8-1862-5482-a428-e456e2a6248f",
+      "evidenceClass": "IN_MEMORY_IDENTITY_CHANGE_ONLY",
+      "changedAssessmentIdentities": 79,
+      "unchangedAssessmentIdentities": 27955,
+      "scope": "ASSESSMENT_INPUT_PAIR_LOCAL_ALLOCATION_PLAN_MAY_REBALANCE"
+    },
+    {
+      "kind": "tender",
+      "focusId": "1870172f-d5a7-4e11-a9fb-ec2cd0909038",
+      "evidenceClass": "IN_MEMORY_IDENTITY_CHANGE_ONLY",
+      "changedAssessmentIdentities": 4,
+      "unchangedAssessmentIdentities": 28030,
+      "scope": "ASSESSMENT_INPUT_PAIR_LOCAL_ALLOCATION_PLAN_MAY_REBALANCE"
+    }
+  ],
+  "committedWrites": 0,
+  "protectedAfter": {
+    "prior": {
+      "legacy": {
+        "embedding_model": 0,
+        "feature_embedding": 0,
+        "evaluation_run": 0,
+        "run_feature": 0,
+        "pair_score": 0,
+        "run_pair": 0,
+        "retrieval_request": 0,
+        "retrieval_result": 0,
+        "scoring_batch": 0,
+        "assessment_job": 0,
+        "assessment_artifact": 0,
+        "human_disposition": 0,
+        "universe_snapshot": 0,
+        "universe_pair": 0,
+        "criterion_audit": 0
+      },
+      "formula": [
+        {
+          "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+          "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+          "scored_count": "707660",
+          "unscored_count": "1320301"
+        }
+      ],
+      "ranking": [
+        {
+          "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+          "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+          "pair_count": "707660",
+          "zero_count": "683653"
+        }
+      ],
+      "priorRows": {
+        "formula": 707660,
+        "ranking": 707660,
+        "profiles": 17450
+      }
+    },
+    "shortlist": [
+      {
+        "run_id": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+        "outcome_hash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+        "pair_count": 28034,
+        "review_count": 18531,
+        "audit_count": 9503
+      }
+    ],
+    "shortlistRows": {
+      "pairs": 28034,
+      "contexts": 17450,
+      "members": 17450
+    }
+  },
+  "metrics": {
+    "elapsedMs": 60166,
+    "connection": {
+      "kind": "results",
+      "queries": 80,
+      "responseBytes": 21552074,
+      "requestBytes": 76572,
+      "maxResponseBytes": 779187
+    },
+    "memory": {
+      "rss": 378580992,
+      "heapTotal": 301785088,
+      "heapUsed": 175973576,
+      "external": 9907265,
+      "arrayBuffers": 477496
+    }
+  },
+  "finishedAt": "2026-09-06T20:25:52.398Z",
+  "sourceConnections": 0,
+  "modelCalls": 0
+}
