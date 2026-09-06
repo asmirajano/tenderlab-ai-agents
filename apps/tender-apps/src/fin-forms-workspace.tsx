@@ -38,6 +38,10 @@ function mappingLabel(mapping: Fin1Mapping) {
   return "Ready";
 }
 
+function presentedMapping(form: PresentedFin1Form | null, mapping: Fin1Mapping) {
+  return form?.mappings.find((candidate) => candidate.id === mapping.id) ?? null;
+}
+
 function statusLabel(form: Fin1Form) {
   if (form.readiness.status === "ready") return "Ready";
   if (form.readiness.status === "partial") return "Partially ready";
@@ -77,7 +81,7 @@ function FxPolicyPanel({ sourceCurrency, targetCurrency, presentation, onChange 
       <div>
         <span>FIN PRESENTATION CURRENCY</span>
         <h2>{sourceCurrency} source evidence → {targetCurrency} FIN-1</h2>
-        <p>The digitized balance sheet remains unchanged. Balance fields use the saved year-end closing rate; income fields use the saved annual average rate.</p>
+        <p>The digitized balance sheet remains unchanged. FIN amounts use full {targetCurrency} units: balance fields use the saved year-end closing rate; income fields use the saved annual average rate.</p>
       </div>
       <FinCurrencySwitcher value={targetCurrency} onChange={onChange} />
       <dl>
@@ -213,7 +217,12 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance, onStartNe
         <div className="fin-mapping-table-wrap">
           <table className="fin-mapping-table excel-dark-table" data-table-format="excel-dark">
             <thead><tr><th>FIN-1 field</th><th>Year</th><th>Value</th><th>Source</th><th>Provenance</th><th>Status</th></tr></thead>
-            <tbody>{form.mappings.map((mapping) => <tr className={`is-${mapping.status}`} key={mapping.id}><td><b>{mapping.label}</b>{mapping.calculationFormula && <small>{mapping.calculationFormula}</small>}</td><td><strong>{mapping.displayYear}</strong>{mapping.originalPeriods.length > 0 && <small>Source: {mapping.originalPeriods.join(" / ")}</small>}</td><td><b>{formatFigure(mapping.value, mapping.unitScale)}{mapping.value !== null ? ` ${mapping.currency}` : ""}</b>{mapping.difference !== null && <small>Calculated: {formatFigure(mapping.calculatedValue, mapping.unitScale)} · Δ {formatFigure(mapping.difference, mapping.unitScale)}</small>}</td><td><span>{mapping.sourceSummary}</span></td><td><code>{mapping.provenance ?? "—"}</code></td><td><span className="fin-mapping-status">{mappingLabel(mapping)}</span>{mapping.action && <button onClick={() => setSourceHelpMapping(mapping)} type="button">{mapping.action} →</button>}</td></tr>)}</tbody>
+            <tbody>{form.mappings.map((mapping) => {
+              const presented = presentedMapping(presentedForm, mapping);
+              const displayValue = presented?.value ?? null;
+              const displayScale = presented?.unitScale ?? 1;
+              return <tr className={`is-${mapping.status}`} key={mapping.id}><td><b>{mapping.label}</b>{mapping.calculationFormula && <small>{mapping.calculationFormula}</small>}</td><td><strong>{mapping.displayYear}</strong>{mapping.originalPeriods.length > 0 && <small>Source: {mapping.originalPeriods.join(" / ")}</small>}</td><td><b>{formatFigure(displayValue, displayScale)}{displayValue !== null ? ` ${targetCurrency}` : ""}</b>{presented?.difference !== null && presented?.difference !== undefined && <small>Calculated: {formatFigure(presented.calculatedValue, displayScale)} · Δ {formatFigure(presented.difference, displayScale)} {targetCurrency}</small>}</td><td><span>{mapping.sourceSummary}</span></td><td><code>{presented?.provenance ?? mapping.provenance ?? "—"}</code></td><td><span className="fin-mapping-status">{mappingLabel(mapping)}</span>{mapping.action && <button onClick={() => setSourceHelpMapping(mapping)} type="button">{mapping.action} →</button>}</td></tr>;
+            })}</tbody>
           </table>
         </div>
 
@@ -260,11 +269,11 @@ export function FinFormsWorkspace({ review, demoMode, onBackToBalance, onStartNe
 
       <FxPolicyPanel sourceCurrency={form.currency} targetCurrency={targetCurrency} presentation={presentation} onChange={setTargetCurrency} />
 
-      <section className="fin-generated-meta"><div><span>Applicant</span><b>{presentedForm.entity}</b></div><div><span>Currency / units</span><b>{presentedForm.currency} · {presentedForm.unitLabel}</b></div><div><span>Historical periods</span><b>{presentedForm.years.join(" · ")}</b></div><div><span>Generation status</span><b>{statusLabel(presentedForm)}</b></div></section>
+      <section className="fin-generated-meta"><div><span>Applicant</span><b>{presentedForm.entity}</b></div><div><span>Currency</span><b>{presentedForm.currency}</b></div><div><span>Amount basis</span><b>Full currency units</b></div><div><span>Historical periods</span><b>{presentedForm.years.join(" · ")}</b></div><div><span>Generation status</span><b>{statusLabel(presentedForm)}</b></div></section>
 
       <section className="fin-generated-form" aria-label="Generated FIN-1 Historical Financial Performance">
         <header><div><span>FORM FIN–1</span><h2>Historical Financial Performance</h2><p>{presentedForm.entity}</p></div><b>{presentedForm.readiness.status === "partial" ? "GENERATED WITH DECLARED GAPS" : "READY"}</b></header>
-        <div className="fin-form-table-wrap"><table className="excel-dark-table" data-table-format="excel-dark"><thead><tr><th>Financial Indicator</th>{presentedForm.years.map((year) => <th key={year}>{year}<small>{presentedForm.currency} · {presentedForm.unitLabel}</small></th>)}</tr></thead><tbody>{FIN1_FIELDS.map((field) => <tr key={field.id}><td><b>{field.label}</b>{field.sourceType === "calculated" && <small>Calculated</small>}</td>{presentedForm.years.map((year) => {
+        <div className="fin-form-table-wrap"><table className="excel-dark-table" data-table-format="excel-dark"><thead><tr><th>Financial Indicator</th>{presentedForm.years.map((year) => <th key={year}>{year}<small>{presentedForm.currency}</small></th>)}</tr></thead><tbody>{FIN1_FIELDS.map((field) => <tr key={field.id}><td><b>{field.label}</b>{field.sourceType === "calculated" && <small>Calculated</small>}</td>{presentedForm.years.map((year) => {
           const mapping = presentedForm.mappings.find((candidate) => candidate.field === field.id && candidate.displayYear === year);
           const unavailableLabel = mapping?.status === "missing" ? mapping.sourceSummary : mapping?.action ?? "Review extraction or mapping";
           return <td className={mapping?.status === "missing" ? "is-missing" : mapping?.status !== "ready" ? "is-finding" : ""} key={year}><b>{formatFigure(mapping?.value ?? null, mapping?.unitScale ?? presentedForm.unitScale)}</b>{mapping?.status !== "ready" ? <small>{unavailableLabel}</small> : <small>{mapping?.fx?.rateType === "identity" ? mapping.sourceProvenance : `CALCULATED · FX ${mapping?.fx?.rateType}`}</small>}</td>;

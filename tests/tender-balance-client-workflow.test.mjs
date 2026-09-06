@@ -185,6 +185,8 @@ test("FIN-1 UI exposes the source-role gate, truthful blockers, and dynamic peri
   assert.match(finWorkspace, /TEMPLATE/);
   assert.match(finWorkspace, /technically blocked from client financial data/);
   assert.match(finWorkspace, /presentedForm\.years\.map/);
+  assert.match(finWorkspace, /FIN amounts use full \{targetCurrency\} units/);
+  assert.match(finWorkspace, /presentedMapping\(presentedForm, mapping\)/);
   assert.match(finWorkspace, /mapping\.sourceSummary/);
   assert.match(finWorkspace, /Resolve the blocking source mappings/);
   assert.match(finWorkspace, /disabled=\{!canGenerate\}/);
@@ -208,8 +210,8 @@ test("FIN-2 UI exposes source turnover, year-end FX, calculated average, and cas
   const [fin2Workspace, finCss] = await Promise.all([readFile(fin2WorkspaceUrl, "utf8"), readFile(finCssUrl, "utf8")]);
 
   assert.match(fin2Workspace, /tenderapps:fin2-case-input:\$\{review\.reviewId\}/);
-  assert.match(fin2Workspace, /Original turnover/);
-  assert.match(fin2Workspace, /Exchange rate/);
+  assert.match(fin2Workspace, /Annual Turnover \(\{comparisonCurrency\}\)/);
+  assert.match(fin2Workspace, /full currency units/);
   assert.match(fin2Workspace, /convertedProvenance/);
   assert.match(fin2Workspace, /averageAnnualTurnover\.formula/);
   assert.match(fin2Workspace, /Export \{comparisonCurrency\} FIN-2 Excel/);

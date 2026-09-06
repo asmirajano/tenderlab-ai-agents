@@ -1,7 +1,7 @@
 import cbuFinFxJson from "./data/cbu-fin-fx-2015-2025.json" with { type: "json" };
 import type { Fin1FieldId, Fin1Form, Fin1Mapping, FinancialProvenance } from "./fin-forms.ts";
 
-export const FIN1_FX_PRESENTATION_VERSION = "1.0.0";
+export const FIN1_FX_PRESENTATION_VERSION = "1.1.0";
 
 export type FinPresentationCurrency = "USD" | "EUR";
 export type FinancialFxRateType = "closing" | "average" | "identity";
@@ -78,8 +78,8 @@ export type PresentedFin1Form = Omit<Fin1Form, "mappings"> & {
   sourceUnitLabel: string;
   sourceUnitScale: number;
   currency: Fin1PresentationCurrency;
-  unitLabel: "thousands";
-  unitScale: 1_000;
+  unitLabel: "units";
+  unitScale: 1;
   mappings: PresentedFin1Mapping[];
   fxDataset: {
     provider: string;
@@ -208,7 +208,7 @@ export function prepareFin1Presentation(form: Fin1Form, targetCurrency: Fin1Pres
       return {
         ...mapping,
         currency: targetCurrency,
-        unitScale: 1_000,
+        unitScale: 1,
         sourceValue: null,
         sourceCurrency: mapping.currency,
         sourceUnitScale: mapping.unitScale,
@@ -232,7 +232,7 @@ export function prepareFin1Presentation(form: Fin1Form, targetCurrency: Fin1Pres
         ...mapping,
         value: null,
         currency: targetCurrency,
-        unitScale: 1_000,
+        unitScale: 1,
         provenance: null,
         sourceValue: mapping.value,
         sourceCurrency: mapping.currency,
@@ -251,7 +251,7 @@ export function prepareFin1Presentation(form: Fin1Form, targetCurrency: Fin1Pres
       ...mapping,
       value: mapping.value * rate.rate,
       currency: targetCurrency,
-      unitScale: 1_000,
+      unitScale: 1,
       provenance: rate.evidence.rateType === "identity" ? mapping.provenance : "CALCULATED",
       sourceValue: mapping.value,
       sourceCurrency: mapping.currency,
@@ -281,8 +281,8 @@ export function prepareFin1Presentation(form: Fin1Form, targetCurrency: Fin1Pres
       sourceUnitLabel: form.unitLabel,
       sourceUnitScale: form.unitScale,
       currency: targetCurrency,
-      unitLabel: "thousands",
-      unitScale: 1_000,
+      unitLabel: "units",
+      unitScale: 1,
       mappings: convertedMappings,
       fxDataset: {
         provider: cbuFinFx.provider,

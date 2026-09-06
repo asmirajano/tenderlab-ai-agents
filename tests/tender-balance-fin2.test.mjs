@@ -124,7 +124,7 @@ test("converts source turnover with auditable year-end CBU rates and calculates 
   assert.ok(Math.abs(year2023.convertedValue - 1_925_896) < 1);
   assert.equal(year2024.convertedProvenance, "CALCULATED");
   assert.match(year2024.sourceScaleFormula, /9,386,124 thousand UZS × 1,000 = 9,386,124,000 UZS/);
-  assert.match(year2024.conversionFormula, /9,386,124 thousand UZS × 1,000.*USD\/UZS/);
+  assert.match(year2024.conversionFormula, /9,386,124,000 UZS × .*USD\/UZS = 726,453 USD/);
   assert.ok(Math.abs(year2024.convertedValue - (year2024.sourceReportedValue * year2024.sourceUnitScale * year2024.exchangeRate.targetUnitsPerSourceUnit)) < 0.000001);
   assert.ok(Math.abs(form.averageAnnualTurnover.value - ((year2023.convertedValue + year2024.convertedValue) / 2)) < 0.000001);
   assert.deepEqual(form.averageAnnualTurnover.yearsIncluded, ["2023", "2024"]);
@@ -239,30 +239,26 @@ test("exports FIN-2 with clean form, mapping, and FX-audit sheets", () => {
   assert.match(workbook, /Source &amp; Mapping/);
   assert.match(workbook, /FX Conversion Audit/);
   assert.match(entries.get("xl/worksheets/sheet1.xml"), /Average Annual Turnover/);
-  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Source reported amount/);
-  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Source unit scale/);
-  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Full source-currency amount/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Annual Turnover \(USD, full units\)/);
+  assert.doesNotMatch(entries.get("xl/worksheets/sheet1.xml"), /Source reported amount|Source unit scale|thousands|000s|\bk\b/i);
   assert.match(entries.get("xl/worksheets/sheet2.xml"), /Net revenue/);
-  assert.match(entries.get("xl/worksheets/sheet2.xml"), /Source-scale formula/);
+  assert.match(entries.get("xl/worksheets/sheet2.xml"), /Full source amount/);
   assert.match(entries.get("xl/worksheets/sheet2.xml"), /Conversion formula/);
+  assert.doesNotMatch(entries.get("xl/worksheets/sheet2.xml"), /Source unit scale|thousands|000s|\bk\b/i);
   assert.match(entries.get("xl/worksheets/sheet3.xml"), /Identity conversion/);
-  assert.match(entries.get("xl/worksheets/sheet3.xml"), /Full target amount/);
+  assert.match(entries.get("xl/worksheets/sheet3.xml"), /FIN full-unit value/);
   const csv = fin2ToCsv(form);
-  assert.match(csv, /Original reported amount/);
-  assert.match(csv, /Source unit scale/);
-  assert.match(csv, /Full source-currency amount/);
-  assert.match(csv, /Full USD equivalent/);
-  assert.match(csv, /Conversion formula/);
-  assert.match(csv, /Average Annual Turnover \(full target-currency units\)/);
+  assert.match(csv, /Annual Turnover \(USD, full units\)/);
+  assert.match(csv, /Average Annual Turnover \(USD, full units\)/);
+  assert.doesNotMatch(csv, /Original reported amount|Source unit scale|Full source-currency amount|thousands|000s|\bk\b/i);
   assert.doesNotMatch(csv, /Joint Venture|Consortium|JV Partner/i);
 });
 
-test("makes the FIN-2 UI conversion path explicit and accessible", () => {
-  assert.match(fin2WorkspaceSource, /Original turnover \(\{form\.sourceCurrency\} · \{form\.sourceUnitLabel\}\)/);
-  assert.match(fin2WorkspaceSource, /Source-reported turnover → full source-currency units → FX → full/);
-  assert.match(fin2WorkspaceSource, /sourceReportedAmount\(mapping\)/);
-  assert.match(fin2WorkspaceSource, /× \{mapping\.sourceUnitScale\.toLocaleString/);
-  assert.match(fin2WorkspaceSource, /full target-currency units/);
+test("makes the FIN-2 UI full-unit target-currency contract explicit and accessible", () => {
+  assert.match(fin2WorkspaceSource, /Annual Turnover \(\{comparisonCurrency\}\)/);
+  assert.match(fin2WorkspaceSource, /All monetary values use \{comparisonCurrency\} in full currency units/);
+  assert.match(fin2WorkspaceSource, /formatFullAmount\(mapping\.convertedValue, comparisonCurrency\)/);
+  assert.doesNotMatch(fin2WorkspaceSource, /\{form\.sourceUnitLabel\}|sourceReportedAmount\(mapping\)|× \{mapping\.sourceUnitScale/);
   assert.match(fin2WorkspaceSource, /<caption>/);
 });
 

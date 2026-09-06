@@ -238,7 +238,7 @@ function mappingForYear(
 
   const convertedValue = value.value * resolvedRate.rate;
   const sourceUnitsPerComparisonUnit = 1 / resolvedRate.rate;
-  const conversionFormula = `${scaleFormula}; ${auditAmount(value.value)} ${value.currency} × ${auditNumber(resolvedRate.rate)} ${comparisonCurrency}/${value.currency}${value.currency === comparisonCurrency ? " (identity)" : ""} = ${auditAmount(convertedValue)} ${comparisonCurrency}`;
+  const conversionFormula = `${auditAmount(value.value)} ${value.currency} × ${auditNumber(resolvedRate.rate)} ${comparisonCurrency}/${value.currency}${value.currency === comparisonCurrency ? " (identity)" : ""} = ${auditAmount(convertedValue)} ${comparisonCurrency}`;
   return {
     ...base,
     sourceProvenance: value.provenance,
@@ -359,25 +359,17 @@ export function fin2ToCsv(form: Fin2Form) {
     ["Invitation number", form.invitationNumber.value ?? "MISSING"],
     ["Purchaser", form.purchaser.value ?? "MISSING"],
     [],
-    ["Year", "Original reported amount", "Source currency", "Source unit", "Source unit scale", "Full source-currency amount", "Original label", `FX rate (${form.comparisonCurrency} per ${form.sourceCurrency})`, `Published quote (${form.sourceCurrency} per ${form.comparisonCurrency})`, "Rate basis/date", `Full ${form.comparisonCurrency} equivalent`, "Conversion formula", "Source", "Status"],
+    ["Year", `Annual Turnover (${form.comparisonCurrency}, full units)`, `FX rate (${form.comparisonCurrency} per ${form.sourceCurrency})`, "Rate basis/date", "Source", "Status"],
     ...form.mappings.map((mapping) => [
       mapping.displayYear,
-      mapping.sourceReportedValue === null ? "MISSING" : roundFinancialFigure(mapping.sourceReportedValue),
-      mapping.sourceCurrency,
-      mapping.sourceUnitLabel,
-      mapping.sourceUnitScale,
-      mapping.sourceValue === null ? "MISSING" : roundFinancialFigure(mapping.sourceValue),
-      mapping.originalLabels.join(" / "),
-      mapping.exchangeRate?.targetUnitsPerSourceUnit ?? "MISSING",
-      mapping.sourceUnitsPerComparisonUnit ?? "MISSING",
-      mapping.exchangeRate ? `${mapping.exchangeRate.rateType}${mapping.exchangeRate.closingDate ? ` · ${mapping.exchangeRate.closingDate}` : ""}` : "MISSING",
       mapping.convertedValue === null ? "MISSING" : roundFinancialFigure(mapping.convertedValue),
-      mapping.conversionFormula ?? "MISSING",
+      mapping.exchangeRate?.targetUnitsPerSourceUnit ?? "MISSING",
+      mapping.exchangeRate ? `${mapping.exchangeRate.rateType}${mapping.exchangeRate.closingDate ? ` · ${mapping.exchangeRate.closingDate}` : ""}` : "MISSING",
       mapping.sourceSummary,
       mapping.status,
     ]),
     [],
-    ["Average Annual Turnover (full target-currency units)", form.averageAnnualTurnover.value ?? "MISSING", form.comparisonCurrency, "units", form.averageAnnualTurnover.formula],
+    [`Average Annual Turnover (${form.comparisonCurrency}, full units)`, form.averageAnnualTurnover.value === null ? "MISSING" : roundFinancialFigure(form.averageAnnualTurnover.value)],
   ];
   const escape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
   return rows.map((row) => row.map(escape).join(",")).join("\n");

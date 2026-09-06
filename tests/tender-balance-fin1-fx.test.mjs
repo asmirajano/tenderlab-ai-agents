@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { generateFin1, FIN1_FIELDS } from "../packages/tender-balance/src/fin-forms.ts";
+import { fin1ToCsv, generateFin1, FIN1_FIELDS } from "../packages/tender-balance/src/fin-forms.ts";
 import { cbuFinFxMetadata, prepareFin1Presentation } from "../packages/tender-balance/src/fin1-fx.ts";
 import { fin1ToExcel } from "../packages/tender-balance/src/excel.ts";
 
@@ -75,8 +75,8 @@ test("converts UZS source evidence into independently selectable USD and EUR FIN
   assert.equal(eur.status, "ready");
   assert.equal(usd.form.currency, "USD");
   assert.equal(eur.form.currency, "EUR");
-  assert.equal(usd.form.unitLabel, "thousands");
-  assert.equal(usd.form.unitScale, 1_000);
+  assert.equal(usd.form.unitLabel, "units");
+  assert.equal(usd.form.unitScale, 1);
 
   const usdAsset = usd.form.mappings.find((mapping) => mapping.field === "total_assets");
   const usdRevenue = usd.form.mappings.find((mapping) => mapping.field === "total_revenue");
@@ -87,10 +87,15 @@ test("converts UZS source evidence into independently selectable USD and EUR FIN
   assert.equal(usdAsset.sourceCurrency, "UZS");
   assert.equal(usdAsset.provenance, "CALCULATED");
   assert.equal(usdAsset.value, originalAsset.value * usdAsset.fx.targetUnitsPerSourceUnit);
+  assert.equal(usdAsset.unitScale, 1);
   assert.notEqual(usdAsset.value, eurAsset.value);
   assert.equal(sourceForm.currency, "UZS");
   assert.equal(originalAsset.value, 100_000_000);
   assert.ok(usd.form.mappings.find((mapping) => mapping.field === "profit_before_tax").value < 0);
+  const csv = fin1ToCsv(usd.form);
+  assert.match(csv, /2024 — USD — full units/);
+  assert.match(csv, new RegExp(String(Math.round(usdAsset.value))));
+  assert.doesNotMatch(csv, /thousands|000s|\bk\b/i);
 });
 
 test("uses identity conversion without CBU coverage when source and FIN currencies match", () => {
@@ -120,4 +125,6 @@ test("exports the converted FIN form with source mapping and FX audit sheets", (
   assert.match(combinedSheets, /Central Bank of the Republic of Uzbekistan/);
   assert.match(combinedSheets, /CALCULATED/);
   assert.match(combinedSheets, /TEA-DS-CBU-FIN-FX-2015-2025/);
+  assert.match(entries.get("xl/worksheets/sheet1.xml"), /Full currency units/);
+  assert.doesNotMatch(entries.get("xl/worksheets/sheet1.xml"), /thousands|000s|\bk\b/i);
 });

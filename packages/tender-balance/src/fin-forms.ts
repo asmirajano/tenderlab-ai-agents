@@ -1215,8 +1215,11 @@ export function prepareFin1FromBalanceReview(review: BalanceSheetReview, require
 }
 
 export function fin1ToCsv(form: Fin1Form) {
+  const presentationBasis = "presentationVersion" in form
+    ? `${form.currency} — full units`
+    : `${form.currency} · ${form.unitLabel}`;
   const rows = [
-    ["Financial Indicator", ...form.years.map((year) => `${year} — ${form.currency} · ${form.unitLabel}`)],
+    ["Financial Indicator", ...form.years.map((year) => `${year} — ${presentationBasis}`)],
     ...FIN1_FIELDS.map((field) => [
       field.label,
       ...form.years.map((year) => {
