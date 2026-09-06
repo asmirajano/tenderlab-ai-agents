@@ -319,6 +319,67 @@ test("digitizes a synthetic Uzbek Form 1 into English canonical labels and gener
   assert.equal(dataset.sources.find((source) => source.originalLabel.includes("соф тушум"))?.page, 4);
 });
 
+test("keeps a long Form No.2 page when PDF reading order emits its visual title after the table", () => {
+  const balanceRows = [
+    "SYNTHETIC LATE TITLE COMPANY LLC",
+    "Accounting balance sheet - Form No.1",
+    "Fourth quarter of 2024",
+    "Unit of measurement, thousand soums",
+    "At the beginning of the reporting period",
+    "At the end of the reporting period",
+    "Total current assets\t390\t1 000,00\t1 200,00",
+    "Total balance sheet asset\t400\t1 500,00\t1 800,00",
+    "Owners' equity\t480\t900,00\t1 100,00",
+    "Total current liabilities\t600\t400,00\t500,00",
+    "Total liabilities\t770\t600,00\t700,00",
+  ];
+  const nonTargetRows = Array.from({ length: 28 }, (_, index) =>
+    `Supporting statutory row ${String(index + 20).padStart(3, "0")}\t${String(index + 20).padStart(3, "0")}\tx\t0,00\tx\t0,00`
+  );
+  const review = buildBalanceSheetReview({
+    source: { documentId: "synthetic:late-income-title", fileName: "SYNTHETIC_LATE_INCOME_TITLE.pdf", sha256: "synthetic-late-income-title", synthetic: true },
+    pages: [
+      { pageNumber: 1, extractionMethod: "digital-text", confidence: 0.99, text: balanceRows.join("\n") },
+      {
+        pageNumber: 2,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: ["Fourth quarter of 2024", "Молиявий натижалар тўғрисида ҳисобот - 2-сонли шакл"].join("\n"),
+      },
+      {
+        pageNumber: 3,
+        extractionMethod: "digital-text",
+        confidence: 0.99,
+        text: [
+          "For corresponding period last year",
+          "For reporting period",
+          "Маҳсулот (товар, иш ва хизмат) ларни сотишдан соф тушум\t010\t2 000,00\tx\t\t2 500,00\tx",
+          ...nonTargetRows,
+          "Фойда солиғини тўлагунга қадар фойда (зарар) (сатр.220+/-",
+          "230)\t240\t300,00\t0,00\t400,00\t0,00",
+          "Ҳисобот даврининг соф фойдаси (зарари) (сатр.240-250-",
+          "260)\t270\t240,00\t0,00\t320,00\t0,00",
+          "МОЛИЯВИЙ НАТИЖАЛАР ТУГРИСИДА ХИСОБОТ - 2-сонли шакл\tЎлчов бирлиги, минг сўм",
+        ].join("\n"),
+      },
+    ],
+  });
+  const { dataset, form } = prepareFin1FromBalanceReview(review);
+
+  assert.equal(dataset.incomeStatementDetected, true);
+  assert.deepEqual(form.years, ["2023", "2024"]);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2023")?.value, 2_000_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "total_revenue" && mapping.displayYear === "2024")?.value, 2_500_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2023")?.value, 300_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_before_tax" && mapping.displayYear === "2024")?.value, 400_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2023")?.value, 240_000);
+  assert.equal(form.mappings.find((mapping) => mapping.field === "profit_after_tax" && mapping.displayYear === "2024")?.value, 320_000);
+  assert.equal(dataset.sources.filter((source) => source.sourceId.includes(":income:")).every((source) => source.page === 3), true);
+  assert.match(dataset.sources.find((source) => source.sourceId.includes(":income:profit_before_tax:"))?.originalLabel ?? "", /^Фойда солиғини/);
+  assert.match(dataset.sources.find((source) => source.sourceId.includes(":income:profit_after_tax:"))?.originalLabel ?? "", /^Ҳисобот даврининг соф фойдаси/);
+  assert.equal(dataset.issues.some((issue) => issue.type === "source-data-gap"), false);
+});
+
 test("keeps note tables out of the primary balance sheet and accepts comprehensive-income statement titles", () => {
   const review = buildBalanceSheetReview({
     source: { documentId: "synthetic:notes-page-isolation", fileName: "SYNTHETIC_NOTES_PAGE_ISOLATION.pdf", sha256: "synthetic-notes-page-isolation", synthetic: true },

@@ -632,8 +632,12 @@ function incomeStatementPages(review: BalanceSheetReview) {
     const lines = (page.text ?? "")
       .split(/\r?\n/)
       .map((line) => line.replace(/\s+/g, " ").trim())
-      .filter(Boolean)
-      .slice(0, 24);
+      .filter(Boolean);
+    // PDF text streams do not guarantee visual reading order. A title drawn
+    // above a table can be emitted after every body row, so scanning only the
+    // first lines can select a title-only cover and discard the real statement
+    // page. Scan the complete page, then require target income rows on that
+    // same page before it can contribute canonical values.
     const candidates = lines.flatMap((_, index) => [1, 2, 3]
       .map((count) => lines.slice(index, index + count).join(" "))
       .filter(Boolean));
@@ -754,7 +758,8 @@ function selectStatutoryIncomeValues(rawValues: string[], expectedPeriodCount: n
 
 function parseStatutoryIncomeRows(text: string, expectedPeriodCount: number) {
   const rows: Array<{ label: string; rawValues: string[]; field: Fin1FieldId }> = [];
-  for (const sourceLine of text.split(/\r?\n/)) {
+  const sourceLines = text.split(/\r?\n/);
+  for (const [lineIndex, sourceLine] of sourceLines.entries()) {
     // Preserve TSV column boundaries until the statutory row code and paired
     // income/expense cells have been recovered. Label normalization collapses
     // whitespace and would otherwise erase those boundaries.
@@ -773,12 +778,27 @@ function parseStatutoryIncomeRows(text: string, expectedPeriodCount: number) {
     }
     const field = parsed?.sourceRowCode ? STATUTORY_INCOME_ROW_FIELDS[parsed.sourceRowCode] : undefined;
     if (!parsed || !field || !parsed.rawValues.length) continue;
+    let label = normalizeIncomeLabel(parsed.label);
+    if (incomeDefinitionForLabel(label)?.field !== field) {
+      let prefix = "";
+      for (let offset = 1; offset <= 3 && lineIndex - offset >= 0; offset += 1) {
+        const previousLine = normalizeIncomeLabel(sourceLines[lineIndex - offset]);
+        const previousRow = parseStatementLine(sourceLines[lineIndex - offset].trim());
+        if (!previousLine || previousRow?.rawValues.length) break;
+        prefix = normalizeIncomeLabel(`${previousLine} ${prefix}`);
+        const candidate = normalizeIncomeLabel(`${prefix} ${label}`);
+        if (incomeDefinitionForLabel(candidate)?.field === field) {
+          label = candidate;
+          break;
+        }
+      }
+    }
     // Statutory Form No.2 exports are not consistent about retaining empty
     // income/expense separator cells. Recover the reported numeric cells first:
     // paired income/expense rows use every second value, while rows whose blank
     // separators collapsed simply use the first value for each period.
     const rawValues = selectStatutoryIncomeValues(parsed.rawValues, expectedPeriodCount);
-    if (rawValues.length === expectedPeriodCount) rows.push({ label: normalizeIncomeLabel(parsed.label), rawValues, field });
+    if (rawValues.length === expectedPeriodCount) rows.push({ label, rawValues, field });
   }
   return rows;
 }
