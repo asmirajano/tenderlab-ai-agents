@@ -17,6 +17,10 @@ Active task/recovery record: [Stage 1 checklist](../tendermatch-stage1-active-ta
 - Approved Stage 0 base: `9f3bcb4ac785f42accd289502932a1f1e6cb7514`.
 - Fetched remote `origin/main`: `d230590cf5ee99a679f162b2e3a19b65752c0f16`.
 - Checkpoint identity: enclosing Git commit; executed runner/SQL hashes are in JSON.
+- Executed implementation checkpoint: `acdc210eeb027e5010976eaebcd471671194555f`.
+  Its successor removes one trailing SQL blank line flagged by the staged whitespace
+  check; trimmed SQL is byte-equivalent and the retained applied-source hash is
+  historical execution evidence. No migration was reapplied for this formatting fix.
 - The stale `25a9` checkout was not used as this stage's implementation base.
 
 The latest Stage 1 delegation explicitly confirmed the historical user selection

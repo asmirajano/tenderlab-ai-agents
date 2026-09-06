@@ -27,7 +27,7 @@ Acceptance checklist:
 - [x] Read back/reconcile counts, IDs and hashes; test idempotency and tenant/role guards.
 - [x] Record measured query/time/storage evidence and actual potential-pair arithmetic.
 - [x] Write `docs/evidence/tendermatch-development-stage1.md` and `.json`.
-- [x] Run focused/full proportional checks; local checkpoint/report are the final remaining actions.
+- [x] Run focused/full proportional checks and create local checkpoint; report and stop.
 
 Scoring, eligibility, shortlisting, normalization, embeddings, AI/provider runs,
 frontend/Formula work, production mutation, push/merge/deploy/publish, paid actions,
@@ -38,5 +38,7 @@ Resume checkpoint: migration applied, 117 + 17323 = 17440 members persisted;
 manifest `1dde6c1b91bf02ff499493e99e236355016ff838cc39d11d1187bffada40a729`,
 capture `dd3d7b86bfe7305f5b7b00228a8e15a55cdccb46ba384ec5ba851d147c8ccc05`.
 Full tests 427/427, focused 59/59, original 3/3; all builds, full lint and strict
-domain typecheck passed. Remaining: local checkpoint commit, report and stop.
+domain typecheck passed. Implementation checkpoint: `acdc210eeb027e5010976eaebcd471671194555f`.
+The enclosing successor corrects only an EOF whitespace warning and this terminal
+record. Stage 1 is complete; report and stop for orchestrator review.
 Do not recapture/register again merely because of compaction.

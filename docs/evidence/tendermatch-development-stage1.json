@@ -8,6 +8,8 @@
     "base": "9f3bcb4ac785f42accd289502932a1f1e6cb7514",
     "remoteMain": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
     "checkpoint": "enclosing Git commit",
+    "executedImplementationCheckpoint": "acdc210eeb027e5010976eaebcd471671194555f",
+    "postValidationSourceChange": "Removed one trailing blank line from 040-input-manifest-up.sql; executable SQL unchanged. Retained executed-file hashes describe the actually applied source, not the whitespace-only successor.",
     "upstream": null,
     "executedFileHashEncoding": "SHA-256 of canonical JSON string containing UTF-8 source text",
     "executedFiles": {

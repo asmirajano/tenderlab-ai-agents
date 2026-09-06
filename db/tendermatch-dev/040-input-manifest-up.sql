@@ -65,4 +65,3 @@ DO $$ DECLARE n text; BEGIN
 END $$;
 REVOKE ALL ON FUNCTION tendermatch_retrieval.guard_input_member_insert(),tendermatch_retrieval.check_input_membership_complete() FROM PUBLIC;
 INSERT INTO tendermatch_retrieval.schema_migration(version) VALUES('20260906-input-manifest-v1');
-
