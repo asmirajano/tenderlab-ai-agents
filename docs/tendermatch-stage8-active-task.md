@@ -1,9 +1,9 @@
-# Stage 8 active checkpoint
+# Stage 8 historical local checkpoint
 
 Subsequent Round 1 status: the separate Stage 7 owner migration and guarded
 persistence are now complete and independently validated. The checkpoint below
-remains the historical Stage 8 implementation record; Stage 8 is still local and
-not a hosted service.
+remains the historical Stage 8 implementation record. The separately approved
+development-only read host is documented in [Stage 8 Neon Function](tendermatch-stage8-hosted.md).
 
 Selected base: Stage 7 pre-owner local commit
 `23560646a3e2734d301d4ac88e5ee000f3a9a7dc`, same isolated all-to-all worktree/branch.

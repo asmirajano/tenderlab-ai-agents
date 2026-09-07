@@ -1,5 +1,9 @@
 # TenderMatch all-to-all Round 1 closure
 
+Historical closure at `d584dd4`. The later, separately authorized development-only
+Stage 8 read host is recorded in [Stage 8 Neon Function](tendermatch-stage8-hosted.md).
+The sealed Round 1 results and the chronology below are preserved unchanged.
+
 ## Outcome
 
 Round 1 is complete within its sealed development scope. It evaluated 117 suppliers

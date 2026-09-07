@@ -1,0 +1,3 @@
+/** Exact Stage 4 row projection; avoids bundling filesystem/owner CLI dependencies. */
+export const resultColumns='pair_score,data_coverage,assessed_fit,evidence_confidence,denominator,fit,states,points,max_points,confidence,ref_groups,limitation_masks,limitation';
+export function rowResult(r){return {pairScore:r.pair_score,dataCoverage:r.data_coverage,assessedFitScore:r.assessed_fit,evidenceConfidence:r.evidence_confidence,denominator:r.denominator,fit:r.fit,states:r.states,points:r.points,max:r.max_points,confidence:r.confidence,referenceGroups:r.ref_groups,limitationMasks:r.limitation_masks,limitation:r.limitation,formulaMainReason:r.data_coverage?'SCORING_ONLY_NO_MATCH_THRESHOLD':'NO_SUPPORTED_CRITERION_POINTS'};}

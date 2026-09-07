@@ -1,0 +1,69 @@
+{
+  "target": {
+    "projectId": "dry-union-87553313",
+    "branchId": "br-polished-boat-b1qddx0m",
+    "branchName": "development",
+    "region": "aws-eu-central-1"
+  },
+  "slug": "tendermatchstage8",
+  "submittedAt": "2026-09-07T11:10:15.375Z",
+  "build": {
+    "schemaVersion": "tendermatch-stage8-hosted-build/1.0.0",
+    "codeHash": "0482e143cbb7791fefc1f1597881870f3751ae964f9adb8b673a1eaa0cd739d1",
+    "sources": {
+      "functions/tendermatch-stage8/database.mjs": "86582f56645c58ca8f068a5e25b7c28ac589872048c84a904c2aae5349c4d695",
+      "functions/tendermatch-stage8/index.mjs": "67a4c637523ea2ddb5233baa5e64364af896f515674d4256e8dae33b7e32d1d0",
+      "functions/tendermatch-stage8/projection.mjs": "ddcaaf564a809001abb3d3ba4577a670e6d78d0d040121e403d339e1919fefe6",
+      "functions/tendermatch-stage8/queries.mjs": "9613cc85d58b68177ab2d06d9c3e77845adaaae8178dcf4807bd97e7131ec9ae",
+      "packages/tendermatch/src/eligibility-scope.ts": "550c1ebab3199e11b1f49ddcfd00e00782eb63c704b8e2122624178ebeaf2166",
+      "packages/tendermatch/src/engine.ts": "ab2194e0f898aac4281407a47a60f6bc15367821ed4b8079b71dafa7bcc3c1c1",
+      "packages/tendermatch/src/escalation-stage7.ts": "c1979b62d016570d55f90eaf50266c9da28d05b23cc0f67fc8d149fde5ec814e",
+      "packages/tendermatch/src/experiment-data.ts": "04ad36c3f96f03b04c8e576c1f3c7812b1df994e220cbba3d8914ab6c17b5f39",
+      "packages/tendermatch/src/exploratory-matching.ts": "58b0381195272229801c077a0621e7ac0d0cb3b454b26176f1cbd10b03d93beb",
+      "packages/tendermatch/src/formula-stage4-adapter.ts": "80a5e913e2725575c8c3f5494acf696cc25c01a3e004c865a01577020e094ff3",
+      "packages/tendermatch/src/hosted-stage8.ts": "feef3d0bed71bf9270b8a954285c997c7d01e7ceaac6c9e730dc684590fe27be",
+      "packages/tendermatch/src/retrieval-features.ts": "bfb605253a039ff3520891413836e4b9323d480fdf1711e929c754cd6220d7f0",
+      "packages/tendermatch/src/retrieval-pipeline.ts": "f969705d9c4ae0d5617fd08e49a778b395ad0f5858027ffff576b637074f807e",
+      "packages/tendermatch/src/service-stage8.ts": "a758040c1d59bf03ac7c36a55399d3c7b3e77c81500deb70321fbdc6b45000ed",
+      "packages/tendermatch/src/supplier-contract.ts": "1928a078f4b78bb24b181c42dc22ba5654f58e4ce716975334c778d2162ccd31",
+      "packages/tendermatch/src/types.ts": "d65fda55390bdeb59a7f510b44e018d871ea001e835fcb388dfb54af563ea0ae",
+      "scripts/lib/tendermatch-stage8-store.mjs": "1ab87839d4b90ff7296e5cc54ae4eaca9bea097b8b51b7f6bb746bce1dce6681",
+      "scripts/build-tendermatch-stage8-function.mjs": "f06ae7765a34e6a5fc72b0c8a9e5c5c00d5e8e50179d27958cc7fcd751e8f1a8",
+      "scripts/lib/tendermatch-stage8-views.mjs": "1c718e0ba6d749ead15053eb5a21ebcca815ff6abad786ce93a943402e085f2a"
+    },
+    "tools": {
+      "node": "v24.19.0",
+      "esbuild": "0.28.1",
+      "fflate": "0.8.3",
+      "pg": "8.16.3"
+    },
+    "runtime": "nodejs24",
+    "bundle": {
+      "bytes": 227350,
+      "sha256": "41bb550f6bb2793c58f5c48e70731d7471cab65bde7ecd1da4aa6ccd3ccd1a3f"
+    },
+    "zip": {
+      "bytes": 52448,
+      "sha256": "e24adfae1256b3d96d2926468005c68ab0891899989ee436c2621fe5b529beeb"
+    }
+  },
+  "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080",
+  "ownerSessionExpiresAt": "2026-09-07T16:56:44.667Z",
+  "response": {
+    "keys": [
+      "deployment"
+    ],
+    "id": 2,
+    "status": "pending"
+  },
+  "secretNames": [
+    "TENDERMATCH_STAGE8_READ_URL",
+    "TENDERMATCH_STAGE8_PIN_JSON",
+    "TENDERMATCH_STAGE8_CURSOR_KEY",
+    "TENDERMATCH_STAGE8_SESSIONS_JSON",
+    "TENDERMATCH_STAGE8_CODE_HASH",
+    "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED"
+  ],
+  "readOnly": true
+}

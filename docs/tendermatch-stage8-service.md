@@ -1,5 +1,10 @@
 # Stage 8 authenticated sealed-pipeline service boundary
 
+Historical local contract below. The separately authorized development-only,
+read-only hosted subset is now documented in
+[Stage 8 Neon Function](tendermatch-stage8-hosted.md). Its intent, job and artifact
+routes are deliberately **not** exposed by the hosted deployment.
+
 This is a locally validated, additive server adapter for `agent:TL-A031`, not a
 deployed service or a frontend change. Selected base is Stage 7 pre-owner commit
 `23560646a3e2734d301d4ac88e5ee000f3a9a7dc`. Existing local/static routes retain their

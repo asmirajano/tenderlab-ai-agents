@@ -50,3 +50,7 @@ ui-debug.log*
 
 # Unrelated local media; add intentionally if it becomes part of the app
 /video/
+
+# Secret-free, reproducible Stage 8 Function bundles and local validation logs
+/build/tendermatch-stage8/
+/build/stage8-*.log

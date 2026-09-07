@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "tendermatch-stage8-hosted-final/1.0.0",
+  "observedAt": "2026-09-07T11:21:01.777Z",
+  "target": {
+    "projectId": "dry-union-87553313",
+    "branchId": "br-polished-boat-b1qddx0m",
+    "branchName": "development",
+    "region": "aws-eu-central-1"
+  },
+  "branch": "codex/tendermatch-neon-all-to-all",
+  "selectedBase": "d584dd455e9b048d178099436d69b32e1cca2e2a",
+  "remote": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+  "pin": {
+    "tenantId": "tendermatch-development-stage1",
+    "planId": "dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f",
+    "planCodeHash": "8a4fbc65338aa4a11e66962583ad870485e38a7b20249d89d10b72c093cab9c7",
+    "allocationHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+    "automaticRequests": 500,
+    "shortlistRunId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+    "shortlistOutcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+    "rankingRunId": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+    "rankingOutcomeHash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+    "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+    "formulaRunId": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+    "formulaOutcomeHash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+    "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+    "eligibilityRunId": "7b3fbc39a401a72a6452c1d9bb050c18bc92d32a0f69acb4829f0a42236e102d",
+    "eligibilityOutcomeHash": "9afc0bf6971a5c0ece68ea1aea01a7f14731cee03ec77e8179e0a6d618d8434a",
+    "eligibilityPolicy": "e0e8d4887aecee90476a70a03e22751a9a5eb5fc63343c209a6817ab4a8b2ab4",
+    "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080"
+  },
+  "rows": {
+    "plans": 1,
+    "decisions": 28034,
+    "requests": 500,
+    "grants": 0,
+    "jobs": 0,
+    "artifacts": 0,
+    "events": 0
+  },
+  "views": 24,
+  "publicViewGrants": 0,
+  "original": {
+    "head": "04b0b2a723223d11617837ee0e7562fa48168cd9",
+    "status": ""
+  },
+  "host": {
+    "url": "https://br-polished-boat-b1qddx0m-tendermatchstage8.compute.c-5.eu-central-1.aws.neon.tech/",
+    "deploymentId": 2,
+    "codeHash": "0482e143cbb7791fefc1f1597881870f3751ae964f9adb8b673a1eaa0cd739d1"
+  },
+  "key": {
+    "name": "TenderMatch Stage 8 dev Functions 2026-09-07",
+    "scope": "Editor single project / all project branches",
+    "projectId": "dry-union-87553313",
+    "storage": "Windows CurrentUser DPAPI outside Git; current-user-only directory ACL"
+  },
+  "validation": {
+    "tests": 638,
+    "passed": 637,
+    "failed": 0,
+    "skipped": 1,
+    "skipReason": "Unrelated MF291 PDF fixture unavailable",
+    "fullLint": "PASS",
+    "productionBuilds": 3,
+    "generatedAgentSpecifications": 64,
+    "strictHostedContract": "PASS",
+    "strictTenderMatch": "PASS",
+    "fullAppTypeScript": {
+      "baselineErrors": 24,
+      "changedSurfaceErrors": 0,
+      "scope": "Unchanged TenderBalance/Logistics files"
+    }
+  },
+  "hostedChecks": 60,
+  "hostedRequests": 25,
+  "maximumPayloadBytes": 160165,
+  "latencyMs": {
+    "samples": 11,
+    "min": 168,
+    "median": 270,
+    "max": 1777,
+    "meaning": "Small serial Windows-to-Frankfurt samples; not a load/cold-start SLA"
+  },
+  "sourceWrites": 0,
+  "resultRowWrites": 0,
+  "modelCalls": 0,
+  "gitPush": false,
+  "gitMerge": false,
+  "firebaseDeployment": false,
+  "stage9Integration": false
+}
