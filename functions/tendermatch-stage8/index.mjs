@@ -2,6 +2,7 @@ import {createStage8Store,bindPin} from '../../scripts/lib/tendermatch-stage8-st
 import {createCursorCodec} from '../../packages/tendermatch/src/service-stage8.ts';
 import {createHostedFetch,hostedSessions} from '../../packages/tendermatch/src/hosted-stage8.ts';
 import {createReadPool} from './database.mjs';
+import {STAGE9_BROWSER} from '../../packages/tendermatch/src/stage9-browser-contract.ts';
 
 let handler;
 function initialize(){
@@ -13,7 +14,9 @@ function initialize(){
   if(process.env.DATABASE_URL!==process.env.TENDERMATCH_STAGE8_READ_URL||process.env.DATABASE_URL_UNPOOLED!==process.env.TENDERMATCH_STAGE8_READ_URL)throw new Error('Injected owner URL overrides required');
   const {connect}=createReadPool(process.env.TENDERMATCH_STAGE8_READ_URL);
   const store=createStage8Store({connect,pins:[pin],cursors:createCursorCodec(Buffer.from(secret,'hex'))});
-  return createHostedFetch({store,sessions,allowedOrigins:[],codeHash:process.env.TENDERMATCH_STAGE8_CODE_HASH});
+  const allowedOrigins=JSON.parse(process.env.TENDERMATCH_STAGE9_ORIGINS_JSON??'[]');
+  if(!Array.isArray(allowedOrigins)||allowedOrigins.length>1||allowedOrigins.some(origin=>origin!==STAGE9_BROWSER.origin))throw new Error('Exact development origin required');
+  return createHostedFetch({store,sessions,allowedOrigins,codeHash:process.env.TENDERMATCH_STAGE8_CODE_HASH});
 }
 export default {async fetch(request){
   try{handler??=initialize();return await handler(request);}

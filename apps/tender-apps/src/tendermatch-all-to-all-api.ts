@@ -1,9 +1,10 @@
 /** Browser-only bounded Stage 8 transport. No DB, static snapshot or provider path. */
+import {STAGE9_BROWSER} from '../../../packages/tendermatch/src/stage9-browser-contract.ts';
 export const ALL_TO_ALL_VERSION = "tendermatch-sealed-service/1.0.0";
 export const ALL_TO_ALL_FORMULA = "tendermatch-match-formula/1.1.0";
 export const ALL_TO_ALL_PREFIX = "/api/tendermatch/all-to-all/v1";
 export const ALL_TO_ALL_LIMITS = { page: 100, responseBytes: 524288, bodyBytes: 8192, timeoutMs: 8000 } as const;
-export type DevelopmentSession = { schemaVersion: "tendermatch-browser-session/1.0.0"; sourceMode: "synthetic-local-postgresql" | "isolated-development-stage8"; bindingId: string; token: string; csrfToken: string; subject: string; scopes: string[]; expiresAt: number; initialSupplierId: string; initialTenderId: string };
+export type DevelopmentSession = { schemaVersion: "tendermatch-browser-session/1.0.0"; sourceMode: "synthetic-local-postgresql" | "isolated-development-stage8" | "hosted-development-stage8"; bindingId: string; token: string; csrfToken: string; subject: string; scopes: string[]; expiresAt: number; initialSupplierId: string; initialTenderId: string; hosted?: {apiOrigin:string; browserOrigin:string; audience:string; codeHash:string; readOnly:true} };
 export type Pair = {
   supplierId: string; tenderId: string; eligibility: { state: string; reasons?: string[] };
   formula: { state: "SCORED" | "NOT_SCORED"; formulaVersion: string; pairScore: number | null; dataCoverage: number | null; assessedFitScore: number | null; assessedFitState?: string; evidenceConfidence: number | null; evidenceConfidenceState?: string; denominator: 100; fit?: (number | null)[]; states?: number[]; points?: number[]; max?: number[]; mainLimitation: { criterion: string; state: string; limitations: string[] } | null };
@@ -15,7 +16,7 @@ export type Pair = {
   aiTors: { state: string; value: null };
   criteria?: { code: string; state: "MISSING" | "ASSESSED"; fit: number | null; points: number; maxPoints: number; evidenceConfidence: number | null; references: { id: string; [key: string]: unknown }[]; limitations: string[]; mainLimitation: boolean }[];
 };
-export type Context = { version: string; bindingId: string; planId: string; formulaRunId: string; rankingRunId: string; shortlistRunId: string; eligibilityRunId: string; population: { universe: number; candidates: number; unscored: number; shortlist: number }; capabilities: { provider: string; executionAuthority: false; automaticMatchDecision: false } };
+export type Context = { version: string; bindingId: string; planId: string; formulaRunId: string; rankingRunId: string; shortlistRunId: string; eligibilityRunId: string; population: { universe: number; candidates: number; unscored: number; shortlist: number }; capabilities: { provider: string; executionAuthority: false; automaticMatchDecision: false; readOnly?:boolean; intentBoundaryAvailable?:boolean; aiRoutesAvailable?:boolean } };
 export type Page = { context: Context; direction: "supplier" | "tender"; focusId: string; results: Pair[]; hasMore: boolean; nextCursor: string | null; maximumPage: number };
 export type IntentInput = { supplierId: string; tenderId: string; kind: "USER_REVIEW" | "REPORT_REQUEST" | "AUDIT_REQUEST"; justification: string };
 export type IntentReceipt = { requestId: string; kind: IntentInput["kind"]; state: "RECORDED"; actor: string; inputHash: string; reused: boolean; executionAuthorization: "NOT_IMPLIED"; queuedExecutions: 0; modelCalls: 0 };
@@ -32,7 +33,11 @@ export const readable = (value: string | null | undefined) => value ? value.repl
 export const metric = (value: number | null | undefined, percent = false) => value === null || value === undefined ? "Not scored" : String(value) + (percent ? "%" : "");
 export function validateDevelopmentSession(value: unknown, now = Date.now()): DevelopmentSession {
   const s = value as DevelopmentSession;
-  if (!s || s.schemaVersion !== "tendermatch-browser-session/1.0.0" || !["synthetic-local-postgresql", "isolated-development-stage8"].includes(s.sourceMode) || !digest(s.bindingId) || !/^[A-Za-z0-9_-]{43,256}$/.test(s.token) || !/^[A-Za-z0-9_-]{43,256}$/.test(s.csrfToken) || s.token === s.csrfToken || !/^[A-Za-z0-9._:@-]{3,128}$/.test(s.subject) || !Array.isArray(s.scopes) || !s.scopes.includes("read") || s.scopes.some(v => !["read", "request-review", "request-audit", "assessment-read"].includes(v)) || !Number.isSafeInteger(s.expiresAt) || s.expiresAt <= now || s.expiresAt > now + 86400000 || !canonicalId(s.initialSupplierId) || !canonicalId(s.initialTenderId)) throw new AllToAllError("DEVELOPMENT_SESSION_UNAVAILABLE");
+  if (!s || s.schemaVersion !== "tendermatch-browser-session/1.0.0" || !["synthetic-local-postgresql", "isolated-development-stage8", "hosted-development-stage8"].includes(s.sourceMode) || !digest(s.bindingId) || !/^[A-Za-z0-9_-]{43,256}$/.test(s.token) || !/^[A-Za-z0-9_-]{43,256}$/.test(s.csrfToken) || s.token === s.csrfToken || !/^[A-Za-z0-9._:@-]{3,128}$/.test(s.subject) || !Array.isArray(s.scopes) || !s.scopes.includes("read") || s.scopes.some(v => !["read", "request-review", "request-audit", "assessment-read"].includes(v)) || !Number.isSafeInteger(s.expiresAt) || s.expiresAt <= now || s.expiresAt > now + 86400000 || !canonicalId(s.initialSupplierId) || !canonicalId(s.initialTenderId)) throw new AllToAllError("DEVELOPMENT_SESSION_UNAVAILABLE");
+  if(s.sourceMode==='hosted-development-stage8'){
+    const h=s.hosted;
+    if(!h||h.apiOrigin!==STAGE9_BROWSER.apiOrigin||h.browserOrigin!==STAGE9_BROWSER.origin||h.audience!==STAGE9_BROWSER.audience||!digest(h.codeHash)||h.readOnly!==true||s.bindingId!==STAGE9_BROWSER.bindingId||s.scopes.join(',')!=='read'||s.expiresAt>now+STAGE9_BROWSER.sessionMs||typeof window!=='undefined'&&window.location.origin!==h.browserOrigin)throw new AllToAllError('DEVELOPMENT_SESSION_UNAVAILABLE');
+  }else if(s.hosted!==undefined)throw new AllToAllError('DEVELOPMENT_SESSION_UNAVAILABLE');
   return Object.freeze({ ...s, scopes: [...s.scopes] });
 }
 export function validatePair(value: unknown): Pair {
@@ -49,6 +54,7 @@ export function validatePair(value: unknown): Pair {
 function context(value: unknown, session: DevelopmentSession): Context {
   const c = value as Context;
   if (!c || c.version !== ALL_TO_ALL_VERSION || c.bindingId !== session.bindingId || ![c.planId,c.formulaRunId,c.rankingRunId,c.shortlistRunId,c.eligibilityRunId].every(digest) || !c.population || [c.population.universe,c.population.candidates,c.population.unscored,c.population.shortlist].some(v=>!Number.isSafeInteger(v)||v<0) || c.population.candidates+c.population.unscored !== c.population.universe || c.capabilities?.executionAuthority !== false || c.capabilities?.automaticMatchDecision !== false) return invalid();
+  if(session.hosted&&(c.capabilities.readOnly!==true||c.capabilities.intentBoundaryAvailable!==false||c.capabilities.aiRoutesAvailable!==false))return invalid();
   return c;
 }
 export function validatePage(value: unknown, session: DevelopmentSession, direction: "supplier" | "tender", focusId: string, limit: number): Page {
@@ -57,24 +63,34 @@ export function validatePage(value: unknown, session: DevelopmentSession, direct
   const seen=new Set();let previous:Pair|undefined;for(const row of p.results){validatePair(row);if(row.eligibility.state!=="CANDIDATE_ELIGIBLE_WITH_LIMITATIONS"||row[direction+"Id" as "supplierId"|"tenderId"]!==focusId) return invalid();const key=row.supplierId+row.tenderId;if(seen.has(key))return invalid();seen.add(key);const opposite=direction==='supplier'?'tenderId':'supplierId';if(previous&&(previous.retrieval.units!<row.retrieval.units!||previous.retrieval.units===row.retrieval.units&&previous[opposite]>=row[opposite]))return invalid();previous=row;}
   return p;
 }
-export function createAllToAllClient(sessionInput: DevelopmentSession, fetcher: typeof fetch = fetch, timeoutMs: number = ALL_TO_ALL_LIMITS.timeoutMs) {
+export function createAllToAllClient(sessionInput: DevelopmentSession, fetcher: typeof fetch = fetch, timeoutMs: number = ALL_TO_ALL_LIMITS.timeoutMs, clock:()=>number=Date.now) {
   const session=validateDevelopmentSession(sessionInput),keys=new Map<string,string>();
+  const observations:{path:string;status:number;bytes:number;durationMs:number;heapBytes:number|null}[]=[];
+  let requestCount=0,maxResponseBytes=0;
   async function request(path: string, signal?: AbortSignal, input?: IntentInput, key?: string) {
-    if (Date.now()>=session.expiresAt) throw new AllToAllError("INVALID_OR_EXPIRED_SESSION",401);
+    if (clock()>=session.expiresAt) throw new AllToAllError("INVALID_OR_EXPIRED_SESSION",401);
+    if(session.hosted&&(input||path.startsWith('/intents')))throw new AllToAllError('READ_ONLY_HOST',403);
+    const started=performance.now();let observedStatus=0,observedBytes=0;requestCount++;
     const controller=new AbortController(),abort=()=>controller.abort(),timer=setTimeout(()=>controller.abort(new AllToAllError("API_TIMEOUT")),timeoutMs);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
     try {
       const body=input?JSON.stringify(input):undefined;if(body&&new TextEncoder().encode(body).length>8192)throw new AllToAllError('REQUEST_BODY_TOO_LARGE');
-      const response=await fetcher(ALL_TO_ALL_PREFIX+path+(path.includes('?')?'&':'?')+'binding='+session.bindingId,{method:input?'POST':'GET',signal:controller.signal,credentials:'omit',cache:'no-store',redirect:'error',headers:{Authorization:'Bearer '+session.token,...(input?{'Content-Type':'application/json','X-CSRF-Token':session.csrfToken,'Idempotency-Key':key!}:{})},...(body?{body}:{})});
+      const response=await fetcher((session.hosted?.apiOrigin??'')+ALL_TO_ALL_PREFIX+path+(path.includes('?')?'&':'?')+'binding='+session.bindingId,{method:input?'POST':'GET',signal:controller.signal,credentials:'omit',cache:'no-store',redirect:'error',headers:{Authorization:'Bearer '+session.token,...(session.hosted?{'X-TenderMatch-Audience':session.hosted.audience}:{}),...(input?{'Content-Type':'application/json','X-CSRF-Token':session.csrfToken,'Idempotency-Key':key!}:{})},...(body?{body}:{})});
+      observedStatus=response.status;
+      if(session.hosted&&response.headers.get('x-tendermatch-code')!==session.hosted.codeHash)throw new AllToAllError('HOST_IDENTITY_MISMATCH');
       if (!response.headers.get('content-type')?.includes('application/json')) throw new AllToAllError('API_UNAVAILABLE',response.status);
       if (Number(response.headers.get('content-length')??0)>524288)throw new AllToAllError('RESPONSE_BUDGET_EXCEEDED');
       const reader=response.body?.getReader();if(!reader)throw new AllToAllError('INVALID_VERSIONED_RESPONSE');const chunks:Uint8Array[]=[];let size=0;
-      while(true){const next=await reader.read();if(next.done)break;size+=next.value.length;if(size>524288){await reader.cancel();throw new AllToAllError('RESPONSE_BUDGET_EXCEEDED');}chunks.push(next.value);}
+      while(true){const next=await reader.read();if(next.done)break;size+=next.value.length;observedBytes=size;if(size>524288){await reader.cancel();throw new AllToAllError('RESPONSE_BUDGET_EXCEEDED');}chunks.push(next.value);}
       const combined=new Uint8Array(size);let offset=0;for(const chunk of chunks){combined.set(chunk,offset);offset+=chunk.length;}const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(combined));
-      if(!response.ok){const code=typeof value?.error?.code==='string'&&/^[A-Z_]{3,80}$/.test(value.error.code)?value.error.code:'API_UNAVAILABLE';throw new AllToAllError(code,response.status);}context(value.context,session);return value;
+      if(clock()>=session.expiresAt)throw new AllToAllError('INVALID_OR_EXPIRED_SESSION',401);
+      if(!response.ok){const code=typeof value?.error?.code==='string'&&/^[A-Z_]{3,80}$/.test(value.error.code)?value.error.code:'API_UNAVAILABLE';throw new AllToAllError(code,response.status);}context(value.context,session);
+      if(session.hosted&&(value.host?.codeHash!==session.hosted.codeHash||value.host?.readOnly!==true||value.host?.modelCalls!==0||value.host?.legacyFallback!==false))return invalid();
+      return value;
     } catch(error) {const timedOut=controller.signal.aborted;controller.abort();if(signal?.aborted)throw new AllToAllError('REQUEST_CANCELLED');if(timedOut)throw new AllToAllError('API_TIMEOUT');if(error instanceof AllToAllError)throw error;throw new AllToAllError('API_UNAVAILABLE');}
-    finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}
+    finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);maxResponseBytes=Math.max(maxResponseBytes,observedBytes);observations.push({path:path.split('?')[0],status:observedStatus,bytes:observedBytes,durationMs:Math.round(performance.now()-started),heapBytes:(performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??null});if(observations.length>50)observations.shift();}
   }
   return {
+    observations:()=>({requestCount,maxResponseBytes,recent:observations.map(o=>({...o})),meaning:'Development observations only; browser-reported heap is approximate, not a load test or SLA.'}),
     health:async(signal?:AbortSignal)=>{const value=await request('/health',signal);if(value.state!=='AVAILABLE_SEALED_BOUNDARY'||value.modelCalls!==0)return invalid();return value.context as Context;},
     page:async(direction:'supplier'|'tender',focusId:string,cursor:string|null=null,limit=25,signal?:AbortSignal)=>{if(!['supplier','tender'].includes(direction)||!canonicalId(focusId)||!Number.isInteger(limit)||limit<1||limit>100||cursor!==null&&cursor.length>1024)throw new AllToAllError('INVALID_PAGE_QUERY');const q=new URLSearchParams({limit:String(limit)});if(cursor)q.set('cursor',cursor);return validatePage(await request('/'+direction+'s/'+focusId+'/results?'+q,signal),session,direction,focusId,limit);},
     detail:async(supplierId:string,tenderId:string,signal?:AbortSignal)=>{if(!canonicalId(supplierId)||!canonicalId(tenderId))throw new AllToAllError('INVALID_CANONICAL_ID');const value=await request('/pairs/'+supplierId+'/'+tenderId,signal),pair=validatePair(value.pair);if(pair.supplierId!==supplierId||pair.tenderId!==tenderId)return invalid();return pair;},
@@ -87,5 +103,6 @@ export function errorExplanation(error: unknown): { code: string; message: strin
   const code=error instanceof AllToAllError?error.code:'API_UNAVAILABLE';
   const messages:Record<string,string>={DEVELOPMENT_SESSION_UNAVAILABLE:'An authenticated development session and exact version binding have not been provisioned. Ask the local runtime operator to configure them; database credentials never belong in this browser.',API_TIMEOUT:'The bounded API request timed out. Retry a read or the same attributed intent; a timeout does not prove that an intent was not recorded.',INVALID_OR_EXPIRED_SESSION:'This development session has expired. Ask the runtime operator for a new authenticated session.',SCOPE_REQUIRED:'This session does not have the required review or assessment permission.',REQUEST_BUDGET_EXHAUSTED:'The plan has reached its 100 on-demand intent cap. Existing exact requests can still be reused; additional execution is not authorized.',AUDIT_TRIGGER_REQUIRED:'This is an audit-only pair. Use an explicit audit request, not a promising-review label.',IDEMPOTENCY_CONFLICT:'This idempotency key already belongs to different intent content. No request was overwritten.',IMMUTABLE_INTENT_CONFLICT:'This pair and intent kind already have an immutable request in this plan. No duplicate was created.',FOCUS_NOT_IN_PINNED_RUN:'That entity is not in the pinned run. Use a canonical supplier or tender ID from the approved development environment.',PAIR_NOT_IN_PINNED_UNIVERSE:'That pair is not in the pinned original population.',PAIR_NOT_REQUESTABLE:'This original outcome is not an eligible Formula candidate. It remains inspectable but cannot use this escalation path.',INVALID_VERSIONED_RESPONSE:'The response did not satisfy the sealed version, identity or score contract. No records were substituted.',SESSION_RATE_LIMIT:'This session has reached its 120 requests per minute limit. Wait for the next minute and retry.',BOUNDED_SERVICE_BUSY:'The development service is at its bounded connection capacity. Retry without changing the intent key.'};
   const staleCursor=['INVALID_CURSOR','CURSOR_SCOPE_OR_EXPIRY','PINNED_VERSION_REQUIRED'].includes(code);
+  Object.assign(messages,{READ_ONLY_HOST:'This hosted development connection permits reads only. Intents, Human Disposition writes, AI/TORS and artifacts require a separate authorized stage.',HOST_IDENTITY_MISMATCH:'The hosted code identity differs from this development session. Ask the operator to reconcile the deployment and preview; no fallback is allowed.',SESSION_AUDIENCE_REQUIRED:'This session is not valid for the current development audience or origin.',TRUSTED_ORIGIN_REQUIRED:'Only the explicitly approved loopback preview origin may use this development connection.',AUTHENTICATION_REQUIRED:'An authenticated short-lived development session is required.'});
   return {code,staleCursor,message:staleCursor?'The cursor or version is stale or belongs to another focus. Start from the first page; no static data will be substituted.':messages[code]??'The sealed development environment is unavailable. The operator must install and verify Stage 7, its exact pinned plan and the authenticated Stage 8 API. No static snapshot or full matrix was loaded.'};
 }

@@ -1,5 +1,9 @@
 # Stage 9 local frontend checkpoint
 
+The separately authorized hosted development continuation from `f99c942` is recorded
+in [Stage 9 hosted integration](tendermatch-stage9-hosted.md). The account below is
+the earlier synthetic/local checkpoint, not current hosted deployment evidence.
+
 Subsequent Round 1 status: the separate Stage 7 owner migration and guarded
 persistence are now complete and independently validated. The checkpoint below
 remains the historical Stage 9 implementation record; the frontend was not deployed.

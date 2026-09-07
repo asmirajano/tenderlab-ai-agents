@@ -1,0 +1,36 @@
+/** Authorized dev-only CORS/session update. No SQL, role changes or key creation. */
+import {randomBytes,createHash} from 'node:crypto';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {attestTarget,neonApi,functionPath,TARGET} from './lib/tendermatch-stage8-operator.mjs';
+import {loadOperatorSecret,saveOperatorSecret} from './lib/tendermatch-stage8-vault.mjs';
+import {sessionHashes} from './tendermatch-stage8-provision.mjs';
+import {guardedRuntimeUrl} from '../functions/tendermatch-stage8/database.mjs';
+import {STAGE9_BROWSER as contract} from '../packages/tendermatch/src/stage9-browser-contract.ts';
+import {hostedSessions} from '../packages/tendermatch/src/hosted-stage8.ts';
+import {developmentPin} from './tendermatch-stage8.mjs';
+import {bindPin} from './lib/tendermatch-stage8-store.mjs';
+
+if(!process.argv.includes('--deploy-approved'))throw new Error('Explicit development-only deployment authority required');
+const target=await attestTarget(),{function:before}=await neonApi(functionPath+'/'+TARGET.slug);
+if(new URL(before.invocation_url).origin!==contract.apiOrigin||before.active_deployment.status!=='completed')throw new Error('Active development Function required');
+const manifest=JSON.parse(await readFile('build/tendermatch-stage8/manifest.json','utf8')),zip=await readFile('build/tendermatch-stage8/function.zip');
+const sha=v=>createHash('sha256').update(v).digest('hex');
+if(sha(zip)!==manifest.zip.sha256)throw new Error('Bundle mismatch');
+for(const [name,expected] of Object.entries(manifest.sources))if(sha((await readFile(name,'utf8')).replaceAll('\r\n','\n'))!==expected)throw new Error('Stale Function build');
+const existing=await loadOperatorSecret('runtime-readonly-v1'),pin=await developmentPin();
+if(existing.projectId!==TARGET.project||existing.branchId!==TARGET.branch||bindPin(pin).bindingId!==contract.bindingId)throw new Error('Target pin mismatch');
+const now=Date.now(),credential=()=>randomBytes(32).toString('base64url');
+const sessions=['browser','expiredBrowser','wrongTenantBrowser'].map(name=>({name,token:credential(),subject:'stage9-'+name,tenantId:name==='wrongTenantBrowser'?'stage9-unconfigured-tenant':pin.tenantId,issuedAt:name==='expiredBrowser'?now-7200000:now,expiresAt:name==='expiredBrowser'?now-3600000:now+contract.sessionMs,browserOrigin:contract.origin,browserAudience:contract.audience}));
+const seeds=[...sessionHashes(existing),...sessions.map(({token,...s})=>({...s,tokenHash:sha(token)}))];hostedSessions(seeds);
+const safe=JSON.parse(await readFile('docs/evidence/tendermatch-stage8-hosted-db.json','utf8'));
+const vaultName='browser-stage9-'+now;
+await saveOperatorSecret(vaultName,{sessions,csrfToken:credential(),initialSupplierId:safe.selected.supplierId,initialTenderId:safe.selected.tenderId,outside:safe.outside,codeHash:manifest.codeHash,contract});
+const readUrl=guardedRuntimeUrl(existing.readUrl);
+const environment={TENDERMATCH_STAGE8_READ_URL:readUrl,DATABASE_URL:readUrl,DATABASE_URL_UNPOOLED:readUrl,TENDERMATCH_STAGE8_PIN_JSON:JSON.stringify(pin),TENDERMATCH_STAGE8_CURSOR_KEY:existing.cursorKey,TENDERMATCH_STAGE8_SESSIONS_JSON:JSON.stringify(seeds),TENDERMATCH_STAGE8_CODE_HASH:manifest.codeHash,TENDERMATCH_STAGE9_ORIGINS_JSON:JSON.stringify([contract.origin])};
+const body=new FormData();body.set('zip',new File([zip],'function.zip',{type:'application/zip'}));body.set('runtime','nodejs24');body.set('environment',JSON.stringify(environment));
+const response=await neonApi(functionPath+'/'+TARGET.slug+'/deployments',{method:'POST',body});
+const evidence={schemaVersion:'tendermatch-stage9-hosted-deployment/1.0.0',base:'f99c942e2c1fa9e90972bf29e819d546fa44b1ba',submittedAt:new Date().toISOString(),target,contract,priorDeployment:before.active_deployment.id,build:manifest,deployment:{id:response.id??response.deployment?.id,status:response.status??response.deployment?.status},sessionExpiresAt:new Date(now+contract.sessionMs).toISOString(),secretNames:Object.keys(environment),keyReused:true,roleAndViewsUnchanged:true,resultWrites:0,sourceWrites:0};
+await mkdir('build/tendermatch-stage9',{recursive:true});
+await writeFile('build/tendermatch-stage9/session-pointer.json',JSON.stringify({vaultName,codeHash:manifest.codeHash,expiresAt:now+contract.sessionMs}));
+await writeFile('docs/evidence/tendermatch-stage9-hosted-deployment.json',JSON.stringify(evidence,null,2)+'\n');
+console.log(JSON.stringify({submitted:true,deployment:evidence.deployment,codeHash:manifest.codeHash,sessionExpiresAt:evidence.sessionExpiresAt,origin:contract.origin}));

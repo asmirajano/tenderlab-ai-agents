@@ -4,6 +4,7 @@ import {randomBytes,createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {createHostedFetch,hostedSessions,readonlyResult} from '../packages/tendermatch/src/hosted-stage8.ts';
 import {API_PREFIX,createCursorCodec} from '../packages/tendermatch/src/service-stage8.ts';
 import {bindPin,createStage8Store,REQUIRED_TABLES} from '../scripts/lib/tendermatch-stage8-store.mjs';
@@ -98,7 +99,12 @@ test('actual PostgreSQL pinned views preserve sealed reads and deny base tables,
 test('retained hosted evidence binds the exact bundle, restricted role and sealed Round 1',{skip:process.env.TENDERMATCH_HOSTED_EVIDENCE!=='1'},async()=>{
   const root=new URL('../',import.meta.url),load=async f=>JSON.parse(await readFile(new URL('docs/evidence/'+f,root),'utf8'));
   const [release,probe,db]=await Promise.all(['tendermatch-stage8-hosted-deployment.json','tendermatch-stage8-hosted-probes.json','tendermatch-stage8-hosted-db.json'].map(load));
-  for(const [name,expected] of Object.entries(release.build.sources))assert.equal(hash((await readFile(new URL(name,root),'utf8')).replaceAll('\r\n','\n')),expected,name);
+  // Deployment 2 is immutable Stage 8 evidence, not the subsequent Stage 9 CORS release.
+  for(const [name,expected] of Object.entries(release.build.sources)){
+    const historical=['packages/tendermatch/src/hosted-stage8.ts','functions/tendermatch-stage8/index.mjs'].includes(name);
+    const source=historical?execFileSync('git',['show','f99c942:'+name],{cwd:root,encoding:'utf8',windowsHide:true}):await readFile(new URL(name,root),'utf8');
+    assert.equal(hash(source.replaceAll('\r\n','\n')),expected,name);
+  }
   assert.equal(probe.passed,true);assert.equal(probe.codeHash,release.build.codeHash);assert.equal(probe.deployment.status,'completed');assert.equal(probe.bindingId,'26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080');
   assert.equal(probe.readRole,LOGIN_ROLE);assert.equal(probe.injectedOwnerUrlsOverridden,true);assert.equal(probe.resultWrites,0);assert.equal(probe.modelCalls,0);assert.equal(probe.sourceWrites,0);assert.equal(db.checks.length,25);
   assert.deepEqual(db.population,{universe:2027961,candidates:707660,unscored:1320301,shortlist:28034});assert.ok(probe.maximumPayloadBytes<=524288);
@@ -107,6 +113,6 @@ test('retained hosted evidence binds the exact bundle, restricted role and seale
 
 test('hosted entry has no injected owner credentials, public auth issuer, model or frontend wiring',async()=>{
   const entry=await readFile(new URL('../functions/tendermatch-stage8/index.mjs',import.meta.url),'utf8');
-  assert.match(entry,/TENDERMATCH_STAGE8_READ_URL/);assert.doesNotMatch(entry,/createReadPool\(process\.env\.DATABASE_URL|NEON_AI_GATEWAY|TENDERMATCH_RESULT_DATABASE_URL/);assert.match(entry,/allowedOrigins:\[\]/);
+  assert.match(entry,/TENDERMATCH_STAGE8_READ_URL/);assert.doesNotMatch(entry,/createReadPool\(process\.env\.DATABASE_URL|NEON_AI_GATEWAY|TENDERMATCH_RESULT_DATABASE_URL/);assert.match(entry,/TENDERMATCH_STAGE9_ORIGINS_JSON\?\?'\[\]'/);assert.match(entry,/allowedOrigins\.some\(origin=>origin!==STAGE9_BROWSER.origin\)/);
   assert.match(entry,/process\.env\.DATABASE_URL!==process\.env\.TENDERMATCH_STAGE8_READ_URL/);
 });

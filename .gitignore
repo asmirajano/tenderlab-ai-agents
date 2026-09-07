@@ -53,4 +53,6 @@ ui-debug.log*
 
 # Secret-free, reproducible Stage 8 Function bundles and local validation logs
 /build/tendermatch-stage8/
+/build/tendermatch-stage9/
+/build/stage9-*.log
 /build/stage8-*.log

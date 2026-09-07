@@ -1,5 +1,10 @@
 # Stage 9: explicit all-to-all development UI
 
+Historical synthetic/local design record. The separately approved real hosted
+read-only connection, current session/CORS boundary and fresh evidence are in
+[Stage 9 hosted integration](tendermatch-stage9-hosted.md); the intent workflow below
+remains synthetic-only and is unavailable on the hosted connection.
+
 Owner: `agent:TL-A031`. This is local interface integration, not a release or a
 new scoring/shortlist policy. Start from the approved Stage 8 checkpoint
 `ae466ae3f15b5e7eddf1a8dfab96b2d847321c4f`. The verified deployed UI lineage remains
