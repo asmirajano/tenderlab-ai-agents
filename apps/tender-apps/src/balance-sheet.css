@@ -641,7 +641,7 @@ button, input, select { font: inherit; }
 .bs-client-result-table td:nth-child(2) { min-width: 260px; }
 .bs-client-result-table td:nth-child(2) b { font-size: var(--type-table); }
 .bs-client-result-table td small { color: #7c8982; display: block; font-size: var(--type-micro); margin-top: 3px; }
-.bs-client-result-table td:nth-child(n+3) b { font-family: var(--font-geist-mono), monospace; font-size: var(--type-table); }
+.bs-client-result-table td:nth-child(n+3) b { font-family: var(--font-geist-sans); font-size: var(--type-table); font-variant-numeric: lining-nums tabular-nums; }
 .bs-client-result-table tr.is-total td { background: #f0f5f2; border-top-color: #9fb7a9; color: var(--bs-ink); font-weight: 900; }
 .bs-client-result-table tr.is-total td:first-child span { background: var(--bs-ink); color: white; }
 
@@ -868,13 +868,13 @@ button, input, select { font: inherit; }
 /*
  * Shared TenderBalance table presentation.
  * Based on the approved Excel Dark reference: charcoal headers, restrained
- * grid lines, compact Aptos/Calibri typography and alternating neutral rows.
+ * grid lines, compact application typography and alternating neutral rows.
  */
 .bs-page .excel-dark-table {
   border: 1px solid #595959;
   border-collapse: collapse;
   border-spacing: 0;
-  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   font-size: 13px;
   width: 100%;
 }
@@ -883,7 +883,7 @@ button, input, select { font: inherit; }
   background: #595959;
   border: 1px solid #404040;
   color: #fff;
-  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .035em;
@@ -894,7 +894,7 @@ button, input, select { font: inherit; }
 
 .bs-page .excel-dark-table thead th small {
   color: #f2f2f2;
-  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0;
@@ -904,7 +904,7 @@ button, input, select { font: inherit; }
 .bs-page .excel-dark-table tbody th {
   border: 1px solid #d9d9d9;
   color: #000;
-  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   font-size: 13px;
   line-height: 1.35;
   padding: 7px 12px;
@@ -972,7 +972,7 @@ button, input, select { font: inherit; }
   border: 1px solid #d9d9d9;
   border-bottom: 0;
   color: #404040;
-  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   font-size: 12px;
   padding: 8px 12px;
   text-align: left;

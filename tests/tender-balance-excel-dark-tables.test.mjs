@@ -17,7 +17,7 @@ test("applies the approved Excel Dark format to every TenderBalance table", () =
 });
 
 test("implements the supplied Excel Dark visual contract as a shared table primitive", () => {
-  assert.match(balanceCss, /\.bs-page \.excel-dark-table \{[^}]*border: 1px solid #595959;[^}]*font-family: Aptos, Calibri, Arial, sans-serif;[^}]*font-size: 13px;/s);
+  assert.match(balanceCss, /\.bs-page \.excel-dark-table \{[^}]*border: 1px solid #595959;[^}]*font-family: var\(--font-geist-sans\);[^}]*font-size: 13px;/s);
   assert.match(balanceCss, /\.bs-page \.excel-dark-table thead th \{[^}]*background: #595959;[^}]*border: 1px solid #404040;[^}]*color: #fff;[^}]*font-size: 12px;[^}]*padding: 8px 12px;/s);
   assert.match(balanceCss, /\.bs-page \.excel-dark-table tbody td,[\s\S]*?border: 1px solid #d9d9d9;[\s\S]*?padding: 7px 12px;/);
   assert.match(balanceCss, /nth-child\(odd\)[^}]*background: #fff/);

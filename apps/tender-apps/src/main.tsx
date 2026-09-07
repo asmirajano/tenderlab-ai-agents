@@ -13,6 +13,7 @@ import "./balance-sheet.css";
 import "./client-shell.css";
 import "./logistics-costing.css";
 import "./tendermatch.css";
+import "./financial-data-typography.css";
 
 const pageComponents: Record<string, ReactNode> = {
   "/balance-sheet-review": <BalanceSheetApp />,
