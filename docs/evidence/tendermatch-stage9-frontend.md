@@ -1,5 +1,10 @@
 # Stage 9 local frontend evidence
 
+Subsequent Round 1 status: Stage 7 migration 100 and guarded persistence were
+completed and independently validated after this local Stage 9 checkpoint. The
+remaining report preserves the historical frontend test boundary; no deployment
+was performed.
+
 ## Authority and unchanged boundaries
 
 Selected base: `ae466ae3f15b5e7eddf1a8dfab96b2d847321c4f` on

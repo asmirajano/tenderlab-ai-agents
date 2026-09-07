@@ -1,0 +1,771 @@
+{
+  "stage": 7,
+  "mode": "execute",
+  "evidenceClass": "GUARDED_RESULTS_ONLY_REQUEST_PERSISTENCE_NO_AI",
+  "base": "cc8c121795d6d95e71ab219b316b983a7bed583d",
+  "code": {
+    "files": {
+      "packages/tendermatch/src/escalation-stage7.ts": "00b90f0b0044e4f281c17dfffe7339c8067df625d45be55be68dbffd4407ef51",
+      "scripts/lib/tendermatch-stage7.mjs": "897182fcf963a325806562bcd54cd69dbcb0151018659b2892bca675a115a4dc",
+      "scripts/lib/tendermatch-stage7-queue.mjs": "30d6b61ceaf0e3785911b02537995c10b9c144f34bceb8fef729c9be9632a59e",
+      "scripts/tendermatch-stage7.mjs": "a59ef8a1a3fc6fc5bf7d10231ac8e8ffcae72a0563191a807f515f473af33377",
+      "db/tendermatch-dev/100-escalation-up.sql": "0a5bd329f7a562e98a35d2df7d632e45bd8544fcd32087b651a01db2a01a3757"
+    },
+    "hash": "8a4fbc65338aa4a11e66962583ad870485e38a7b20249d89d10b72c093cab9c7"
+  },
+  "provider": {
+    "state": "UNCONFIGURED",
+    "registeredExecutableAdapters": 0,
+    "providerVersion": null,
+    "modelVersion": null,
+    "promptVersion": null,
+    "credentialLoaded": false,
+    "modelCalls": 0,
+    "source": "ACTIVE_PATHS_EXPLICITLY_DISABLED_INTERFACE_AND_SYNTHETIC_TEST_PROVIDERS_ONLY",
+    "sourceBindings": {
+      "packages/tendermatch/src/selective-assessment.ts": "43617708376a3b02f5a6c6f53806d3ff7c193d79a2ad98268e2b94ffeaec124e",
+      "scripts/lib/tendermatch-pair-service.mjs": "b0381043eb8237f68b9d0cc8ee7ec9b87654d4b6108b61d2e43a701d8d721d28",
+      "scripts/serve-tendermatch-local.mjs": "9360bdff15124616c25a44da0bbc5f6c1c1e3789fa5134c2938e750e810e5cdb",
+      "scripts/build-tendermatch-pair-snapshot.mjs": "74b56563d5a7fd713a856b35f5815d5ffa4c4b3667fc9f7865b1c85df1b32084"
+    }
+  },
+  "inputHash": "1d0afa9f2a66363fdfb7ea3eaa87a378c59f56e04582dc24f3d6a8af65ce9575",
+  "shortlistRunId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+  "inputMetrics": {
+    "pages": 29,
+    "elapsedMs": 40882
+  },
+  "protectedBefore": {
+    "prior": {
+      "legacy": {
+        "embedding_model": 0,
+        "feature_embedding": 0,
+        "evaluation_run": 0,
+        "run_feature": 0,
+        "pair_score": 0,
+        "run_pair": 0,
+        "retrieval_request": 0,
+        "retrieval_result": 0,
+        "scoring_batch": 0,
+        "assessment_job": 0,
+        "assessment_artifact": 0,
+        "human_disposition": 0,
+        "universe_snapshot": 0,
+        "universe_pair": 0,
+        "criterion_audit": 0
+      },
+      "formula": [
+        {
+          "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+          "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+          "scored_count": "707660",
+          "unscored_count": "1320301"
+        }
+      ],
+      "ranking": [
+        {
+          "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+          "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+          "pair_count": "707660",
+          "zero_count": "683653"
+        }
+      ],
+      "priorRows": {
+        "formula": 707660,
+        "ranking": 707660,
+        "profiles": 17450
+      }
+    },
+    "shortlist": [
+      {
+        "run_id": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+        "outcome_hash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+        "pair_count": 28034,
+        "review_count": 18531,
+        "audit_count": 9503
+      }
+    ],
+    "shortlistRows": {
+      "pairs": 28034,
+      "contexts": 17450,
+      "members": 17450
+    }
+  },
+  "results": [],
+  "limits": {
+    "automaticRequests": 500,
+    "onDemandRequests": 100,
+    "requestsPerPlan": 600,
+    "perSupplier": 10,
+    "perTender": 2,
+    "attemptsPerJob": 3,
+    "concurrentLeases": 2,
+    "inputBytes": 131072,
+    "outputBytes": 131072,
+    "outputTokens": 4096,
+    "leaseMs": 60000
+  },
+  "planId": "dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f",
+  "identity": {
+    "policyVersion": "tendermatch-selective-escalation/1.0.0",
+    "codeHash": "8a4fbc65338aa4a11e66962583ad870485e38a7b20249d89d10b72c093cab9c7",
+    "shortlistRunId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+    "inputHash": "1d0afa9f2a66363fdfb7ea3eaa87a378c59f56e04582dc24f3d6a8af65ce9575",
+    "population": 28034,
+    "selected": 500,
+    "allocationHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+    "budget": {
+      "name": "balanced-500",
+      "total": 500,
+      "supplier": 10,
+      "tender": 2
+    },
+    "limits": {
+      "automaticRequests": 500,
+      "onDemandRequests": 100,
+      "requestsPerPlan": 600,
+      "perSupplier": 10,
+      "perTender": 2,
+      "attemptsPerJob": 3,
+      "concurrentLeases": 2,
+      "inputBytes": 131072,
+      "outputBytes": 131072,
+      "outputTokens": 4096,
+      "leaseMs": 60000
+    },
+    "schemaVersion": "tendermatch-full-tors-evidence/2.0.0",
+    "promptVersion": "tendermatch-frozen-evidence-tors/1.0.0"
+  },
+  "summary": {
+    "population": 28034,
+    "selected": 500,
+    "byState": {
+      "AUDIT_EXPLICIT_ONLY": 9503,
+      "DEFERRED_BUDGET": 18031,
+      "PLANNED_REVIEW": 500
+    },
+    "byReason": {
+      "FORMULA_CRITERION_EVIDENCE_MISSING": 18531,
+      "TIED_NOMINATION_DIMENSIONS": 7382,
+      "TOP_DIRECTIONAL_NOMINATION": 5969
+    },
+    "selectedReasons": {
+      "TIED_NOMINATION_DIMENSIONS": 335,
+      "FORMULA_CRITERION_EVIDENCE_MISSING": 500,
+      "TOP_DIRECTIONAL_NOMINATION": 410
+    },
+    "suppliers": 99,
+    "tenders": 377,
+    "maxSupplier": 6,
+    "maxTender": 2,
+    "outcomeHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+    "executionAuthorized": 0,
+    "modelCalls": 0
+  },
+  "preparation": {
+    "insertedPlan": 1,
+    "insertedDecisions": 28034
+  },
+  "decisions": {
+    "count": 28034,
+    "outcomeHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5"
+  },
+  "execution": {
+    "count": 500,
+    "inserted": 500,
+    "reused": 0,
+    "outcomeHash": "793cfc45cd08bb795b7e4eaef3d2694dfc1007853bdc299530ec4caee6d0b878",
+    "elapsedMs": 26205,
+    "maxBatchBytes": 554925
+  },
+  "readback": {
+    "count": 500,
+    "inserted": 0,
+    "reused": 500,
+    "outcomeHash": "793cfc45cd08bb795b7e4eaef3d2694dfc1007853bdc299530ec4caee6d0b878",
+    "elapsedMs": 14680,
+    "maxBatchBytes": 2
+  },
+  "replay": {
+    "count": 500,
+    "inserted": 0,
+    "reused": 500,
+    "outcomeHash": "793cfc45cd08bb795b7e4eaef3d2694dfc1007853bdc299530ec4caee6d0b878",
+    "elapsedMs": 3257,
+    "maxBatchBytes": 2
+  },
+  "security": {
+    "privileges": [
+      {
+        "table_name": "tendermatch_retrieval.escalation_plan",
+        "s": true,
+        "i": true,
+        "extra": false,
+        "identity_update": false
+      },
+      {
+        "table_name": "tendermatch_retrieval.escalation_decision",
+        "s": true,
+        "i": true,
+        "extra": false,
+        "identity_update": false
+      },
+      {
+        "table_name": "tendermatch_retrieval.escalation_request",
+        "s": true,
+        "i": true,
+        "extra": false,
+        "identity_update": false
+      },
+      {
+        "table_name": "tendermatch_retrieval.escalation_authorization",
+        "s": true,
+        "i": false,
+        "extra": false,
+        "identity_update": false
+      },
+      {
+        "table_name": "tendermatch_retrieval.escalation_job",
+        "s": true,
+        "i": true,
+        "extra": false,
+        "identity_update": false
+      },
+      {
+        "table_name": "tendermatch_retrieval.escalation_artifact",
+        "s": true,
+        "i": true,
+        "extra": false,
+        "identity_update": false
+      },
+      {
+        "table_name": "tendermatch_retrieval.escalation_event",
+        "s": true,
+        "i": false,
+        "extra": false,
+        "identity_update": false
+      }
+    ],
+    "sealedPlans": "DENIED",
+    "ownerOnlyAuthorization": "DENIED_TO_WRITER",
+    "eventForgery": "DENIED",
+    "deleteTruncateDdl": "DENIED",
+    "crossTenantReads": 0,
+    "crossTenantWrites": "DENIED",
+    "committedProbeRows": 0,
+    "tenantBoundary": "TRUSTED_SERVICE_GUC_NOT_END_USER_AUTHENTICATION"
+  },
+  "queries": {
+    "supplier": {
+      "focusId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+      "expected": 6,
+      "rows": 6,
+      "bytes": 3112,
+      "elapsedMs": 105,
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.27,
+            "Total Cost": 15.44,
+            "Plan Rows": 5,
+            "Plan Width": 219,
+            "Actual Startup Time": 0.03,
+            "Actual Total Time": 0.043,
+            "Actual Rows": 6,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 8,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Result",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 0.27,
+                "Total Cost": 15.44,
+                "Plan Rows": 5,
+                "Plan Width": 219,
+                "Actual Startup Time": 0.029,
+                "Actual Total Time": 0.042,
+                "Actual Rows": 6,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "One-Time Filter": "(current_setting('tendermatch.tenant_id'::text, true) = 'tendermatch-development-stage1'::text)",
+                "Shared Hit Blocks": 8,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "escalation_request_supplier",
+                    "Relation Name": "escalation_request",
+                    "Alias": "escalation_request",
+                    "Startup Cost": 0.27,
+                    "Total Cost": 15.39,
+                    "Plan Rows": 5,
+                    "Plan Width": 187,
+                    "Actual Startup Time": 0.023,
+                    "Actual Total Time": 0.032,
+                    "Actual Rows": 6,
+                    "Actual Loops": 1,
+                    "Disabled": false,
+                    "Index Cond": "((tenant_id = 'tendermatch-development-stage1'::text) AND (plan_id = 'dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f'::text) AND (supplier_id = '00ac1546-1d93-5b0d-ae95-23d7e77a1c9a'::uuid))",
+                    "Rows Removed by Index Recheck": 0,
+                    "Index Searches": 1,
+                    "Shared Hit Blocks": 8,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 0,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.122,
+          "Triggers": [],
+          "Execution Time": 0.078
+        }
+      ]
+    },
+    "tender": {
+      "focusId": "0013f25b-f687-44cb-add1-ba1824203bed",
+      "expected": 2,
+      "rows": 2,
+      "bytes": 1120,
+      "elapsedMs": 101,
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.27,
+            "Total Cost": 8.3,
+            "Plan Rows": 1,
+            "Plan Width": 219,
+            "Actual Startup Time": 0.032,
+            "Actual Total Time": 0.036,
+            "Actual Rows": 2,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Result",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 0.27,
+                "Total Cost": 8.3,
+                "Plan Rows": 1,
+                "Plan Width": 219,
+                "Actual Startup Time": 0.031,
+                "Actual Total Time": 0.035,
+                "Actual Rows": 2,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "One-Time Filter": "(current_setting('tendermatch.tenant_id'::text, true) = 'tendermatch-development-stage1'::text)",
+                "Shared Hit Blocks": 4,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "escalation_request_tender",
+                    "Relation Name": "escalation_request",
+                    "Alias": "escalation_request",
+                    "Startup Cost": 0.27,
+                    "Total Cost": 8.29,
+                    "Plan Rows": 1,
+                    "Plan Width": 187,
+                    "Actual Startup Time": 0.024,
+                    "Actual Total Time": 0.026,
+                    "Actual Rows": 2,
+                    "Actual Loops": 1,
+                    "Disabled": false,
+                    "Index Cond": "((tenant_id = 'tendermatch-development-stage1'::text) AND (plan_id = 'dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f'::text) AND (tender_id = '0013f25b-f687-44cb-add1-ba1824203bed'::uuid))",
+                    "Rows Removed by Index Recheck": 0,
+                    "Index Searches": 1,
+                    "Shared Hit Blocks": 4,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 0,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.137,
+          "Triggers": [],
+          "Execution Time": 0.069
+        }
+      ]
+    }
+  },
+  "detail": {
+    "supplierId": "01e0bb8e-a4a4-5c86-b95c-3598c2baabc9",
+    "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+    "supplierProfile": "80d85973a042f4d5af296e631b6bb5c4ce3ddf2976a2c09b5801763092fb9f4d",
+    "tenderProfile": "ab32c11bc9c85b88269244ed5e671c2d8f0d0b329b314090361c774a837ae385",
+    "methodHash": "12f757d4e689b64ef2249d4fb64690fce9cbc79d23317bf68a00583097b62cc6",
+    "formulaPolicy": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+    "units": 100000,
+    "pair_score": 37,
+    "data_coverage": 65,
+    "assessed_fit": 57,
+    "evidence_confidence": 30,
+    "denominator": 100,
+    "fit": [
+      3,
+      3,
+      null,
+      2,
+      null
+    ],
+    "states": [
+      1,
+      1,
+      0,
+      1,
+      0
+    ],
+    "points": [
+      21,
+      12,
+      0,
+      4,
+      0
+    ],
+    "max_points": [
+      35,
+      20,
+      20,
+      10,
+      15
+    ],
+    "confidence": [
+      30,
+      30,
+      null,
+      30,
+      null
+    ],
+    "ref_groups": [
+      1,
+      2,
+      0,
+      3,
+      0
+    ],
+    "limitation_masks": [
+      20,
+      6,
+      1,
+      36,
+      1
+    ],
+    "limitation": 2,
+    "tier": 1,
+    "pairKey": "000e1e58d1b4ce199bff3ad23703d09c960e7f58a06460184fdbd679c2655037",
+    "selection": {
+      "reasonMask": 1,
+      "tenderTieSize": null,
+      "supplierTieSize": 2,
+      "tenderNominationRank": null,
+      "supplierNominationRank": 57
+    },
+    "decision": {
+      "tier": 1,
+      "state": "PLANNED_REVIEW",
+      "pairKey": "000e1e58d1b4ce199bff3ad23703d09c960e7f58a06460184fdbd679c2655037",
+      "reasons": [
+        "TIED_NOMINATION_DIMENSIONS",
+        "FORMULA_CRITERION_EVIDENCE_MISSING"
+      ],
+      "position": 393,
+      "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+      "inputHash": "9e6f98766120f7fdfd6a7c2b5ef2c0b35ab106bd0bf4f1d660ba45eb0e0cca43",
+      "omissions": [],
+      "supplierId": "01e0bb8e-a4a4-5c86-b95c-3598c2baabc9"
+    },
+    "formula": {
+      "pairScore": 37,
+      "dataCoverage": 65,
+      "assessedFitScore": 57,
+      "evidenceConfidence": 30,
+      "denominator": 100,
+      "fit": [
+        3,
+        3,
+        null,
+        2,
+        null
+      ],
+      "states": [
+        1,
+        1,
+        0,
+        1,
+        0
+      ],
+      "points": [
+        21,
+        12,
+        0,
+        4,
+        0
+      ],
+      "max": [
+        35,
+        20,
+        20,
+        10,
+        15
+      ],
+      "confidence": [
+        30,
+        30,
+        null,
+        30,
+        null
+      ],
+      "referenceGroups": [
+        1,
+        2,
+        0,
+        3,
+        0
+      ],
+      "limitationMasks": [
+        20,
+        6,
+        1,
+        36,
+        1
+      ],
+      "limitation": 2,
+      "formulaMainReason": "SCORING_ONLY_NO_MATCH_THRESHOLD"
+    },
+    "eligibility": "CANDIDATE_ELIGIBLE_WITH_LIMITATIONS",
+    "retrieval": {
+      "units": 100000,
+      "semanticSimilarity": null,
+      "semanticState": "MISSING"
+    },
+    "humanDisposition": null,
+    "humanDispositionState": "NOT_LOADED",
+    "aiTors": null,
+    "aiTorsState": "NOT_LOADED_USE_EXPLICIT_JOB_AND_ARTIFACT_ID"
+  },
+  "rows": {
+    "escalation_plan": 1,
+    "escalation_decision": 28034,
+    "escalation_request": 500,
+    "escalation_authorization": 0,
+    "escalation_job": 0,
+    "escalation_artifact": 0,
+    "escalation_event": 0
+  },
+  "storage": [
+    {
+      "table_name": "escalation_artifact",
+      "total_bytes": "24576",
+      "heap_bytes": "0"
+    },
+    {
+      "table_name": "escalation_authorization",
+      "total_bytes": "16384",
+      "heap_bytes": "0"
+    },
+    {
+      "table_name": "escalation_decision",
+      "total_bytes": "42106880",
+      "heap_bytes": "19251200"
+    },
+    {
+      "table_name": "escalation_event",
+      "total_bytes": "16384",
+      "heap_bytes": "0"
+    },
+    {
+      "table_name": "escalation_job",
+      "total_bytes": "32768",
+      "heap_bytes": "0"
+    },
+    {
+      "table_name": "escalation_plan",
+      "total_bytes": "32768",
+      "heap_bytes": "8192"
+    },
+    {
+      "table_name": "escalation_request",
+      "total_bytes": "3932160",
+      "heap_bytes": "294912"
+    }
+  ],
+  "actual": {
+    "modelCalls": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "cost": 0,
+    "executionAuthorized": 0,
+    "queuedExecutions": 0,
+    "fullTorsArtifacts": 0,
+    "providerBlocker": "UNCONFIGURED"
+  },
+  "protectedAfter": {
+    "prior": {
+      "legacy": {
+        "embedding_model": 0,
+        "feature_embedding": 0,
+        "evaluation_run": 0,
+        "run_feature": 0,
+        "pair_score": 0,
+        "run_pair": 0,
+        "retrieval_request": 0,
+        "retrieval_result": 0,
+        "scoring_batch": 0,
+        "assessment_job": 0,
+        "assessment_artifact": 0,
+        "human_disposition": 0,
+        "universe_snapshot": 0,
+        "universe_pair": 0,
+        "criterion_audit": 0
+      },
+      "formula": [
+        {
+          "run_id": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+          "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+          "scored_count": "707660",
+          "unscored_count": "1320301"
+        }
+      ],
+      "ranking": [
+        {
+          "run_id": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+          "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+          "pair_count": "707660",
+          "zero_count": "683653"
+        }
+      ],
+      "priorRows": {
+        "formula": 707660,
+        "ranking": 707660,
+        "profiles": 17450
+      }
+    },
+    "shortlist": [
+      {
+        "run_id": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+        "outcome_hash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+        "pair_count": 28034,
+        "review_count": 18531,
+        "audit_count": 9503
+      }
+    ],
+    "shortlistRows": {
+      "pairs": 28034,
+      "contexts": 17450,
+      "members": 17450
+    }
+  },
+  "metrics": {
+    "elapsedMs": 137310,
+    "connection": {
+      "kind": "results",
+      "queries": 295,
+      "responseBytes": 46436753,
+      "requestBytes": 18559209,
+      "maxResponseBytes": 779187
+    },
+    "memory": {
+      "rss": 203317248,
+      "heapTotal": 124022784,
+      "heapUsed": 85019360,
+      "external": 9956445,
+      "arrayBuffers": 527965
+    }
+  },
+  "finishedAt": "2026-09-07T01:22:40.196Z",
+  "sourceConnections": 0,
+  "modelCalls": 0
+}

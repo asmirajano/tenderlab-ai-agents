@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "tendermatch-round1-closure/1.0.0",
+  "completedAt": "2026-09-07T01:36:55.2078065Z",
+  "state": "ROUND1_COMPLETE_ISOLATED_NEON_AND_LOCAL_APP_VALIDATED",
+  "branch": "codex/tendermatch-neon-all-to-all",
+  "round1ClosureBase": "f3d0e3081f2d599eef5ea6aa4e321514342be953",
+  "originMainAtClosureStart": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+  "sealedPopulation": {
+    "suppliers": 117,
+    "openTenders": 17333,
+    "pairUniverse": 2027961,
+    "formulaScored": 707660,
+    "formulaUnscored": 1320301,
+    "positiveRetrieval": 24007,
+    "shortlist": 28034,
+    "review": 18531,
+    "audit": 9503
+  },
+  "stage7": {
+    "target": {
+      "projectId": "dry-union-87553313",
+      "branchId": "br-polished-boat-b1qddx0m",
+      "database": "tendermatch_results_dev",
+      "schema": "tendermatch_retrieval"
+    },
+    "migration": "20260907-escalation-stage7-v1",
+    "migrationCanonicalSha256": "0a5bd329f7a562e98a35d2df7d632e45bd8544fcd32087b651a01db2a01a3757",
+    "shortlistRunId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+    "planId": "dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f",
+    "decisionOutcomeHash": "2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5",
+    "requestOutcomeHash": "793cfc45cd08bb795b7e4eaef3d2694dfc1007853bdc299530ec4caee6d0b878",
+    "rows": {
+      "escalation_plan": 1,
+      "escalation_decision": 28034,
+      "escalation_request": 500,
+      "escalation_authorization": 0,
+      "escalation_job": 0,
+      "escalation_artifact": 0,
+      "escalation_event": 0
+    },
+    "states": {
+      "PLANNED_REVIEW": 500,
+      "DEFERRED_BUDGET": 18031,
+      "AUDIT_EXPLICIT_ONLY": 9503
+    },
+    "replay": "ZERO_INSERT_500_REUSED_IDENTICAL_HASH",
+    "independentValidation": "PASS",
+    "modelCalls": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "cost": 0
+  },
+  "verification": {
+    "fullTests": {
+      "total": 631,
+      "passed": 630,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "Unrelated explicitly supplied MF291 benchmark PDF is absent on this machine"
+    },
+    "builds": {
+      "tenderlab": "PASS",
+      "ecosystemAtlas": "PASS",
+      "tenderApps": "PASS",
+      "agentSpecificationsGenerated": 64
+    },
+    "lint": "PASS",
+    "ledgerBinding": "PASS"
+  },
+  "deployment": {
+    "performed": false,
+    "push": false,
+    "merge": false,
+    "publish": false
+  },
+  "round2Backlog": [
+    "Refresh the OPEN tender manifest",
+    "Add explicit Services and Consulting eligibility and scoring policies",
+    "Re-run readiness through selective escalation with new versioned identities",
+    "Populate approved embeddings before claiming semantic retrieval"
+  ]
+}

@@ -1,5 +1,10 @@
 # Stage 8 active checkpoint
 
+Subsequent Round 1 status: the separate Stage 7 owner migration and guarded
+persistence are now complete and independently validated. The checkpoint below
+remains the historical Stage 8 implementation record; Stage 8 is still local and
+not a hosted service.
+
 Selected base: Stage 7 pre-owner local commit
 `23560646a3e2734d301d4ac88e5ee000f3a9a7dc`, same isolated all-to-all worktree/branch.
 Fresh fetch/prune confirms origin/main `d230590cf5ee99a679f162b2e3a19b65752c0f16`,

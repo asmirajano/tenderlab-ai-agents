@@ -1,10 +1,16 @@
 # Stage 7 owner-only 100 handoff
 
-Status: owner-ready action gate. Final full suite 590/590, zero failures/skips,
-20 focused tests, all three builds and 64 Agent Specifications, full lint and strict
-Stage 7 TypeScript pass. No Stage 7 Neon DDL/DML has occurred. Writer credentials cannot and must not execute
-this migration. The orchestrator must still reconfirm the action-time target and
-owner approval before executing the unchanged SQL.
+Status: executed and independently validated. The unchanged migration was applied
+by `neondb_owner` to the approved isolated target, followed by guarded writer
+persistence, a zero-insert replay and read-only validation. This document retains
+the exact procedure as an audit record; it is not an instruction to rerun migration
+100. Writer credentials cannot and must not execute the owner migration.
+
+Completion result: one plan, 28,034 decisions, 500 requests, zero authorizations,
+jobs, artifacts or events, and zero model calls/tokens/cost. Allocation hash
+`2bd6dbcc2d40ea824c6426a5d4ea815f9dd6de1db89e05f64312920c8bf1e0b5` and request
+hash `793cfc45cd08bb795b7e4eaef3d2694dfc1007853bdc299530ec4caee6d0b878`
+matched execution, replay and independent validation.
 
 | Target | Required identity |
 | --- | --- |
@@ -53,7 +59,7 @@ outcome `25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137`,
 including 683,653 zero retrieval; Stage 4 remains 707,660 scored/1,320,301 unscored.
 The migration verifies the exact eight prior markers and exact development comment.
 
-## Exact separately approved additive action
+## Exact separately approved additive action performed
 
 ```sql
 BEGIN;
@@ -102,7 +108,7 @@ UPDATE, DELETE/TRUNCATE, DDL or direct definer-function access. Report verified
 target and successful COMMIT to the worker; a Console success toast alone does not
 replace the table/marker/completion checks.
 
-## Guarded writer continuation after owner confirmation
+## Guarded writer continuation performed after owner confirmation
 
 ```powershell
 $env:TENDERMATCH_APPROVED_PROJECT_ID='dry-union-87553313'

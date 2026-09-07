@@ -1,5 +1,9 @@
 # Stage 9 local frontend checkpoint
 
+Subsequent Round 1 status: the separate Stage 7 owner migration and guarded
+persistence are now complete and independently validated. The checkpoint below
+remains the historical Stage 9 implementation record; the frontend was not deployed.
+
 Approved base: `ae466ae3f15b5e7eddf1a8dfab96b2d847321c4f`, same isolated worktree
 and branch. Fresh all-remote fetch/prune confirms clean selected HEAD, no upstream,
 origin/main `d230590cf5ee99a679f162b2e3a19b65752c0f16`, ahead 14/behind 0.

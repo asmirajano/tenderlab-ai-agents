@@ -1,6 +1,28 @@
 # Stage 7 evidence: selective Full TORS orchestration
 
-## Status and authority
+## Post-owner completion
+
+Stage 7 is complete in the approved isolated Neon results target. Migration 100
+was installed by `neondb_owner` in project `dry-union-87553313`, development branch
+`br-polished-boat-b1qddx0m`, database `tendermatch_results_dev`. The migration marker,
+seven RLS tables, exact function bodies and least-privilege grants were verified.
+
+Guarded writer execution persisted one immutable plan, 28,034 decisions and 500
+request intents. Re-execution inserted zero and reused all 500 requests. Independent
+validation reproduced the exact allocation and request hashes, found zero invalid
+reasons and confirmed 500 planned / 18,031 deferred / 9,503 audit-explicit-only.
+Execution authorizations, jobs, artifacts, events, model calls, tokens and cost are
+all zero. Evidence is retained in:
+
+- `docs/evidence/tendermatch-stage7-execute.json`
+- `docs/evidence/tendermatch-stage7-replay.json`
+- `docs/evidence/tendermatch-stage7-validation.json`
+
+The sections below preserve the pre-owner design and audit history. Statements
+describing migration or persistence as pending are historical checkpoints and are
+superseded by this completion record.
+
+## Pre-owner status and authority
 
 Pre-owner checkpoint: implementation, realistic read-only comparison, local SQL
 benchmark and full repository test/build checks pass. **No Stage 7 Neon DDL/DML or
@@ -199,7 +221,7 @@ No unrelated full-application TypeScript baseline is claimed repaired.
 | A valid artifact could otherwise be inserted without completed job state. | Shape validation alone did not establish atomic completion. | Deferred artifact/job completion constraint. | Validation and durable transition are separate obligations. | Direct orphan insert denied; atomic success passes. |
 | Benchmark assertion expected the index to be chosen naturally. |80-row table makes sequential scan cheaper. | Preserve natural plan and separately record index-eligibility diagnostic. | Do not force the planner and misreport the forced plan as natural. | Natural+diagnostic EXPLAIN evidence. |
 
-## Exact owner action and remaining work
+## Executed owner action and remaining external work
 
 Target project `dry-union-87553313`, development branch `br-polished-boat-b1qddx0m`,
 database `tendermatch_results_dev`, owner `neondb_owner`. Read-only action-gate probe
@@ -211,10 +233,9 @@ Raw worktree-file SHA256 `6acc419c0da8f9ea9278eff485ccfafe0665ff32e446685f0a9eef
 Runbook `docs/tendermatch-stage7-owner-runbook.md` specifies exact preflight,
 transaction, role grants and empty-table verification. No execution grant is issued.
 
-After owner COMMIT: persist one plan/28,034 decisions/500 requests, verify full
-hashes/reuse/permissions/indexes/size, run independent reference replay and installed
-function-body audit, rerun full regression suite, create local commit and stop for
-review. Remaining limitations: no executable provider, no real output quality study,
+After owner COMMIT, one plan/28,034 decisions/500 requests were persisted and the
+full hashes, reuse, permissions, indexes, size, independent reference replay and
+installed function bodies were verified. Remaining limitations: no executable provider, no real output quality study,
 no semantic truth validation, no frontend/API deployment or end-user authentication,
 no source-document expansion, no automatic history cleanup and globally rebalanced
 allocation under competing caps. No source connection/write, vectors, external AI,

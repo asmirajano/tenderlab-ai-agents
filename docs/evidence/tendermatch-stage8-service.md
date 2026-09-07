@@ -1,5 +1,9 @@
 # Stage 8 local service evidence
 
+Subsequent Round 1 status: Stage 7 migration 100 and guarded persistence were
+completed and independently validated after this local Stage 8 checkpoint. The
+remaining report preserves what Stage 8 itself measured and did not claim.
+
 ## Identity and scope
 
 Selected base: Stage 7 pre-owner local checkpoint

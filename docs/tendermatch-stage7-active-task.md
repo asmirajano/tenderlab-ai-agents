@@ -1,4 +1,15 @@
-# Stage 7 active checkpoint
+# Stage 7 completed checkpoint
+
+Post-owner completion: migration 100 is installed in the approved isolated Neon
+results target. Guarded persistence, unchanged replay and independent validation
+all passed: one plan, 28,034 decisions and 500 request intents; zero execution
+authorizations, jobs, artifacts, events, model calls, tokens or cost. The exact
+allocation and request hashes matched across execution, replay and validation.
+See `docs/evidence/tendermatch-stage7-execute.json`,
+`docs/evidence/tendermatch-stage7-replay.json` and
+`docs/evidence/tendermatch-stage7-validation.json`.
+
+The remaining text preserves the pre-owner checkpoint chronology.
 
 Approved base `cc8c121795d6d95e71ab219b316b983a7bed583d`, same isolated
 `codex/tendermatch-neon-all-to-all` branch/worktree. Fetch/prune confirmed
