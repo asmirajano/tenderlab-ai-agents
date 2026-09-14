@@ -74,7 +74,7 @@ export default function TenderMatchAllToAll() {
     if([healthError,pageError,pairError].some(e=>e instanceof AllToAllError&&e.status===401)){clear();return;}
     const timer=setTimeout(clear,Math.max(0,session.expiresAt-Date.now()));return()=>clearTimeout(timer);
   },[session,healthError,pageError,pairError]);
-  useEffect(()=>{if(!session){setValue(null);return;}const pop=()=>setValue(route(session));pop();window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop);},[session]);
+  useEffect(()=>{if(!session)return;const pop=()=>setValue(route(session));window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop);},[session]);
   const navigate=(update:Partial<Route>)=>{if(!session||!value)return;const next={...value,...update},u=new URL(window.location.href);u.search=new URLSearchParams({mode:'all-to-all-dev',direction:next.direction,focus:next.focusId,...(next.cursor?{cursor:next.cursor}:{}),...(next.supplierId&&next.tenderId?{pairSupplier:next.supplierId,pairTender:next.tenderId}:{})}).toString();window.history.pushState(null,'',u);setValue(route(session));};
   const metadata=useMemo(()=>context?Object.entries(context.population).map(([name,count])=>({name:readable(name),count:count.toLocaleString('en-US')})):[],[context]);
   if(connection===undefined)return <Shell><p className="tm9-loading" role="status">Opening the short-lived development reader…</p></Shell>;
