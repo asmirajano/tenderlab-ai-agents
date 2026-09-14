@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const project = 'tenderlab-ai-agents';
 const runtime = `tenderapps-access@${project}.iam.gserviceaccount.com`;
+const buildIdentity = `projects/${project}/serviceAccounts/tenderapps-build@${project}.iam.gserviceaccount.com`;
 const config = 'firebase.tenderapps-access.json';
 const api = `https://cloudfunctions.googleapis.com/v2/projects/${project}/locations/europe-west1/functions/tenderappsAccess`;
 const origins = ['https://tenderapps-ai.web.app', 'https://tenderapps-ai.firebaseapp.com'];
@@ -60,10 +61,10 @@ async function main() {
   }
   // Firebase CLI15.27 unconditionally demands actAs on the broad default App Engine
   // identity. The supported Cloud Functions command authorizes the actual runtime
-  // instead. Retain existing invoker IAM, build identity, environment and secrets.
+  // instead. Use a restricted build identity; retain invoker IAM, environment and secrets.
   const result = spawnSync('gcloud', ['functions', 'deploy', 'tenderappsAccess', '--gen2',
     '--project', project, '--region=europe-west1', '--runtime=nodejs22', '--entry-point=tenderappsAccess',
-    '--source=build/tender-access-release', `--service-account=${runtime}`, '--memory=256Mi',
+    '--source=build/tender-access-release', `--service-account=${runtime}`, `--build-service-account=${buildIdentity}`, '--memory=256Mi',
     '--max-instances=1', '--min-instances=0', '--concurrency=20', '--timeout=30s',
     '--serve-all-traffic-latest-revision', `--update-labels=tenderapps-source=${sha}`, '--quiet',
     '--format=json(name,state,serviceConfig.revision)'],
@@ -72,7 +73,7 @@ async function main() {
   const outcome = classifyDeploy(result);
   const after = await readFunction(); checkRuntime(after);
   if (after.updateTime === before.updateTime || after.labels?.['tenderapps-source'] !== sha ||
-      after.buildConfig.serviceAccount !== before.buildConfig.serviceAccount ||
+      after.buildConfig.serviceAccount !== buildIdentity ||
       !after.buildConfig?.sourceProvenance?.resolvedStorageSource?.generation) {
     throw Error('New provider release was not verified; Hosting was not published');
   }

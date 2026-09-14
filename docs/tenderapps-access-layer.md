@@ -50,4 +50,6 @@ The release script checks the existing protected profile, publishes only the nam
 
 ## Closed rollback procedure
 
+Automated builds use tenderapps-build with Logs Writer on this project, Artifact Registry Writer on only europe-west1/gcf-artifacts, and Object Viewer on only the two existing regional Functions source/upload buckets. The GitHub deploy identity can act as this build account and the restricted runtime account, not the broad App Engine/Compute defaults. No service-account key is created for the build identity. Existing runtime permissions and business databases stay unchanged.
+
 Versioned payload-free fallback: firebase.tenderapps-maintenance.json and apps/tender-access-maintenance/index.html. If the canary fails, disable the gateway first and deploy only this maintenance Hosting target. Never restore the old public app payload as a security rollback. No browser case or business data deletion is part of rollback. Record intentional retained Auth/App Check/IAM/billing resources separately; restoring Hosting alone does not undo them.
