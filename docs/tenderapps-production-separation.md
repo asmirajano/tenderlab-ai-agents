@@ -10,6 +10,8 @@ This is one serialized Firebase site-wide release. Independent builds do not mea
 
 ## Release
 
+The validated release runtime is Node24.19.0 with pnpm11.19.0. CI uses that exact Node version: the former22.13.0 runner failed three Stage10 SQLite statement-lifetime tests that pass under the validated runtime. No tests are skipped to work around that runtime difference.
+
 Run lockfile-consistent install, lint, all tests/build, product typechecks and the composition tests. Preserve the previous Hosting version and Git checkpoint. Fetch/reconcile origin/main immediately before promotion. The existing GitHub workflow runs its full test gate; a push commit tagged `[tenderapps-only]` deploys only TenderApps and skips the four unrelated/legacy deployment steps. Untagged pushes retain the prior all-target behavior. Manual dispatch supports scope=tenderapps or all. This tag does not skip tests.
 
 The scoped manual fallback is `firebase deploy --project tenderlab-ai-agents --config firebase.tenderapps.json --only hosting:tender-apps`, after equivalent checks. Report manual fallback separately from CI success. Never deploy Functions, Firestore rules or other targets as part of this release.
