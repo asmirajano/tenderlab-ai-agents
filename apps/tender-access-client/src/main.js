@@ -42,7 +42,9 @@ signin.addEventListener('click', async () => {
     const data = await response.json(); await signOut(auth); showApps(data.apps);
   } catch (error) {
     await signOut(auth).catch(() => {});
-    status.textContent = error.code === 'auth/popup-closed-by-user' ? 'Sign-in cancelled.' : 'Access could not be established. Please retry or contact the administrator.';
+    const code = typeof error.code === 'string' && /^(auth|appCheck)\/[a-z-]+$/.test(error.code) ? error.code : '';
+    status.textContent = code === 'auth/popup-closed-by-user' ? 'Sign-in cancelled.' :
+      `Access could not be established${code ? ` (${code})` : ''}. Please retry or contact the administrator.`;
   } finally { signin.disabled = false; }
 });
 
