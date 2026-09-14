@@ -1039,7 +1039,7 @@ function parseLineItems(pages: SourcePageInput[], periods: string[]): LineItemIn
             originalLabel: "[no printed label]",
             englishLabel: CONCEPT_ENGLISH_LABELS[unlabelledSubtotalConcept],
             concept: unlabelledSubtotalConcept,
-            classification: activeSection,
+            classification: activeSection ?? undefined,
             isTotal: true,
             values: subtotal.rawValues.map((raw, index) => ({
               period: usedPeriods[index] ?? `column-${index + 1}`,

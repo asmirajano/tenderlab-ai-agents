@@ -2,6 +2,14 @@ name: Test and deploy public Firebase products
 
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Hosting release scope
+        type: choice
+        default: all
+        options:
+          - all
+          - tenderapps
   push:
     branches:
       - main
@@ -19,6 +27,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -38,11 +48,18 @@ jobs:
         run: pnpm run lint
 
       - name: Build and test
-        run: pnpm run test
+        # Product boundaries must typecheck independently before the full release suite.
+        # Keep this gate separate so a successful bundler cannot hide type failures.
+        run: |
+          npm --prefix apps/tender-logistics run typecheck
+          npm --prefix apps/tender-balance run typecheck
+          npm --prefix apps/tender-match run typecheck
+          pnpm run test
         env:
           NEXT_PUBLIC_TENDER_APPS_URL: https://tenderapps-ai.web.app
 
       - name: Deploy TenderLab Command Center
+        if: (github.event_name == 'push' && !contains(github.event.head_commit.message, '[tenderapps-only]')) || (github.event_name == 'workflow_dispatch' && inputs.scope == 'all')
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
@@ -51,6 +68,7 @@ jobs:
           target: tenderlab
 
       - name: Deploy Tender Ecosystem Atlas
+        if: (github.event_name == 'push' && !contains(github.event.head_commit.message, '[tenderapps-only]')) || (github.event_name == 'workflow_dispatch' && inputs.scope == 'all')
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
@@ -58,7 +76,7 @@ jobs:
           projectId: tenderlab-ai-agents
           target: ecosystem-atlas
 
-      - name: Deploy unified Tender Apps
+      - name: Deploy independently built Tender Apps
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
@@ -67,6 +85,7 @@ jobs:
           target: tender-apps
 
       - name: Redirect legacy TenderBalance URL
+        if: (github.event_name == 'push' && !contains(github.event.head_commit.message, '[tenderapps-only]')) || (github.event_name == 'workflow_dispatch' && inputs.scope == 'all')
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
@@ -75,6 +94,7 @@ jobs:
           target: tender-balance
 
       - name: Redirect legacy landed-cost hosting target
+        if: (github.event_name == 'push' && !contains(github.event.head_commit.message, '[tenderapps-only]')) || (github.event_name == 'workflow_dispatch' && inputs.scope == 'all')
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}

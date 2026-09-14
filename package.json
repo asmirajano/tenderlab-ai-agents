@@ -11,7 +11,7 @@
     "build": "npm run build:tenderlab && npm run build:atlas && npm run build:tender-apps && npm run generate:agent-specs",
     "build:tenderlab": "vinext build && node scripts/export-firebase.mjs",
     "build:atlas": "npm --prefix apps/ecosystem-atlas run build",
-    "build:tender-apps": "npm --prefix apps/tender-apps run build",
+    "build:tender-apps": "npm --prefix apps/tender-apps run build && npm --prefix apps/tender-logistics run build && npm --prefix apps/tender-balance run build && npm --prefix apps/tender-match run build && node scripts/compose-tenderapps-release.mjs",
     "dev:tender-apps": "npm --prefix apps/tender-apps run dev",
     "extract:tendermatch-pilot": "node scripts/extract-tendermatch-central-asia-pilot.mjs",
     "export:tendermatch-static-snapshot": "node --experimental-strip-types scripts/export-tendermatch-static-snapshot.mjs",

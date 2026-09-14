@@ -26,7 +26,7 @@ function MatchProduct() {
           </nav>
           <LayoutSwitcher value={layoutMode} onChange={setLayoutMode} />
         </div>
-        <div className="client-surface-status"><i aria-hidden="true" /><span>Client workspace</span><small>{development ? "All-to-all development · Authenticated session required · No model execution" : "Isolated development extraction · Pinned snapshot · not deployed"}</small></div>
+<div className="client-surface-status"><i aria-hidden="true" /><span>Client workspace</span><small>{development ? "All-to-all development · Authenticated session required · No model execution" : import.meta.env.PROD ? 'Independent application · Pinned snapshot' : 'Isolated development extraction · Pinned snapshot · not deployed'}</small></div>
       </header>
       {supported ? <TenderMatchApp /> : <main style={{ padding: "140px 32px" }}><h1>Page not found</h1><a href="/tendermatch">Open TenderMatch</a></main>}
     </div>

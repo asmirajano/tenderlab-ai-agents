@@ -285,7 +285,7 @@ export async function readPdfPages(buffer: ArrayBuffer, onProgress?: ProgressRep
     onProgress?.({ stage: "extracting-text", label: `Reading text on page ${pageNumber} of ${pdf.numPages}`, progress: (pageNumber - 1) / pdf.numPages, pageNumber });
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    const text = reconstructPdfPageText(content.items.filter((item): item is PositionedPdfTextItem => "str" in item));
+    const text = reconstructPdfPageText(content.items.filter((item) => "str" in item));
     pages.push({
       pageNumber,
       text,

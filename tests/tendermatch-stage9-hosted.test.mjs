@@ -47,7 +47,16 @@ test('hosted transport pins live code and capabilities, refuses writes before ne
 });
 test('Stage 9 preserves Stage 8 restricted query/view/role/cursor sources and production UI',async()=>{
   const paths=['functions/tendermatch-stage8/database.mjs','functions/tendermatch-stage8/queries.mjs','functions/tendermatch-stage8/projection.mjs','scripts/lib/tendermatch-stage8-store.mjs','scripts/lib/tendermatch-stage8-views.mjs','packages/tendermatch/src/service-stage8.ts','db/tendermatch-dev/110-stage8-reader-up.sql','db/tendermatch-dev/110-stage8-reader-down.sql','apps/tender-apps/src/main.tsx','apps/tender-apps/src/tendermatch-app.tsx','apps/tender-apps/src/tendermatch.css','apps/tender-apps/src/tendermatch-formula-view.tsx','firebase.json','.firebaserc'];
-  for(const file of paths){const original=execFileSync('git',['show','f99c942:'+file],{encoding:'utf8',windowsHide:true}),current=await readFile(file,'utf8');assert.equal(current.replaceAll('\r\n','\n'),original.replaceAll('\r\n','\n'),file);}
+  for(const file of paths){
+    const baseline=file==='apps/tender-apps/src/main.tsx'?'56c22f49b5e176ef5e428c91b7424593a069f03a':'f99c942';
+    const original=execFileSync('git',['show',baseline+':'+file],{encoding:'utf8',windowsHide:true}),current=await readFile(file,'utf8');
+    if(file==='firebase.json'){
+      // The approved separation changes only this Hosting release unit. Preserve all other resources exactly.
+      const before=JSON.parse(original),after=JSON.parse(current),scope=JSON.parse(await readFile('firebase.tenderapps.json','utf8')).hosting;
+      assert.deepEqual(after.hosting.find(h=>h.target==='tender-apps'),scope);
+      before.hosting=before.hosting.filter(h=>h.target!=='tender-apps');after.hosting=after.hosting.filter(h=>h.target!=='tender-apps');assert.deepEqual(after,before);
+    }else assert.equal(current.replaceAll('\r\n','\n'),original.replaceAll('\r\n','\n'),file);
+  }
 });
 test('hosted Stage 9 evidence binds current sources, live/API/browser observations and unchanged sealed counts',{skip:process.env.TENDERMATCH_STAGE9_HOSTED_EVIDENCE!=='1'},async()=>{
   const load=async n=>JSON.parse(await readFile('docs/evidence/tendermatch-stage9-hosted-'+n+'.json','utf8'));

@@ -895,7 +895,7 @@ button, input, select { font: inherit; }
 .bs-page .excel-dark-table thead th small {
   color: #f2f2f2;
   font-family: var(--font-geist-sans);
-  font-size: 10px;
+  font-size: var(--type-micro);
   font-weight: 500;
   letter-spacing: 0;
 }

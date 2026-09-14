@@ -120,7 +120,7 @@ export function resolveFinancialFxRate(
   targetCurrency: FinPresentationCurrency,
   year: string,
   rateTypeInput: Exclude<FinancialFxRateType, "identity">,
-) {
+): { rate: number; evidence: FinancialFxEvidence } | null {
   const sourceCurrency = sourceCurrencyInput.trim().toUpperCase();
   if (sourceCurrency === targetCurrency) {
     return {
@@ -147,7 +147,7 @@ export function resolveFinancialFxRate(
   const rateType = rateTypeInput;
   const rateRecord = cbuFinFx.currencies[sourceCurrency]?.years[year]?.[targetCurrency];
   const rate = rateRecord?.[rateType];
-  if (!rateRecord || !Number.isFinite(rate) || !(rate > 0)) return null;
+  if (!rateRecord || typeof rate !== 'number' || !Number.isFinite(rate) || !(rate > 0)) return null;
   return {
     rate,
     evidence: {

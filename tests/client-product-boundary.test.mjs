@@ -154,7 +154,7 @@ test("builds one Tender Apps bundle with dedicated practical-Agent pages and no 
   assert.doesNotMatch(shell, /route\.label\} · deterministic calculation/);
 });
 
-test("maps one unified Tender Apps target and keeps old product hosts as redirects", async () => {
+test("maps three independent builds to one same-origin target and preserves legacy redirects", async () => {
   const [firebaseConfig, rootPackage, firebaseProjects, deployWorkflow] = await Promise.all([
     readProject("firebase.json").then(JSON.parse),
     readProject("package.json").then(JSON.parse),
@@ -164,13 +164,14 @@ test("maps one unified Tender Apps target and keeps old product hosts as redirec
   const clientHosting = firebaseConfig.hosting.find((entry) => entry.target === "tender-apps");
 
   assert.ok(clientHosting, "expected a distinct TenderApps Firebase target");
-  assert.equal(clientHosting.public, "apps/tender-apps/dist");
+  assert.equal(clientHosting.public, "dist/tenderapps-production");
   assert.notEqual(clientHosting.public, firebaseConfig.hosting.find((entry) => entry.target === "tenderlab")?.public);
   assert.match(JSON.stringify(clientHosting.headers), /frame-ancestors 'none'/);
   assert.match(JSON.stringify(clientHosting.headers), /script-src 'self' 'wasm-unsafe-eval'/);
   assert.match(JSON.stringify(clientHosting.headers), /noindex, nofollow, noarchive/);
   assert.match(rootPackage.scripts.build, /build:tender-apps/);
-  assert.equal(rootPackage.scripts["build:tender-apps"], "npm --prefix apps/tender-apps run build");
+  for (const app of ['tender-apps', 'tender-logistics', 'tender-balance', 'tender-match']) assert.ok(rootPackage.scripts['build:tender-apps'].includes(`npm --prefix apps/${app} run build`));
+  assert.ok(rootPackage.scripts['build:tender-apps'].endsWith('node scripts/compose-tenderapps-release.mjs'));
   const configuredTarget = firebaseProjects.targets?.[firebaseProjects.projects.default]?.hosting?.["tender-apps"];
   assert.deepEqual(configuredTarget, ["tenderapps-ai"]);
   assert.deepEqual(firebaseProjects.targets?.[firebaseProjects.projects.default]?.hosting?.["tender-balance"], ["tenderbalance-ai"]);
@@ -179,6 +180,6 @@ test("maps one unified Tender Apps target and keeps old product hosts as redirec
   const costLegacy = firebaseConfig.hosting.find((entry) => entry.target === "tender-apps-legacy");
   assert.equal(balanceLegacy.redirects[0].destination, "https://tenderapps-ai.web.app/balance-sheet-review");
   assert.equal(costLegacy.redirects[0].destination, "https://tenderapps-ai.web.app/landed-cost");
-  assert.match(deployWorkflow, /Deploy unified Tender Apps/);
+  assert.match(deployWorkflow, /Deploy independently built Tender Apps/);
   assert.doesNotMatch(deployWorkflow, /NEXT_PUBLIC_TENDER_BALANCE_URL/);
 });

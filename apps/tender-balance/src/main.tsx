@@ -25,7 +25,7 @@ function BalanceProduct() {
           </nav>
           <LayoutSwitcher value={layoutMode} onChange={setLayoutMode} />
         </div>
-        <div className="client-surface-status"><i aria-hidden="true" /><span>Client workspace</span><small>Isolated development extraction · not deployed</small></div>
+<div className="client-surface-status"><i aria-hidden="true" /><span>Client workspace</span><small>{import.meta.env.PROD ? 'Independent application' : 'Isolated development extraction · not deployed'}</small></div>
       </header>
       {supported ? <BalanceSheetApp /> : <main style={{ padding: "140px 32px" }}><h1>Page not found</h1><a href="/balance-sheet-review">Open TenderBalance</a></main>}
     </div>
