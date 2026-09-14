@@ -1,0 +1,24 @@
+{
+  "stage": "1 — dependency guard only; not extracted applications",
+  "domains": [
+    {"name":"Balance","root":"packages/tender-balance/src","externals":["pdfjs-dist","tesseract.js","xlsx","exceljs"]},
+    {"name":"Logistics","root":"packages/logistics-costing/src","externals":[]},
+    {"name":"Match","root":"packages/tendermatch/src","externals":[]}
+  ],
+  "logistics": {
+    "entries":["apps/tender-apps/src/logistics-costing-app.tsx","apps/tender-apps/src/logistics-costing.css"],
+    "externals":["react","pdfjs-dist","xlsx","exceljs"],
+    "files":[
+      "apps/tender-apps/src/logistics-costing-app.tsx",
+      "apps/tender-apps/src/logistics-costing.css",
+      "apps/tender-apps/src/client-document-extraction.ts",
+      "apps/tender-apps/src/document-semantic-extraction.ts",
+      "apps/tender-apps/src/logistics-calculation-excel.ts",
+      "apps/tender-apps/src/trial-notice.tsx",
+      "apps/tender-apps/src/trial-notice.css",
+      "apps/tender-apps/src/agent-role-callout.tsx",
+      "apps/tender-apps/src/agent-role-callout.css",
+      "apps/tender-apps/src/practical-agent-overview.tsx"
+    ]
+  }
+}

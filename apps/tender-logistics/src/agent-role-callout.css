@@ -1,0 +1,152 @@
+.agent-role-callout {
+  --agent-role-accent: var(--bs-signal, #c9ee63);
+  --agent-role-border: #acd8c0;
+  --agent-role-ink: var(--bs-ink, #102f25);
+  --agent-role-label: var(--bs-green, #176b51);
+  --agent-role-surface-from: #ecfaf2;
+  --agent-role-surface-to: #d9f3e5;
+  align-items: center;
+  background: linear-gradient(135deg, var(--agent-role-surface-from), var(--agent-role-surface-to));
+  border: 1px solid var(--agent-role-border);
+  border-radius: 28px;
+  color: var(--agent-role-ink);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(104px, .76fr) minmax(0, 1.24fr);
+  min-width: 0;
+  padding: 11px;
+  position: relative;
+}
+
+.agent-role-callout::after {
+  background: var(--agent-role-surface-to);
+  border-bottom: 1px solid var(--agent-role-border);
+  border-right: 1px solid var(--agent-role-border);
+  bottom: -9px;
+  content: "";
+  height: 17px;
+  left: 44px;
+  position: absolute;
+  transform: rotate(45deg);
+  width: 17px;
+}
+
+.agent-role-callout__portrait {
+  align-self: stretch;
+  background: radial-gradient(circle at 25% 22%, color-mix(in srgb, var(--agent-role-label) 72%, white) 0 10%, transparent 11%), var(--agent-role-ink);
+  border-radius: 42% 58% 48% 52% / 35% 42% 58% 65%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 10px 22px rgba(13, 47, 36, .14);
+  display: grid;
+  margin: 0;
+  min-height: 126px;
+  overflow: hidden;
+  place-items: end center;
+  position: relative;
+  transform: rotate(-1.5deg);
+}
+
+.agent-role-callout__portrait::after {
+  background: var(--agent-role-accent);
+  border-radius: 50%;
+  content: "";
+  height: 18px;
+  left: 9px;
+  opacity: .9;
+  position: absolute;
+  top: 12px;
+  width: 18px;
+  z-index: 2;
+}
+
+.agent-role-callout__portrait img {
+  display: block;
+  filter: saturate(.92) contrast(1.03);
+  height: 100%;
+  inset: 0;
+  max-width: none;
+  object-fit: cover;
+  object-position: var(--agent-role-image-position, 50% 18%);
+  position: absolute;
+  transform: rotate(1.5deg) scale(1.04);
+  width: 100%;
+  z-index: 1;
+}
+
+.agent-role-callout__copy {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 5px 7px 5px 0;
+}
+
+.agent-role-callout__eyebrow {
+  color: var(--agent-role-label);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.agent-role-callout__copy > strong {
+  font-size: clamp(17px, 1.45vw, 22px);
+  letter-spacing: -.035em;
+  line-height: 1.04;
+}
+
+.agent-role-callout__copy > p {
+  color: color-mix(in srgb, var(--agent-role-ink) 72%, white);
+  font-size: 10px;
+  font-weight: 620;
+  line-height: 1.42;
+  margin: 0;
+}
+
+.agent-role-callout__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.agent-role-callout__tags li {
+  background: var(--agent-role-ink);
+  border: 1px solid var(--agent-role-ink);
+  border-radius: 999px;
+  color: var(--agent-role-accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 4px 7px;
+}
+
+@media (max-width: 620px) {
+  .agent-role-callout {
+    grid-template-columns: minmax(112px, .42fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 440px) {
+  .agent-role-callout {
+    align-items: start;
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .agent-role-callout__portrait {
+    justify-self: center;
+    min-height: 154px;
+    width: min(230px, 76vw);
+  }
+
+  .agent-role-callout__copy {
+    padding: 2px 5px 6px;
+    text-align: center;
+  }
+
+  .agent-role-callout__tags {
+    justify-content: center;
+  }
+}

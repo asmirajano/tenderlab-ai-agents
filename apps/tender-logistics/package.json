@@ -1,0 +1,24 @@
+{
+  "name": "@tenderlab/tender-logistics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0",
+    "pdfjs-dist": "5.4.149",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.0.2",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3",
+    "vite": "8.0.13"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "tender-logistics",
+  "name": "Tender Logistics",
+  "cwd": "C:\\CodexWork\\tenderapps-boundaries-stage1\\apps\\tender-logistics",
+  "command": ["{node}", "{controller}\\vite-server.mjs"],
+  "expectedHead": "8f1c0556e72aa41ad3542cee6e25fae2418fc0c6",
+  "healthPath": "/__localhost/health"
+}

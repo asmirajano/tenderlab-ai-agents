@@ -1,0 +1,30 @@
+/* Extracted app only: keep navigation visible without horizontal scrolling. */
+@media (max-width: 640px) {
+  html, body { min-width: 0; }
+  .client-product-bar {
+    position: relative;
+    padding-block: 12px;
+    gap: 12px;
+    min-height: 0;
+  }
+  .client-header-controls {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+    gap: 10px;
+    padding: 0;
+    border-bottom: 0;
+    overflow: visible;
+    max-width: 100%;
+  }
+  .client-agent-nav { flex-wrap: wrap; justify-content: center; }
+  .client-agent-nav a { min-height: 44px; }
+  .client-layout-switcher { border-left: 0; padding-left: 0; justify-self: center; }
+  .client-layout-switcher button { min-height: 44px; }
+  .client-workspace-nav { padding-top: 24px; }
+  .saved-case-view-tabs { flex-wrap: wrap; overflow: visible; }
+  .saved-case-view-tabs button { flex: 1 1 auto; white-space: normal; min-height: 44px; }
+  .saved-case-workspace-heading > div { min-width: 0; overflow-wrap: anywhere; }
+  .saved-case-workspace-heading > button { flex: 0 0 44px; height: 44px; }
+}

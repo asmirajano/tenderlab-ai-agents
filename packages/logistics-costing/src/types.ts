@@ -391,7 +391,7 @@ export type DocumentPhysicalEvidenceRole =
 export type DocumentPhysicalEvidence = {
   id: string;
   role: DocumentPhysicalEvidenceRole;
-  scope: "line-item" | "shipment";
+  scope: "lot" | "line-item" | "shipment";
   dimensionsCm?: { length: number; width: number; height: number };
   weightKg?: number;
   quantity?: number;
