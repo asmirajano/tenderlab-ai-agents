@@ -82,7 +82,9 @@ jobs:
           target: ecosystem-atlas
 
       - name: Deploy independently built Tender Apps
-        if: github.event_name != 'workflow_dispatch' || inputs.scope != 'validate'
+        # The legacy public uploader must not reopen app bytes during access cutover.
+        # Re-enable only through the protected gateway-first release workflow.
+        if: ${{ false }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TENDERLAB_AI_AGENTS }}
