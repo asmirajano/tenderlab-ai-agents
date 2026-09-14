@@ -4,7 +4,7 @@
 
 Shared Firebase Google identity with independent balance/logistics/match entitlements. Initial administrator email was explicitly supplied by the user; resolve and bind its verified Firebase UID using a privileged provisioning operation before granting access. Do not grant access automatically to the first visitor or to all Google users. Keep personal account provisioning outside this public repository.
 
-## Implemented, not deployed
+## Implemented access candidate
 
 `packages/tender-access/server-policy.mjs` provides a server-only authorization policy with injected trusted verification/registry adapters. It requires Google identity, verified email, expected Firebase session issuer/audience, explicit UID/email membership, enabled status and per-app role. Firebase session verification must check revocation. Membership is reread on each request. Registry outages fail closed. Production configuration rejects emulator and bypass settings.
 
@@ -28,6 +28,18 @@ A dedicated tenderapps-access runtime identity has a custom role containing only
 6. Build local-only emulator adapters isolated from production. Production startup/build checks must reject emulator/bypass configuration.
 7. Validate exact release, unauthorized direct routes/assets, owner login, session persistence, signout, revocation, app boundaries and representative saved cases. Human completes Google account chooser. Preserve rollback that does not reopen protected content.
 
-## State
+## Live canary checkpoint — 2026-09-14
 
-Base source: 389b5fafb661c67e8483f0cf87c568b7fea29115, fetched origin/main and deployed release at checkpoint. These additions are uncommitted implementation work, not a production release. Existing production Hosting, databases and app entrypoints were not modified. Blaze billing was separately enabled with explicit user approval. Services Control was requested in App Roadmap to audit the canonical Services registry and monitoring gaps; no monitor is implied by that delegation.
+The gateway is deployed from manifest source 022badaf8da08f813a8f1d12058a6d757fcecf5f. Exact-source CI 34858677892 passed; canonical main checkpoint e1ade52043c351ed0566791f5bda0b8ef6dcbc9d also passed CI 34859540401. Subsequent login diagnostics and the Firebase Auth Google helper CSP correction are in d0fccc9. The payload-free bootstrap is deployed to tenderapps-ai, replacing public app delivery. This is an incomplete live authentication canary, not a verified usable private beta.
+
+The Cloud Function is ACTIVE on Node 22, europe-west1, with the dedicated runtime service account, maximum one instance and 30-second timeout. Its service-level allUsers invoker permits reaching the gateway only; authorization precedes every private manifest read. Invalid-session denial passed all 121 paths on the direct Run endpoint and on both production Hosting domains (363 checks, no failures). Tests do not prove owner login, legitimate asset hydration, case migration or logout.
+
+The initial browser attempt exposed a CSP omission for the installed Firebase Auth SDK's apis.google.com helper. That specific origin was added; the browser then reached Waiting for Google sign-in. Human Google selection remains required. Do not proceed to Match live backend activation until owner login, per-app hydration, preservation and logout checks pass.
+
+The Firebase CLI reported successful Function deployment followed by a missing Artifact Registry cleanup-policy warning/error. No automatic image deletion was enabled. Runtime limits are not spending caps. No billing monitor or baseline registry update has been verified. Services Control creation has returned pending client IDs without a real task ID; do not represent its audit as running or complete.
+
+No business database migration, Firestore rule change, Neon production promotion, or unrelated app deployment occurred. Existing parallel Balance work is preserved. Production app bytes are gated but historical public Git content cannot be made confidential retroactively. Runtime npm audit has two moderate transitive findings in uuid/gaxios; inspected runtime use is uuid.v4 rather than the advisory's affected buffer-writing operations. No high or critical findings were reported at packaging time.
+
+## Closed rollback
+
+Versioned payload-free fallback: firebase.tenderapps-maintenance.json and apps/tender-access-maintenance/index.html. If the canary fails, disable the gateway first and deploy only this maintenance Hosting target. Never restore the old public app payload as a security rollback. No browser case or business data deletion is part of rollback. Record intentional retained Auth/App Check/IAM/billing resources separately; restoring Hosting alone does not undo them.
