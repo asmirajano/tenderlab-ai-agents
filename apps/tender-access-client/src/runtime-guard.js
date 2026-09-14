@@ -1,4 +1,5 @@
 import {createCaseVault, isCaseKey} from './case-vault.js';
+import {openCaseRecovery} from './case-recovery.js';
 let startupStage = 'session';
 
 async function start() {
@@ -14,14 +15,16 @@ async function start() {
     adoptLegacy: account.adoptLegacy === true,
     storage: {getItem: key => originalGet.call(storage, key), setItem: (key, value) => originalSet.call(storage, key, value),
       removeItem: key => originalRemove.call(storage, key)}});
-  const caseKeys = Object.keys(storage).filter(isCaseKey);
+  const ownPrefix = `tenderapps:vault:1:${account.uid}:`;
+  const caseKeys = [...new Set(Object.keys(storage).flatMap(key => key.startsWith(ownPrefix) ? [key.slice(ownPrefix.length)] : isCaseKey(key) ? [key] : []))];
   startupStage = 'case-preservation';
-  if (account.adoptLegacy && caseKeys.length) {
+  if (account.adoptLegacy) {
     // Explicitly visible conversion notice; never upload case content to the server.
     const notice = document.createElement('p');
     notice.textContent = 'Securing your existing local saved cases for this account. Case contents stay in this browser.';
     document.body.prepend(notice);
-    for (const key of caseKeys) vault.getItem(key);
+    const recovery = await openCaseRecovery(account.uid);
+    try { await vault.prepare(caseKeys, recovery); } finally { recovery.close(); }
     notice.remove();
   }
   startupStage = 'storage-adapter';
