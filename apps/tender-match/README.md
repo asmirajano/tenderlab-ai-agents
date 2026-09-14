@@ -22,11 +22,13 @@ Cases at port 4174 remain there and are NOT copied to port 6210.
 
 `/tendermatch?mode=all-to-all-dev` retains the newer authenticated development UI.
 Without an authorized session it fails closed and does not load the static matrix.
-The existing backend/browser contract is pinned to origin 4189, with historical
-session expiry on 7 September. It is not activated at 6210 by this extraction.
-Do not weaken the origin check, inject old tokens, provision credentials, change
-CORS, run a database script or deploy to make this preview appear complete.
-Adapting the authenticated read-only path needs a separately approved stage.
+The existing backend/browser contract was historically pinned to origin 4189;
+this approved development stage adapts the same contract to the registered
+6210 controller origin without changing its audience, binding, scopes, or
+read-only limits. The controller-managed `/__tendermatch/session` exchange keeps
+the short-lived credential out of HTML, URLs, persistent browser storage, and
+logs. Do not weaken the origin check, inject old tokens, provision
+new credentials, change grants/schema, or use a second server.
 
 ## Checkpoint and rollback
 

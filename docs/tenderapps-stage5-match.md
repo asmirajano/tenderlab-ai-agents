@@ -26,7 +26,7 @@ Date: 2026-09-14. Scope: local extraction, not production or backend cutover.
 | Browser Cases | Origin-scoped, not implicitly transferred | Existing 4174 storage remains there; 6210 is a separate origin |
 | Local lifecycle | Registered permanent controller address | `tender-match`, 6210, own start/stop/restart/health |
 | Backend | Client-side/local domain work | Normal pinned snapshot plus separately authenticated hosted development mode |
-| Auth adjustment | Not required for prior client extraction | NOT made: hosted contract allows only 4189 and old session has expired |
+| Auth adjustment | Not required for prior client extraction | Stage 6 adapts the same hosted contract to registered 6210; audience, binding, scopes and read-only limits remain unchanged |
 | Cutover | Validate before removing old coupling | Original TenderApps still working; no old code/coupling removed |
 
 The hosted service, restricted views/roles, SQL, domain and exact origin contract
@@ -62,10 +62,11 @@ The old optional local API service is not implicitly started either.
 
 This stage establishes an independent local frontend, NOT a fully active standalone
 authenticated all-to-all application. Next: approve a bounded development-only
-origin/session handoff for 6210, adapt the controller-owned session delivery without
-exposing credentials, verify exact backend identity/read-only limits, then replay
-the authenticated workflow. No database split is required by frontend extraction.
-Production release/independent CI and old coupling removal remain later gates.
+The approved Stage 6 development handoff adapts the controller-owned session
+delivery to 6210 without exposing credentials, verifies exact backend identity and
+read-only limits, then replays the authenticated workflow. No database split is
+required by frontend extraction. Production release/independent CI and old
+coupling removal remain later gates.
 
 ## Rollback
 

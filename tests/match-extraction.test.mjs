@@ -12,7 +12,15 @@ const contract = JSON.parse(read('docs/product-boundaries.json'));
 test('Match preserves twenty selected UI files including the authenticated development interface', () => {
   const names = fs.readdirSync(path.join(root,'apps/tender-match/src')).filter(n=>n!=='main.tsx');
   assert.equal(names.length,20);
-  for(const n of names) assert.equal(read('apps/tender-match/src/'+n),read('apps/tender-apps/src/'+n),n);
+  for(const n of names) {
+    if(n==='tendermatch-all-to-all.tsx') {
+      const source=read('apps/tender-match/src/'+n);
+      assert.match(source,/__tendermatch\/session/);
+      assert.doesNotMatch(source,/tendermatch-all-to-all-session/);
+      continue;
+    }
+    assert.equal(read('apps/tender-match/src/'+n),read('apps/tender-apps/src/'+n),n);
+  }
 });
 test('Match public snapshot and maps are exact copies, with no extra public files', () => {
   const walk = dir => fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);
