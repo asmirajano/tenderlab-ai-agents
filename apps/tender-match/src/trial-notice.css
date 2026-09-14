@@ -1,0 +1,95 @@
+.trial-notice {
+  --trial-accent: #16785c;
+  --trial-border: rgba(22, 120, 92, 0.54);
+  --trial-surface: rgba(232, 246, 239, 0.52);
+  --trial-ink: #0c2a20;
+  position: fixed;
+  z-index: 80;
+  top: clamp(9rem, 18vh, 13rem);
+  left: clamp(0.75rem, 2vw, 1.75rem);
+  width: min(20rem, calc(100vw - 1.5rem));
+  box-sizing: border-box;
+  padding: 1rem 1.1rem 1.05rem 1.25rem;
+  border: 1px solid var(--trial-border);
+  border-left: 0.32rem solid var(--trial-accent);
+  border-radius: 0.2rem 0.9rem 0.9rem 0.2rem;
+  background: var(--trial-surface);
+  box-shadow: 0 1.15rem 2.8rem rgba(8, 38, 29, 0.18);
+  color: var(--trial-ink);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(-100% - 2rem));
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease;
+  -webkit-backdrop-filter: blur(14px) saturate(1.18);
+  backdrop-filter: blur(14px) saturate(1.18);
+}
+
+.trial-notice[data-product="logistics"] {
+  --trial-accent: #b8ed45;
+  --trial-border: rgba(42, 112, 82, 0.52);
+  --trial-surface: rgba(226, 243, 234, 0.52);
+}
+
+.trial-notice[data-product="match"] {
+  --trial-accent: #c6f34f;
+  --trial-border: rgba(8, 52, 39, 0.58);
+  --trial-surface: rgba(218, 242, 229, 0.52);
+}
+
+.trial-notice.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.trial-notice.is-exiting {
+  opacity: 0;
+  transform: translateX(calc(-100% - 2rem));
+}
+
+.trial-notice__title {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--trial-ink);
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+
+.trial-notice p {
+  margin: 0.25rem 0;
+  color: var(--trial-ink);
+  font-size: 0.88rem;
+  line-height: 1.42;
+}
+
+.trial-notice__plan {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  padding: 0.32rem 0.62rem;
+  border-radius: 999px;
+  background: var(--trial-accent);
+  color: #09241a;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .trial-notice {
+    top: 7.7rem;
+    left: 0.65rem;
+    width: min(19rem, calc(100vw - 1.3rem));
+    padding: 0.9rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trial-notice {
+    transform: none;
+    transition: opacity 120ms linear;
+  }
+}

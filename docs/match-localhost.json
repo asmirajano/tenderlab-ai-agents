@@ -1,0 +1,8 @@
+{
+  "id": "tender-match",
+  "name": "TenderMatch",
+  "cwd": "C:\\CodexWork\\tenderapps-match-extraction\\apps\\tender-match",
+  "command": ["{node}", "{controller}\\vite-server.mjs"],
+  "expectedHead": "00c9ada835d80c81e7cc39d28e81a0c24f8186ad",
+  "healthPath": "/tendermatch"
+}

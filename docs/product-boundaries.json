@@ -1,5 +1,5 @@
 {
-  "stage": "4 — Logistics and Balance development extractions; no production cutover",
+  "stage": "5 — Three independent frontend extractions; Match hosted authentication remains separately gated; no production cutover",
   "products": [{
     "name": "Balance UI",
     "domainRoot": "packages/tender-balance/src",
@@ -28,11 +28,40 @@
       "apps/tender-balance/src/trial-notice.css",
       "apps/tender-balance/src/trial-notice.tsx"
     ]
+  }, {
+    "name": "Match UI",
+    "domainRoot": "packages/tendermatch/src",
+    "entries": ["apps/tender-match/src/main.tsx"],
+    "externals": ["react", "react-dom", "exceljs"],
+    "files": [
+      "packages/design-system/src/tokens.css",
+      "apps/tender-match/src/main.tsx",
+      "apps/tender-match/src/agent-role-callout.css",
+      "apps/tender-match/src/agent-role-callout.tsx",
+      "apps/tender-match/src/client-shell.css",
+      "apps/tender-match/src/financial-data-typography.css",
+      "apps/tender-match/src/layout-switcher.tsx",
+      "apps/tender-match/src/practical-agent-overview.tsx",
+      "apps/tender-match/src/preload-recovery.ts",
+      "apps/tender-match/src/tendermatch-all-to-all-api.ts",
+      "apps/tender-match/src/tendermatch-all-to-all.css",
+      "apps/tender-match/src/tendermatch-all-to-all.tsx",
+      "apps/tender-match/src/tendermatch-app.tsx",
+      "apps/tender-match/src/tendermatch-formula-contract.ts",
+      "apps/tender-match/src/tendermatch-formula-view.tsx",
+      "apps/tender-match/src/tendermatch-pair-api.ts",
+      "apps/tender-match/src/tendermatch-pair-display.ts",
+      "apps/tender-match/src/tendermatch-pair-workspace.tsx",
+      "apps/tender-match/src/tendermatch-supplier-api.ts",
+      "apps/tender-match/src/tendermatch.css",
+      "apps/tender-match/src/trial-notice.css",
+      "apps/tender-match/src/trial-notice.tsx"
+    ]
   }],
   "domains": [
     {"name":"Balance","root":"packages/tender-balance/src","externals":["pdfjs-dist","tesseract.js","xlsx","exceljs"]},
     {"name":"Logistics","root":"packages/logistics-costing/src","externals":[]},
-    {"name":"Match","root":"packages/tendermatch/src","externals":[]}
+    {"name":"Match","root":"packages/tendermatch/src","externals":["node:crypto"]}
   ],
   "logistics": {
     "entries":["apps/tender-apps/src/logistics-costing-app.tsx","apps/tender-apps/src/logistics-costing.css"],
