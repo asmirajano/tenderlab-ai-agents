@@ -1,0 +1,10 @@
+-- Revoke/drop the new credential first via the rollback runner. No CASCADE.
+DROP VIEW tendermatch_all_supplier_api.contract_manifest_v1;
+DROP VIEW tendermatch_all_supplier_api.current_supplier_evidence;
+DROP VIEW tendermatch_all_supplier_api.current_supplier_profiles;
+DROP VIEW tendermatch_all_supplier_api.supplier_profiles_v1;
+DROP VIEW tendermatch_all_supplier_api.supplier_evidence_v1;
+DROP VIEW tendermatch_all_supplier_api.pinned_profiles_v1;
+DROP TABLE tendermatch_all_supplier_api.approved_company_ids_v1;
+DROP SCHEMA tendermatch_all_supplier_api;
+DROP ROLE tendermatch_all_supplier_reader;

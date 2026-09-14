@@ -49,6 +49,7 @@ function normalizePath(pathname: string) {
 function TenderAppsProduct() {
   const path = normalizePath(window.location.pathname);
   const route = routes[path] ?? routes["/"];
+  const surfaceStatus = path === "/tendermatch" && new URL(window.location.href).searchParams.get("mode") === "all-to-all-dev" ? "All-to-all development · Version-pinned API · No model execution" : route.surfaceStatus;
   const [layoutMode, setLayoutMode] = useLayoutPreference();
 
   useEffect(() => {
@@ -87,7 +88,7 @@ function TenderAppsProduct() {
         <div className="client-surface-status">
           <i aria-hidden="true" />
           <span>Client workspace</span>
-          <small>{route.label} · {route.surfaceStatus}</small>
+          <small>{route.label} · {surfaceStatus}</small>
         </div>
       </header>
       {route.component}

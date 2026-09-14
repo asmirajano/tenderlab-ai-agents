@@ -1,0 +1,323 @@
+{
+  "schemaVersion": "tendermatch-stage9-hosted-api/1.0.0",
+  "observedAt": "2026-09-07T13:44:06.572Z",
+  "target": {
+    "projectId": "dry-union-87553313",
+    "branchId": "br-polished-boat-b1qddx0m",
+    "branchName": "development",
+    "region": "aws-eu-central-1"
+  },
+  "deploymentId": 3,
+  "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+  "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080",
+  "requests": [
+    {
+      "name": "exact read preflight",
+      "method": "OPTIONS",
+      "status": 204,
+      "ms": 872,
+      "bytes": 0,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "write preflight denied",
+      "method": "OPTIONS",
+      "status": 403,
+      "ms": 299,
+      "bytes": 132,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "READ_ONLY_PREFLIGHT_REQUIRED",
+      "sha256": "06742a358ee25a969ebd79d7c028a66ac5c019112f6086df7139dd7c2b93dec9"
+    },
+    {
+      "name": "unauthenticated",
+      "method": "GET",
+      "status": 401,
+      "ms": 107,
+      "bytes": 127,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "AUTHENTICATION_REQUIRED",
+      "sha256": "b3159867b0c380e55f7c66c613b00c0e30b7c4eea9ed02cfa7243fb13032bb6b"
+    },
+    {
+      "name": "expired browser session",
+      "method": "GET",
+      "status": 401,
+      "ms": 107,
+      "bytes": 130,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "INVALID_OR_EXPIRED_SESSION",
+      "sha256": "c33f5de15cebd6122748f4783c547e63d117de4491b87960f7b5a3826bb2d219"
+    },
+    {
+      "name": "wrong server tenant",
+      "method": "GET",
+      "status": 403,
+      "ms": 109,
+      "bytes": 125,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "TENANT_NOT_CONFIGURED",
+      "sha256": "2c0fe50802ddc2e9875e57e975d9bc8b6e08774847fa2964a09749cff9d00743"
+    },
+    {
+      "name": "wrong audience",
+      "method": "GET",
+      "status": 403,
+      "ms": 109,
+      "bytes": 129,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "SESSION_AUDIENCE_REQUIRED",
+      "sha256": "c856c4b1c9b2a9669ea0070476fadc5c335e31fadd6ff3dbc5e1ddeda4964258"
+    },
+    {
+      "name": "wrong origin",
+      "method": "GET",
+      "status": 403,
+      "ms": 152,
+      "bytes": 127,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "TRUSTED_ORIGIN_REQUIRED",
+      "sha256": "88844ccf24aefc72b6c666ba9bd122fb869662d72fe0cb9c926d1e16d908b781"
+    },
+    {
+      "name": "wrong binding",
+      "method": "GET",
+      "status": 409,
+      "ms": 103,
+      "bytes": 127,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "PINNED_VERSION_REQUIRED",
+      "sha256": "87962ccb549c00e6f0aca18993c9e13639c7ef41ac78ce184dc24a64ee92b650"
+    },
+    {
+      "name": "client tenant denied",
+      "method": "GET",
+      "status": 400,
+      "ms": 130,
+      "bytes": 131,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "UNEXPECTED_QUERY_PARAMETERS",
+      "sha256": "6ecaefaf84ad496bc9ea795935f610a92ad0f6207706113826b08ddc73d7cb6f"
+    },
+    {
+      "name": "sealed health",
+      "method": "GET",
+      "status": 200,
+      "ms": 207,
+      "bytes": 1049,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "7116714ff932cfdad1123cc350139c473b4f2e78e2eea84d1f95169f36f5078c"
+    },
+    {
+      "name": "supplier25",
+      "method": "GET",
+      "status": 200,
+      "ms": 292,
+      "bytes": 42265,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "87791e8e0d38e1569cc795f0b8d417ce297be7e54719dff619754b4f3a479077"
+    },
+    {
+      "name": "supplier continuation25",
+      "method": "GET",
+      "status": 200,
+      "ms": 335,
+      "bytes": 40734,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "c8e9a86a123654154062c31311f451939c86ae59e818a86bf3c0d03cf12ee125"
+    },
+    {
+      "name": "maximum101 denied",
+      "method": "GET",
+      "status": 400,
+      "ms": 112,
+      "bytes": 122,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "INVALID_PAGE_LIMIT",
+      "sha256": "fcaa95af2b1e8fb373505cc564fb255f1958283ccb91863e93ce76a05b81c357"
+    },
+    {
+      "name": "maximum100",
+      "method": "GET",
+      "status": 200,
+      "ms": 357,
+      "bytes": 158806,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "9dba7373987cd6c66076ea8df3b2ea49f98463d1cad8bd8f718c3be29bb6186a"
+    },
+    {
+      "name": "forged cursor",
+      "method": "GET",
+      "status": 400,
+      "ms": 185,
+      "bytes": 118,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "INVALID_CURSOR",
+      "sha256": "c9bfa88a655da6f2b5c89e56584fec0d18ad706fa0927a8dc5ce202604e0ae2c"
+    },
+    {
+      "name": "cross-direction cursor",
+      "method": "GET",
+      "status": 400,
+      "ms": 230,
+      "bytes": 126,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "CURSOR_SCOPE_OR_EXPIRY",
+      "sha256": "21604d2abfe55ca4e3f0342d1de69c865eac5e74b1a406778a11fadb1158a044"
+    },
+    {
+      "name": "expired signed cursor",
+      "method": "GET",
+      "status": 400,
+      "ms": 186,
+      "bytes": 126,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "CURSOR_SCOPE_OR_EXPIRY",
+      "sha256": "21604d2abfe55ca4e3f0342d1de69c865eac5e74b1a406778a11fadb1158a044"
+    },
+    {
+      "name": "scored detail",
+      "method": "GET",
+      "status": 200,
+      "ms": 3870,
+      "bytes": 7052,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "1a7ed6266fad199bcaa3b64d861b68378e9f4beda9b63708507a9c3a18dd53d3"
+    },
+    {
+      "name": "outside scope detail",
+      "method": "GET",
+      "status": 200,
+      "ms": 1755,
+      "bytes": 2315,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "sha256": "6fae2ddf4fe76d1a47d7861f3cd2d1322df5b7c7db89184e114ac55768859576"
+    },
+    {
+      "name": "intent write disabled",
+      "method": "POST",
+      "status": 405,
+      "ms": 409,
+      "bytes": 129,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "READ_ONLY_METHOD_REQUIRED",
+      "sha256": "de4462be73fa0e9de419807c666f2a688e60d84a49234b9cb38428edaa20e32e"
+    },
+    {
+      "name": "human write disabled",
+      "method": "POST",
+      "status": 405,
+      "ms": 125,
+      "bytes": 129,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "READ_ONLY_METHOD_REQUIRED",
+      "sha256": "de4462be73fa0e9de419807c666f2a688e60d84a49234b9cb38428edaa20e32e"
+    },
+    {
+      "name": "AI route absent",
+      "method": "GET",
+      "status": 404,
+      "ms": 103,
+      "bytes": 129,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "READ_ONLY_ROUTE_NOT_FOUND",
+      "sha256": "f2c7721469810a0b4ef044d0f3e00ae469c61ee3cefcd6058c48b0bd3ecc9069"
+    },
+    {
+      "name": "artifact route absent",
+      "method": "GET",
+      "status": 404,
+      "ms": 109,
+      "bytes": 129,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "READ_ONLY_ROUTE_NOT_FOUND",
+      "sha256": "f2c7721469810a0b4ef044d0f3e00ae469c61ee3cefcd6058c48b0bd3ecc9069"
+    },
+    {
+      "name": "whole matrix absent",
+      "method": "GET",
+      "status": 404,
+      "ms": 103,
+      "bytes": 129,
+      "codeHash": "aabb1a3a7732c4d93b4ab6df115164899beabab35b768113737fd78de4194e53",
+      "errorCode": "READ_ONLY_ROUTE_NOT_FOUND",
+      "sha256": "f2c7721469810a0b4ef044d0f3e00ae469c61ee3cefcd6058c48b0bd3ecc9069"
+    }
+  ],
+  "checks": [
+    {
+      "name": "sealed counts unchanged",
+      "passed": true
+    },
+    {
+      "name": "25-page bounds and nonduplicate continuation",
+      "passed": true
+    },
+    {
+      "name": "100 upper bound",
+      "passed": true
+    },
+    {
+      "name": "null missing fit and separate evidence",
+      "passed": true
+    },
+    {
+      "name": "outside unscored not zero",
+      "passed": true
+    },
+    {
+      "name": "unmodified frontend response semantics accept actual bounded host",
+      "passed": true
+    }
+  ],
+  "sourceWrites": 0,
+  "resultWrites": 0,
+  "humanDispositionWrites": 0,
+  "modelCalls": 0,
+  "wholeMatrixDownloads": 0,
+  "frontendTransport": {
+    "requestCount": 4,
+    "maxResponseBytes": 41253,
+    "recent": [
+      {
+        "path": "/health",
+        "status": 200,
+        "bytes": 1049,
+        "durationMs": 216,
+        "heapBytes": null
+      },
+      {
+        "path": "/tenders/1870172f-d5a7-4e11-a9fb-ec2cd0909038/results",
+        "status": 200,
+        "bytes": 41253,
+        "durationMs": 260,
+        "heapBytes": null
+      },
+      {
+        "path": "/pairs/700df25e-8bdc-506d-adc9-6c1cc76925f9/1870172f-d5a7-4e11-a9fb-ec2cd0909038",
+        "status": 200,
+        "bytes": 7597,
+        "durationMs": 1726,
+        "heapBytes": null
+      },
+      {
+        "path": "/pairs/00ac1546-1d93-5b0d-ae95-23d7e77a1c9a/589bddd1-0529-4d52-82dc-c0d8d431d65a",
+        "status": 200,
+        "bytes": 2315,
+        "durationMs": 1505,
+        "heapBytes": null
+      }
+    ],
+    "meaning": "Development observations only; browser-reported heap is approximate, not a load test or SLA."
+  },
+  "passed": true,
+  "latencyMs": {
+    "samples": 6,
+    "min": 207,
+    "median": 357,
+    "max": 3870,
+    "meaning": "Development Windows-to-Frankfurt observations, not SLA/load test"
+  },
+  "maxPayloadBytes": 158806
+}

@@ -1,0 +1,614 @@
+{
+  "stage": 4,
+  "base": "4b66114330e302f80f9415910d2e029106578d76",
+  "checkpoint": "ENCLOSING_COMMIT",
+  "checkedAt": "2026-09-06T18:00:59.928Z",
+  "runId": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+  "identity": {
+    "manifestId": "e928df5e6a432fa23c8ea95dbfbf1aee4f1c883646d5ed72fd2856d994102ac2",
+    "normalizationId": "782f8b38737b21f6940b5c3f4fe4ec6eb890be4e2d168f19ba29b4952530e5f9",
+    "normalizationOutcome": "3503f4b0c4f42661f469b23bdc01945aa6619860f1d2ebb946f20a25d9de8caf",
+    "readinessRun": "ce4d742d71cccc329a3129bb549273c41f4efe3fafcdd3b862dbe4ef6058d844",
+    "readinessOutcome": "ecb47df168f0df87a802d40a2bef623c1695a4c12ffdb6d3e7fe21f8f6aa5396",
+    "readinessSchema": "tendermatch-supplier-readiness/1.0.0",
+    "readinessPolicy": "tendermatch-supplier-alignment/1.0.0",
+    "readinessCodeHash": "0436e05a9b82add71744dc9ea9d5042bd546a52d4f537c56ffad302a3088800e",
+    "schema": "tendermatch-development-formula-result/1.0.0",
+    "adapter": "tendermatch-stage2a-formula-adapter/1.0.0",
+    "formula": "tendermatch-match-formula/1.1.0",
+    "formulaPolicy": "tendermatch-coverage-adjusted-goods-works/1.1.0",
+    "codeHash": "3039fdbd0577772ac53f8fdce92e0e4cc101b448e84d5d3a74357f33baf289ca",
+    "stage3Policy": "e0e8d4887aecee90476a70a03e22751a9a5eb5fc63343c209a6817ab4a8b2ab4",
+    "criterionLimitations": [
+      "CRITERION_EVIDENCE_MISSING",
+      "TENDER_CAPACITY_THRESHOLD_UNKNOWN",
+      "INDEPENDENT_VERIFICATION_MISSING",
+      "NO_NORMALIZED_TECHNICAL_OVERLAP",
+      "NOTICE_LEVEL_TECHNICAL_COMPARISON",
+      "DELIVERY_FEASIBILITY_UNVERIFIED"
+    ],
+    "mainLimitation": "largest lost points, Missing before assessed on tie, then original criterion order",
+    "policyHash": "1c77e56b4e95ae4d5fd726ae27c12e3314a1bdbe0c567cf58107cbebfe5c44de",
+    "stage3RunId": "7b3fbc39a401a72a6452c1d9bb050c18bc92d32a0f69acb4829f0a42236e102d",
+    "stage3OutcomeHash": "9afc0bf6971a5c0ece68ea1aea01a7f14731cee03ec77e8179e0a6d618d8434a",
+    "suppliers": 117,
+    "tenders": 17333,
+    "expectedScored": 707660,
+    "inputHash": "264a195e87118b5da01225547800d84a009a88cd91861e2ccbb7461de5075de9",
+    "maturity": "DEVELOPMENT_EXPERIMENT",
+    "authority": "SCORE_ONLY_NO_THRESHOLD_OR_HUMAN_DECISION"
+  },
+  "code": {
+    "files": {
+      "packages/tendermatch/src/formula-stage4-adapter.ts": "842a1eb993f49e347df49b930ff189d996a543bfef23c011b481721d4ee3d80f",
+      "packages/tendermatch/src/exploratory-matching.ts": "f6e32e38350dfe5b40325fd9d8db5cd70fbcd51505c41437b0e5e9dacce23ef1",
+      "packages/tendermatch/src/retrieval-pipeline.ts": "59614a19ca8ee1b65849bd88921b8fd3fa836e65baa95a6af793e53479f8c492",
+      "packages/tendermatch/src/retrieval-features.ts": "0e3fe02b3841713acb000b6fa3cd10f19ddc19075564d5bc00af15f8f8b541d0",
+      "scripts/lib/tendermatch-formula-inputs.mjs": "4dda704c906f893471560b3d68bc1afbb2886cd64a15143671689df50b67f5ba",
+      "scripts/lib/tendermatch-formula.mjs": "f764ab5197492cd5ce2360cbd333ce35b1fe4caeb804a17c26532ce0a0c7a0ca",
+      "scripts/tendermatch-score-formula.mjs": "feb5b2d67b5a4e0c07e534c020f3b59ac82221ec804a1ee6a0c009712d41d783",
+      "db/tendermatch-dev/070-formula-up.sql": "d38569ef9919558b7d97a54fc58c9701f749aca64eeb6232cf679d343c73d228"
+    },
+    "hash": "3039fdbd0577772ac53f8fdce92e0e4cc101b448e84d5d3a74357f33baf289ca"
+  },
+  "artifactsRawSha256": {
+    "docs/evidence/tendermatch-stage4-inspect.json": "7d1e1e6c4b44461f4272a3ee23843ad9149a0d0e4c5537a1f2ad7a7447acbfa7",
+    "docs/evidence/tendermatch-stage4-execute.json": "f2f454b2777976f5a5a986ad83de2736502dc279b8b9b77e204cdc26d330b986",
+    "db/tendermatch-dev/070-formula-up.sql": "5b3599db168050366673f891bfc04da13706cd061405a22d4219dcba305e53fc"
+  },
+  "tenderOperands": {
+    "emptyScoringTermTenders": 0,
+    "whitespaceOnlyCountryTenders": 0
+  },
+  "sqlAggregate": {
+    "scored": 707660,
+    "unique_pairs": 707660,
+    "minimum": 0,
+    "maximum": 55,
+    "zeros": 266866,
+    "zero_coverage": 59373,
+    "invalid_sums": 0,
+    "elapsedMs": 5881
+  },
+  "sqlPopulation": [
+    {
+      "state": 0,
+      "outcomes": 905697,
+      "scored": 0
+    },
+    {
+      "state": 2,
+      "outcomes": 414604,
+      "scored": 0
+    },
+    {
+      "state": 3,
+      "outcomes": 707660,
+      "scored": 707660
+    }
+  ],
+  "originalFormulaOracle": {
+    "sampledPairs": 50,
+    "scalarsAndAllCriteria": "PASS",
+    "freshnessClock": "SYNTHETIC_ORACLE_ONLY_NOT_PERSISTED"
+  },
+  "incremental": {
+    "supplierCandidateInvalidations": [
+      {
+        "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "01e0bb8e-a4a4-5c86-b95c-3598c2baabc9",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "038e2b43-647d-5d12-b369-a54255de43ba",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "039cbaf9-17de-52dc-8e53-5ec9581f7885",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "04319dc8-f7ac-5063-8f74-9adf4e7d8c7f",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "0763dfb7-984d-5058-9c53-2e854f7d44d4",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "0808ef8b-b291-5758-9800-8d660e8e90c9",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "0dbecc2b-1cb5-5e36-bd90-1ddf65f55e3e",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "0f73dbcd-63c7-5e0b-9987-af20987930cc",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "0f91f96f-c168-52b5-ae2b-d669cb1095ac",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "146175b8-66a0-5e86-bd39-60370b1bd080",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "15c03d48-74db-5840-b7bb-03db05892cc4",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "16770cb0-7ca6-5629-8be2-8acefbde5818",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "1fb26da8-03c5-5b13-ac76-40c5f69ee361",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "1fc7606d-0877-5901-a195-a73fbc8b79c4",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "2037bfbe-038a-5525-820c-1b8b63cb2970",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "20e9a681-d753-5ca2-819c-30fa17510785",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "2670b1ab-6da9-54fb-a241-4e1e6ab8a18d",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "27a10605-f978-52f1-8711-29fe2f0883ac",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "28d507a8-1862-5482-a428-e456e2a6248f",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "29b5e8b4-735c-5cbb-9333-cc28995ff31a",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "29cb1e74-f611-5f94-b66f-2a67a0a2454b",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "2d139892-a886-5c02-9ce3-16248d9d72b1",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "2e042050-55df-5339-b3e3-e585887fefb5",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "30005d83-3150-583d-88f4-b784b086b476",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "305c29bd-811e-5ee3-ae18-a656b584691c",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "344bf3a9-1ed4-5b27-9f9d-a61e1ca532a7",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "346260ad-45aa-512f-a024-e396f086359d",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "355b3aff-d1a3-513c-8fc2-c5a2a46a14a8",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "38c0c825-71ed-556f-aa1e-29f6a73d23d2",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "38f68f94-fa5f-5e6f-ae04-41b1a6c27cf2",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "39736a7e-6911-5408-8a12-09154cd0d7f3",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+        "candidatePairs": 2995
+      },
+      {
+        "supplierId": "3ce2e8c0-ef23-5ed2-a03f-c43236fd4216",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "3f288a7d-a993-525d-8ff9-c0166151687a",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "416db82e-a78b-5299-9450-f69346eb5abb",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "43338902-12a1-5c5e-b7fe-beb130765df5",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "43856552-099e-5bc7-a603-bdcc47c24e9f",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "4502da9a-b082-59cf-b54a-f962e3df7e70",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "46305bc3-b8da-57ff-9832-c5a25a3b04ec",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "4ad1d99f-b85f-5509-9481-7ffd03920831",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "52262e00-409d-54c4-8ed0-aeedebe4eb4c",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "5392b35c-b3c5-52ae-bc70-039957047ef3",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "5640e291-cb2b-57e1-b770-6d4dac93a991",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "59cd31a3-642c-5cef-a64a-3e48480c4a44",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "5cdfc3c4-c685-5c7f-98c9-5a8525b72ff2",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "620c4551-ac6b-51d3-a01d-0954ea63c870",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "6241c82c-3ab2-594b-bf94-e01457ca692b",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "635bc1ab-6470-53f1-8f92-5f91a53dfd1f",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "642f4b66-fe6c-597d-a6ac-1746b1527cf6",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "656020ec-ab01-51b0-8a8e-443eefcd7ac6",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "661dac25-213f-54b8-8704-50c0b603ca80",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "6a0487f9-205c-50d2-8910-7de2a92ba403",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "6c88ec31-a320-550d-817c-4cb5748561be",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "6e3d272e-af23-58db-9904-46c0b5d11c7d",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "6ea1abc6-affc-571f-a43b-821220b15ed7",
+        "candidatePairs": 9592
+      },
+      {
+        "supplierId": "6eede9a8-25e7-55af-87b0-7f073bfcf4a1",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "700df25e-8bdc-506d-adc9-6c1cc76925f9",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "70448432-ecf7-59d2-809e-522097993f46",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "7329a5f3-d697-5cd9-8496-c1c0433d547a",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "756677fb-a9db-5434-aaf2-0abd436ef27b",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "76480659-7134-59c0-b07a-20ae6832ca05",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "77b0b117-559a-5cff-bd44-f96714513ff5",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "798e8be4-9a4d-5a84-b2ec-1b21f92714e8",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "7a693ba8-58b5-5152-89e0-7f14d3c446af",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "7bda6fbe-141d-5fcf-8d35-99e2cce32cf7",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "7c3a8744-f6cb-544a-9f31-654e1fb00cc0",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8120dac4-de16-5f25-8b19-5e7f16e7f468",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8129613f-3130-5750-8e64-24fe5ea66b83",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "82041b7d-4d25-588f-9252-58c9f64cd8d3",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8837da6c-8969-5b55-b508-8c1aed8d9981",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8af7fa0a-e035-5504-a632-e511019094fc",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8c0574c1-454c-5c79-87e7-0744661b8ce1",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8ed641bd-2528-5507-9da4-6a2c449657c6",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "8f575881-967a-5333-965c-903db3cd3e83",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "8f96683d-542e-5cc1-821e-e5d045d3e787",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "92d8dbe9-459d-56a0-aa77-15810de9f2f0",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "9451f2ac-535f-5076-8b3b-d79ce8d49f19",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "983a4cfd-f174-5788-af84-375be94c4d01",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "9ba7fba0-707c-5d30-a044-f0485571d048",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "9e73f9e4-11bc-5250-8b22-d244f15d9b03",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "a5518434-3f3a-5885-8380-9c1ec207d36f",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "a5667703-16ac-560d-8e38-ce5d17393bcf",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "a6abaaa9-69aa-58d1-b6c8-f001e46c9872",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "a830c9c7-93f5-5568-aab0-074a65295967",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "a99eeb48-e0ee-5764-9d18-b5c526d166f0",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "b12de016-b608-54a3-bf89-2ee55c70fd39",
+        "candidatePairs": 9592
+      },
+      {
+        "supplierId": "b2a1a918-8f7b-550e-b39d-8c6419ce6203",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "b4cd89ed-8ea6-5225-971a-45922a41a5d0",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "b6148812-9cff-5709-b715-b50a9b8647d3",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "b63f3f92-11db-5604-8037-efb55a5d8f3e",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "b8896421-82b6-5cc1-ad6e-bda7b8ad49b4",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "bd3727e7-12ff-5180-9b6a-975ec6a8900a",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "be660266-8ce5-58ad-b73d-b91c73443878",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "bee7f306-4b8d-5a9d-b011-f27fe2d026f9",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "bf5101a7-9329-52e1-bec0-7a10dacc67ca",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "c14c2909-75cd-5d6c-bef7-5a52d2236128",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "c1f4c78a-f18e-5193-8583-dc592fc9802c",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "c6be3622-5622-55fa-ba84-9a3256291eea",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "c7b11ab6-ebfe-5fb8-ae8d-d16465c353e6",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "c990c0e9-2135-51c3-8cf4-7c8df7c292e6",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "cddb9ad4-932a-5c0c-b4d7-cf3f658beaeb",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "cee9043a-3765-518b-9ba2-8de6fc7b14ae",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "d44b6503-1c6a-5371-a590-4ff1c9ec3921",
+        "candidatePairs": 2995
+      },
+      {
+        "supplierId": "d5212071-9004-54c5-af4d-f97201802e90",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "d92b0fbd-ce73-5bd6-ac35-81d6903c9832",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "dd1fa148-8bd4-53b9-b33a-22fff60581a1",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "e4c6b363-55aa-5c43-9f6f-56d329057f45",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "e77230e2-73ff-545d-a9d9-87492cffb2f9",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "ef0bd58f-653e-57f6-989f-78e956414712",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "f395d7c3-8f49-5427-9c80-3dc5d4138cae",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "f49e5c9c-8874-5958-8eb5-a40422bc6d59",
+        "candidatePairs": 0
+      },
+      {
+        "supplierId": "f5e43f14-b85e-5fa2-bf8e-258750324ed1",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "fcaf7747-565c-5ac2-a031-8aedb4068531",
+        "candidatePairs": 6597
+      },
+      {
+        "supplierId": "feed91af-79ea-5340-af20-46216c6f8c3d",
+        "candidatePairs": 2995
+      },
+      {
+        "supplierId": "feff2695-eac8-5949-9585-58229dc7ef37",
+        "candidatePairs": 6597
+      }
+    ],
+    "tenderCandidateInvalidations": {
+      "GOODS": 105,
+      "WORKS": 5,
+      "SERVICES": 0
+    },
+    "sourceMutations": 0,
+    "method": "Cache key changes for one entity; persisted synthetic SQL tests prove exact affected candidate count and historical reuse."
+  },
+  "connection": {
+    "kind": "results",
+    "queries": 80,
+    "responseBytes": 153359416,
+    "requestBytes": 10904,
+    "maxResponseBytes": 2304553
+  },
+  "validation": {
+    "fullRepository": {
+      "tests": 544,
+      "pass": 544,
+      "fail": 0,
+      "skipped": 0
+    },
+    "fullTestElapsedMs": 21047,
+    "strictAdapterTypecheck": 2656,
+    "lint": 36627
+  },
+  "storageTotalBytes": 657555456,
+  "databaseBytes": "1673043968",
+  "negativeChecks": {
+    "updateDeleteTruncateDdl": "denied",
+    "crossTenantRead": "zero",
+    "crossTenantWrite": "denied",
+    "sealedMembership": "denied",
+    "committedProbeRows": 0,
+    "tenantBoundary": "TRUSTED_SERVICE_GUC_NOT_USER_AUTHENTICATION"
+  },
+  "prohibitions": {
+    "sourceWrites": 0,
+    "retrieval": 0,
+    "embeddings": 0,
+    "aiTors": 0,
+    "humanDecisions": 0,
+    "frontendChanges": 0,
+    "push": false,
+    "merge": false,
+    "deploy": false
+  },
+  "status": "AWAITING_STAGE4_ORCHESTRATOR_REVIEW"
+}

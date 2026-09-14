@@ -1,0 +1,279 @@
+{
+  "stage": 5,
+  "evidenceClass": "INDEPENDENT_READ_ONLY_NEON_VALIDATION",
+  "runId": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+  "code": {
+    "files": {
+      "packages/tendermatch/src/retrieval-stage5.ts": "2c900311eba211e2688ccbb107413ad80066ab3d9e5f6ced58d8f72696066638",
+      "scripts/lib/tendermatch-stage5.mjs": "8b15348c7c01e8680669d2d1f760607bbe71da26bcec6cc4f7b2cd7c28a4b1de",
+      "scripts/tendermatch-stage5.mjs": "58248c31377d78176be8a9a325dad78946e9cb07446be3486c87623f11b524d3",
+      "db/tendermatch-dev/080-ranking-up.sql": "78fc8cc40d51f6acdc7b8ddf1f8b3e02da9e5d2bcc7787c5386501c4fbd41b7f"
+    },
+    "hash": "ff30b52ab11a8789cae5d9e5c30cb74153ce56a6a93e77c9039ec9a5dbbc27f5"
+  },
+  "validatorHash": "3d96e02d260100f6a86ead73debeb03b146a7cc35ee670f7c1f9d4579071de7d",
+  "startedAt": "2026-09-06T19:00:34.003Z",
+  "profileReuse": {
+    "extracted": 0,
+    "reused": 17450
+  },
+  "sql": {
+    "total": 707660,
+    "unique_pairs": 707660,
+    "zero": 683653,
+    "min_units": 0,
+    "max_units": 371428,
+    "invalid_components": 0,
+    "missing_formula": 0,
+    "elapsedMs": 3865
+  },
+  "completion": {
+    "outcome_hash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+    "pair_count": "707660",
+    "zero_count": "683653"
+  },
+  "fullTraversals": {
+    "supplier": {
+      "focusId": "6ea1abc6-affc-571f-a43b-821220b15ed7",
+      "rows": 9592,
+      "pages": 96,
+      "maxResponseBytes": 75837,
+      "elapsedMs": 38835,
+      "unique": true,
+      "ordered": true,
+      "zeroRows": 9028,
+      "includesZero": true
+    },
+    "tender": {
+      "focusId": "0013f25b-f687-44cb-add1-ba1824203bed",
+      "rows": 105,
+      "pages": 2,
+      "maxResponseBytes": 75437,
+      "elapsedMs": 732,
+      "unique": true,
+      "ordered": true,
+      "zeroRows": 55,
+      "includesZero": true
+    }
+  },
+  "boundedPages": {
+    "supplier": {
+      "rows": 25,
+      "elapsedMs": 492,
+      "bytes": 19362,
+      "hasMore": true,
+      "includesCompletionCheck": true
+    },
+    "tender": {
+      "rows": 25,
+      "elapsedMs": 359,
+      "bytes": 19425,
+      "hasMore": true,
+      "includesCompletionCheck": true
+    }
+  },
+  "detailSamples": [
+    {
+      "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+      "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+      "relevance": 0,
+      "pairScore": 0,
+      "coverage": 35,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "00ac1546-1d93-5b0d-ae95-23d7e77a1c9a",
+      "tenderId": "017029f0-f221-458d-b909-461c968e1ea5",
+      "relevance": 0.024242,
+      "pairScore": 7,
+      "coverage": 35,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+      "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+      "relevance": 0.1,
+      "pairScore": 25,
+      "coverage": 45,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "01dade9c-c6e0-55ac-809d-d1577cbd611a",
+      "tenderId": "044f75f0-5ea3-47c0-85cc-6d842728ce3a",
+      "relevance": 0.2,
+      "pairScore": 25,
+      "coverage": 45,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "0808ef8b-b291-5758-9800-8d660e8e90c9",
+      "tenderId": "0013f25b-f687-44cb-add1-ba1824203bed",
+      "relevance": 0,
+      "pairScore": 0,
+      "coverage": 0,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "1fc7606d-0877-5901-a195-a73fbc8b79c4",
+      "tenderId": "26c9b24f-de02-4c8a-bd13-a677f1a70cff",
+      "relevance": 0.3,
+      "pairScore": 48,
+      "coverage": 65,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+      "tenderId": "000fa43d-e278-467a-9b7f-9759e4cb0b94",
+      "relevance": 0,
+      "pairScore": 6,
+      "coverage": 40,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+      "tenderId": "0034d46b-d03d-4ff6-bf8f-aeb85a627dd3",
+      "relevance": 0.108771,
+      "pairScore": 26,
+      "coverage": 40,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+      "tenderId": "0044825b-2365-4bba-840d-778011af0ef3",
+      "relevance": 0.326315,
+      "pairScore": 31,
+      "coverage": 40,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+      "tenderId": "00705d78-f326-43ba-baac-9057e357d560",
+      "relevance": 0.097058,
+      "pairScore": 26,
+      "coverage": 40,
+      "criterionParity": true
+    },
+    {
+      "supplierId": "3bece19b-115a-5227-a277-badb81e55e0a",
+      "tenderId": "14f6e962-98c7-41be-b4a0-db34cc38d10d",
+      "relevance": 0.293333,
+      "pairScore": 31,
+      "coverage": 40,
+      "criterionParity": true
+    }
+  ],
+  "emptyFocuses": {
+    "supplier": "2037bfbe-038a-5525-820c-1b8b63cb2970",
+    "tender": "000a20a5-a768-4939-9d30-d15203bb293f",
+    "rows": 0
+  },
+  "incrementalCandidateHistogram": {
+    "supplier": {
+      "0": 9,
+      "2995": 3,
+      "6597": 103,
+      "9592": 2
+    },
+    "tender": {
+      "0": 7741,
+      "5": 2995,
+      "105": 6597
+    }
+  },
+  "privileges": [
+    {
+      "relname": "ranking_completion",
+      "relrowsecurity": true,
+      "owner": "neondb_owner",
+      "can_select": true,
+      "can_insert": true,
+      "extra": false
+    },
+    {
+      "relname": "ranking_member",
+      "relrowsecurity": true,
+      "owner": "neondb_owner",
+      "can_select": true,
+      "can_insert": true,
+      "extra": false
+    },
+    {
+      "relname": "ranking_pair",
+      "relrowsecurity": true,
+      "owner": "neondb_owner",
+      "can_select": true,
+      "can_insert": true,
+      "extra": false
+    },
+    {
+      "relname": "ranking_profile",
+      "relrowsecurity": true,
+      "owner": "neondb_owner",
+      "can_select": true,
+      "can_insert": true,
+      "extra": false
+    },
+    {
+      "relname": "ranking_run",
+      "relrowsecurity": true,
+      "owner": "neondb_owner",
+      "can_select": true,
+      "can_insert": true,
+      "extra": false
+    }
+  ],
+  "databaseBytes": "2710536192",
+  "storage": [
+    {
+      "table_name": "ranking_completion",
+      "total_bytes": "32768",
+      "heap_bytes": "8192"
+    },
+    {
+      "table_name": "ranking_member",
+      "total_bytes": "10551296",
+      "heap_bytes": "3866624"
+    },
+    {
+      "table_name": "ranking_pair",
+      "total_bytes": "994476032",
+      "heap_bytes": "231890944"
+    },
+    {
+      "table_name": "ranking_profile",
+      "total_bytes": "32186368",
+      "heap_bytes": "24526848"
+    },
+    {
+      "table_name": "ranking_run",
+      "total_bytes": "32768",
+      "heap_bytes": "8192"
+    }
+  ],
+  "protectedFormula": {
+    "outcome_hash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+    "scored_count": "707660",
+    "unscored_count": "1320301"
+  },
+  "metrics": {
+    "elapsedMs": 67194,
+    "connection": {
+      "kind": "results",
+      "queries": 322,
+      "responseBytes": 57293788,
+      "requestBytes": 2526990,
+      "maxResponseBytes": 848001
+    },
+    "memory": {
+      "rss": 199745536,
+      "heapTotal": 160518144,
+      "heapUsed": 95139440,
+      "external": 10148381,
+      "arrayBuffers": 719901
+    }
+  },
+  "finishedAt": "2026-09-06T19:01:22.376Z",
+  "sourceConnections": 0,
+  "modelCalls": 0,
+  "committedWrites": 0
+}

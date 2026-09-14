@@ -1,0 +1,31 @@
+{
+  "contractVersion": "tendermatch-all-company-read/1.0.0",
+  "preparedOnly": true,
+  "organization": "TenderLab",
+  "project": "tender-entity-registry",
+  "projectId": "dry-union-87553313",
+  "branch": "development",
+  "branchId": "br-polished-boat-b1qddx0m",
+  "host": "ep-dark-dew-b15ctyr1.c-5.eu-central-1.aws.neon.tech",
+  "owner": "neondb_owner",
+  "sourceDatabase": "tender_entity_registry",
+  "resultDatabase": "tendermatch_results_dev",
+  "sourceSchema": "tendermatch_all_supplier_api",
+  "resultSchema": "tendermatch_retrieval",
+  "expectedCompanies": 117,
+  "expectedExistingConsumerProfiles": 17,
+  "predicate": "registry.entities.entity_type_code = 'company'",
+  "profilePins": [
+    { "batch": "accio-neutral-suppliers-2026-09-01-v2.1-policy-corrected", "version": "v2.1-policy-corrected-2026-09-01" },
+    { "batch": "accio-goods-works-suppliers-2026-09-01-v1.3-critical-evidence-corrected-db-staged", "version": "v1.3-critical-evidence-corrected-2026-09-01" }
+  ],
+  "readerRole": "tendermatch_all_supplier_reader",
+  "consumerLogin": "tendermatch_all_supplier_consumer_dev",
+  "writerRole": "tendermatch_result_writer",
+  "writerLogin": "tendermatch_result_writer_dev",
+  "consumerSecretFile": ".env.tendermatch-all-suppliers-dev",
+  "consumerVariable": "TENDERMATCH_ALL_SUPPLIER_DATABASE_URL",
+  "writerSecretFile": ".env.tendermatch-results-dev",
+  "writerVariable": "TENDERMATCH_RESULT_DATABASE_URL",
+  "identityEvidence": "Project/branch/database/117 companies confirmed by orchestrator's Neon Console audit on 2026-09-06 Asia/Tashkent. Endpoint fingerprint additionally grounded in local registry inspect-v1-3-consumer-target.mjs. Reconfirm the direct endpoint belongs to this branch before execution."
+}

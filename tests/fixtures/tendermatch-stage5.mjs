@@ -1,0 +1,25 @@
+/** Synthetic evidence only, isolated Stage 5 test fixture. */
+import {sha,TENANT} from '../../scripts/lib/tendermatch-input-manifest.mjs';
+import {scopeInputKey} from '../../packages/tendermatch/src/eligibility-scope.ts';
+import {alignSupplierReadiness} from '../../packages/tendermatch/src/supplier-readiness.ts';
+import {adaptStage2aSupplier,adaptStage2Tender,hashAdapter,STAGE4_ADAPTER} from '../../packages/tendermatch/src/formula-stage4-adapter.ts';
+import {createRun,prepareRun,executeUniverse,completeRun} from '../../scripts/lib/tendermatch-eligibility.mjs';
+import {createFormulaRun,prepareFormulaRun,executeFormula,completeFormulaRun} from '../../scripts/lib/tendermatch-formula.mjs';
+export const id=n=>`00000000-0000-0000-0000-${String(n).padStart(12,'0')}`;
+export const rekey=i=>{const {key,...body}=i;void key;return {...body,key:hashAdapter({adapter:STAGE4_ADAPTER,...body})};};
+function scope(kind,n,category='GOODS',extra={}){const body={kind,id:id(n),featureKey:sha(['f',kind,n]),featureHash:sha(['h',n]),sourceHash:sha(['source',n]),sourceVersion:'synthetic/1',category,profileState:kind==='supplier'?'PINNED':null,candidateScope:kind==='supplier'?category:null,signals:kind==='supplier'?[category]:[],scopeEvidence:kind==='supplier'?[{id:id(80),sourceRecordId:id(81),artifactId:id(82),status:'INFERRED',valueClass:'SOURCE'}]:[],readinessId:null,readinessHash:null,readinessState:'NEEDS_EVIDENCE',classificationValueClass:'ESTIMATED',candidateReasons:[],deadline:null,timezone:null,requirementsMissing:true,hardEvidence:[],...extra};return {...body,key:scopeInputKey(body)};}
+export function supplier(n=1,claims=[['product_families','Steel parts and transformers'],['capacity','Employees: 120 employees'],['geographic_markets','Asia']],category='GOODS'){
+ const evidence=claims.map(([field,value,status='STATED_UNVERIFIED',available=true],j)=>({canonical_entity_id:id(n),profile_version_id:id(n+100),claim_id:id(n*1000+j),external_claim_id:`synthetic-${n}-${j}`,field,source_field:field,display_value:value,status,value_class:status==='UNKNOWN'?'MISSING':'SOURCE',source_record_id:id(n*2000+j),source_system:'SYNTHETIC',retrieved_at:'2026-09-01T00:00:00Z',source_artifact_id:id(n*3000+j),artifact_available:available,artifact_status:available?'saved':'unavailable',artifact_sha256:available?sha(j):null,artifact_limitation:available?'':'Unavailable synthetic artifact',formula_role:'SUPPORTING_ONLY'}));
+ const input={kind:'supplier',id:id(n),sourceVersion:'synthetic/1',baseContentHash:sha(evidence),provenance:{batch:'synthetic'},profile:{canonical_entity_id:id(n),profile_version_id:id(n+100),display_name:'Synthetic company',legal_name:'Synthetic company',country_code:'CN',entity_type_code:'company',classification:category,classification_value_class:'SOURCE',classification_claim_ids:[],profile_state:'PINNED',readiness_status:'usable_with_limitations',readiness_contract_version:'synthetic',verification_status:'under_review',evidence_count:evidence.length},evidence};
+ const readiness=alignSupplierReadiness(input,sha('readiness-code'));readiness.classification.signals=[category];const s=scope('supplier',n,category,{readinessId:readiness.readinessId,readinessHash:readiness.contentHash});return {scope:s,adapted:adaptStage2aSupplier(readiness,s)};
+}
+export function tender(n=20,category='GOODS',words='transformers electrical steel'){
+ const s=scope('tender',n,category),f={id:id(n),sourceVersion:'synthetic/1',featureKey:s.featureKey,contentHash:s.featureHash,title:words,reference:'SYNTHETIC',procurementType:category,country:{name:'Uzbekistan'},formulaInputs:{scoringTerms:words.split(' '),scoringConcepts:words.includes('electrical')?['electrical']:[]},sourceDates:{deadlineAt:null,timezone:null}};
+ return {scope:s,adapted:adaptStage2Tender(f,s)};
+}
+export async function sealSyntheticFormula(c,seeds,{norm=sha('synthetic norm'),register=false}={}){
+ if(register){for(const {scope:i} of seeds){await c.query('INSERT INTO tendermatch_retrieval.normalized_feature VALUES($1,$2) ON CONFLICT DO NOTHING',[TENANT,i.featureKey]);await c.query('INSERT INTO tendermatch_retrieval.normalization_member VALUES($1,$2,$3,$4,$5)',[TENANT,norm,i.kind,i.id,i.featureKey]);}await c.query('INSERT INTO tendermatch_retrieval.normalization_snapshot VALUES($1,$2,$3,$4)',[TENANT,norm,seeds.filter(x=>x.scope.kind==='supplier').length,seeds.filter(x=>x.scope.kind==='tender').length]);}
+ const scopeRun=createRun(seeds.map(x=>x.scope),{normalizationId:norm},{hash:sha('scope-code')});await prepareRun(c,scopeRun);const p=await executeUniverse(c,scopeRun);await completeRun(c,scopeRun,p);
+ const loaded={scope:scopeRun,stage3OutcomeHash:p.outcomeHash,stage3Counts:p.counts,protectedInputs:{normalizationId:norm},inputs:seeds.map(x=>x.adapted)},run=createFormulaRun(loaded,{hash:sha('formula-code')});await prepareFormulaRun(c,run);const proof=await executeFormula(c,run);await completeFormulaRun(c,run,proof);
+ return {inputs:loaded.inputs,formula:{runId:run.runId,identity:run.identity,policyHash:run.policyHash,outcomeHash:proof.outcomeHash,scored:proof.scored,unscored:proof.unscored}};
+}

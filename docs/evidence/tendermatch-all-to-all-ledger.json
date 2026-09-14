@@ -1,0 +1,387 @@
+{
+  "schemaVersion": "tendermatch-all-to-all-final-ledger/1.1.0",
+  "baseCommit": "ddf2ab2f854b84d1c75fc2cb5a1f39a6871fbf0a",
+  "round1ClosureBase": "f3d0e3081f2d599eef5ea6aa4e321514342be953",
+  "state": "ROUND1_COMPLETE_ISOLATED_NEON_AND_LOCAL_APP_VALIDATED",
+  "evidenceClass": "SEALED_NEON_STAGES_3_TO_7_PLUS_LOCAL_STAGES_8_TO_10_HASH_BOUND",
+  "sourceBinding": {
+    "docs/evidence/tendermatch-development-stage1.json": "991352847f46fe56925b779f1273ef6e629923dd1c2d9afc2b38026a54d759bc",
+    "docs/evidence/tendermatch-development-stage2.json": "44b98d2a64fa47e6243415f90ed2070157b6c021c68cdd66d9eaf1754e6c9d98",
+    "docs/evidence/tendermatch-stage2a-readiness.json": "7c2ad563ad9d5c49661296622f06e6236df9c9b19a1ab030c175885d6c115a5c",
+    "docs/evidence/tendermatch-stage3-execute.json": "f39f1c2a627be34d77e8d1b8c1e44cfbbfe90c605a2f28eed5802cfe1d836e35",
+    "docs/evidence/tendermatch-stage4-execute.json": "f2f454b2777976f5a5a986ad83de2736502dc279b8b9b77e204cdc26d330b986",
+    "docs/evidence/tendermatch-stage5-execute.json": "72dabc670387fddee73c2b92a51ce6d8acc0564e34bd3a2163204232d6962b08",
+    "docs/evidence/tendermatch-stage6-execute.json": "d6820db27928f145c048033476087675fb56d447ad84133643e1f7f952f85e90",
+    "docs/evidence/tendermatch-stage7-comparison.json": "20746d616e1c334b00f0503004dc9da5865fca3cf57a26ef6992ef09cf2cf721",
+    "docs/evidence/tendermatch-stage7-execute.json": "a05dd783dcc35a7dd5ed7d7ddd4d65709350b34929f4352eb64fe94e7c59e96e",
+    "docs/evidence/tendermatch-stage7-replay.json": "b3b3365751262cb7309f33c9478177e70170f1bb12a7d31cb71eef8fcafa2b89",
+    "docs/evidence/tendermatch-stage7-validation.json": "89ff028a04a98a120620f7797a7a67b08e34c645e52b3d807d4f464dd9f124a0",
+    "docs/evidence/tendermatch-stage8-validation.json": "a80f281581b9340c9ab29497f691492a9912d7b59aeb6694f39affde92ef62f3",
+    "docs/evidence/tendermatch-stage8-benchmark.json": "f7a24a7edcb3c51174cb68749748845e25e77fa9aa40d235c4626d7c0d2fb6d9",
+    "docs/evidence/tendermatch-stage9-validation.json": "4165f7906f122bf29c294e95c9e94a3cd498b0e9ea1ceab0b79cc5803cee7870",
+    "docs/evidence/tendermatch-stage9-browser.json": "804aef608a054b580a12df6ef4fb040ab1aac18debf8d3c5562bcc3f38397e2e",
+    "docs/evidence/tendermatch-stage10-validation.json": "dd2c847e38533023a4ed71f26b792682bae0187b8ff2a4472ff26b68cd596ebd",
+    "docs/evidence/tendermatch-stage10-benchmark.json": "0bdee46f9a46f7a6fb157c4c2313e95092df57004bfd56cc57fa37b3a5e0fbf9",
+    "docs/evidence/tendermatch-round1-closure.json": "cf7b94c3080cd1a06a5e01ff31ae5c5c6f718ca4babe2d5c3acf428a2600e42e"
+  },
+  "population": {
+    "suppliers": 117,
+    "openTenders": 17333,
+    "universe": 2027961,
+    "formulaScored": 707660,
+    "formulaUnscored": 1320301,
+    "scopeNotDemonstrated": 414604,
+    "outsideFormulaScope": 905697,
+    "ranked": 707660,
+    "positiveRetrieval": 24007,
+    "shortlist": 28034,
+    "review": 18531,
+    "audit": 9503,
+    "stage7PlannedIntents": 500,
+    "actualModelCalls": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "cost": 0
+  },
+  "chronology": {
+    "stage1OpenTenders": 17323,
+    "sealedStage2OpenTenders": 17333,
+    "explanation": "Stage 2 refreshed the source manifest; the later sealed 17,333 tender population supersedes the initial Stage 1 count, without rewriting that historical capture."
+  },
+  "sealed": [
+    {
+      "stage": 3,
+      "runId": "7b3fbc39a401a72a6452c1d9bb050c18bc92d32a0f69acb4829f0a42236e102d",
+      "outcomeHash": "9afc0bf6971a5c0ece68ea1aea01a7f14731cee03ec77e8179e0a6d618d8434a",
+      "executedRows": 2027961,
+      "formulaScored": null,
+      "executionMs": 246537,
+      "readbackMs": 278577,
+      "tableBytes": 842334208,
+      "tables": [
+        {
+          "name": "eligibility_completion",
+          "totalBytes": 32768
+        },
+        {
+          "name": "eligibility_input",
+          "totalBytes": 22601728
+        },
+        {
+          "name": "eligibility_member",
+          "totalBytes": 9814016
+        },
+        {
+          "name": "eligibility_pair",
+          "totalBytes": 809852928
+        },
+        {
+          "name": "eligibility_run",
+          "totalBytes": 32768
+        }
+      ],
+      "evidenceFile": "docs/evidence/tendermatch-stage3-execute.json"
+    },
+    {
+      "stage": 4,
+      "runId": "8c60354ecfd613fab2edca21528fab8c22aeb275df7115590a5916847c78efc5",
+      "outcomeHash": "b7a12c75afc68f241ce740eaf557ada12abb79159406c1ebf6471e69ed6e5df6",
+      "executedRows": 2027961,
+      "formulaScored": 707660,
+      "executionMs": 621543,
+      "readbackMs": 342001,
+      "tableBytes": 657555456,
+      "tables": [
+        {
+          "name": "formula_completion",
+          "totalBytes": 49152
+        },
+        {
+          "name": "formula_input",
+          "totalBytes": 40124416
+        },
+        {
+          "name": "formula_member",
+          "totalBytes": 9904128
+        },
+        {
+          "name": "formula_pair",
+          "totalBytes": 607412224
+        },
+        {
+          "name": "formula_run",
+          "totalBytes": 65536
+        }
+      ],
+      "evidenceFile": "docs/evidence/tendermatch-stage4-execute.json"
+    },
+    {
+      "stage": 5,
+      "runId": "b0ba6e965bc81ef5f3d53466d815c1c7c4c4596bd21b16ff9342b4098b484c7d",
+      "outcomeHash": "1a7cc57af3cf1d06824700cfc4c367658b9abc67519d372a8e77fc1f4c123b47",
+      "executedRows": 707660,
+      "formulaScored": null,
+      "executionMs": 430033,
+      "readbackMs": 204802,
+      "tableBytes": 1037279232,
+      "tables": [
+        {
+          "name": "ranking_completion",
+          "totalBytes": 32768
+        },
+        {
+          "name": "ranking_member",
+          "totalBytes": 10551296
+        },
+        {
+          "name": "ranking_pair",
+          "totalBytes": 994476032
+        },
+        {
+          "name": "ranking_profile",
+          "totalBytes": 32186368
+        },
+        {
+          "name": "ranking_run",
+          "totalBytes": 32768
+        }
+      ],
+      "evidenceFile": "docs/evidence/tendermatch-stage5-execute.json"
+    },
+    {
+      "stage": 6,
+      "runId": "239ec961dd32138d4a224fb2925c0fdc47b7115298b355e1874b33aa5a388884",
+      "outcomeHash": "25811f4efab7676acd407d6145a58685b3c843bb27b5f3d78bc8c32b1b9fa137",
+      "executedRows": 28034,
+      "formulaScored": null,
+      "executionMs": 23614,
+      "readbackMs": 12988,
+      "tableBytes": 81985536,
+      "tables": [
+        {
+          "name": "shortlist_completion",
+          "totalBytes": 32768
+        },
+        {
+          "name": "shortlist_context",
+          "totalBytes": 31039488
+        },
+        {
+          "name": "shortlist_member",
+          "totalBytes": 9830400
+        },
+        {
+          "name": "shortlist_pair",
+          "totalBytes": 41050112
+        },
+        {
+          "name": "shortlist_run",
+          "totalBytes": 32768
+        }
+      ],
+      "evidenceFile": "docs/evidence/tendermatch-stage6-execute.json"
+    }
+  ],
+  "vector": {
+    "available": "0.8.6",
+    "installed": "0.8.6",
+    "embeddingRows": 0,
+    "embeddingModels": 0,
+    "semanticState": "MISSING",
+    "ranking": "DETERMINISTIC_LEXICAL_STRUCTURED_FALLBACK",
+    "note": "pgvector and an HNSW structure existed; no approved frozen embedding source was available or used."
+  },
+  "stage7": {
+    "ownerMigration": "100",
+    "ownerInstallation": "VERIFIED_COMPLETE",
+    "persistence": "EXECUTED_REPLAYED_INDEPENDENTLY_VALIDATED",
+    "migrationCanonicalSha256": "0a5bd329f7a562e98a35d2df7d632e45bd8544fcd32087b651a01db2a01a3757",
+    "planId": "dc67810353a738dc27e64153a06da4520e7d91626957f1775309c8a87792154f",
+    "rows": {
+      "escalation_plan": 1,
+      "escalation_decision": 28034,
+      "escalation_request": 500,
+      "escalation_authorization": 0,
+      "escalation_job": 0,
+      "escalation_artifact": 0,
+      "escalation_event": 0
+    },
+    "plannedStates": {
+      "AUDIT_EXPLICIT_ONLY": 9503,
+      "DEFERRED_BUDGET": 18031,
+      "PLANNED_REVIEW": 500
+    },
+    "selectedReasons": {
+      "TIED_NOMINATION_DIMENSIONS": 335,
+      "FORMULA_CRITERION_EVIDENCE_MISSING": 500,
+      "TOP_DIRECTIONAL_NOMINATION": 410
+    },
+    "executionAuthorizations": 0,
+    "jobs": 0,
+    "artifacts": 0,
+    "provider": "UNCONFIGURED",
+    "workload": {
+      "distinctSupplierProfiles": 99,
+      "distinctTenderProfiles": 377,
+      "inputBytes": 5033461,
+      "maxInputBytes": 13254,
+      "potentialInitialCalls": 500,
+      "potentialCallsAtThreeAttempts": 1500,
+      "maxOutputTokenReservation": 2048000,
+      "inputTokenEstimate": null,
+      "costEstimate": null,
+      "limitation": "NO_PROVIDER_TOKENIZER_OR_PRICING_CONFIGURED_BYTE_COUNTS_ARE_NOT_TOKEN_COUNTS"
+    },
+    "executionMetrics": {
+      "elapsedMs": 137310,
+      "connection": {
+        "kind": "results",
+        "queries": 295,
+        "responseBytes": 46436753,
+        "requestBytes": 18559209,
+        "maxResponseBytes": 779187
+      },
+      "memory": {
+        "rss": 203317248,
+        "heapTotal": 124022784,
+        "heapUsed": 85019360,
+        "external": 9956445,
+        "arrayBuffers": 527965
+      }
+    },
+    "replayMetrics": {
+      "elapsedMs": 40638,
+      "connection": {
+        "kind": "results",
+        "queries": 153,
+        "responseBytes": 51863973,
+        "requestBytes": 185974,
+        "maxResponseBytes": 779187
+      },
+      "memory": {
+        "rss": 127524864,
+        "heapTotal": 56025088,
+        "heapUsed": 53634544,
+        "external": 9638868,
+        "arrayBuffers": 210388
+      }
+    },
+    "validationMetrics": {
+      "elapsedMs": 53462,
+      "connection": {
+        "kind": "results",
+        "queries": 143,
+        "responseBytes": 39685038,
+        "requestBytes": 19721,
+        "maxResponseBytes": 720990
+      },
+      "memory": {
+        "rss": 155217920,
+        "heapTotal": 81874944,
+        "heapUsed": 79469856,
+        "external": 9637769,
+        "arrayBuffers": 209289
+      }
+    }
+  },
+  "stage8": {
+    "state": "LOCAL_POSTGRESQL_HTTP_VALIDATED_NOT_HOSTED",
+    "fixtureCandidates": 1440,
+    "latency": {
+      "supplier": {
+        "samples": 12,
+        "minMs": 84.1,
+        "medianMs": 92.83,
+        "p95Ms": 109.36,
+        "maxMs": 109.36
+      },
+      "tender": {
+        "samples": 12,
+        "minMs": 76.01,
+        "medianMs": 81.35,
+        "p95Ms": 84.7,
+        "maxMs": 84.7
+      },
+      "detail": {
+        "samples": 8,
+        "minMs": 78.2,
+        "medianMs": 84.05,
+        "p95Ms": 87.82,
+        "maxMs": 87.82
+      },
+      "intent": {
+        "samples": 100,
+        "minMs": 83.55,
+        "medianMs": 92.95,
+        "p95Ms": 129.23,
+        "maxMs": 367.74
+      },
+      "status": {
+        "samples": 8,
+        "minMs": 69.48,
+        "medianMs": 75.1,
+        "p95Ms": 80.02,
+        "maxMs": 80.02
+      }
+    },
+    "modelCalls": 0,
+    "neonConnections": 0,
+    "failClosed": "Absent Stage 7 marker/plan/API never falls back to static data"
+  },
+  "stage9": {
+    "state": "EXPLICIT_DEVELOPMENT_MODE_ONLY_NOT_DEPLOYED",
+    "browser": {
+      "checksPassed": 23,
+      "screenshots": 10,
+      "javascriptExceptions": 0,
+      "mode": "SYNTHETIC_LOCAL_POSTGRESQL_NOT_NEON",
+      "fixtureUniverse": 240,
+      "fixtureCandidates": 182,
+      "fixtureUnscored": 58,
+      "fixtureShortlist": 112,
+      "maximumResponseBytes": 43348,
+      "protectedOverviewAndFormulaDOM": "EXACT_D230590_TEXT_GEOMETRY_AND_STATUS_PARITY"
+    },
+    "protectedOverviewFormula": "EXACT_D230590_TEXT_GEOMETRY_AND_STATUS_PARITY",
+    "release": {
+      "commit": "d230590cf5ee99a679f162b2e3a19b65752c0f16",
+      "js": "index-B47XFTdH.js",
+      "jsSha256": "97cc8072376e0d8a29ae32b87b3d22401676ee4b1c39bfe48ccddefb927a2b63",
+      "css": "index-CugebHFU.css",
+      "cssSha256": "13c15e609c9b32b06eb128c1eac7f7f949085b1a555b700e44608ff9a30293f3",
+      "evidence": "Stage 9 read-only release reconciliation retained; Round 1 does not deploy."
+    }
+  },
+  "stage10": {
+    "state": "LOCAL_INCREMENTAL_COORDINATOR_VALIDATED_NOT_NEON_PUBLISHER",
+    "validationStatus": "LOCAL_INCREMENTAL_COORDINATOR_VALIDATED_CLOUD_INCOMPLETE",
+    "benchmark": "docs/evidence/tendermatch-stage10-benchmark.json",
+    "newOwnerMigration": false,
+    "sourceConnections": 0,
+    "neonConnections": 0,
+    "modelCalls": 0,
+    "newTorsRequests": 0,
+    "latestRunPublication": "Atomic local sealed-run CAS; no change to Stage 8 hosted pin or historical Neon data."
+  },
+  "remainingOperationalGates": [
+    "Approved read-only current-source manifest publisher with immutable objects and atomic CURRENT replacement",
+    "Reviewed cross-store publication adapter translating local incremental identities to installed versioned Neon contracts",
+    "Hosted authenticated/authorized server runtime, session/CSRF secret management, observability and explicit deployment authorization",
+    "Operational lineage compaction beyond 32 local versions and measured cloud-scale capacity validation",
+    "Separate provider configuration, execution budget and authorization before any AI/TORS call"
+  ],
+  "round2Backlog": [
+    "Refresh the OPEN tender universe at execution time rather than changing the sealed Round 1 population",
+    "Add Consulting and Services supplier/tender eligibility and scoring policies instead of treating Formula v1.1 as universal",
+    "Re-run readiness, eligibility, Formula, ranking, shortlist and selective escalation under new versioned policies",
+    "Populate approved embeddings before claiming semantic retrieval; otherwise retain the labelled deterministic fallback"
+  ],
+  "limitations": [
+    "Source evidence remains limited; absent comparable-contract or financial threshold evidence is not invented",
+    "Missing criterion evidence contributes zero points at denominator 100 but stays Missing, not measured incompatibility",
+    "Outside-scope and scope-not-demonstrated pairs remain null/unscored; zero retrieval is not a Non-match decision",
+    "Retrieval, Formula, Data Coverage, Assessed-only Fit, Evidence Confidence, shortlist, escalation, TORS and Human Disposition stay distinct",
+    "No model/tokenizer/pricing configuration exists; potential byte counts are not token or cost estimates",
+    "Stage 8–10 timings are local/synthetic and cannot be presented as hosted cloud production SLAs"
+  ]
+}

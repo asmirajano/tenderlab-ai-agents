@@ -1,0 +1,493 @@
+{
+  "schemaVersion": "tendermatch-stage8-hosted-probes/1.0.0",
+  "observedAt": "2026-09-07T11:11:01.805Z",
+  "target": {
+    "projectId": "dry-union-87553313",
+    "branchId": "br-polished-boat-b1qddx0m",
+    "branchName": "development",
+    "region": "aws-eu-central-1"
+  },
+  "url": "https://br-polished-boat-b1qddx0m-tendermatchstage8.compute.c-5.eu-central-1.aws.neon.tech",
+  "codeHash": "0482e143cbb7791fefc1f1597881870f3751ae964f9adb8b673a1eaa0cd739d1",
+  "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080",
+  "deployment": {
+    "id": 2,
+    "status": "completed",
+    "runtime": "nodejs24",
+    "memoryMiB": 2048
+  },
+  "readRole": "tendermatch_stage8_reader_dev",
+  "injectedOwnerUrlsOverridden": true,
+  "checks": [
+    {
+      "name": "unauthenticated no-store",
+      "passed": true
+    },
+    {
+      "name": "unauthenticated bounded payload",
+      "passed": true
+    },
+    {
+      "name": "expired session no-store",
+      "passed": true
+    },
+    {
+      "name": "expired session bounded payload",
+      "passed": true
+    },
+    {
+      "name": "wrong server tenant no-store",
+      "passed": true
+    },
+    {
+      "name": "wrong server tenant bounded payload",
+      "passed": true
+    },
+    {
+      "name": "wrong pin no-store",
+      "passed": true
+    },
+    {
+      "name": "wrong pin bounded payload",
+      "passed": true
+    },
+    {
+      "name": "client tenant injection no-store",
+      "passed": true
+    },
+    {
+      "name": "client tenant injection bounded payload",
+      "passed": true
+    },
+    {
+      "name": "untrusted CORS origin no-store",
+      "passed": true
+    },
+    {
+      "name": "untrusted CORS origin bounded payload",
+      "passed": true
+    },
+    {
+      "name": "intents disabled no-store",
+      "passed": true
+    },
+    {
+      "name": "intents disabled bounded payload",
+      "passed": true
+    },
+    {
+      "name": "jobs disabled no-store",
+      "passed": true
+    },
+    {
+      "name": "jobs disabled bounded payload",
+      "passed": true
+    },
+    {
+      "name": "artifacts disabled no-store",
+      "passed": true
+    },
+    {
+      "name": "artifacts disabled bounded payload",
+      "passed": true
+    },
+    {
+      "name": "bulk matrix absent no-store",
+      "passed": true
+    },
+    {
+      "name": "bulk matrix absent bounded payload",
+      "passed": true
+    },
+    {
+      "name": "first authenticated health no-store",
+      "passed": true
+    },
+    {
+      "name": "first authenticated health bounded payload",
+      "passed": true
+    },
+    {
+      "name": "read-only capabilities",
+      "passed": true
+    },
+    {
+      "name": "sealed health",
+      "passed": true
+    },
+    {
+      "name": "default supplier page no-store",
+      "passed": true
+    },
+    {
+      "name": "default supplier page bounded payload",
+      "passed": true
+    },
+    {
+      "name": "default25",
+      "passed": true
+    },
+    {
+      "name": "maximum101 denied no-store",
+      "passed": true
+    },
+    {
+      "name": "maximum101 denied bounded payload",
+      "passed": true
+    },
+    {
+      "name": "supplier page100 no-store",
+      "passed": true
+    },
+    {
+      "name": "supplier page100 bounded payload",
+      "passed": true
+    },
+    {
+      "name": "maximum100",
+      "passed": true
+    },
+    {
+      "name": "supplier continuation no-store",
+      "passed": true
+    },
+    {
+      "name": "supplier continuation bounded payload",
+      "passed": true
+    },
+    {
+      "name": "supplier no duplicate continuation",
+      "passed": true
+    },
+    {
+      "name": "forged cursor no-store",
+      "passed": true
+    },
+    {
+      "name": "forged cursor bounded payload",
+      "passed": true
+    },
+    {
+      "name": "cross-focus cursor no-store",
+      "passed": true
+    },
+    {
+      "name": "cross-focus cursor bounded payload",
+      "passed": true
+    },
+    {
+      "name": "expired signed cursor no-store",
+      "passed": true
+    },
+    {
+      "name": "expired signed cursor bounded payload",
+      "passed": true
+    },
+    {
+      "name": "tender page100 no-store",
+      "passed": true
+    },
+    {
+      "name": "tender page100 bounded payload",
+      "passed": true
+    },
+    {
+      "name": "tender continuation no-store",
+      "passed": true
+    },
+    {
+      "name": "tender continuation bounded payload",
+      "passed": true
+    },
+    {
+      "name": "bounded complete representative tender traversal",
+      "passed": true
+    },
+    {
+      "name": "scored pair detail no-store",
+      "passed": true
+    },
+    {
+      "name": "scored pair detail bounded payload",
+      "passed": true
+    },
+    {
+      "name": "stored score and independent lexical semantics",
+      "passed": true
+    },
+    {
+      "name": "missing fit preserved",
+      "passed": true
+    },
+    {
+      "name": "human and AI authority absent",
+      "passed": true
+    },
+    {
+      "name": "outside scope pair no-store",
+      "passed": true
+    },
+    {
+      "name": "outside scope pair bounded payload",
+      "passed": true
+    },
+    {
+      "name": "outside is unscored not zero",
+      "passed": true
+    },
+    {
+      "name": "repeat health 1 no-store",
+      "passed": true
+    },
+    {
+      "name": "repeat health 1 bounded payload",
+      "passed": true
+    },
+    {
+      "name": "repeat health 2 no-store",
+      "passed": true
+    },
+    {
+      "name": "repeat health 2 bounded payload",
+      "passed": true
+    },
+    {
+      "name": "repeat health 3 no-store",
+      "passed": true
+    },
+    {
+      "name": "repeat health 3 bounded payload",
+      "passed": true
+    }
+  ],
+  "requests": [
+    {
+      "name": "unauthenticated",
+      "status": 401,
+      "ms": 1388,
+      "bytes": 127,
+      "sha256": "b3159867b0c380e55f7c66c613b00c0e30b7c4eea9ed02cfa7243fb13032bb6b",
+      "serverTiming": "app;dur=1",
+      "errorCode": "AUTHENTICATION_REQUIRED"
+    },
+    {
+      "name": "expired session",
+      "status": 401,
+      "ms": 421,
+      "bytes": 130,
+      "sha256": "c33f5de15cebd6122748f4783c547e63d117de4491b87960f7b5a3826bb2d219",
+      "serverTiming": "app;dur=0",
+      "errorCode": "INVALID_OR_EXPIRED_SESSION"
+    },
+    {
+      "name": "wrong server tenant",
+      "status": 403,
+      "ms": 118,
+      "bytes": 125,
+      "sha256": "2c0fe50802ddc2e9875e57e975d9bc8b6e08774847fa2964a09749cff9d00743",
+      "serverTiming": "app;dur=1",
+      "errorCode": "TENANT_NOT_CONFIGURED"
+    },
+    {
+      "name": "wrong pin",
+      "status": 409,
+      "ms": 117,
+      "bytes": 127,
+      "sha256": "87962ccb549c00e6f0aca18993c9e13639c7ef41ac78ce184dc24a64ee92b650",
+      "serverTiming": "app;dur=0",
+      "errorCode": "PINNED_VERSION_REQUIRED"
+    },
+    {
+      "name": "client tenant injection",
+      "status": 400,
+      "ms": 107,
+      "bytes": 131,
+      "sha256": "6ecaefaf84ad496bc9ea795935f610a92ad0f6207706113826b08ddc73d7cb6f",
+      "serverTiming": "app;dur=0",
+      "errorCode": "UNEXPECTED_QUERY_PARAMETERS"
+    },
+    {
+      "name": "untrusted CORS origin",
+      "status": 403,
+      "ms": 181,
+      "bytes": 127,
+      "sha256": "88844ccf24aefc72b6c666ba9bd122fb869662d72fe0cb9c926d1e16d908b781",
+      "serverTiming": "app;dur=0",
+      "errorCode": "TRUSTED_ORIGIN_REQUIRED"
+    },
+    {
+      "name": "intents disabled",
+      "status": 405,
+      "ms": 107,
+      "bytes": 129,
+      "sha256": "de4462be73fa0e9de419807c666f2a688e60d84a49234b9cb38428edaa20e32e",
+      "serverTiming": "app;dur=0",
+      "errorCode": "READ_ONLY_METHOD_REQUIRED"
+    },
+    {
+      "name": "jobs disabled",
+      "status": 404,
+      "ms": 123,
+      "bytes": 129,
+      "sha256": "f2c7721469810a0b4ef044d0f3e00ae469c61ee3cefcd6058c48b0bd3ecc9069",
+      "serverTiming": "app;dur=0",
+      "errorCode": "READ_ONLY_ROUTE_NOT_FOUND"
+    },
+    {
+      "name": "artifacts disabled",
+      "status": 404,
+      "ms": 114,
+      "bytes": 129,
+      "sha256": "f2c7721469810a0b4ef044d0f3e00ae469c61ee3cefcd6058c48b0bd3ecc9069",
+      "serverTiming": "app;dur=0",
+      "errorCode": "READ_ONLY_ROUTE_NOT_FOUND"
+    },
+    {
+      "name": "bulk matrix absent",
+      "status": 404,
+      "ms": 119,
+      "bytes": 129,
+      "sha256": "f2c7721469810a0b4ef044d0f3e00ae469c61ee3cefcd6058c48b0bd3ecc9069",
+      "serverTiming": "app;dur=0",
+      "errorCode": "READ_ONLY_ROUTE_NOT_FOUND"
+    },
+    {
+      "name": "first authenticated health",
+      "status": 200,
+      "ms": 180,
+      "bytes": 1049,
+      "sha256": "4a7978598a30fe33b878b9eabbcfcfdaffffe23df65fca9e39d7b1463c2abb65",
+      "serverTiming": "app;dur=72"
+    },
+    {
+      "name": "default supplier page",
+      "status": 200,
+      "ms": 326,
+      "bytes": 42265,
+      "sha256": "5cceee929092d933e21a686cfd0233f8930c7860221043224484e11028a419ce",
+      "serverTiming": "app;dur=216"
+    },
+    {
+      "name": "maximum101 denied",
+      "status": 400,
+      "ms": 109,
+      "bytes": 122,
+      "sha256": "fcaa95af2b1e8fb373505cc564fb255f1958283ccb91863e93ce76a05b81c357",
+      "serverTiming": "app;dur=1",
+      "errorCode": "INVALID_PAGE_LIMIT"
+    },
+    {
+      "name": "supplier page100",
+      "status": 200,
+      "ms": 363,
+      "bytes": 160165,
+      "sha256": "c4d581b0a2a862cfbd7412456df50da83bca1d16c0cfd0e2a84838a8bd4898ac",
+      "serverTiming": "app;dur=231"
+    },
+    {
+      "name": "supplier continuation",
+      "status": 200,
+      "ms": 364,
+      "bytes": 158930,
+      "sha256": "2a14d6d0442cfb9e86c428b9bc99d09389f8db6f479317486e1b1c92febd10d9",
+      "serverTiming": "app;dur=253"
+    },
+    {
+      "name": "forged cursor",
+      "status": 400,
+      "ms": 176,
+      "bytes": 118,
+      "sha256": "c9bfa88a655da6f2b5c89e56584fec0d18ad706fa0927a8dc5ce202604e0ae2c",
+      "serverTiming": "app;dur=69",
+      "errorCode": "INVALID_CURSOR"
+    },
+    {
+      "name": "cross-focus cursor",
+      "status": 400,
+      "ms": 200,
+      "bytes": 126,
+      "sha256": "21604d2abfe55ca4e3f0342d1de69c865eac5e74b1a406778a11fadb1158a044",
+      "serverTiming": "app;dur=87",
+      "errorCode": "CURSOR_SCOPE_OR_EXPIRY"
+    },
+    {
+      "name": "expired signed cursor",
+      "status": 400,
+      "ms": 166,
+      "bytes": 126,
+      "sha256": "21604d2abfe55ca4e3f0342d1de69c865eac5e74b1a406778a11fadb1158a044",
+      "serverTiming": "app;dur=66",
+      "errorCode": "CURSOR_SCOPE_OR_EXPIRY"
+    },
+    {
+      "name": "tender page100",
+      "status": 200,
+      "ms": 270,
+      "bytes": 158806,
+      "sha256": "04b78da85ceea99fb6af598d0029ab78d00e954dd733a54fd3cd667eb5a754cc",
+      "serverTiming": "app;dur=133"
+    },
+    {
+      "name": "tender continuation",
+      "status": 200,
+      "ms": 187,
+      "bytes": 8926,
+      "sha256": "01b03fac087dbffab16459963470ce1f997eeb3e16dcfe9c8e2a878e1cd81342",
+      "serverTiming": "app;dur=79"
+    },
+    {
+      "name": "scored pair detail",
+      "status": 200,
+      "ms": 1777,
+      "bytes": 7052,
+      "sha256": "c9f36dac98a29dd052f4e1488c1ff2967b14d00076245d9bd3c479ddf8b8a74a",
+      "serverTiming": "app;dur=1654"
+    },
+    {
+      "name": "outside scope pair",
+      "status": 200,
+      "ms": 1487,
+      "bytes": 2315,
+      "sha256": "0836fddff5e4d0394205e4fe5f1858441378580ba833ff6d6ab4ef28e1b0f220",
+      "serverTiming": "app;dur=1372"
+    },
+    {
+      "name": "repeat health 1",
+      "status": 200,
+      "ms": 229,
+      "bytes": 1049,
+      "sha256": "4a7978598a30fe33b878b9eabbcfcfdaffffe23df65fca9e39d7b1463c2abb65",
+      "serverTiming": "app;dur=123"
+    },
+    {
+      "name": "repeat health 2",
+      "status": 200,
+      "ms": 208,
+      "bytes": 1049,
+      "sha256": "4a7978598a30fe33b878b9eabbcfcfdaffffe23df65fca9e39d7b1463c2abb65",
+      "serverTiming": "app;dur=97"
+    },
+    {
+      "name": "repeat health 3",
+      "status": 200,
+      "ms": 168,
+      "bytes": 1049,
+      "sha256": "4a7978598a30fe33b878b9eabbcfcfdaffffe23df65fca9e39d7b1463c2abb65",
+      "serverTiming": "app;dur=62"
+    }
+  ],
+  "sourceWrites": 0,
+  "resultWrites": 0,
+  "modelCalls": 0,
+  "tenderTraversalCount": 105,
+  "passed": true,
+  "maximumPayloadBytes": 160165,
+  "latencyMs": {
+    "samples": 11,
+    "min": 168,
+    "median": 270,
+    "max": 1777,
+    "meaning": "Small serial Windows-to-Frankfurt samples; not a load/cold-start SLA"
+  },
+  "ownerSessionExpiresAt": "2026-09-07T16:56:44.667Z"
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import {
   assessmentFromExploratoryEvaluation,
   countryTenderRadarClusters,
@@ -275,7 +275,15 @@ function SupplierTabs({ view, onChange }: { view: WorkspaceView; onChange: (view
   </nav>;
 }
 
+const AllToAllDevelopment = lazy(() => import("./tendermatch-all-to-all.tsx"));
 export default function TenderMatchApp() {
+  if (typeof window !== "undefined" && new URL(window.location.href).searchParams.get("mode") === "all-to-all-dev") {
+    return <Suspense fallback={<main className="tb3-page"><p role="status">Loading the isolated all-to-all development interface…</p></main>}><AllToAllDevelopment /></Suspense>;
+  }
+  return <TenderMatchLegacyApp />;
+}
+
+function TenderMatchLegacyApp() {
   const [runtimeState, setRuntimeState] = useState<TenderMatchRuntimeState>({ status: "loading", progress: "Loading the approved read-only supplier data…" });
   useEffect(() => {
     const controller = new AbortController();
