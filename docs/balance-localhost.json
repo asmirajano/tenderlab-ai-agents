@@ -1,0 +1,8 @@
+{
+  "id": "tender-balance",
+  "name": "TenderBalance",
+  "cwd": "C:\\CodexWork\\tenderapps-balance-extraction\\apps\\tender-balance",
+  "command": ["{node}", "{controller}\\vite-server.mjs"],
+  "expectedHead": "a99c34227c025aeba822d759fa4a7d97c628679f",
+  "healthPath": "/__localhost/health"
+}

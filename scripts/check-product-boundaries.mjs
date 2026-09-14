@@ -57,8 +57,10 @@ export function audit(root, contract) {
   for (const domain of contract.domains) {
     for (const file of files(domain.root)) walk(file, target => target.startsWith(domain.root + '/'), domain.externals, domain.name);
   }
-  const ui = contract.logistics;
-  for (const entry of ui.entries) walk(entry, target => target.startsWith('packages/logistics-costing/src/') || ui.files.includes(target), ui.externals, 'Logistics UI');
+  for (const ui of [contract.logistics, ...(contract.products ?? [])]) {
+    const domainRoot = ui.domainRoot ?? 'packages/logistics-costing/src';
+    for (const entry of ui.entries) walk(entry, target => target.startsWith(domainRoot + '/') || ui.files.includes(target), ui.externals, ui.name ?? 'Logistics UI');
+  }
   return {errors, edges, visitedCount:visited.size};
 }
 

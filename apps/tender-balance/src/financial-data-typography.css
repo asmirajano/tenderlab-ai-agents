@@ -1,0 +1,172 @@
+/*
+ * Shared financial-data typography for TenderBalance and Tender Logistics Cost.
+ * Technical identifiers may remain monospace elsewhere; reported and calculated
+ * figures always use the application's conventional UI face with aligned digits.
+ */
+:where(.bs-page, .costing-page) {
+  --financial-data-font-family: var(--font-geist-sans);
+  --financial-data-weight: 500;
+  --financial-total-weight: 700;
+}
+
+:where(.bs-page, .costing-page) :is(
+  [data-financial-figure],
+  input[type="number"],
+  input[inputmode="numeric"],
+  .bs-client-result-table th:nth-child(n + 3),
+  .bs-client-result-table td:nth-child(n + 3),
+  .bs-client-result-table td:nth-child(n + 3) b,
+  .bs-confidence,
+  .bs-value-pair b,
+  .bs-value-pair span,
+  .bs-value-pair small,
+  .bs-check-list small,
+  .bs-check-list p,
+  .bs-comparison-rows span,
+  .bs-comparison-rows small,
+  .bs-comparison-rows em,
+  .bs-result-metadata b,
+  .bs-product-health strong,
+  .fin-hero aside dd,
+  .fin-readiness-summary dd,
+  .fin-readiness-panel dd,
+  .fin-generated-meta b,
+  .fin-mapping-table th:nth-child(2),
+  .fin-mapping-table th:nth-child(3),
+  .fin-mapping-table td:nth-child(2),
+  .fin-mapping-table td:nth-child(3),
+  .fin-generated-form th:not(:first-child),
+  .fin-generated-form td:not(:first-child),
+  .fin2-mapping-table th:nth-child(n + 2):nth-child(-n + 6),
+  .fin2-mapping-table td:nth-child(n + 2):nth-child(-n + 6),
+  .fin2-average-audit dd,
+  .fin2-average-result strong,
+  .result-total strong,
+  .result-total small,
+  .result-metrics strong,
+  .client-result-metrics strong,
+  .estimate-hero-copy h1,
+  .production-result-hero > aside strong,
+  .production-kpis strong,
+  .truck-allocation dd,
+  .transport-model-grid dd,
+  .production-cost-breakdown td,
+  .commercial-summary strong,
+  .commercial-summary > p,
+  .reconcile-chip strong,
+  .cargo-formula-grid span,
+  .cargo-calculation-table-wrap td:nth-child(2),
+  .cargo-calculation-table-wrap td:nth-child(3),
+  .cargo-calculation-table-wrap td:nth-child(6),
+  .cargo-calculation-table-wrap td:nth-child(7),
+  .cargo-calculation-table-wrap th:nth-child(2),
+  .cargo-calculation-table-wrap th:nth-child(3),
+  .cargo-calculation-table-wrap th:nth-child(6),
+  .cargo-calculation-table-wrap th:nth-child(7),
+  .cost-lines-table td:nth-child(2),
+  .cost-lines-table th:nth-child(2),
+  .allocation-table td:nth-child(n + 2):nth-child(-n + 8),
+  .allocation-table th:nth-child(n + 2):nth-child(-n + 8),
+  .saved-case-grid time,
+  .saved-case-grid dd,
+  .cost-preparation-summary dd
+) {
+  font-family: var(--financial-data-font-family);
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: normal;
+}
+
+:where(.bs-page, .costing-page) .fin2-calculation-list span {
+  font-family: var(--financial-data-font-family);
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: normal;
+}
+
+/* Ordinary table values stay calm; hierarchy is expressed by weight alone. */
+:where(.bs-page, .costing-page) :is(
+  .bs-client-result-table td:nth-child(n + 3) b,
+  .fin-mapping-table td:nth-child(3) > b,
+  .fin-generated-form td:not(:first-child) > b,
+  .fin2-mapping-table td:nth-child(n + 3):nth-child(-n + 6) > b,
+  .cost-lines-table td:nth-child(2),
+  .allocation-table td:nth-child(n + 2):nth-child(-n + 8),
+  .cargo-calculation-table-wrap td:nth-child(2),
+  .cargo-calculation-table-wrap td:nth-child(3),
+  .cargo-calculation-table-wrap td:nth-child(6),
+  .cargo-calculation-table-wrap td:nth-child(7),
+  .production-cost-breakdown tbody td:nth-child(2)
+) {
+  font-weight: var(--financial-data-weight);
+}
+
+/* Totals and headline figures remain prominent without switching typeface. */
+:where(.bs-page, .costing-page) :is(
+  .excel-dark-table tr.is-total > *,
+  .fin2-average-result strong,
+  .result-total strong,
+  .estimate-hero-copy h1,
+  .production-cost-breakdown tfoot th,
+  .production-cost-breakdown tfoot td,
+  .commercial-summary .commercial-total strong,
+  .cost-lines-table tfoot th,
+  .cost-lines-table tfoot td,
+  .allocation-table tfoot th,
+  .allocation-table tfoot td
+) {
+  font-family: var(--financial-data-font-family);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: var(--financial-total-weight);
+  letter-spacing: normal;
+}
+
+/* Numeric table columns retain accounting-style scanning and alignment. */
+.bs-page :is(
+  .bs-client-result-table th:nth-child(n + 3),
+  .bs-client-result-table td:nth-child(n + 3),
+  .fin-mapping-table th:nth-child(2),
+  .fin-mapping-table th:nth-child(3),
+  .fin-mapping-table td:nth-child(2),
+  .fin-mapping-table td:nth-child(3),
+  .fin-generated-form th:not(:first-child),
+  .fin-generated-form td:not(:first-child),
+  .fin2-mapping-table th:nth-child(n + 2):nth-child(-n + 6),
+  .fin2-mapping-table td:nth-child(n + 2):nth-child(-n + 6)
+),
+.costing-page :is(
+  .cargo-calculation-table-wrap th:nth-child(2),
+  .cargo-calculation-table-wrap th:nth-child(3),
+  .cargo-calculation-table-wrap th:nth-child(6),
+  .cargo-calculation-table-wrap th:nth-child(7),
+  .cargo-calculation-table-wrap td:nth-child(2),
+  .cargo-calculation-table-wrap td:nth-child(3),
+  .cargo-calculation-table-wrap td:nth-child(6),
+  .cargo-calculation-table-wrap td:nth-child(7),
+  .cost-lines-table th:nth-child(2),
+  .cost-lines-table td:nth-child(2),
+  .allocation-table th:nth-child(n + 2):nth-child(-n + 8),
+  .allocation-table td:nth-child(n + 2):nth-child(-n + 8),
+  .production-cost-breakdown th:nth-child(2),
+  .production-cost-breakdown td:nth-child(2)
+) {
+  text-align: right;
+}
+
+@media print {
+  :where(.bs-page, .costing-page) :is(
+    table,
+    input[type="number"],
+    input[inputmode="numeric"],
+    [data-financial-figure],
+    .result-total,
+    .result-metrics,
+    .production-kpis,
+    .commercial-summary,
+    .fin-generated-form,
+    .fin-mapping-table
+  ) {
+    font-family: var(--financial-data-font-family);
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+}

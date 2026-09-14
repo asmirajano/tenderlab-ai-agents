@@ -1,5 +1,34 @@
 {
-  "stage": "1 — dependency guard only; not extracted applications",
+  "stage": "4 — Logistics and Balance development extractions; no production cutover",
+  "products": [{
+    "name": "Balance UI",
+    "domainRoot": "packages/tender-balance/src",
+    "entries": ["apps/tender-balance/src/main.tsx"],
+    "externals": ["react", "react-dom", "pdfjs-dist", "tesseract.js", "xlsx", "exceljs"],
+    "files": [
+      "packages/design-system/src/tokens.css",
+      "apps/tender-balance/src/main.tsx",
+      "apps/tender-balance/src/agent-role-callout.css",
+      "apps/tender-balance/src/agent-role-callout.tsx",
+      "apps/tender-balance/src/balance-sheet-app.tsx",
+      "apps/tender-balance/src/balance-sheet-navigation.ts",
+      "apps/tender-balance/src/balance-sheet.css",
+      "apps/tender-balance/src/client-product-manifesto.css",
+      "apps/tender-balance/src/client-product-manifesto.tsx",
+      "apps/tender-balance/src/client-shell.css",
+      "apps/tender-balance/src/collapsible-workspace.tsx",
+      "apps/tender-balance/src/fin-form-shared.tsx",
+      "apps/tender-balance/src/fin-forms-workspace.tsx",
+      "apps/tender-balance/src/fin-forms.css",
+      "apps/tender-balance/src/fin2-workspace.tsx",
+      "apps/tender-balance/src/financial-data-typography.css",
+      "apps/tender-balance/src/layout-switcher.tsx",
+      "apps/tender-balance/src/practical-agent-overview.tsx",
+      "apps/tender-balance/src/preload-recovery.ts",
+      "apps/tender-balance/src/trial-notice.css",
+      "apps/tender-balance/src/trial-notice.tsx"
+    ]
+  }],
   "domains": [
     {"name":"Balance","root":"packages/tender-balance/src","externals":["pdfjs-dist","tesseract.js","xlsx","exceljs"]},
     {"name":"Logistics","root":"packages/logistics-costing/src","externals":[]},
