@@ -1,0 +1,9 @@
+{
+  "name": "@tenderlab/access-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "vite build"},
+  "dependencies": {"firebase": "^12.18.0", "@noble/ciphers": "2.4.0"},
+  "devDependencies": {"vite": "8.0.13"}
+}

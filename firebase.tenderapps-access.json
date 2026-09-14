@@ -1,0 +1,22 @@
+{
+  "hosting": {
+    "target": "tender-apps",
+    "public": "apps/tender-access-client/dist",
+    "ignore": ["**/.*", "**/node_modules/**"],
+    "rewrites": [{"source": "**", "function": {"functionId": "tenderappsAccess", "region": "europe-west1"}}],
+    "headers": [{"source": "**", "headers": [
+      {"key": "Cache-Control", "value": "private, no-store"},
+      {"key": "X-Content-Type-Options", "value": "nosniff"},
+      {"key": "Referrer-Policy", "value": "no-referrer"},
+      {"key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive"},
+      {"key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups"},
+      {"key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; style-src 'self' 'unsafe-inline'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseappcheck.googleapis.com https://www.google.com https://www.recaptcha.net; frame-src https://tenderlab-ai-agents.firebaseapp.com https://www.google.com https://www.recaptcha.net; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"}
+    ]}]
+  },
+  "functions": [{
+    "source": "packages/tender-access",
+    "codebase": "tenderapps-access",
+    "runtime": "nodejs22",
+    "ignore": ["node_modules", ".git", "*.log", ".env*", "firebase-debug.log*"]
+  }]
+}
