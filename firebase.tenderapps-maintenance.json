@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "target": "tender-apps",
+    "public": "apps/tender-access-maintenance",
+    "ignore": ["**/.*", "**/node_modules/**"],
+    "rewrites": [{"source": "**", "destination": "/index.html"}],
+    "headers": [{"source": "**", "headers": [
+      {"key": "Cache-Control", "value": "no-store"},
+      {"key": "Content-Security-Policy", "value": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"},
+      {"key": "X-Content-Type-Options", "value": "nosniff"}
+    ]}]
+  }
+}
