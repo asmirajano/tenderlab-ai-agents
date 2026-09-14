@@ -1,9 +1,10 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { execFileSync } from "node:child_process";
 
 type ViteServer = {middlewares: {use: (path: string, handler: (request: IncomingMessage, response: ServerResponse) => void) => void}};
 type BrowserSession = {name?: string; token: string; browserOrigin: string; browserAudience: string; expiresAt: number; subject: string};
@@ -13,12 +14,15 @@ const pointerPath = path.join(workspaceRoot, "build", "tendermatch-stage9", "ses
 const browserOrigin = "http://127.0.0.1:6210";
 const browserAudience = "tendermatch-stage9-development-readonly";
 const bindingId = "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080";
+const operatorLocalAppData = path.join("C:", "Users", "Cowork 2", "AppData", "Local");
 
 async function readBrowserSession() {
   const pointer = JSON.parse(await readFile(pointerPath, "utf8"));
   if (!pointer?.vaultName || !/^[a-z0-9-]{3,64}$/.test(pointer.vaultName) || !Number.isSafeInteger(pointer.expiresAt) || Date.now() >= pointer.expiresAt) throw new Error("expired");
-  const vaultModule = await import(pathToFileURL(path.join(workspaceRoot, "scripts", "lib", "tendermatch-stage8-vault.mjs")).href);
-  const vault = await vaultModule.loadOperatorSecret(pointer.vaultName);
+  const vaultPath = path.join(operatorLocalAppData, "TenderMatch", "stage8-dev", pointer.vaultName + ".dpapi");
+  const command = 'Add-Type -AssemblyName System.Security; $bytes=[Convert]::FromBase64String([Console]::In.ReadToEnd()); $result=[Security.Cryptography.ProtectedData]::Unprotect($bytes,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($result))';
+  const plaintext = execFileSync('powershell.exe', ['-NoProfile','-NonInteractive','-Command',command], {input:(await readFile(vaultPath)).toString('base64'),encoding:'utf8',windowsHide:true,stdio:['pipe','pipe','ignore']});
+  const vault = JSON.parse(Buffer.from(plaintext,'base64').toString('utf8'));
   const session = vault?.sessions?.find((candidate: BrowserSession) => candidate?.name === "browser");
   const contract = vault?.contract;
   if (!session?.token || !vault?.csrfToken || !contract || contract.origin !== browserOrigin || contract.audience !== browserAudience || contract.bindingId !== bindingId || session.browserOrigin !== browserOrigin || session.browserAudience !== browserAudience || session.expiresAt !== pointer.expiresAt || Date.now() >= session.expiresAt) throw new Error("invalid");
