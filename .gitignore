@@ -56,3 +56,5 @@ ui-debug.log*
 /build/tendermatch-stage9/
 /build/stage9-*.log
 /build/stage8-*.log
+/build/tender-access-function/
+/build/tender-access-release/

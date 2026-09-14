@@ -14,7 +14,7 @@
     ]}]
   },
   "functions": [{
-    "source": "packages/tender-access",
+    "source": "build/tender-access-release",
     "codebase": "tenderapps-access",
     "runtime": "nodejs22",
     "ignore": ["node_modules", ".git", "*.log", ".env*", "firebase-debug.log*"]

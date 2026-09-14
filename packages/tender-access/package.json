@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "main": "index.mjs",
+  "packageManager": "pnpm@11.19.0",
+  "files": ["*.mjs", "dist/private/**"],
   "engines": {"node": "22"},
   "dependencies": {
     "firebase-admin": "14.4.0",
