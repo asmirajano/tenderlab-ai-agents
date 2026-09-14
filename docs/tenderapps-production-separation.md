@@ -1,5 +1,7 @@
 # Same-origin production separation
 
+Historical public-release procedure. Since the approved shared-access cutover, use `docs/tenderapps-access-layer.md` and the controlled `scope=tenderapps` workflow. Do not execute the old public Hosting fallback or old public rollback below: they would bypass protected delivery. Independent builds still share one serialized Hosting/gateway release unit.
+
 TenderBalance, Tender Logistics and TenderMatch have independent source entries, builds and asset namespaces. Production preserves the existing tenderapps-ai.web.app origin and routes, so browser case storage stays in place. No database or browser-storage migration is performed.
 
 `npm run build:tender-apps` builds the retained catalog/compatibility shell and all three independent products, then runs the collision-rejecting composer. `dist/tenderapps-production/tenderapps-release.json` identifies the exact source commit and entry/asset hashes for each product. Same-path public files must be byte-identical. Credentials, source maps and hidden files are excluded. All old catalog/public asset routes remain available.

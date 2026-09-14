@@ -58,3 +58,4 @@ ui-debug.log*
 /build/stage8-*.log
 /build/tender-access-function/
 /build/tender-access-release/
+gha-creds-*.json

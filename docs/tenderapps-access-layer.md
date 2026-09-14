@@ -40,6 +40,14 @@ The Firebase CLI reported successful Function deployment followed by a missing A
 
 No business database migration, Firestore rule change, Neon production promotion, or unrelated app deployment occurred. Existing parallel Balance work is preserved. Production app bytes are gated but historical public Git content cannot be made confidential retroactively. Runtime npm audit has two moderate transitive findings in uuid/gaxios; inspected runtime use is uuid.v4 rather than the advisory's affected buffer-writing operations. No high or critical findings were reported at packaging time.
 
-## Closed rollback
+## Verified access canary and controlled release automation — 2026-09-14
+
+The later14665d9 release supersedes the incomplete checkpoint above: actual owner sign-in, all three app hydration,3 Logistics/10 Balance saved cases, an existing Balance result, logout204, and fresh sign-in passed. TenderMatch still uses its labeled pinned snapshot. No live production API is implied.
+
+Controlled production entry: dispatch `deploy-firebase.yml` on canonical `main` with `scope=tenderapps`. A successful prior push-validation run for the exact SHA is mandatory, and the dispatched run repeats ordinary tests/builds. Other products and the old public TenderApps uploader remain excluded. Production runs serialize without cancellation. The workflow uses the existing GitHub secret (never printed) and the deploy identity's resource-level ability to act as the dedicated gateway runtime account.
+
+The release script checks the existing protected profile, publishes only the codebase-qualified gateway, verifies provider runtime bounds/new source generation and direct denial, then publishes the matching payload-free Hosting and verifies both domains by exact public hashes plus protected-path denial. Only the pinned CLI's explicit post-success missing-cleanup-policy exit is classified as a warning; arbitrary errors stop before Hosting. No image cleanup policy or forced deletion is introduced. A failed confidentiality check requires the ordered rollback below; an authenticated owner replay remains a separate release verification.
+
+## Closed rollback procedure
 
 Versioned payload-free fallback: firebase.tenderapps-maintenance.json and apps/tender-access-maintenance/index.html. If the canary fails, disable the gateway first and deploy only this maintenance Hosting target. Never restore the old public app payload as a security rollback. No browser case or business data deletion is part of rollback. Record intentional retained Auth/App Check/IAM/billing resources separately; restoring Hosting alone does not undo them.
