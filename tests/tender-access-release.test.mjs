@@ -9,10 +9,10 @@ test('release does not hide arbitrary CLI failures', () => {
     assert.throws(() => classifyDeploy(result));
   }
 });
-test('only exact post-success cleanup warning is classified without force/deletion', () => {
+test('nonzero exits are never softened into success', () => {
   const stdout = 'functions[tenderappsAccess(europe-west1)] Successful update operation.\n';
   const stderr = 'Error: Functions successfully deployed but could not set up cleanup policy in location europe-west1. Pass the --force option';
-  assert.equal(classifyDeploy({status: 1, stdout, stderr}), 'cleanup-policy-warning');
+  assert.throws(() => classifyDeploy({status: 1, stdout, stderr}));
   assert.throws(() => classifyDeploy({status: 1, stdout, stderr: stderr + '\nError: Other failure'}));
   assert.throws(() => classifyDeploy({status: 1, stdout: '', stderr}));
 });

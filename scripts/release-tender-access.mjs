@@ -10,16 +10,10 @@ const config = 'firebase.tenderapps-access.json';
 const api = `https://cloudfunctions.googleapis.com/v2/projects/${project}/locations/europe-west1/functions/tenderappsAccess`;
 const origins = ['https://tenderapps-ai.web.app', 'https://tenderapps-ai.firebaseapp.com'];
 
-// The pinned CLI reports this one post-success policy warning as exit 1.
-// Never suppress a deployment error or enable destructive image cleanup to hide it.
+// Cloud Functions deployment must succeed before any Hosting publication.
 export function classifyDeploy(result) {
   if (result.error || result.signal) throw Error('Deployment process failed');
   if (result.status === 0) return 'success';
-  const output = (result.stdout || '') + (result.stderr || '');
-  const errors = output.split(/\r?\n/).filter(line => /^Error:/.test(line));
-  if (result.status === 1 && errors.length === 1 &&
-      errors[0].startsWith('Error: Functions successfully deployed but could not set up cleanup policy in location europe-west1.') &&
-      /tenderappsAccess\(europe-west1\)\]? Successful update operation/.test(output)) return 'cleanup-policy-warning';
   throw Error('Gateway deployment did not complete successfully; Hosting was not published');
 }
 
@@ -64,13 +58,22 @@ async function main() {
       throw Error('Unknown live Hosting profile; refusing release');
     }
   }
-  const result = spawnSync('firebase', ['deploy', '--project', project, '--config', config,
-    '--only', 'functions:tenderapps-access:tenderappsAccess', '--non-interactive'],
-  {encoding: 'utf8', env: {...process.env, FUNCTIONS_DISCOVERY_TIMEOUT: '60', NO_COLOR: '1'}, maxBuffer: 8 * 1024 * 1024});
+  // Firebase CLI15.27 unconditionally demands actAs on the broad default App Engine
+  // identity. The supported Cloud Functions command authorizes the actual runtime
+  // instead. Retain existing invoker IAM, build identity, environment and secrets.
+  const result = spawnSync('gcloud', ['functions', 'deploy', 'tenderappsAccess', '--gen2',
+    '--project', project, '--region=europe-west1', '--runtime=nodejs22', '--entry-point=tenderappsAccess',
+    '--source=build/tender-access-release', `--service-account=${runtime}`, '--memory=256Mi',
+    '--max-instances=1', '--min-instances=0', '--concurrency=20', '--timeout=30s',
+    '--serve-all-traffic-latest-revision', `--update-labels=tenderapps-source=${sha}`, '--quiet',
+    '--format=json(name,state,serviceConfig.revision)'],
+  {encoding: 'utf8', maxBuffer: 8 * 1024 * 1024});
   process.stdout.write(result.stdout || ''); process.stderr.write(result.stderr || '');
   const outcome = classifyDeploy(result);
   const after = await readFunction(); checkRuntime(after);
-  if (after.updateTime === before.updateTime || !after.buildConfig?.sourceProvenance?.resolvedStorageSource?.generation) {
+  if (after.updateTime === before.updateTime || after.labels?.['tenderapps-source'] !== sha ||
+      after.buildConfig.serviceAccount !== before.buildConfig.serviceAccount ||
+      !after.buildConfig?.sourceProvenance?.resolvedStorageSource?.generation) {
     throw Error('New provider release was not verified; Hosting was not published');
   }
   execFileSync(process.execPath, ['scripts/check-tender-access-denial.mjs', after.serviceConfig.uri], {stdio: 'inherit'});

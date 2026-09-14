@@ -14,4 +14,5 @@ delete manifest.files;
 fs.writeFileSync(path.join(output, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
 fs.copyFileSync(path.join(source, 'package-lock.json'), path.join(output, 'package-lock.json'));
 fs.writeFileSync(path.join(output, '.env.tenderlab-ai-agents'), 'TENDER_ACCESS_APP_ID=1:398180283651:web:57dd419ed20dbfc5322536\n');
+fs.writeFileSync(path.join(output, '.gcloudignore'), '.gcloudignore\n.git\nnode_modules\n.env*\n*.log\ngha-creds-*.json\n');
 console.log('Prepared standalone Functions package with its versioned runtime lockfile.');
