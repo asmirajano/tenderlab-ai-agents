@@ -1,0 +1,61 @@
+{
+  "target": {
+    "project": "dry-union-87553313",
+    "branch": "br-wispy-bird-b1fj8mih",
+    "database": "tendermatch_results_prod",
+    "host": "ep-misty-brook-b1fmfplb.c-5.eu-central-1.aws.neon.tech",
+    "region": "aws-eu-central-1",
+    "grantRole": "tendermatch_results_reader",
+    "loginRole": "tendermatch_results_reader_prod",
+    "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080"
+  },
+  "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080",
+  "observedAt": "2026-09-14T18:02:38.294Z",
+  "checks": [
+    "117 suppliers / 17333 tenders",
+    "supplier bounded first page",
+    "supplier stable cursor without duplicates",
+    "tender bounded first page",
+    "tender stable cursor without duplicates",
+    "scored dimensions remain distinct",
+    "unscored remains null, not zero"
+  ],
+  "measurements": [
+    {
+      "name": "read-role health",
+      "ms": 1403
+    },
+    {
+      "name": "supplier first page",
+      "ms": 1862
+    },
+    {
+      "name": "supplier second page",
+      "ms": 1773
+    },
+    {
+      "name": "tender first page",
+      "ms": 1688
+    },
+    {
+      "name": "tender second page",
+      "ms": 1549
+    },
+    {
+      "name": "scored detail",
+      "ms": 3358
+    },
+    {
+      "name": "unscored detail",
+      "ms": 2999
+    }
+  ],
+  "liveBackendSwitched": false,
+  "population": {
+    "universe": 2027961,
+    "candidates": 707660,
+    "unscored": 1320301,
+    "shortlist": 28034
+  },
+  "state": "PRODUCTION_DATABASE_CANARY_PASSED_NOT_DEPLOYED"
+}

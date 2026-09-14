@@ -1,0 +1,493 @@
+{
+  "state": "PRODUCTION_DATA_READY_NOT_LIVE",
+  "verifiedAt": "2026-09-14T18:06:33.914Z",
+  "target": {
+    "project": "dry-union-87553313",
+    "branch": "br-wispy-bird-b1fj8mih",
+    "database": "tendermatch_results_prod",
+    "host": "ep-misty-brook-b1fmfplb.c-5.eu-central-1.aws.neon.tech",
+    "region": "aws-eu-central-1",
+    "grantRole": "tendermatch_results_reader",
+    "loginRole": "tendermatch_results_reader_prod",
+    "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080"
+  },
+  "source": {
+    "project": "dry-union-87553313",
+    "branch": "br-polished-boat-b1qddx0m",
+    "database": "tendermatch_results_dev",
+    "host": "ep-dark-dew-b15ctyr1.c-5.eu-central-1.aws.neon.tech",
+    "region": "aws-eu-central-1",
+    "org": "org-dark-snow-95046181",
+    "slug": "tendermatchstage8"
+  },
+  "sourceCommit": "8ac562342afcaf62c13f73037b693f253a3edbe0",
+  "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080",
+  "checkpointCapturedAt": "2026-09-14T17:24:29.139Z",
+  "checkpointSealedAt": "2026-09-14T17:44:08.541Z",
+  "binaryCheckpointDigest": "d8403a588b81e5497a934da6d108f770393869fb5b3c0b1ba5547764f8ff5550",
+  "sourceSchemaSnapshotDigest": "dd036b25db681d02e2f32f0f715276548f569fdc8296aab8003b74a4bf055028",
+  "canonicalSourceAndDestinationDigest": "c4ad525b2e223fc3d545df51875883e65b8652ec5a86ddde0e266da8bed8badd",
+  "tables": [
+    {
+      "name": "eligibility_completion",
+      "copiedRows": 1,
+      "copyHash": "6a3125d4be02f12ff665599ddca551265805064b8c1cf74904431869be3e8ae1",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "13892cfb32b82c1e5e5fb7747846b54ba1e0538a96fc29d9d092e25c8e0f2bc3",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "13892cfb32b82c1e5e5fb7747846b54ba1e0538a96fc29d9d092e25c8e0f2bc3",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "eligibility_input",
+      "copiedRows": 17450,
+      "copyHash": "399cd94c456d7e1a51b01f0d9ab0c233b965afbccaf096c7b589b64112083a1e",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "c1205b980f278da66c230cfd7a26f80c0a6b8ffca2022148f54f23aea50c195e",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "c1205b980f278da66c230cfd7a26f80c0a6b8ffca2022148f54f23aea50c195e",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "eligibility_member",
+      "copiedRows": 17450,
+      "copyHash": "26738f8a66e0999ee1504eae7650221bcf600013ffe0aa5305843bc3b74bc9f4",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "4db81e25a4a8b05caaa13d44d9300e07e89923633189838b60c33aa9b82b10ea",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "4db81e25a4a8b05caaa13d44d9300e07e89923633189838b60c33aa9b82b10ea",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "eligibility_pair",
+      "copiedRows": 2027961,
+      "copyHash": "b982f0bd87f5ce1292d8f36b1602a8882d35fb83f9e4656948f9cd95114ec5d8",
+      "destinationRows": 2027961,
+      "destinationCanonicalHash": "fc5e46c23882210f0c0d3892036c9d6cbac2e70c8d60614f55038e1f4f805d74",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "fc5e46c23882210f0c0d3892036c9d6cbac2e70c8d60614f55038e1f4f805d74",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "eligibility_run",
+      "copiedRows": 1,
+      "copyHash": "3a11d905eca3b166130b98b9481eb7179b0d0a43d16c2a6088934cf187d5ae9b",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "439c3981016913448c99210fdb796f4af0a8a3a379bed8364a6819ace8e9db6f",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "439c3981016913448c99210fdb796f4af0a8a3a379bed8364a6819ace8e9db6f",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "escalation_artifact",
+      "copiedRows": 0,
+      "copyHash": "62a74fd0e2d1e3a59b88b5b71c06ca8d43662c6787430c516b8e0bc28bbbda02",
+      "destinationRows": 0,
+      "destinationCanonicalHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "escalation_authorization",
+      "copiedRows": 0,
+      "copyHash": "62a74fd0e2d1e3a59b88b5b71c06ca8d43662c6787430c516b8e0bc28bbbda02",
+      "destinationRows": 0,
+      "destinationCanonicalHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "escalation_decision",
+      "copiedRows": 28034,
+      "copyHash": "d0b5064f3fb0fba32e3317cc71a69c4e8b6f19c6303556d61be700500ab8d739",
+      "destinationRows": 28034,
+      "destinationCanonicalHash": "48ee87818d862b5005bed91b34d1f3616c229c83eae1ae1114a8617b05fd8899",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "48ee87818d862b5005bed91b34d1f3616c229c83eae1ae1114a8617b05fd8899",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "escalation_job",
+      "copiedRows": 0,
+      "copyHash": "62a74fd0e2d1e3a59b88b5b71c06ca8d43662c6787430c516b8e0bc28bbbda02",
+      "destinationRows": 0,
+      "destinationCanonicalHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "escalation_plan",
+      "copiedRows": 1,
+      "copyHash": "7bd5195bf474567ad19f8861bec1aa02cc353a689e106a005e67a18281a1c7f3",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "4bcc53a1eebb7f0a743c0d43ed7d80b9d93f47dc564432dd8e6ac2b5159736a8",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "4bcc53a1eebb7f0a743c0d43ed7d80b9d93f47dc564432dd8e6ac2b5159736a8",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "escalation_request",
+      "copiedRows": 500,
+      "copyHash": "bea7b3b75fd7584adb5eb1866becb708b4bbc918cad53097b01dfc34850bc4b3",
+      "destinationRows": 500,
+      "destinationCanonicalHash": "329ab73725666db33419730a9dd3501336f4de051bade7c78e5e597e7df18675",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "329ab73725666db33419730a9dd3501336f4de051bade7c78e5e597e7df18675",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "formula_completion",
+      "copiedRows": 1,
+      "copyHash": "03ecfccfb2d96a82f9f6f8aa6c5fbe547e135abca0da1d402b2e66a2517409a0",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "f170de20adc02b7801dc720bc6f06a98c250a58d98a6890fcd52695d3cb82eed",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "f170de20adc02b7801dc720bc6f06a98c250a58d98a6890fcd52695d3cb82eed",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "formula_input",
+      "copiedRows": 17450,
+      "copyHash": "8d2a32804c27b8dcfba35216a5833806b525ddf1c13e3589ae80c7c539045335",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "42e9dee54aa501e3f89d215a800ff796d6d862f87a75cdbcba50103e86154283",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "42e9dee54aa501e3f89d215a800ff796d6d862f87a75cdbcba50103e86154283",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "formula_member",
+      "copiedRows": 17450,
+      "copyHash": "68446b7d980b074ee801c666e38bf7514568096b732fbb30d6f5544116e498b0",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "95cdbd9a37cb68d3dde55bbf0a6dc43bf8fcce5a592d326f128902fa1905c885",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "95cdbd9a37cb68d3dde55bbf0a6dc43bf8fcce5a592d326f128902fa1905c885",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "formula_pair",
+      "copiedRows": 707660,
+      "copyHash": "b68242ee8dc15466e2a104e80ad91e9035a17eae5d10cd06a442c059318096e9",
+      "destinationRows": 707660,
+      "destinationCanonicalHash": "341e320759a8887548520ea3ae2819f58ea153e807270a48e118b4d19bf946dd",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "341e320759a8887548520ea3ae2819f58ea153e807270a48e118b4d19bf946dd",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "formula_run",
+      "copiedRows": 1,
+      "copyHash": "04267e69fa2ba78dcd411ff9e09cbb64877678c8894475c9de7a1055d3cdfd61",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "f0b9d2fa4ddf5e10d25a24ccc3c7cbf82e82b244e33236ac9ec32ec8045b96f1",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "f0b9d2fa4ddf5e10d25a24ccc3c7cbf82e82b244e33236ac9ec32ec8045b96f1",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "input_manifest",
+      "copiedRows": 1,
+      "copyHash": "c6a6ce6c01000030aa9683b4d974b45d1b1a375b4a7ea56184856887da8c9bd7",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "fbef037c15629e8be8582fffb4a363f926859a38079f425d07b89d292550f7e1",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "fbef037c15629e8be8582fffb4a363f926859a38079f425d07b89d292550f7e1",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "input_member",
+      "copiedRows": 17450,
+      "copyHash": "632c16a74fc1c6010f2e8daaa72bb385bc062a07c414fe5583774d036b4e9588",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "97bfe49f8747a539253aab69dd062365aca9abda643711ea750d6e6ce0c13697",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "97bfe49f8747a539253aab69dd062365aca9abda643711ea750d6e6ce0c13697",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "normalization_member",
+      "copiedRows": 17450,
+      "copyHash": "ff9a33f413cb9935df4d6e5e4e8e4ee2ade0129df649c5000ae6a7a2aadf4958",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "9af5370e854d819fe88702805c7331c8b30cbc374d8ba4dab5749df1480f40cc",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "9af5370e854d819fe88702805c7331c8b30cbc374d8ba4dab5749df1480f40cc",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "normalization_snapshot",
+      "copiedRows": 1,
+      "copyHash": "ddb8dc286d8ac2f287564d427fd4aabe10b5497b1a0703a9fe28c4edae266f23",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "acf886122ae8ceae7ebdf48dd42406ed58bad136a7681648da67da9c1d295e65",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "acf886122ae8ceae7ebdf48dd42406ed58bad136a7681648da67da9c1d295e65",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "normalized_feature",
+      "copiedRows": 17450,
+      "copyHash": "e72405b994a01b1ba7a565ddf1397d9799a32422dfb3bb6425441f91b121ad79",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "d3d0609569ef7056e8dd9a75dcebe28cf048eda1142bff131c8cf0a488b1131c",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "d3d0609569ef7056e8dd9a75dcebe28cf048eda1142bff131c8cf0a488b1131c",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "ranking_completion",
+      "copiedRows": 1,
+      "copyHash": "e6de26a5dece4850828302212869dc5d7d622040c6aba466dfdc05fecc108793",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "febfd98c545cc6fd41234103490de7282eb7a553a4f27d3f525f08241b19f586",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "febfd98c545cc6fd41234103490de7282eb7a553a4f27d3f525f08241b19f586",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "ranking_member",
+      "copiedRows": 17450,
+      "copyHash": "c80a8024ba8578d7cb156e3f1a1cddda0148e5913eb0f38b3ff5104c5239f18d",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "da2bc1146a46810ad8f89b5b7ee0e4d26421fd383a00bd850ce40ded04a3f388",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "da2bc1146a46810ad8f89b5b7ee0e4d26421fd383a00bd850ce40ded04a3f388",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "ranking_pair",
+      "copiedRows": 707660,
+      "copyHash": "9bf2644d89d4684081ee8fef53f016f37f281afd60e8b67d9603ac10345dc163",
+      "destinationRows": 707660,
+      "destinationCanonicalHash": "10445a0799ac9eea81e6a67ee62cd7df52742aecb2d2cee084932f4b4441e192",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "10445a0799ac9eea81e6a67ee62cd7df52742aecb2d2cee084932f4b4441e192",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "ranking_profile",
+      "copiedRows": 17450,
+      "copyHash": "c27c82c636fd724b573a44036f25b111829b5b0ff96bac4cbb5b51b4e1eb6c1a",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "5e7ec4bc785aa6256b1d05ea332f870d4751655a8c31b2e35ad878f6aba35c92",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "5e7ec4bc785aa6256b1d05ea332f870d4751655a8c31b2e35ad878f6aba35c92",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "ranking_run",
+      "copiedRows": 1,
+      "copyHash": "dd5a35d358fc9ca4007e4fc6f8c3ec160470043d3c108de1ba7d0f764b2309cb",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "80ea216947a2004eb64d4e1c80f6ff8b9ec084973a8b2700777ec1300d1a37b1",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "80ea216947a2004eb64d4e1c80f6ff8b9ec084973a8b2700777ec1300d1a37b1",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "schema_migration",
+      "copiedRows": 5,
+      "copyHash": "5f7bd6f5eb2f6bf92f6476164f0c841e2a95685dc345cec80d2d055b66fd7d66",
+      "destinationRows": 5,
+      "destinationCanonicalHash": "0853af1ee13b5decec86e87210d3bd42850dd98d228ba53b1bedae961ae8d6aa",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "0853af1ee13b5decec86e87210d3bd42850dd98d228ba53b1bedae961ae8d6aa",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "shortlist_completion",
+      "copiedRows": 1,
+      "copyHash": "3d0e7b302bb46895fe1f2ff58aefca522695eb28ee41d0933f24247675ed87c3",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "28ac6920d1436b885b23345c8704a681e640a05c591a97d9219883c08258281b",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "28ac6920d1436b885b23345c8704a681e640a05c591a97d9219883c08258281b",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "shortlist_context",
+      "copiedRows": 17450,
+      "copyHash": "f1711d00592ee7ed478906477e6c3151da4674245cd29b801ce2edea2bc77db1",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "fb8078f9c1907aab59de881e1c8bf761960a17c60e76cbb5be5791b7c853b2ac",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "fb8078f9c1907aab59de881e1c8bf761960a17c60e76cbb5be5791b7c853b2ac",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "shortlist_member",
+      "copiedRows": 17450,
+      "copyHash": "4fe89503b2cdd79ccbd8b0cd5b597c6e773cbe86da88509487cc98a5880cf45a",
+      "destinationRows": 17450,
+      "destinationCanonicalHash": "b4cfd59286191613004b341a40c340add8b18bc49af5600a65da8d42321e0cf1",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "b4cfd59286191613004b341a40c340add8b18bc49af5600a65da8d42321e0cf1",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "shortlist_pair",
+      "copiedRows": 28034,
+      "copyHash": "f2a129f22e062b131af3d6ba688e6864e2d2d8745c9474e2d7dbac9723903257",
+      "destinationRows": 28034,
+      "destinationCanonicalHash": "305b39754fbb3502138beeb39d245308ab3211149ecb1a721e55c30eb495adf8",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "305b39754fbb3502138beeb39d245308ab3211149ecb1a721e55c30eb495adf8",
+      "sourceUnchanged": true
+    },
+    {
+      "name": "shortlist_run",
+      "copiedRows": 1,
+      "copyHash": "57d6970f1d4a22e740bcde8bc227f06bd55d38d8e71fc5c23a0af68ebc7a8190",
+      "destinationRows": 1,
+      "destinationCanonicalHash": "5a7024fe0169fd565b00cac2ec6e2c88c5aa044ad68ac5767d24cbd4327f1d01",
+      "schemaIdentical": true,
+      "sourceCanonicalHash": "5a7024fe0169fd565b00cac2ec6e2c88c5aa044ad68ac5767d24cbd4327f1d01",
+      "sourceUnchanged": true
+    }
+  ],
+  "population": {
+    "universe": 2027961,
+    "candidates": 707660,
+    "unscored": 1320301,
+    "shortlist": 28034
+  },
+  "suppliers": 117,
+  "tenders": 17333,
+  "storedReviewRequests": 500,
+  "role": {
+    "rolname": "tendermatch_results_reader_prod",
+    "rolsuper": false,
+    "rolcreatedb": false,
+    "rolcreaterole": false,
+    "rolreplication": false,
+    "rolbypassrls": false,
+    "rolconnlimit": 3
+  },
+  "checks": [
+    "all checkpoint files authenticated and hashed before creation",
+    "source tenant policy understood before promotion",
+    "dedicated destination exists for verified empty retry",
+    "new production role names unused",
+    "failed import rolled back completely; no destination user relations",
+    "no staged schema survived failed transaction",
+    "production database has no PUBLIC connect/temp rights",
+    "all data schema/constraint/index DDL validated on empty transactional schema before copy",
+    "all committed production counts/schema verified and every field independently hashed",
+    "development pinned data and role configuration unchanged",
+    "production reader cannot read unrelated database neondb",
+    "production reader cannot read unrelated database tender_entity_registry",
+    "restricted production runtime identity",
+    "sole application membership is production NOLOGIN reader",
+    "no base access or writes/ownership",
+    "only read access on exact pinned views",
+    "runtime and grant role own zero objects",
+    "actual production reader sees exact sealed population/header",
+    "base read denied by ACL",
+    "raw input read denied by ACL",
+    "API write denied by ACL",
+    "role creation denied by ACL",
+    "database creation denied by ACL",
+    "wrong tenant has no visible ranking members",
+    "pre-existing production database identities unchanged",
+    "no compute endpoint or scaling configuration changed"
+  ],
+  "canary": {
+    "checks": [
+      "117 suppliers / 17333 tenders",
+      "supplier bounded first page",
+      "supplier stable cursor without duplicates",
+      "tender bounded first page",
+      "tender stable cursor without duplicates",
+      "scored dimensions remain distinct",
+      "unscored remains null, not zero"
+    ],
+    "measurements": [
+      {
+        "name": "read-role health",
+        "ms": 1403
+      },
+      {
+        "name": "supplier first page",
+        "ms": 1862
+      },
+      {
+        "name": "supplier second page",
+        "ms": 1773
+      },
+      {
+        "name": "tender first page",
+        "ms": 1688
+      },
+      {
+        "name": "tender second page",
+        "ms": 1549
+      },
+      {
+        "name": "scored detail",
+        "ms": 3358
+      },
+      {
+        "name": "unscored detail",
+        "ms": 2999
+      }
+    ]
+  },
+  "environment": {
+    "developmentMutations": 0,
+    "developmentCredentialChanges": 0,
+    "variable": "TENDERMATCH_PRODUCTION_READ_URL",
+    "storage": "Separate Windows CurrentUser DPAPI production vault; no runtime binding/deployment yet",
+    "liveBackendSwitched": false,
+    "developmentFallbackAllowed": false
+  },
+  "schemaTreatment": "Preserve tenant RLS; replace development generation/job writer triggers with a production all-write rejection. No writer/model execution is deployed.",
+  "rollback": {
+    "applicationCommit": "8ac562342afcaf62c13f73037b693f253a3edbe0",
+    "gatewayRevision": "tenderappsaccess-00004-yan",
+    "liveBackendSwitched": false,
+    "developmentFallbackAllowed": false,
+    "keepExistingSnapshot": true
+  },
+  "databaseBytes": 2357993472,
+  "endpointsChanged": false,
+  "planChanges": 0,
+  "billing": "Usage-based storage/history, transfer and compute; actual incremental charges not yet reconciled",
+  "servicesControl": {
+    "threadId": "01a0a046-d1ab-7c12-a43c-323a0e5382fb",
+    "status": "Acknowledged and preserved; Neon monitoring Manual; canonical registration pending inactive App Roadmap Services writer",
+    "newMonitoringEnabled": false
+  },
+  "crossDatabaseSecurityDefinerCheck": {
+    "target": {
+      "project": "dry-union-87553313",
+      "branch": "br-wispy-bird-b1fj8mih",
+      "database": "tendermatch_results_prod",
+      "host": "ep-misty-brook-b1fmfplb.c-5.eu-central-1.aws.neon.tech",
+      "region": "aws-eu-central-1",
+      "grantRole": "tendermatch_results_reader",
+      "loginRole": "tendermatch_results_reader_prod",
+      "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080"
+    },
+    "observedAt": "2026-09-14T18:06:28.900Z",
+    "checks": [
+      {
+        "database": "neondb",
+        "callableSecurityDefinerFunctions": 0
+      },
+      {
+        "database": "tender_entity_registry",
+        "callableSecurityDefinerFunctions": 0
+      }
+    ]
+  },
+  "limitations": [
+    "No live Function or UI was switched",
+    "Database canary is not an authenticated end-to-end live-backend deployment canary",
+    "Database size is not provider billable storage",
+    "Development writer triggers intentionally replaced, not cloned"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "target": {
+    "project": "dry-union-87553313",
+    "branch": "br-wispy-bird-b1fj8mih",
+    "database": "tendermatch_results_prod",
+    "host": "ep-misty-brook-b1fmfplb.c-5.eu-central-1.aws.neon.tech",
+    "region": "aws-eu-central-1",
+    "grantRole": "tendermatch_results_reader",
+    "loginRole": "tendermatch_results_reader_prod",
+    "bindingId": "26e1bab78a38d8d520d59563e702bc4540405213f39cbb7b40a49ecbb03a4080"
+  },
+  "observedAt": "2026-09-14T18:06:28.900Z",
+  "checks": [
+    {
+      "database": "neondb",
+      "callableSecurityDefinerFunctions": 0
+    },
+    {
+      "database": "tender_entity_registry",
+      "callableSecurityDefinerFunctions": 0
+    }
+  ]
+}

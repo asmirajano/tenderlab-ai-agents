@@ -1,0 +1,6 @@
+{
+  "name": "tendermatch-production-promotion-tools",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {"pg-copy-streams": "7.0.0"}
+}
