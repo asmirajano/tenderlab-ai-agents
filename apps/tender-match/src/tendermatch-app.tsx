@@ -26,6 +26,7 @@ import { AgentRoleCallout } from "./agent-role-callout.tsx";
 import { PracticalAgentOverview, PracticalAgentOverviewBoundary, PracticalAgentOverviewPart } from "./practical-agent-overview.tsx";
 import { TrialNotice } from "./trial-notice.tsx";
 import { TenderMatchFormulaView } from "./tendermatch-formula-view.tsx";
+import { TenderMatchHowItWorksView } from "./tendermatch-how-it-works-view.tsx";
 import { loadSupplierEvidence, loadTenderMatchRuntime, type TenderMatchRuntimeState, type TenderMatchRuntimeCatalog } from "./tendermatch-supplier-api.ts";
 import { loadTenderMatchPair, queryTenderMatchPairs, type PairQuery, type TenderMatchCompactPair } from "./tendermatch-pair-api.ts";
 import { PagedPairMatrix, PagedPairRanking } from "./tendermatch-pair-workspace.tsx";
@@ -41,10 +42,11 @@ type WorkspaceView =
   | "matrix"
   | "match-tenders"
   | "match-suppliers"
-  | "formula";
+  | "formula"
+  | "how-it-works";
 
 type NavItem = { id: WorkspaceView; label: string; short: string; sublabel: string };
-type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match" | "formula";
+type NavGroupId = "overview" | "market" | "suppliers" | "tender-directory" | "match" | "formula" | "how-it-works";
 type NavGroup = {
   id: NavGroupId;
   label: string;
@@ -71,6 +73,7 @@ function navGroupsFor(supplierCount: number): NavGroup[] { return [
     { id: "match-suppliers", label: "Review by Suppliers", short: "05C", sublabel: "Supplier-first" },
   ] },
   { id: "formula", label: "Formula", short: "06", family: "analysis", sublabel: "How scoring works", items: [{ id: "formula", label: "Formula", short: "06", sublabel: "How scoring works" }] },
+  { id: "how-it-works", label: "How it works", short: "07", family: "analysis", sublabel: "General rule", items: [{ id: "how-it-works", label: "How it works", short: "07", sublabel: "General rule" }] },
 ]; }
 
 const workspaceViewIds = new Set<WorkspaceView>(navGroupsFor(0).flatMap((group) => group.items).map((item) => item.id));
@@ -336,6 +339,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimeCatalog 
     "tender-directory": true,
     match: initialNavGroup === "match",
     formula: true,
+    "how-it-works": true,
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(initialResult.match.key);
@@ -537,6 +541,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimeCatalog 
           {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} runtime={runtime} caseResults={caseResults} onView={changeView} onOpen={openIdentity} onFocus={openFocused} onDecision={decide} />}
           {view === "verification" && <VerificationView view={view} supplier={supplier} suppliers={suppliers} evidenceStatus={evidenceStatus} evidenceError={evidenceError} onFocus={openFocused} onView={changeView} />}
           {view === "formula" && <TenderMatchFormulaView />}
+          {view === "how-it-works" && <TenderMatchHowItWorksView onFormula={() => changeView("formula")} />}
         </div>
       </section>
     </section>
