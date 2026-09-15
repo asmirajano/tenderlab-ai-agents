@@ -507,8 +507,8 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimeCatalog 
     <div className="tb3-case-actions"><button onClick={saveCase}>Save Case</button><button onClick={loadCase}>Load Case</button><small>{persistenceMessage}</small></div>
   </section>;
 
-  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : view === "formula" ? "tb3-page-formula" : ""}`}>
-    {view !== "dashboard" && view !== "formula" && <section className="tb3-product-intro">
+  return <main className={`tb3-page ${view === "dashboard" ? "tb3-page-overview" : view === "formula" ? "tb3-page-formula" : view === "how-it-works" ? "tb3-page-method" : ""}`}>
+    {view !== "dashboard" && view !== "formula" && view !== "how-it-works" && <section className="tb3-product-intro">
       <div><p><i /> TENDERAPPS AGENT 03 · INTERNAL MATCHING WORKSPACE</p><h1>Tender<em>Match</em></h1><h2>Company × Tender evidence review for TenderLab Consultants.</h2><span>Select an explicit pair, inspect evidence-linked match support, gaps and freshness, then keep the consultant’s match disposition visible and human-controlled.</span></div>
       <aside><span>OPERATING ROLE</span><b>TL-A031</b><small>Company-to-Tender Match Score Agent · internal consultant workspace</small><strong>MATCH SUPPORT · EVIDENCE REVIEW · HUMAN DISPOSITION</strong></aside>
     </section>}
@@ -529,7 +529,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimeCatalog 
         {openingPair && <p role="status" className="tb3-pair-pipeline">Loading selected-pair evidence and explanation…</p>}
         {actionError && <div className="tb3-alert" role="alert"><b>Action needs attention</b><span>{actionError}</span><button onClick={() => setActionError("")} aria-label="Dismiss action error">×</button></div>}
 
-        {view !== "dashboard" && view !== "formula" && caseControls}
+        {view !== "dashboard" && view !== "formula" && view !== "how-it-works" && caseControls}
 
         <div className="tb3-view-surface" ref={viewSurfaceRef} role="region" aria-label={`${navItems.find((entry) => entry.id === view)?.label ?? "TenderMatch"} workspace`} tabIndex={-1}>
           {view === "dashboard" && <DashboardView allMatches={allMatches} auditedMatches={auditedMatches} evaluatedMatches={evaluatedMatches} priorityMatches={priorityMatches} suppliers={suppliers} onView={changeView} onOpen={openAssessment} />}
@@ -541,7 +541,7 @@ function TenderMatchWorkspace({ runtime }: { runtime: TenderMatchRuntimeCatalog 
           {(view === "match-tenders" || view === "match-suppliers") && <MatchWorkspaceView view={view} tender={tender} supplier={supplier} suppliers={suppliers} result={result} runtime={runtime} caseResults={caseResults} onView={changeView} onOpen={openIdentity} onFocus={openFocused} onDecision={decide} />}
           {view === "verification" && <VerificationView view={view} supplier={supplier} suppliers={suppliers} evidenceStatus={evidenceStatus} evidenceError={evidenceError} onFocus={openFocused} onView={changeView} />}
           {view === "formula" && <TenderMatchFormulaView />}
-          {view === "how-it-works" && <TenderMatchHowItWorksView onFormula={() => changeView("formula")} />}
+          {view === "how-it-works" && <TenderMatchHowItWorksView />}
         </div>
       </section>
     </section>

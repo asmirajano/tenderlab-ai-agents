@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Как работает TenderMatch — общее правило</title>
+<style>
+  :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#15313b;background:#f5f8f7}
+  *{box-sizing:border-box}body{margin:0;padding:20px}main{max-width:1050px;margin:auto}
+  h1{font-size:clamp(1.5rem,3vw,2.2rem);margin:0 0 7px}h2{font-size:1.2rem;margin:30px 0 12px}h3{font-size:1rem;margin:0 0 6px}
+  p{line-height:1.48;margin:7px 0 12px}.muted{color:#536b70}.small{font-size:.88rem}.eyebrow{color:#446b66;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;font-weight:700}
+  .lanes,.questions,.split,.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+  .node,.question,.rulebox,.note,.funnel-node{background:white;border:1px solid #d9e4e1;border-radius:11px;padding:16px}
+  .node{min-height:120px;border-top:5px solid #4194a5}.lanes .node:last-child{border-top-color:#ba8e48}
+  .step{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}.step span{background:#edf4f3;border-radius:7px;padding:6px 8px}.arrow{font-size:1.25rem;color:#527a74}
+  .merge{margin:18px auto;width:max-content;max-width:100%;padding:11px 19px;border-radius:30px;background:#174d4b;color:white;text-align:center;font-weight:650}
+  .down{text-align:center;color:#527a74;font-size:1.4rem;line-height:1;margin:6px 0}
+  .questions{grid-template-columns:repeat(3,minmax(0,1fr))}.question{min-height:140px}.question.retrieval{border-top:5px solid #267eac}.question.formula{border-top:5px solid #b87331}.question.eligibility{border-top:5px solid #8170aa}
+  .question strong{display:block;margin:8px 0;font-size:1.08rem}.human{border-left:5px solid #557d57;margin:0 auto;max-width:650px}
+  .badge{display:inline-block;font-size:.69rem;line-height:1.2;letter-spacing:.05em;font-weight:750;border-radius:4px;padding:4px 6px;margin:4px 0 6px}
+  .badge.rule{background:#e0f0f3;color:#15546a}.badge.sim{background:#fff0c5;color:#674812}.badge.real{background:#e4e9e9;color:#405255}
+  .simfig{padding:9px 11px;background:#fff9e8;border-left:3px solid #b58b35;border-radius:5px;margin:11px 0 2px;line-height:1.45;font-size:.9rem}
+  .simfig b{display:block}.simfig .badge{margin:0 0 4px}.sim-ribbon{text-align:center;margin:5px auto 14px;max-width:650px}
+  .math{font-size:1rem;font-weight:700;background:#edf4f7;border-radius:8px;padding:10px;margin:10px 0;overflow-wrap:anywhere}
+  .split .rulebox:first-child{border-top:5px solid #267eac}.split .rulebox:last-child{border-top:5px solid #8170aa}
+  .sum{font-weight:750;text-align:center;padding:12px 10px;background:#e6f3ee;border-radius:8px;margin:15px 0}
+  .warning{border-left:5px solid #bf8132;background:#fff4df;padding:10px 14px;border-radius:7px}
+  .rules .rulebox:first-child{border-top:5px solid #4b796d}.rules .rulebox:last-child{border-top:5px solid #b87331}
+  ul{padding-left:20px;margin:8px 0;line-height:1.45}li{margin:4px 0}
+  .funnel{display:grid;gap:5px;max-width:680px;margin:auto}.funnel-node{text-align:center;padding:10px 12px}.funnel-node b{display:block}.funnel-node small{display:block;color:#536b70;margin-top:3px}.funnel-count{font-size:1.3rem;font-weight:750;display:block;margin:3px 0}.branch{padding:9px 12px;border-left:4px solid #84918e;background:#edf1f0;font-size:.9rem;margin:3px 0 3px 10px}
+  details{background:white;border:1px solid #d9e4e1;border-radius:8px;margin:8px 0;padding:10px 13px}summary{cursor:pointer;font-weight:650;line-height:1.4}details p,details ul{margin:10px 0 4px}
+  .table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.88rem}th,td{text-align:left;padding:7px;border-bottom:1px solid #e5ece9}th{background:#f0f6f3}
+  .try{margin-top:24px}.inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}label{display:block;font-size:.88rem;font-weight:650}input{font:inherit;width:100%;margin-top:5px;padding:8px;border:1px solid #9cadab;border-radius:6px}output{display:block;background:#e6f3ee;padding:12px;border-radius:8px;line-height:1.55;margin-top:12px;font-weight:650}
+  a{color:#006f67}footer{margin:22px 0;color:#576e72;font-size:.78rem;line-height:1.45}
+  @media(max-width:760px){.questions{grid-template-columns:1fr}.lanes,.split,.rules{grid-template-columns:1fr}.node{min-height:auto}}
+  @media(max-width:480px){body{padding:12px}.step{gap:6px}.step span{flex:1 1 110px}.inputs{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">Общее правило · любая компания × любой тендер</div>
+<h1>Как TenderMatch превращает данные в возможность</h1>
+<p class="muted">Сначала система сравнивает компанию и тендер. Затем отвечает на четыре разных вопроса — автоматического общего «процента совпадения» нет.</p>
+<p class="small"><span class="badge rule" lang="en">RULE</span> действующее правило · <span class="badge sim" lang="en">SIMULATED EXAMPLE</span> вымышленные учебные числа · <span class="badge real" lang="en">REAL EXAMPLE</span> данные обработанной пары, только в конце страницы.</p>
+
+<section aria-label="Общая схема работы TenderMatch">
+  <div class="lanes">
+    <div class="node"><span class="badge rule" lang="en">RULE</span><h3>Компания</h3><div class="step"><span>Данные компании + утверждения с источниками</span><span class="arrow" aria-hidden="true">→</span><span>Технические слова + понятия</span></div><p class="small muted">Сведения могут быть проверенными, заявленными самой компанией или отсутствовать.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>10 слов · 4 понятия</b>У одной условной компании; статус её сведений сохраняется.</div></div>
+    <div class="node"><span class="badge rule" lang="en">RULE</span><h3>Тендер</h3><div class="step"><span>Данные актуального объявления</span><span class="arrow" aria-hidden="true">→</span><span>Слова + понятия тендера</span></div><p class="small muted">В объявлении могут отсутствовать подробные требования или надёжный часовой пояс срока подачи.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>5 слов · 3 понятия · GOODS</b>Срок подачи условно действует; требование об авторизации производителя ещё не подтверждено.</div></div>
+  </div>
+  <div class="down" aria-hidden="true">↓</div><div class="merge">Одна компания × один тендер</div>
+  <div class="simfig sim-ribbon"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>Та же условная пара дальше по всей схеме</b>3 общих слова · 2 общих понятия.</div>
+  <p class="small muted" style="text-align:center">Сначала проверяется область применимости и предварительная допустимость. Для кандидата в области применимости два числовых показателя рассчитываются отдельно.</p>
+  <div class="questions">
+    <div class="question retrieval"><span class="badge rule" lang="en">RULE</span><h3>Релевантность поиска</h3><strong>Есть ли общие слова и понятия?</strong><p>Совпадения дают показатель для ранжирования от 0 до 1 000 000.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>280 000 / 1 000 000</b>200 000 за слова + 80 000 за понятия.</div></div>
+    <div class="question formula"><span class="badge rule" lang="en">RULE</span><h3>Оценка Formula</h3><strong>Что подтверждают доступные сведения?</strong><p>Пять критериев дают отдельную оценку 0–100. Отсутствующие сведения приносят 0 баллов и остаются отмеченными как отсутствующие.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>55 / 100</b>Полнота данных 65 / 100; уверенность в доказательствах 65 / 100. Это три разных числа.</div></div>
+    <div class="question eligibility"><span class="badge rule" lang="en">RULE</span><h3>Допустимость участия</h3><strong>Можно ли подтвердить право на участие?</strong><p>Система предварительно проверяет область работ и подтверждённые ограничения; требования тендера, соответствие им и квалификацию ещё нужно проверить.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>Нужна проверка</b>Условный тендер требует авторизации производителя, но доказательство отсутствует. Это вывод при просмотре условий человеком, не автоматическая проверка данного документа.</div></div>
+  </div>
+  <div class="down" aria-hidden="true">↓</div>
+  <div class="note human"><span class="badge rule" lang="en">RULE</span><h3>Проверка человеком / консультантом</h3><p>Прежде чем решать, участвовать ли, нужно проверить объявление, доказательства, срок подачи и реальную возможность выполнить контракт. Положительная оценка не является разрешением на участие.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>280 000 релевантность · 55 Formula · срок действует</b>Но авторизация не подтверждена → запросить документ и пересмотреть допустимость; пока не одобрять участие.</div></div>
+</section>
+
+<section aria-labelledby="retrieval-heading">
+  <h2 id="retrieval-heading">Как рассчитывается релевантность поиска</h2>
+  <div class="split">
+    <div class="rulebox"><span class="badge rule" lang="en">RULE</span><h3>① Совпадающие слова</h3><p>Сравниваются два набора уникальных слов: сколько встречается в обоих и сколько разных слов есть хотя бы в одном.</p><div class="math">⌊800 000 × общие слова ÷ все разные слова⌋</div><p>Максимум <strong>800 000</strong>. Если слов нет ни в одном наборе, эта часть равна 0.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>10 + 5 − 3 = 12 разных слов</b>⌊800 000 × 3 / 12⌋ = 200 000.</div></div>
+    <div class="rulebox"><span class="badge rule" lang="en">RULE</span><h3>② Совпадающие понятия</h3><p>Распознанные слова сопоставляются с фиксированными понятиями. Затем сравниваются два набора понятий.</p><div class="math">⌊200 000 × общие понятия ÷ все разные понятия⌋</div><p>Максимум <strong>200 000</strong>. Если понятий нет ни в одном наборе, эта часть равна 0.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>4 + 3 − 2 = 5 разных понятий</b>⌊200 000 × 2 / 5⌋ = 80 000.</div></div>
+  </div>
+  <div class="sum"><span class="badge rule" lang="en">RULE</span> Релевантность = слова + понятия · максимум 1 000 000<br><span class="badge sim" lang="en">SIMULATED EXAMPLE</span> 200 000 + 80 000 = 280 000 / 1 000 000</div>
+  <div class="warning"><strong>Это не вероятность.</strong> Значение 250 000 не означает 25% шанса на допуск, победу или пригодность тендера. В коде задана шкала до миллиона, но причина выбора именно этого предела не документирована.</div>
+</section>
+
+<section aria-labelledby="fixed-heading">
+  <h2 id="fixed-heading">Что остаётся постоянным, а что меняется для каждой пары</h2>
+  <div class="rules">
+    <div class="rulebox"><span class="badge rule" lang="en">RULE</span><h3>Постоянное правило</h3><ul><li>Максимум всей шкалы — 1 000 000</li><li>Максимум части за слова — 800 000</li><li>Максимум части за понятия — 200 000</li><li>Сравнение уникальных наборов, фиксированное соотношение 80/20, округление каждой части вниз до целого</li><li>Фиксированный словарь понятий; подтверждённой семантической модели в этом методе нет</li></ul></div>
+    <div class="rulebox"><span class="badge rule" lang="en">RULE</span><h3>Меняется для каждой пары</h3><ul><li>Наборы слов и понятий компании и тендера</li><li>Общие элементы и число всех разных элементов</li><li>Обе части и общий показатель релевантности</li><li>Отдельные баллы Formula, полнота данных и уверенность в доказательствах</li><li>Отдельный вывод о допустимости и последующее решение человека</li></ul><p class="small"><strong>Знаменатель вроде 31 не является постоянным.</strong> Он относится лишь к паре, в которой два набора дают 31 разное слово.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span>У нашей учебной пары знаменатель за слова <b>12</b>, за понятия <b>5</b>. При другой компании или тендере оба изменятся.</div></div>
+  </div>
+</section>
+
+<section aria-labelledby="formula-heading">
+  <h2 id="formula-heading">Formula оценивает другой аспект</h2>
+  <div class="note"><span class="badge rule" lang="en">RULE</span><p><strong>Пять критериев, максимум 100 баллов.</strong> Текущая область применения — GOODS (поставка товаров) и WORKS (выполнение работ). Formula использует нормализованные категорию, название и страну тендера, а также пригодные утверждения компании с отметкой об их проверенности. Техническое сравнение использует подготовленные слова; мощность, опыт, рынок и финансовые сведения оцениваются отдельно.</p><p>Если для критерия нет достаточных данных, его результат остаётся <strong>MISSING (данных нет)</strong> и приносит 0 баллов — это не доказательство несоответствия. Оценка Formula — сумма баллов из фиксированных 100; автоматического порога «совпадения» нет.</p><div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>Та же условная пара GOODS: Formula = 55 / 100</b>Сведения позволяют оценить только техническую часть, мощность и рынок. Опыт и финансовая готовность остаются MISSING.</div></div>
+  <div class="table-wrap"><table aria-label="Текущие критерии Formula v1.1"><thead><tr><th>GOODS · товары</th><th>Макс.</th><th>WORKS · работы</th><th>Макс.</th></tr></thead><tbody>
+    <tr><td>Техническая релевантность</td><td>35</td><td>Техническая релевантность работ</td><td>25</td></tr>
+    <tr><td>Мощность / выполнение поставки</td><td>20</td><td>Аналогичные контракты</td><td>25</td></tr>
+    <tr><td>Сопоставимый опыт</td><td>20</td><td>Персонал / оборудование</td><td>20</td></tr>
+    <tr><td>Рынок / выполнение поставки</td><td>10</td><td>Мобилизация / местное выполнение</td><td>15</td></tr>
+    <tr><td>Финансовая / закупочная готовность</td><td>15</td><td>Финансовая / закупочная готовность</td><td>15</td></tr>
+  </tbody></table></div>
+  <p class="small"><strong>Полнота данных (Coverage)</strong> — доля из 100 возможных баллов, для которой были данные, позволяющие оценить критерии. <strong>Уверенность в доказательствах (Evidence Confidence)</strong> — взвешенная уверенность в сведениях, использованных для оценённых критериев. Ни одно из этих значений само по себе не подтверждает законное право на участие или независимую проверку.</p>
+  <div class="simfig"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><b>Учебное распределение баллов для этой же пары GOODS</b>
+    <div class="table-wrap"><table aria-label="Учебный пример Formula; не данные TenderMatch"><thead><tr><th>Критерий</th><th>Оценка</th><th>Баллы</th></tr></thead><tbody>
+      <tr><td>Техническая релевантность</td><td>5 / 5</td><td>35 / 35</td></tr>
+      <tr><td>Мощность / поставка</td><td>3 / 5 (предварительно)</td><td>12 / 20</td></tr>
+      <tr><td>Сопоставимый опыт</td><td>MISSING, не «провален»</td><td>0 / 20</td></tr>
+      <tr><td>Рынок / поставка</td><td>4 / 5</td><td>8 / 10</td></tr>
+      <tr><td>Финансовая готовность</td><td>MISSING, не «провалена»</td><td>0 / 15</td></tr>
+    </tbody></table></div>
+    <p><strong>Formula: 35 + 12 + 0 + 8 + 0 = 55 / 100.</strong> Полнота данных: 35 + 20 + 10 = <strong>65 / 100</strong> (это доступные максимумы оценённых критериев, а не заработанные баллы). Если уверенность в технических, мощностных и рыночных сведениях условно 50, 100 и 50, то взвешенная уверенность: округлить (35×50 + 20×100 + 10×50) / 65 = <strong>65 / 100</strong>. Эти три итога нельзя складывать.</p>
+  </div>
+  <div class="warning"><span class="badge rule" lang="en">RULE</span> В текущей пилотной реализации аналогичный опыт и финансовая готовность остаются MISSING, а оценка мощности при наличии сведений — предварительный уровень 3 / 5. Поэтому учебное Formula = 72 / 100 из задания нельзя выдавать за результат действующего правила; здесь использовано корректное 55 / 100.</div>
+</section>
+
+<section aria-labelledby="funnel-heading">
+  <h2 id="funnel-heading">От списка OPEN до проверенной возможности</h2>
+  <p class="small"><span class="badge sim" lang="en">SIMULATED EXAMPLE</span> Вся воронка ниже — вымышленная учебная группа для одной условной компании. Числа не измерены в TenderMatch и не отражают реальную долю прохождения. Наша условная пара доходит до проверки допуска, но пока не попадает в подтверждённые возможности: не хватает авторизации.</p>
+  <div class="funnel">
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Тендеры со статусом OPEN</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">10 000</span><small>Статус источника не доказывает, что срок подачи ещё не истёк.</small></div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Текущая область Formula: GOODS / WORKS</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">6 000</span><small>Другие 4 000 вне этой версии Formula, не обязательно неподходящи.</small></div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Отдельные оценки Formula и релевантности</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">6 000 пар</span><small>Предварительная проверка области → два отдельных показателя; нет общего процента «совпадения».</small></div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Релевантность &gt; 0: кандидаты для просмотра</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">400</span><small>Общие слова или понятия найдены; это не подтверждённые совпадения.</small></div>
+    <div class="branch"><span class="badge rule" lang="en">RULE</span> Нулевая релевантность остаётся доступной для аудита. <span class="badge sim" lang="en">SIMULATED EXAMPLE</span> Условные 5 600 других пар не объявлены недопустимыми.</div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Подробная проверка соответствия и сведений</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">80</span><small>Условно заинтересовали человека; этот отбор не автоматический порог Formula.</small></div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Детальная проверка права на участие</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">20</span><small>У нашей пары здесь остаётся вопрос об авторизации производителя.</small></div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Подтверждённые возможности</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">8</span><small>Проверены вручную; наша пара пока НЕ среди них.</small></div><div class="down" aria-hidden="true">↓</div>
+    <div class="funnel-node"><span class="badge rule" lang="en">RULE</span><b>Выбраны человеком для действия</b><span class="badge sim" lang="en">SIMULATED EXAMPLE</span><span class="funnel-count">3</span><small>Планы участия решает человек; текущие оценки не выполняют этот шаг автоматически.</small></div>
+  </div>
+</section>
+
+<section aria-labelledby="details-heading">
+  <h2 id="details-heading">Что находится под схемой</h2>
+  <details><summary>Как создаются слова компании?</summary><p>Пригодные технические сведения о компании — категории товаров, виды работ, обслуживаемые отрасли и материалы — превращаются в уникальные слова в нижнем регистре. Слова короче трёх символов и элементы фиксированного списка общих слов исключаются. У каждого утверждения сохраняется статус источника; извлечённое слово не означает, что утверждение проверено.</p></details>
+  <details><summary>Как создаются слова тендера?</summary><p>Для этой оценки и поиска слова берутся из названия и категории закупки. Более широкий словарь объявления может сохраняться из тегов и описания, но этап Retrieval использует более узкий набор слов для оценки — не весь текст объявления и не производные теги. Структурированные требования тендера могут отсутствовать.</p></details>
+  <details><summary>Как создаются понятия?</summary><p>Фиксированный словарь английских соответствий сопоставляет распознанные слова с понятиями, например «сельское хозяйство», «вода», «дороги», «электротехника». Неизвестное словарю слово не создаёт понятия. Это словарное сопоставление, а не подтверждённая семантическая схожесть; источник векторных представлений здесь отсутствует.</p></details>
+  <details><summary>Как рассчитывается совпадение?</summary><p>На каждой стороне — набор уникальных элементов. Общие слова или понятия образуют пересечение двух наборов; все разные элементы образуют объединение: число компании + число тендера − число общих элементов. Каждая взвешенная дробь округляется вниз до целого. Если объединение пусто, его часть равна 0. Знаменатели пересчитываются для каждой пары компания–тендер.</p></details>
+  <details><summary>Как работает Formula в деталях?</summary><p>Каждый критерий получает оценку соответствия от 0 до 5 или состояние MISSING (данных нет). Баллы = максимум критерия × оценка соответствия ÷ 5; MISSING приносит 0. Основной результат использует постоянный знаменатель 100. Полнота данных суммирует максимальные веса критериев, по которым есть данные для оценки. Уверенность в доказательствах взвешивает надёжность использованных сведений по этим критериям. Оценка только изученных критериев отличается от основного результата Formula 0–100. Автоматического порога «совпадения» нет.</p></details>
+  <details><summary>Как определяется допустимость участия?</summary><p>Предварительная проверка рассматривает поддерживаемые категории GOODS/WORKS, закреплённый профиль компании, подтверждённую общую область деятельности и доказанные серьёзные ограничения. Кандидат может получить статус «допустим с ограничениями», пока независимая проверка, соответствие требованиям, условия тендера и часовой пояс срока подачи остаются неизвестными. Подтверждённые ограничения могут исключить участие; слова из объявления сами по себе — нет. Фактическое право на участие требует дальнейшей проверки.</p></details>
+</section>
+
+<details class="try"><summary><span class="badge sim" lang="en">SIMULATED EXAMPLE</span> Измените ту же учебную пару → посмотрите, какие числа меняются</summary>
+  <p class="small muted">Это учебные числа, не данные реальной компании или тендера. Их изменение не влияет на правила или результаты TenderMatch.</p>
+  <h3>Слова</h3><div class="inputs">
+    <label>Слова компании <input id="wc" type="number" min="0" max="256" value="10"></label>
+    <label>Слова тендера <input id="wt" type="number" min="0" max="256" value="5"></label>
+    <label>Общие слова <input id="ws" type="number" min="0" max="256" value="3"></label>
+  </div><h3 style="margin-top:14px">Понятия</h3><div class="inputs">
+    <label>Понятия компании <input id="cc" type="number" min="0" max="128" value="4"></label>
+    <label>Понятия тендера <input id="ct" type="number" min="0" max="128" value="3"></label>
+    <label>Общие понятия <input id="cs" type="number" min="0" max="128" value="2"></label>
+  </div><output id="calculation" aria-live="polite"></output>
+</details>
+
+<details><summary><span class="badge real" lang="en">REAL EXAMPLE</span> После учебного примера — реальная пилотная пара →</summary><p>В ранее обработанной паре было 30 слов компании, 3 слова тендера и 2 общих слова: всего 31 разное слово. Часть за слова составила 51 612, за понятия — 200 000, общая релевантность — 251 612. Это иллюстрация, а не постоянный знаменатель или проверенное совпадение. <a href="bgt-tech-review-leads-v1.2.html">Открыть отдельный список кандидатов для просмотра</a>.</p></details>
+<footer>Описанный метод: закреплённый пилот TenderMatch, этапы 3–6 / Formula v1.1; файлы правил совпадают с загруженной версией <code>origin/main</code> 8ac562342afcaf62c13f73037b693f253a3edbe0. Это только локальное объяснение: исходный код, алгоритм, данные, производственный интерфейс и развёртывание не менялись. «Проверенная возможность» означает требуемый результат дальнейшей проверки, а не автоматический статус текущего API.</footer>
+</main>
+<script>
+  const ids=['wc','wt','ws','cc','ct','cs'],fields=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)])),out=document.getElementById('calculation');
+  function bounded(field){const n=Number(field.value);return Number.isFinite(n)?Math.min(Number(field.max),Math.max(0,Math.floor(n))):0}
+  function calculate(){
+    const wc=bounded(fields.wc),wt=bounded(fields.wt),ws=Math.min(bounded(fields.ws),wc,wt),cc=bounded(fields.cc),ct=bounded(fields.ct),cs=Math.min(bounded(fields.cs),cc,ct);
+    fields.ws.value=String(ws);fields.cs.value=String(cs);
+    const wu=wc+wt-ws,cu=cc+ct-cs,word=wu?Math.floor(800000*ws/wu):0,concept=cu?Math.floor(200000*cs/cu):0;
+    out.textContent=`Слова: ${wc} + ${wt} − ${ws} = ${wu} разных → ${word.toLocaleString('ru-RU')} из 800 000. Понятия: ${cc} + ${ct} − ${cs} = ${cu} разных → ${concept.toLocaleString('ru-RU')} из 200 000. Всего: ${(word+concept).toLocaleString('ru-RU')} из 1 000 000 (не вероятность).`;
+  }
+  ids.forEach(id=>fields[id].addEventListener('input',calculate));calculate();
+</script>
+</body></html>

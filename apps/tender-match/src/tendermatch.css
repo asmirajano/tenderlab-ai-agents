@@ -779,29 +779,15 @@ button.tb3-metric:hover { border-color: var(--tb3-green); transform: translateY(
   min-width: 0;
 }
 
-/* General rule page: compact infographic explanation, separate from Formula. */
-.tm-how-page { display:grid; gap:18px; }
-.tm-how-hero { align-items:center; background:linear-gradient(135deg,#10271f,#17644d); border-radius:16px; color:#fff; display:grid; gap:20px; grid-template-columns:minmax(0,1fr) 210px; padding:24px 28px; }
-.tm-how-hero > div > span,.tm-how-funnel header > div > span { color:var(--tb3-lime); font:800 12px/1.2 var(--font-geist-mono),monospace; letter-spacing:.06em; text-transform:uppercase; }
-.tm-how-hero h1 { font-size:clamp(32px,4vw,52px); letter-spacing:-.045em; line-height:1; margin:8px 0 10px; max-width:820px; }
-.tm-how-hero p { color:#d4e1da; font-size:17px; line-height:1.45; margin:0; max-width:760px; }
-.tm-how-hero aside { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); border-radius:12px; display:grid; gap:6px; padding:18px; text-align:center; }
-.tm-how-hero aside b { color:var(--tb3-lime); font-size:18px; }.tm-how-hero aside span { color:#d4e1da; }
-.tm-how-flow { align-items:stretch; display:grid; gap:8px; grid-template-columns:minmax(130px,1fr) 22px minmax(130px,1fr) 22px minmax(150px,1fr) 22px minmax(190px,1.2fr); }
-.tm-how-node,.tm-how-result,.tm-how-signals article,.tm-how-human,.tm-how-funnel,.tm-how-details { background:#fff; border:1px solid #cbd5e1; border-radius:12px; padding:16px; }
-.tm-how-node { border-top:4px solid #4b796d; }.tm-how-engine { background:#edf6f1; border-color:#bad5c8; }.tm-how-result { background:#10271f; border-color:#10271f; color:#fff; box-shadow:0 8px 24px rgba(15,39,31,.12); }
-.tm-how-node h2,.tm-how-result h2 { font-size:20px; margin:8px 0 12px; }.tm-how-node small { color:#607269; display:block; font-size:13px; line-height:1.4; }
-.tm-how-visual { background:#f3f7f4; border:1px solid #dce8e1; border-radius:8px; display:grid; gap:3px; margin-bottom:10px; padding:12px; }.tm-how-visual span { color:#607269; font-size:13px; }
-.tm-how-steps { display:flex; flex-wrap:wrap; gap:5px; margin:14px 0 18px; }.tm-how-steps span { background:#d8eadf; border-radius:5px; color:#164b3a; font-size:13px; font-weight:700; padding:7px 9px; }
-.tm-how-arrow { align-self:center; color:#6e857b; font-size:24px; text-align:center; }.tm-how-badge { background:#e0f0f3; border-radius:4px; color:#15546a; display:inline-block; font:800 11px/1.2 var(--font-geist-mono),monospace; letter-spacing:.04em; padding:4px 6px; }.tm-how-badge.sim { background:#fff0c5; color:#674812; }
-.tm-how-result .tm-how-badge { margin-bottom:4px; }.tm-how-result > strong { color:var(--tb3-lime); display:block; font-size:17px; margin-bottom:12px; }.tm-how-result dl { display:grid; gap:8px; margin:0; }.tm-how-result dl div { border-top:1px solid rgba(255,255,255,.16); display:flex; justify-content:space-between; padding-top:7px; }.tm-how-result dt { color:#b8cbc1; }.tm-how-result dd { color:#fff; font-weight:700; margin:0; }
-.tm-how-signals { display:grid; gap:12px; grid-template-columns:repeat(3,minmax(0,1fr)); }.tm-how-signals article { border-top:4px solid #267eac; }.tm-how-signals article:nth-child(2){border-top-color:#b87331}.tm-how-signals article:nth-child(3){border-top-color:#8170aa}.tm-how-signals h2 { font-size:18px; line-height:1.25; margin:10px 0 7px; }.tm-how-signals p { color:#526861; font-size:14px; line-height:1.45; margin:0 0 12px; }.tm-how-signals button { background:transparent; border:0; color:var(--tb3-green); cursor:pointer; font-weight:750; padding:0; }
-.tm-how-human { border-left:5px solid #557d57; }.tm-how-human h2 { font-size:23px; margin:8px 0 6px; }.tm-how-human p { color:#526861; margin:0 0 12px; }.tm-how-gate { align-items:center; background:#fff4df; border-radius:7px; display:flex; gap:8px; justify-content:space-between; padding:10px 12px; }.tm-how-gate span { color:#695837; }.tm-how-gate b { color:#674812; }
-.tm-how-funnel header { align-items:end; display:flex; gap:18px; justify-content:space-between; }.tm-how-funnel h2 { font-size:24px; margin:6px 0 0; }.tm-how-funnel header small { color:#607269; }.tm-how-funnel-row { display:grid; gap:6px; grid-template-columns:repeat(6,minmax(0,1fr)); margin-top:16px; }.tm-how-funnel-row div { background:#edf4f0; border-top:4px solid var(--tb3-green); border-radius:7px; display:grid; gap:5px; padding:12px; text-align:center; }.tm-how-funnel-row b { font:750 22px/1 var(--font-geist-mono),monospace; }.tm-how-funnel-row span { color:#526861; font-size:13px; }
-.tm-how-details summary { cursor:pointer; font-weight:700; }.tm-how-details p { color:#526861; line-height:1.5; margin:12px 0 2px; }.tm-how-inputs { display:grid; gap:10px; grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:12px; }.tm-how-inputs label { display:grid; gap:5px; font-size:13px; font-weight:700; }.tm-how-inputs input { border:1px solid #9cadab; border-radius:6px; font:inherit; padding:8px; }.tm-how-details output { background:#e6f3ee; border-radius:7px; display:block; line-height:1.5; margin-top:12px; padding:10px; }
-.tm-how-boundary { background:#edf4f0; border-left:4px solid var(--tb3-green); border-radius:7px; display:flex; gap:14px; line-height:1.45; padding:12px 14px; }.tm-how-boundary b { white-space:nowrap; }
-@media (max-width:900px){.tm-how-flow{grid-template-columns:1fr 20px 1fr 20px 1fr}.tm-how-flow .tm-how-result{grid-column:1/-1}.tm-how-signals{grid-template-columns:1fr 1fr}.tm-how-signals article:last-child{grid-column:1/-1}.tm-how-funnel-row{grid-template-columns:repeat(3,1fr)}}
-@media (max-width:600px){.tm-how-hero{grid-template-columns:1fr;padding:20px}.tm-how-flow{grid-template-columns:1fr}.tm-how-arrow{transform:rotate(90deg)}.tm-how-signals{grid-template-columns:1fr}.tm-how-signals article:last-child{grid-column:auto}.tm-how-funnel header,.tm-how-boundary{align-items:flex-start;flex-direction:column}.tm-how-funnel-row{grid-template-columns:repeat(2,1fr)}.tm-how-inputs{grid-template-columns:1fr}.tm-how-hero h1{font-size:34px}}
+/* The reviewed Russian HTML owns the explanation and its visual baseline. */
+.tm-general-page { display: grid; gap: 10px; min-width: 0; }
+.tm-general-nav { align-items: center; background: #fff; border: 1px solid var(--tl-line); border-radius: 10px; display: flex; gap: 12px; justify-content: space-between; padding: 9px 13px; }
+.tm-general-nav span { color: var(--tb3-green); font-size: 13px; font-weight: 750; }
+.tb3-page-method { padding-top: 104px; }
+.tm-general-nav a { background: #edf4f0; border: 1px solid #cbdad1; border-radius: 7px; color: var(--tb3-green); font-size: 13px; font-weight: 750; padding: 7px 10px; text-decoration: none; }
+.tm-general-nav a:focus-visible { outline: 3px solid rgba(23, 107, 81, .25); outline-offset: 2px; }
+.tm-general-page iframe { background: #f5f8f7; border: 0; display: block; max-width: 100%; min-width: 0; overflow: hidden; width: 100%; }
+@media (max-width: 600px) { .tm-general-nav { padding: 8px 10px; } }
 .tb3-formula-hero { align-items: end; background: linear-gradient(135deg, #10271f 0%, #164b3a 100%); border-radius: 18px; color: #fff; display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr) 190px; overflow: hidden; padding: 30px 32px; position: relative; }
 .tb3-formula-hero::after { background: radial-gradient(circle, rgba(201, 238, 99, .18) 0 2px, transparent 3px); background-size: 20px 20px; content: ""; height: 160px; opacity: .55; position: absolute; right: -20px; top: -30px; width: 260px; }
 .tb3-formula-hero > div, .tb3-formula-hero > aside { position: relative; z-index: 1; }
