@@ -9,9 +9,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8').replaceAll('\r\n','\n');
 const contract = JSON.parse(read('docs/product-boundaries.json'));
 
-test('Match preserves twenty selected UI files including the authenticated development interface', () => {
+test('Match preserves twenty-two selected UI files including the authenticated development interface and approved method explainer', () => {
   const names = fs.readdirSync(path.join(root,'apps/tender-match/src')).filter(n=>n!=='main.tsx');
-  assert.equal(names.length,20);
+  assert.equal(names.length,22);
   for(const n of names) {
     if(n==='tendermatch-all-to-all.tsx') {
       const source=read('apps/tender-match/src/'+n);
