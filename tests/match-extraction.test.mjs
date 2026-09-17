@@ -25,6 +25,12 @@ test('Match preserves twenty-two selected UI files including the authenticated d
       assert.match(source,/id: "how-it-works", label: "How it works"/);
       continue;
     }
+    if(n==='tendermatch.css') {
+      const source=read('apps/tender-match/src/'+n);
+      assert.match(source,/\.tm-general-page/);
+      assert.match(source,/\.tb3-page-method/);
+      continue;
+    }
     if(n==='tendermatch-how-it-works-view.tsx' || n==='tendermatch-general-rule.html') continue;
     assert.equal(read('apps/tender-match/src/'+n),read('apps/tender-apps/src/'+n),n);
   }
