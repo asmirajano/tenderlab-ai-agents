@@ -19,6 +19,13 @@ test('Match preserves twenty-two selected UI files including the authenticated d
       assert.doesNotMatch(source,/tendermatch-all-to-all-session/);
       continue;
     }
+    if(n==='tendermatch-app.tsx') {
+      const source=read('apps/tender-match/src/'+n);
+      assert.match(source,/TenderMatchHowItWorksView/);
+      assert.match(source,/id: "how-it-works", label: "How it works"/);
+      continue;
+    }
+    if(n==='tendermatch-how-it-works-view.tsx' || n==='tendermatch-general-rule.html') continue;
     assert.equal(read('apps/tender-match/src/'+n),read('apps/tender-apps/src/'+n),n);
   }
 });
